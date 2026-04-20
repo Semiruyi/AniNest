@@ -1,0 +1,50 @@
+# Visual Studio 相关
+.vs/
+*.user
+*.suo
+*.cache
+*.userosscache
+*.sln.docstates
+[Bb]in/
+[Oo]bj/
+*.dbmdl
+*.jfm
+*.pdb
+*.vsp
+*.vspx
+*.sap
+*.opensdf
+*.sdf
+*.log
+
+# 编译输出
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+bld/
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+project.lock.json
+
+# Rider / VS Code
+.idea/
+.vscode/
+*.swp
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# WinForms 特定
+*.exe
+*.dll
+*.pdb
+*.cachefile
