@@ -329,4 +329,14 @@ private int InfoY => CoverHeight + TitleAreaHeight + ProgressAreaHeight;
         path.CloseFigure();
         return path;
     }
+
+
+    public void CheckAndResetHover()
+    {
+        Point mousePos = this.PointToClient(Cursor.Position);
+        if (!this.ClientRectangle.Contains(mousePos))
+        {
+            this.BackColor = Color.FromArgb(35, 35, 35);
+        }
+    }
 }

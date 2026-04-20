@@ -124,6 +124,7 @@ public partial class MainPage : UserControl
             
             // TODO: 切换到播放页面，传入视频列表
             MessageBox.Show($"打开文件夹: {folderName}\n共 {videos.Length} 个视频");
+            card.CheckAndResetHover();
         };
         
         // 右键菜单
