@@ -9,6 +9,7 @@ public partial class MainPage : UserControl
     private Button? addButton;
     private Panel? bottomPanel;
     private SettingsService settingsService;
+    public event Action<object, string, string>? FolderSelected;
 
     public MainPage()
     {
@@ -121,9 +122,9 @@ public partial class MainPage : UserControl
                 MessageBox.Show("文件夹内没有视频文件", "提示");
                 return;
             }
+
+            FolderSelected?.Invoke(this, folderPath, folderName);
             
-            // TODO: 切换到播放页面，传入视频列表
-            MessageBox.Show($"打开文件夹: {folderName}\n共 {videos.Length} 个视频");
             card.CheckAndResetHover();
         };
         
