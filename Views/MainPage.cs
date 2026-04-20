@@ -24,7 +24,7 @@ public partial class MainPage : UserControl
             AutoScroll = true,
             FlowDirection = FlowDirection.LeftToRight,
             WrapContents = true,
-            Padding = new Padding(20),
+            Padding = new Padding(20, 20, 20, 20),  // 统一边距
             BackColor = Color.FromArgb(20, 20, 20)
         };
 
@@ -76,7 +76,22 @@ public partial class MainPage : UserControl
             if (dialog.ShowDialog() == DialogResult.OK)
             {
                 string folderPath = dialog.SelectedPath;
-                MessageBox.Show($"选择了: {folderPath}", "提示");
+                string folderName = Path.GetFileName(folderPath);
+                
+                // 创建卡片
+                var card = new FolderCard
+                {
+                    FolderName = folderName,
+                    FolderPath = folderPath,
+                    VideoCount = 0  // 暂时写 0，后续扫描真实数量
+                };
+                
+                card.Click += (s, ev) =>
+                {
+                    MessageBox.Show($"点击了: {folderName}", "提示");
+                };
+                
+                cardPanel?.Controls.Add(card);
             }
         }
     }
