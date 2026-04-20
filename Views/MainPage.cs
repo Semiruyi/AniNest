@@ -70,38 +70,62 @@ public partial class MainPage : UserControl
         {
             if (Directory.Exists(folder.Path))
             {
-                AddFolderCard(folder.Name, folder.Path);
+                int videoCount = VideoScanner.CountVideosInFolder(folder.Path);
+                AddFolderCard(folder.Name, folder.Path, videoCount);
+            }
+            else
+            {
+                // 文件夹不存在，从设置中移除
+                settingsService.RemoveFolder(folder.Path);
             }
         }
     }
 
-    private void AddFolderCard(string folderName, string folderPath)
+    private void AddFolderCard(string folderName, string folderPath, int videoCount = 0)
     {
         var card = new FolderCard
         {
             FolderName = folderName,
             FolderPath = folderPath,
-            VideoCount = 0,  // TODO: 扫描真实数量
+            VideoCount = videoCount,
             ProgressPercent = 0
         };
         
         card.CardClick += (s, ev) =>
         {
-            MessageBox.Show($"打开文件夹: {card.FolderName}\n路径: {card.FolderPath}");
-            // TODO: 切换到播放页面
+            // 检查文件夹是否还存在
+            if (!Directory.Exists(folderPath))
+            {
+                MessageBox.Show("文件夹不存在，可能已被移动或删除", "错误");
+                return;
+            }
+            
+            // 重新扫描视频
+            var videos = VideoScanner.GetVideoFiles(folderPath);
+            if (videos.Length == 0)
+            {
+                MessageBox.Show("文件夹内没有视频文件", "提示");
+                return;
+            }
+            
+            // TODO: 切换到播放页面，传入视频列表
+            MessageBox.Show($"打开文件夹: {folderName}\n共 {videos.Length} 个视频");
         };
-
-        // 右键菜单：删除
+        
+        // 右键菜单
         var contextMenu = new ContextMenuStrip();
-        contextMenu.Renderer = new DarkMenuRenderer();  // 使用深色渲染器
+        contextMenu.Renderer = new DarkMenuRenderer();
         contextMenu.BackColor = Color.FromArgb(40, 40, 40);
         contextMenu.ForeColor = Color.White;
-
+        
         var deleteItem = new ToolStripMenuItem("删除")
         {
             BackColor = Color.FromArgb(40, 40, 40),
             ForeColor = Color.White
         };
+        deleteItem.MouseEnter += (s, ev) => deleteItem.BackColor = Color.FromArgb(60, 60, 60);
+        deleteItem.MouseLeave += (s, ev) => deleteItem.BackColor = Color.FromArgb(40, 40, 40);
+        
         deleteItem.Click += (s, ev) =>
         {
             if (MessageBox.Show($"确定要移除 \"{folderName}\" 吗？", "确认", 
@@ -113,6 +137,22 @@ public partial class MainPage : UserControl
             }
         };
         contextMenu.Items.Add(deleteItem);
+        
+        // 添加刷新选项
+        var refreshItem = new ToolStripMenuItem("刷新")
+        {
+            BackColor = Color.FromArgb(40, 40, 40),
+            ForeColor = Color.White
+        };
+        refreshItem.MouseEnter += (s, ev) => refreshItem.BackColor = Color.FromArgb(60, 60, 60);
+        refreshItem.MouseLeave += (s, ev) => refreshItem.BackColor = Color.FromArgb(40, 40, 40);
+        refreshItem.Click += (s, ev) =>
+        {
+            int count = VideoScanner.CountVideosInFolder(folderPath);
+            card.VideoCount = count;
+        };
+        contextMenu.Items.Add(refreshItem);
+        
         card.ContextMenuStrip = contextMenu;
         
         cardPanel?.Controls.Add(card);
@@ -146,11 +186,20 @@ public partial class MainPage : UserControl
                     }
                 }
                 
+                // 扫描视频数量
+                int videoCount = VideoScanner.CountVideosInFolder(folderPath);
+                
+                if (videoCount == 0)
+                {
+                    MessageBox.Show("该文件夹内没有视频文件", "提示");
+                    return;
+                }
+                
                 // 保存到设置
                 settingsService.AddFolder(folderPath, folderName);
                 
                 // 添加卡片
-                AddFolderCard(folderName, folderPath);
+                AddFolderCard(folderName, folderPath, videoCount);
             }
         }
     }
