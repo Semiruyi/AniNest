@@ -18,13 +18,11 @@ public class MainForm : Form
     public MainForm()
     {
         this.Text = "LocalPlayer";
-        this.StartPosition = FormStartPosition.CenterScreen;
+        this.StartPosition = FormStartPosition.Manual;  // 改为手动
         this.BackColor = Color.FromArgb(20, 20, 20);
         
-        // 设置窗口大小为屏幕的 65%
         SetSizeToScreenPercent(0.65);
-        
-        // 设置最小尺寸
+        this.CenterToScreen();  // 添加这行，强制居中
         this.MinimumSize = new Size(800, 500);
         
         mainPage = new MainPage();
@@ -32,7 +30,6 @@ public class MainForm : Form
         this.Controls.Add(mainPage);
 
         this.Load += MainForm_Load;
-        this.Resize += MainForm_Resize;
     }
 
     private void SetSizeToScreenPercent(double percent)
