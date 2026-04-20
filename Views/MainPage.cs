@@ -1,4 +1,5 @@
 using LocalPlayer.Controls;
+using LocalPlayer.Services;
 
 namespace LocalPlayer.Views;
 
@@ -7,10 +8,13 @@ public partial class MainPage : UserControl
     private FlowLayoutPanel? cardPanel;
     private Button? addButton;
     private Panel? bottomPanel;
+    private SettingsService settingsService;
 
     public MainPage()
     {
+        settingsService = new SettingsService();
         SetupUI();
+        LoadSavedFolders();
     }
 
     private void SetupUI()
@@ -59,6 +63,60 @@ public partial class MainPage : UserControl
         this.Controls.Add(bottomPanel);
     }
 
+    private void LoadSavedFolders()
+    {
+        var folders = settingsService.GetFolders();
+        foreach (var folder in folders)
+        {
+            if (Directory.Exists(folder.Path))
+            {
+                AddFolderCard(folder.Name, folder.Path);
+            }
+        }
+    }
+
+    private void AddFolderCard(string folderName, string folderPath)
+    {
+        var card = new FolderCard
+        {
+            FolderName = folderName,
+            FolderPath = folderPath,
+            VideoCount = 0,  // TODO: 扫描真实数量
+            ProgressPercent = 0
+        };
+        
+        card.CardClick += (s, ev) =>
+        {
+            MessageBox.Show($"打开文件夹: {card.FolderName}\n路径: {card.FolderPath}");
+            // TODO: 切换到播放页面
+        };
+
+        // 右键菜单：删除
+        var contextMenu = new ContextMenuStrip();
+        contextMenu.Renderer = new DarkMenuRenderer();  // 使用深色渲染器
+        contextMenu.BackColor = Color.FromArgb(40, 40, 40);
+        contextMenu.ForeColor = Color.White;
+
+        var deleteItem = new ToolStripMenuItem("删除")
+        {
+            BackColor = Color.FromArgb(40, 40, 40),
+            ForeColor = Color.White
+        };
+        deleteItem.Click += (s, ev) =>
+        {
+            if (MessageBox.Show($"确定要移除 \"{folderName}\" 吗？", "确认", 
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                settingsService.RemoveFolder(folderPath);
+                cardPanel?.Controls.Remove(card);
+                card.Dispose();
+            }
+        };
+        contextMenu.Items.Add(deleteItem);
+        card.ContextMenuStrip = contextMenu;
+        
+        cardPanel?.Controls.Add(card);
+    }
     private void BottomPanel_Resize(object? sender, EventArgs e)
     {
         if (addButton != null && bottomPanel != null)
@@ -78,20 +136,21 @@ public partial class MainPage : UserControl
                 string folderPath = dialog.SelectedPath;
                 string folderName = Path.GetFileName(folderPath);
                 
-                // 创建卡片
-                var card = new FolderCard
+                // 检查是否已存在
+                foreach (FolderCard card in cardPanel!.Controls)
                 {
-                    FolderName = folderName,
-                    FolderPath = folderPath,
-                    VideoCount = 0  // 暂时写 0，后续扫描真实数量
-                };
+                    if (card.FolderPath == folderPath)
+                    {
+                        MessageBox.Show("该文件夹已添加", "提示");
+                        return;
+                    }
+                }
                 
-                card.Click += (s, ev) =>
-                {
-                    MessageBox.Show($"点击了: {folderName}", "提示");
-                };
+                // 保存到设置
+                settingsService.AddFolder(folderPath, folderName);
                 
-                cardPanel?.Controls.Add(card);
+                // 添加卡片
+                AddFolderCard(folderName, folderPath);
             }
         }
     }
