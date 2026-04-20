@@ -90,6 +90,20 @@ public partial class MainPage : UserControl
             VideoCount = videoCount,
             ProgressPercent = 0
         };
+
+        // 加载封面图
+        string? coverPath = VideoScanner.FindCoverImage(folderPath);
+        if (coverPath != null)
+        {
+            try
+            {
+                using (var stream = new FileStream(coverPath, FileMode.Open, FileAccess.Read))
+                {
+                    card.SetCoverImage(Image.FromStream(stream));
+                }
+            }
+            catch { }
+        }
         
         card.CardClick += (s, ev) =>
         {

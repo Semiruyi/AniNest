@@ -9,22 +9,39 @@ namespace LocalPlayer.Controls;
 public class FolderCard : UserControl
 {
     // ========== 尺寸配置 ==========
-    private const float ScaleFactor = 1.5f;           // 缩放倍数，改这里全局生效
-    private const int BaseCoverWidth = 150;
-    private const int BaseCoverHeight = 225;          // 2:3 比例
-    private const int BaseCardWidth = 180;
-    private const int BaseCardHeight = 315;
-    private const int BaseMargin = 12;
-    private const int BaseRadius = 12;
-    
-    // 实际使用的尺寸
-    private static readonly int CoverWidth = (int)(BaseCoverWidth * ScaleFactor);
-    private static readonly int CoverHeight = (int)(BaseCoverHeight * ScaleFactor);
-    private static readonly int CardWidth = (int)(BaseCardWidth * ScaleFactor);
-    private static readonly int CardHeight = (int)(BaseCardHeight * ScaleFactor);
-    private static readonly int CardMargin = (int)(BaseMargin * ScaleFactor);
-    private static readonly int CardRadius = (int)(BaseRadius * ScaleFactor);
-    // ===============================
+private const float ScaleFactor = 0.7f;
+private const int BaseCoverWidth = 600;
+private const int BaseCoverHeight = 750;
+
+// 各区域高度（相对于封面高度）
+private const float TitleHeightPercent = 0.15f;      // 标题区高度 = 封面高 15%
+private const float InfoHeightPercent = 0.10f;       // 信息区高度 = 封面高 10%
+private const float ProgressHeightPercent = 0.04f;
+
+// 内容边距（相对于封面宽度）
+private const float ContentMarginPercent = 0.05f;    // 左右边距 5%
+
+private const int BaseRadius = 20;
+
+// 实际尺寸
+private int CoverWidth => (int)(BaseCoverWidth * ScaleFactor);
+private int CoverHeight => (int)(BaseCoverHeight * ScaleFactor);
+private int CardWidth => CoverWidth;
+private int ContentMargin => (int)(CoverWidth * ContentMarginPercent);
+private int ContentWidth => CoverWidth - ContentMargin * 2;
+
+private int TitleAreaHeight => (int)(CoverHeight * TitleHeightPercent);
+private int InfoAreaHeight => (int)(CoverHeight * InfoHeightPercent);
+private int ProgressAreaHeight => (int)(CoverHeight * ProgressHeightPercent);
+
+private int CardHeight => CoverHeight + TitleAreaHeight + InfoAreaHeight + ProgressAreaHeight;
+private int CardRadius => (int)(BaseRadius * ScaleFactor);
+
+// 各区域 Y 坐标
+private int TitleY => CoverHeight;
+private int ProgressY => CoverHeight + TitleAreaHeight;
+private int InfoY => CoverHeight + TitleAreaHeight + ProgressAreaHeight;
+// ===============================
     
     private Label? nameLabel;
     private Label? infoLabel;
@@ -75,14 +92,10 @@ public class FolderCard : UserControl
         {
             progressPercent = value;
             if (progressBar != null)
-            {
-                int contentWidth = CardWidth - CardMargin * 2;
-                progressBar.Width = (int)(contentWidth * value / 100);
-            }
+                progressBar.Width = (int)(ContentWidth * value / 100);
         }
     }
 
-    // 点击事件
     public event EventHandler? CardClick;
 
     public FolderCard()
@@ -90,7 +103,7 @@ public class FolderCard : UserControl
         this.Size = new Size(CardWidth, CardHeight);
         this.BackColor = Color.FromArgb(35, 35, 35);
         this.Cursor = Cursors.Hand;
-        this.Margin = new Padding(CardMargin);
+        this.Margin = new Padding(15);
         
         SetupUI();
         AttachHoverEffect();
@@ -99,83 +112,103 @@ public class FolderCard : UserControl
 
     private void SetupUI()
     {
-        int contentWidth = CardWidth - CardMargin * 2;
-        
-        // 封面图片
+        // 封面图片（无边距）
         coverBox = new PictureBox
         {
             Size = new Size(CoverWidth, CoverHeight),
-            Location = new Point((CardWidth - CoverWidth) / 2, CardMargin),
+            Location = new Point(0, 0),
             BackColor = Color.FromArgb(45, 45, 45),
-            SizeMode = PictureBoxSizeMode.Zoom
+            SizeMode = PictureBoxSizeMode.StretchImage  // 填满，不留黑边
         };
-        // 给封面加个圆角效果（通过绘制）
         coverBox.Paint += CoverBox_Paint;
         
-        int nameFontSize = (int)(9 * ScaleFactor);
-        int infoFontSize = (int)(7 * ScaleFactor);
-        
-        int yOffset = CoverHeight + CardMargin + 8;
-        
-        // 文件夹名称（支持换行，最多两行）
+        // 标题区域（紧贴封面下方，高度 = 封面高 20%）
         nameLabel = new Label
         {
-            Font = new Font("微软雅黑", nameFontSize, FontStyle.Bold),
+            Font = new Font("微软雅黑", 27, FontStyle.Bold),
             ForeColor = Color.White,
             BackColor = Color.Transparent,
-            Location = new Point(CardMargin, yOffset),
-            Size = new Size(contentWidth, (int)(36 * ScaleFactor)),
-            TextAlign = ContentAlignment.TopLeft,
+            Location = new Point(ContentMargin, TitleY),
+            Size = new Size(ContentWidth, TitleAreaHeight),
+            TextAlign = ContentAlignment.MiddleCenter,
             AutoSize = false,
             Text = "文件夹名称"
         };
         
-        yOffset += (int)(38 * ScaleFactor);
-        
-        // 视频数量
-        infoLabel = new Label
-        {
-            Font = new Font("微软雅黑", infoFontSize),
-            ForeColor = Color.FromArgb(160, 160, 160),
-            BackColor = Color.Transparent,
-            Location = new Point(CardMargin, yOffset),
-            Size = new Size(contentWidth, (int)(16 * ScaleFactor)),
-            Text = "0 个视频"
-        };
-        
-        yOffset += (int)(20 * ScaleFactor);
-        
-        // 进度条背景
+        // 进度条区域
         Panel progressBg = new Panel
         {
-            Size = new Size(contentWidth, (int)(3 * ScaleFactor)),
-            Location = new Point(CardMargin, yOffset),
-            BackColor = Color.FromArgb(60, 60, 60)
+            Size = new Size(ContentWidth, ProgressAreaHeight),
+            Location = new Point(ContentMargin, ProgressY),
+            BackColor = Color.Transparent
         };
-        
-        // 进度条
+
+        // 进度条背景轨道（顶部居中）
+        int barHeight = 8;
+        int barWidth = ContentWidth;  // 或者可以设置更窄，比如 (int)(ContentWidth * 0.8f)
+
+        Panel progressTrack = new Panel
+        {
+            Size = new Size(barWidth, barHeight),
+            Location = new Point((ContentWidth - barWidth) / 2, 0),  // 水平居中，顶部对齐
+            BackColor = Color.FromArgb(80, 80, 80)
+        };
+        progressTrack.Paint += (s, e) =>
+        {
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            using (var path = GetRoundedRectangle(progressTrack.ClientRectangle, barHeight / 2))
+            using (var brush = new SolidBrush(progressTrack.BackColor))
+            {
+                e.Graphics.FillPath(brush, path);
+            }
+        };
+
+        // 进度条（圆角，淡蓝色）
         progressBar = new Panel
         {
-            Size = new Size(0, (int)(3 * ScaleFactor)),
+            Size = new Size(0, barHeight),
             Location = new Point(0, 0),
-            BackColor = Color.FromArgb(0, 122, 204)
+            BackColor = Color.FromArgb(100, 180, 255)  // 淡蓝色
         };
-        progressBg.Controls.Add(progressBar);
+        progressBar.Paint += (s, e) =>
+        {
+            if (progressBar.Width == 0) return;
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            using (var path = GetRoundedRectangle(progressBar.ClientRectangle, barHeight / 2))
+            using (var brush = new SolidBrush(progressBar.BackColor))
+            {
+                e.Graphics.FillPath(brush, path);
+            }
+        };
+
+        progressTrack.Controls.Add(progressBar);
+        progressBg.Controls.Add(progressTrack);
+
+        // 视频数量区域（高度 = 封面高 10%）
+        infoLabel = new Label
+        {
+            Font = new Font("微软雅黑", 12),
+            ForeColor = Color.FromArgb(160, 160, 160),
+            BackColor = Color.Transparent,
+            Location = new Point(ContentMargin, InfoY),
+            Size = new Size(ContentWidth, InfoAreaHeight),
+            TextAlign = ContentAlignment.TopCenter,
+            Text = "0 个视频"
+        };
         
         this.Controls.Add(coverBox);
         this.Controls.Add(nameLabel);
         this.Controls.Add(infoLabel);
         this.Controls.Add(progressBg);
     }
-
     private void CoverBox_Paint(object? sender, PaintEventArgs e)
     {
         if (coverBox?.Image == null) return;
         
         e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-        int radius = (int)(8 * ScaleFactor);
+        int radius = CardRadius;
         
-        using (var path = GetRoundedRectangle(coverBox.ClientRectangle, radius))
+        using (var path = GetRoundedRectangle(new Rectangle(0, 0, CoverWidth, CoverHeight), radius))
         {
             coverBox.Region = new Region(path);
         }
@@ -186,12 +219,7 @@ public class FolderCard : UserControl
         Color originalColor = this.BackColor;
         Color hoverColor = Color.FromArgb(50, 50, 50);
         
-        // 鼠标进入卡片本身
-        this.MouseEnter += (s, e) =>
-        {
-            this.BackColor = hoverColor;
-        };
-        
+        this.MouseEnter += (s, e) => this.BackColor = hoverColor;
         this.MouseLeave += (s, e) =>
         {
             // 检查鼠标是否真的离开了整个卡片区域
@@ -201,7 +229,6 @@ public class FolderCard : UserControl
             }
         };
         
-        // 让所有子控件的事件也触发卡片的高亮
         AttachHoverToChildren(this, hoverColor, originalColor);
     }
 
@@ -209,64 +236,51 @@ public class FolderCard : UserControl
     {
         foreach (Control child in parent.Controls)
         {
-            child.MouseEnter += (s, e) =>
-            {
-                this.BackColor = hoverColor;
-            };
-            
+            child.MouseEnter += (s, e) => this.BackColor = hoverColor;
             child.MouseLeave += (s, e) =>
             {
-                // 检查鼠标是否真的离开了整个卡片区域
-                if (!this.ClientRectangle.Contains(this.PointToClient(Cursor.Position)))
+                // 关键修复：延迟检查，等鼠标位置更新
+                this.BeginInvoke(new Action(() =>
                 {
-                    this.BackColor = originalColor;
-                }
+                    if (!this.ClientRectangle.Contains(this.PointToClient(Cursor.Position)))
+                    {
+                        this.BackColor = originalColor;
+                    }
+                }));
             };
             
-            // 递归处理子控件的子控件（比如进度条背景里的进度条）
             if (child.HasChildren)
-            {
                 AttachHoverToChildren(child, hoverColor, originalColor);
-            }
         }
     }
 
     private void AttachClickEvent()
     {
         this.Click += (s, e) => CardClick?.Invoke(this, e);
-        
-        // 让子控件点击也触发卡片点击
         foreach (Control ctrl in this.Controls)
-        {
             ctrl.Click += (s, e) => CardClick?.Invoke(this, e);
-        }
     }
 
     private void AdjustNameFontSize()
     {
         if (nameLabel == null || string.IsNullOrEmpty(nameLabel.Text)) return;
         
-        int maxFontSize = (int)(9 * ScaleFactor);
-        int minFontSize = (int)(7 * ScaleFactor);
+        int maxSize = (int)(25 * ScaleFactor);
+        int minSize = (int)(12 * ScaleFactor);
         
-        // 先设置最大字体
-        nameLabel.Font = new Font("微软雅黑", maxFontSize, FontStyle.Bold);
+        nameLabel.Font = new Font("微软雅黑", maxSize, FontStyle.Bold);
         
-        // 测量文本是否超出
         using (Graphics g = nameLabel.CreateGraphics())
         {
             SizeF textSize = g.MeasureString(nameLabel.Text, nameLabel.Font, nameLabel.Width);
+            if (textSize.Width <= nameLabel.Width * 1.2f) return;
             
-            if (textSize.Height <= nameLabel.Height && textSize.Width <= nameLabel.Width * 2)
-                return;  // 当前字体合适
-            
-            // 缩小字体
-            for (int size = maxFontSize - 1; size >= minFontSize; size--)
+            for (int size = maxSize - 1; size >= minSize; size--)
             {
                 using (Font font = new Font("微软雅黑", size, FontStyle.Bold))
                 {
                     textSize = g.MeasureString(nameLabel.Text, font, nameLabel.Width);
-                    if (textSize.Height <= nameLabel.Height)
+                    if (textSize.Width <= nameLabel.Width)
                     {
                         nameLabel.Font = new Font("微软雅黑", size, FontStyle.Bold);
                         break;
@@ -279,15 +293,10 @@ public class FolderCard : UserControl
     public void SetCoverImage(Image? image)
     {
         if (image != null && coverBox != null)
-        {
             coverBox.Image = image;
-        }
     }
 
-    public void SetProgress(double percent)
-    {
-        ProgressPercent = percent;
-    }
+    public void SetProgress(double percent) => ProgressPercent = percent;
 
     protected override void OnPaint(PaintEventArgs e)
     {
