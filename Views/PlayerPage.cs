@@ -384,7 +384,6 @@ public class PlayerPage : UserControl
                 controlBar.Visible = true;
                 Cursor.Show();
             }
-            isControlBarVisible = true;
         }
 
         StartHideTimer();

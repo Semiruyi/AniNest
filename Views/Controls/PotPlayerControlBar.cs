@@ -571,7 +571,7 @@ public class PotPlayerVolumeControl : UserControl
 
     public PotPlayerVolumeControl()
     {
-        this.Size = new Size(30, 30);
+        this.Size = new Size(35, 35);
         this.BackColor = backgroundColor;
 
         InitializeComponents();
@@ -581,12 +581,12 @@ public class PotPlayerVolumeControl : UserControl
     {
         volumeButton = new Button
         {
-            Size = new Size(30, 30),
+            Size = new Size(35, 35),
             Location = new Point(0, 0),
             FlatStyle = FlatStyle.Flat,
             BackColor = backgroundColor,
             ForeColor = textColor,
-            Font = new Font("Segoe UI", 11),
+            Font = new Font("Segoe UI", 12),
             Text = "🔊",
             Cursor = Cursors.Hand,
             TextAlign = ContentAlignment.MiddleCenter
@@ -610,21 +610,25 @@ public class PotPlayerVolumeControl : UserControl
         volumeSlider.MouseLeave += (s, e) => HideVolumeSlider();
 
         hideSliderTimer = new Timer { Interval = 500 };
-        hideSliderTimer.Tick += (s, e) =>
-        {
-            if (!volumeSlider.ClientRectangle.Contains(volumeSlider.PointToClient(Cursor.Position)))
-            {
-                HideVolumeSlider();
-            }
-            hideSliderTimer.Stop();
-        };
+        hideSliderTimer.Tick += HideSliderTimer_Tick;
 
         this.Controls.Add(volumeSlider);
         this.Controls.Add(volumeButton);
     }
 
+    private void HideSliderTimer_Tick(object? sender, EventArgs e)
+    {
+        if (volumeSlider != null && !volumeSlider.ClientRectangle.Contains(volumeSlider.PointToClient(Cursor.Position)))
+        {
+            HideVolumeSlider();
+        }
+        hideSliderTimer?.Stop();
+    }
+
     private void VolumeButton_Click(object? sender, EventArgs e)
     {
+        if (volumeSlider == null) return;
+        
         if (isMuted)
         {
             isMuted = false;
@@ -646,6 +650,8 @@ public class PotPlayerVolumeControl : UserControl
 
     private void VolumeSlider_ValueChanged(object? sender, EventArgs e)
     {
+        if (volumeSlider == null) return;
+        
         volume = volumeSlider.Value;
         isMuted = (volume == 0);
         UpdateVolumeIcon();
@@ -655,18 +661,23 @@ public class PotPlayerVolumeControl : UserControl
 
     private void ShowVolumeSlider()
     {
-        volumeSlider.Visible = true;
-        volumeSlider.BringToFront();
-        hideSliderTimer.Stop();
+        if (volumeSlider != null)
+        {
+            volumeSlider.Visible = true;
+            volumeSlider.BringToFront();
+        }
+        hideSliderTimer?.Stop();
     }
 
     private void HideVolumeSlider()
     {
-        hideSliderTimer.Start();
+        hideSliderTimer?.Start();
     }
 
     private void UpdateVolumeIcon()
     {
+        if (volumeButton == null) return;
+        
         if (isMuted || volume == 0)
             volumeButton.Text = "🔇";
         else if (volume < 30)
@@ -700,24 +711,23 @@ public class PotPlayerVolumeControl : UserControl
         set
         {
             isMuted = value;
+            if (volumeSlider == null) return;
+            
             if (isMuted)
             {
                 volumeBeforeMute = volume;
                 volume = 0;
-                if (volumeSlider != null)
-                    volumeSlider.Value = 0;
+                volumeSlider.Value = 0;
             }
             else
             {
                 volume = volumeBeforeMute;
-                if (volumeSlider != null)
-                    volumeSlider.Value = volume;
+                volumeSlider.Value = volume;
             }
             UpdateVolumeIcon();
         }
     }
 }
-
 // 进度变更事件参数
 public class ProgressChangedEventArgs : EventArgs
 {
