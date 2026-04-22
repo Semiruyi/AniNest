@@ -1,8 +1,11 @@
 using System;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using LibVLCSharp.Shared;
 using LibVLCSharp.WinForms;
+using LocalPlayer.Models;
+using LocalPlayer.Services;
 using LocalPlayer.Views.Controls;
 
 namespace LocalPlayer.Views;
@@ -45,6 +48,12 @@ public class PlayerPage : UserControl
 
     private Panel? videoContainer;
 
+    // 弹幕
+    private DanmakuOverlay? danmakuOverlay;
+    private DanmakuInputBar? danmakuInputBar;
+    private DanmakuService danmakuService = new();
+    private string currentVideoPath = "";
+
     public event EventHandler? BackRequested;
     public event KeyEventHandler? KeyDownHandler;
 
@@ -82,6 +91,11 @@ public class PlayerPage : UserControl
         // 将 VideoView 添加到容器
         videoContainer.Controls.Add(videoView);
         videoView.Dock = DockStyle.Fill;
+
+        // 弹幕覆盖层（独立透明窗口，不作为子控件）
+        danmakuOverlay = new DanmakuOverlay();
+        danmakuOverlay.AttachTo(videoContainer);
+        danmakuOverlay.Start();
 
         // 右侧选集面板
         rightPanel = new Panel
@@ -136,12 +150,122 @@ public class PlayerPage : UserControl
             controlBar.Visible = true;
         }
 
+        // 弹幕输入栏（在控制栏上方）
+        danmakuInputBar = new DanmakuInputBar
+        {
+            Dock = DockStyle.Bottom,
+            Height = 36,
+            Visible = true
+        };
+        danmakuInputBar.DanmakuSent += DanmakuInputBar_DanmakuSent;
+        danmakuInputBar.ToggleRequested += DanmakuInputBar_ToggleRequested;
+        danmakuInputBar.TestDanmakuRequested += DanmakuInputBar_TestDanmakuRequested;
+        videoContainer.Controls.Add(danmakuInputBar);
+
         this.Resize += PlayerPage_Resize;
 
         // 初始化布局
         PlayerPage_Resize(this, EventArgs.Empty);
     }
 
+
+    private void DanmakuInputBar_DanmakuSent(object? sender, string text)
+    {
+        if (mediaPlayer == null || string.IsNullOrEmpty(currentVideoPath)) return;
+
+        double timeSeconds = mediaPlayer.Time / 1000.0;
+        var color = danmakuInputBar?.GetSelectedColor() ?? Color.White;
+
+        var item = new DanmakuItem
+        {
+            Text = text,
+            TimeSeconds = timeSeconds,
+            ColorHex = ColorTranslator.ToHtml(color),
+            FontSize = 22,
+            Speed = 120f
+        };
+
+        danmakuService.Add(currentVideoPath, item);
+        danmakuOverlay?.UpdateVideoTime(timeSeconds);
+        Console.WriteLine($"[弹幕] 发送: \"{text}\" @ {timeSeconds:F1}s");
+    }
+
+    private void DanmakuInputBar_ToggleRequested(object? sender, EventArgs e)
+    {
+        if (danmakuOverlay != null && danmakuInputBar != null)
+        {
+            danmakuOverlay.DanmakuEnabled = danmakuInputBar.DanmakuEnabled;
+            Console.WriteLine($"[弹幕] {(danmakuInputBar.DanmakuEnabled ? "开启" : "关闭")}");
+        }
+    }
+
+    private void DanmakuInputBar_TestDanmakuRequested(object? sender, EventArgs e)
+    {
+        if (mediaPlayer == null || mediaPlayer.Length <= 0)
+        {
+            Console.WriteLine("[弹幕测试] 请先播放视频");
+            return;
+        }
+
+        double totalSeconds = mediaPlayer.Length / 1000.0;
+        var testDanmaku = GenerateTestDanmaku(totalSeconds);
+
+        danmakuOverlay?.Clear();
+        danmakuOverlay?.LoadDanmaku(testDanmaku);
+
+        // 同时保存为该视频的弹幕
+        if (!string.IsNullOrEmpty(currentVideoPath))
+            danmakuService.Save(currentVideoPath, testDanmaku);
+
+        Console.WriteLine($"[弹幕测试] 已生成 {testDanmaku.Count} 条均匀分布弹幕 (时长 {totalSeconds:F0}s)");
+    }
+
+    private static readonly string[] SampleTexts = {
+        "前方高能！", "哈哈哈笑死", "太强了", "666666", "awsl",
+        "来了来了", "名场面", "泪目", "好家伙", "妙啊",
+        "弹幕护体", "下次一定", "爷青回", "破防了", "好活",
+        "上手了", "细节", "这也太美了", "催更催更", "冲冲冲",
+        "太甜了吧", "笑不活了", "合理怀疑", "有内味了", "开局就王炸",
+        "绝绝子", "不是吧不是吧", "直接起飞", "格局打开了", "芜湖起飞"
+    };
+
+    private static readonly string[] SampleColors = {
+        "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF",
+        "#FF6666", "#FF6666",
+        "#FFAA00", "#FFD700",
+        "#66FF66", "#66FF66",
+        "#66CCFF", "#66CCFF",
+        "#FF66CC", "#FF66CC",
+        "#AAAAFF", "#CCCCCC"
+    };
+
+    private static List<DanmakuItem> GenerateTestDanmaku(double totalSeconds)
+    {
+        var rng = new Random();
+        int count = Math.Max(30, (int)(totalSeconds / 2));
+        count = Math.Min(count, 500);
+
+        var danmaku = new List<DanmakuItem>();
+        double interval = totalSeconds / count;
+
+        for (int i = 0; i < count; i++)
+        {
+            double time = interval * i + rng.NextDouble() * interval * 0.8;
+            time = Math.Min(time, totalSeconds - 0.5);
+
+            danmaku.Add(new DanmakuItem
+            {
+                Text = SampleTexts[rng.Next(SampleTexts.Length)],
+                TimeSeconds = Math.Max(0, time),
+                ColorHex = SampleColors[rng.Next(SampleColors.Length)],
+                FontSize = rng.Next(18, 28),
+                Speed = 100f + rng.Next(0, 50)
+            });
+        }
+
+        danmaku.Sort((a, b) => a.TimeSeconds.CompareTo(b.TimeSeconds));
+        return danmaku;
+    }
 
     private void SetupControlBar()
     {
@@ -199,26 +323,29 @@ public class PlayerPage : UserControl
         // 监听播放状态变化
         mediaPlayer.Playing += (s, e) =>
         {
-            this.BeginInvoke(new Action(() =>
-            {
-                controlBar?.UpdatePlayPauseButton(true);
-            }));
+            if (this.IsHandleCreated)
+                this.BeginInvoke(new Action(() =>
+                {
+                    controlBar?.UpdatePlayPauseButton(true);
+                }));
         };
 
         mediaPlayer.Paused += (s, e) =>
         {
-            this.BeginInvoke(new Action(() =>
-            {
-                controlBar?.UpdatePlayPauseButton(false);
-            }));
+            if (this.IsHandleCreated)
+                this.BeginInvoke(new Action(() =>
+                {
+                    controlBar?.UpdatePlayPauseButton(false);
+                }));
         };
 
         mediaPlayer.Stopped += (s, e) =>
         {
-            this.BeginInvoke(new Action(() =>
-            {
-                controlBar?.UpdatePlayPauseButton(false);
-            }));
+            if (this.IsHandleCreated)
+                this.BeginInvoke(new Action(() =>
+                {
+                    controlBar?.UpdatePlayPauseButton(false);
+                }));
         };
 
         Console.WriteLine("[VLC] 初始化完成");
@@ -339,6 +466,12 @@ public class PlayerPage : UserControl
                 // Buffering 是事件，不能直接读取值
                 // 我们暂时不使用缓冲百分比，或者可以自己跟踪
                 controlBar.UpdateProgress(currentTime, totalTime, 0);
+            }
+
+            // 同步弹幕时间
+            if (mediaPlayer.IsPlaying)
+            {
+                danmakuOverlay?.UpdateVideoTime(mediaPlayer.Time / 1000.0);
             }
         }
     }
@@ -709,6 +842,9 @@ public class PlayerPage : UserControl
         videoContainer.Invalidate();
         videoContainer.Update();
 
+        // 弹幕窗口跟随全屏
+        danmakuOverlay?.AttachTo(videoContainer);
+
         isFullscreen = true;
         StartHideTimer();
 
@@ -750,6 +886,9 @@ public class PlayerPage : UserControl
 
         videoContainer.Invalidate();
         videoContainer.Update();
+
+        // 弹幕窗口跟随恢复
+        danmakuOverlay?.AttachTo(videoContainer);
 
         isFullscreen = false;
         isControlBarVisible = true;
@@ -852,6 +991,9 @@ public class PlayerPage : UserControl
             PlayVideo(videoFiles[0]);
             episodeList.SelectedIndex = 0;
         }
+
+        // 显示弹幕覆盖层
+        danmakuOverlay?.Show();
     }
 
     private void PlayVideo(string filePath)
@@ -861,6 +1003,13 @@ public class PlayerPage : UserControl
         Console.WriteLine($"[VLC] 开始播放: {Path.GetFileName(filePath)}");
         var media = new Media(libVLC, filePath);
         mediaPlayer.Play(media);
+
+        // 加载弹幕
+        currentVideoPath = filePath;
+        var danmakuList = danmakuService.Load(filePath);
+        danmakuOverlay?.Clear();
+        danmakuOverlay?.LoadDanmaku(danmakuList);
+        Console.WriteLine($"[弹幕] 已加载 {danmakuList.Count} 条弹幕");
     }
 
     private void EpisodeList_SelectedIndexChanged(object? sender, EventArgs e)
@@ -904,6 +1053,11 @@ public class PlayerPage : UserControl
         hideControlBarTimer?.Dispose();
         updateTimer?.Stop();
         updateTimer?.Dispose();
+
+        danmakuOverlay?.Stop();
+        danmakuOverlay?.Hide();
+        danmakuOverlay?.Close();
+        danmakuOverlay?.Dispose();
 
         if (isFullscreen)
         {
