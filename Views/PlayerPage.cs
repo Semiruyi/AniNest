@@ -21,9 +21,8 @@ public class PlayerPage : UserControl
 
     // 控制栏
     private PotPlayerControlBar? controlBar;
-    private System.Windows.Forms.Timer? hideControlBarTimer;
+    private System.Windows.Forms.Timer? hideControlBarTimer; // 键盘触发后的短暂自动隐藏
     private System.Windows.Forms.Timer? updateTimer;
-    private bool isControlBarVisible = true;
 
     private string[] videoFiles = Array.Empty<string>();
     private string currentFolderPath = "";
@@ -147,7 +146,7 @@ public class PlayerPage : UserControl
             controlBar.Dock = DockStyle.Bottom;
             controlBar.Height = 70;
             controlBar.BringToFront();
-            controlBar.Visible = true;
+            controlBar.Visible = false;
         }
 
         // 弹幕输入栏（在控制栏上方）
@@ -155,7 +154,7 @@ public class PlayerPage : UserControl
         {
             Dock = DockStyle.Bottom,
             Height = 36,
-            Visible = true
+            Visible = false
         };
         danmakuInputBar.DanmakuSent += DanmakuInputBar_DanmakuSent;
         danmakuInputBar.ToggleRequested += DanmakuInputBar_ToggleRequested;
@@ -288,13 +287,28 @@ public class PlayerPage : UserControl
         controlBar.MuteChanged += ControlBar_MuteChanged;
         controlBar.ProgressChanged += ControlBar_ProgressChanged;
 
+        // 鼠标离开控制栏时立即隐藏
+        controlBar.MouseLeave += ControlBar_MouseLeave;
+        controlBar.ProgressBarDragEnded += (s, e) =>
+        {
+            // 进度条拖拽结束后，检查鼠标是否仍在控制栏上
+            if (controlBar != null)
+            {
+                Point mousePos = controlBar.PointToClient(Cursor.Position);
+                if (!controlBar.ClientRectangle.Contains(mousePos))
+                {
+                    HideControlBar();
+                }
+            }
+        };
+
         // 控制栏作为视频区域的子控件（叠加层）
         // 注意：不要在这里添加到 Controls，稍后在 SetupUI 中添加
     }
 
     private void SetupTimers()
     {
-        // 自动隐藏控制栏的定时器
+        // 键盘触发后的短暂自动隐藏定时器
         hideControlBarTimer = new System.Windows.Forms.Timer
         {
             Interval = 3000
@@ -358,23 +372,37 @@ public class PlayerPage : UserControl
         mouseCheckTimer.Tick += MouseCheckTimer_Tick;
         mouseCheckTimer.Start();
 
-        // 在视频区域和控制栏上处理鼠标移动
+        // VideoView 填满了容器，鼠标移动事件需要挂在 videoView 上
         if (videoView != null)
         {
-            videoView.MouseMove += (s, e) => ShowControlBar();
+            videoView.MouseMove += VideoView_MouseMove;
         }
-
-        this.MouseMove += PlayerPage_MouseMove;
+        if (videoContainer != null)
+        {
+            videoContainer.MouseMove += VideoContainer_MouseMove;
+        }
 
         Console.WriteLine("[鼠标检测] 定时器已启动");
     }
 
-    private void PlayerPage_MouseMove(object? sender, MouseEventArgs e)
+    private void VideoView_MouseMove(object? sender, MouseEventArgs e)
     {
-        // 检查鼠标是否在底部区域（控制栏区域）
-        if (controlBar != null && e.Y > this.ClientSize.Height - 100)
+        // 鼠标在视频区域移动时，检查是否靠近底部
+        if (videoContainer != null && e.Y > videoContainer.Height - 80)
         {
             ShowControlBar();
+        }
+    }
+
+    private void VideoContainer_MouseMove(object? sender, MouseEventArgs e)
+    {
+        // 鼠标靠近底部区域时显示控制栏
+        if (controlBar != null && videoContainer != null)
+        {
+            if (e.Y > videoContainer.Height - 80)
+            {
+                ShowControlBar();
+            }
         }
     }
 
@@ -382,25 +410,21 @@ public class PlayerPage : UserControl
     private void ControlBar_PlayPauseClicked(object? sender, EventArgs e)
     {
         TogglePlayPause();
-        ShowControlBar();
     }
 
     private void ControlBar_StopClicked(object? sender, EventArgs e)
     {
         Stop();
-        ShowControlBar();
     }
 
     private void ControlBar_PreviousClicked(object? sender, EventArgs e)
     {
         PlayPreviousEpisode();
-        ShowControlBar();
     }
 
     private void ControlBar_NextClicked(object? sender, EventArgs e)
     {
         PlayNextEpisode();
-        ShowControlBar();
     }
 
     private void ControlBar_FullscreenClicked(object? sender, EventArgs e)
@@ -478,33 +502,51 @@ public class PlayerPage : UserControl
 
     private void HideControlBarTimer_Tick(object? sender, EventArgs e)
     {
-        // 检查鼠标是否在控制栏上
-        if (controlBar != null && controlBar.Visible)
+        // 仅用于键盘触发后的自动隐藏
+        if (controlBar != null && controlBar.Visible && !controlBar.IsInteracting)
+        {
+            HideControlBar();
+        }
+        hideControlBarTimer?.Stop();
+    }
+
+    private void ControlBar_MouseLeave(object? sender, EventArgs e)
+    {
+        // WinForms 中鼠标移到子控件也会触发 MouseLeave，需要检查鼠标是否真的离开了
+        if (controlBar != null && controlBar.Visible && !controlBar.IsInteracting)
         {
             Point mousePos = controlBar.PointToClient(Cursor.Position);
-            bool isMouseOverControlBar = controlBar.ClientRectangle.Contains(mousePos);
-
-            // 检查鼠标是否在视频容器底部区域
-            bool isMouseNearBottom = false;
-            if (videoContainer != null)
+            if (!controlBar.ClientRectangle.Contains(mousePos))
             {
-                Point containerMousePos = videoContainer.PointToClient(Cursor.Position);
-                isMouseNearBottom = containerMousePos.Y > videoContainer.Height - 100;
-            }
-
-            if (!isMouseOverControlBar && !isMouseNearBottom && !controlBar.IsProgressDragging)
-            {
-                controlBar.Visible = false;
-                isControlBarVisible = false;
-
-                // 全屏时也隐藏鼠标
-                if (isFullscreen)
+                // 还要检查鼠标是否在弹幕输入栏上
+                bool overDanmakuBar = false;
+                if (danmakuInputBar != null && danmakuInputBar.Visible)
                 {
-                    Cursor.Hide();
+                    Point danmakuPos = danmakuInputBar.PointToClient(Cursor.Position);
+                    overDanmakuBar = danmakuInputBar.ClientRectangle.Contains(danmakuPos);
+                }
+                if (!overDanmakuBar)
+                {
+                    HideControlBar();
                 }
             }
         }
-        hideControlBarTimer?.Stop();
+    }
+
+    private void HideControlBar()
+    {
+        if (controlBar != null)
+        {
+            controlBar.Visible = false;
+            if (isFullscreen)
+            {
+                Cursor.Hide();
+            }
+        }
+        if (danmakuInputBar != null)
+        {
+            danmakuInputBar.Visible = false;
+        }
     }
 
     // 控制栏显示/隐藏
@@ -518,12 +560,15 @@ public class PlayerPage : UserControl
                 Cursor.Show();
             }
         }
-
-        StartHideTimer();
+        if (danmakuInputBar != null)
+        {
+            danmakuInputBar.Visible = true;
+        }
     }
 
-    private void StartHideTimer()
+    private void ShowControlBarTemporarily()
     {
+        ShowControlBar();
         hideControlBarTimer?.Stop();
         hideControlBarTimer?.Start();
     }
@@ -541,6 +586,20 @@ public class PlayerPage : UserControl
 
     private void MouseCheckTimer_Tick(object? sender, EventArgs e)
     {
+        // 轮询检测鼠标是否靠近底部区域，显示控制栏
+        if (videoContainer != null && controlBar != null && !controlBar.Visible)
+        {
+            try
+            {
+                Point mousePos = videoContainer.PointToClient(Cursor.Position);
+                if (videoContainer.ClientRectangle.Contains(mousePos) && mousePos.Y > videoContainer.Height - 80)
+                {
+                    ShowControlBar();
+                }
+            }
+            catch { }
+        }
+
         bool isMouseDown = (Control.MouseButtons & MouseButtons.Left) != 0;
 
         if (isMouseDown && !wasMouseDown)
@@ -630,27 +689,27 @@ public class PlayerPage : UserControl
         {
             case Keys.Space:
                 TogglePlayPause();
-                ShowControlBar();
+                ShowControlBarTemporarily();
                 break;
 
             case Keys.Left:
                 SeekBackward(5000);
-                ShowControlBar();
+                ShowControlBarTemporarily();
                 break;
 
             case Keys.Right:
                 SeekForward(5000);
-                ShowControlBar();
+                ShowControlBarTemporarily();
                 break;
 
             case Keys.Up:
                 IncreaseVolume(10);
-                ShowControlBar();
+                ShowControlBarTemporarily();
                 break;
 
             case Keys.Down:
                 DecreaseVolume(10);
-                ShowControlBar();
+                ShowControlBarTemporarily();
                 break;
 
             case Keys.F:
@@ -670,29 +729,29 @@ public class PlayerPage : UserControl
 
             case Keys.M:
                 ToggleMute();
-                ShowControlBar();
+                ShowControlBarTemporarily();
                 break;
 
             case Keys.J:
                 SeekBackward(10000);
-                ShowControlBar();
+                ShowControlBarTemporarily();
                 break;
 
             case Keys.L:
                 SeekForward(10000);
-                ShowControlBar();
+                ShowControlBarTemporarily();
                 break;
 
             case Keys.N:
             case Keys.PageDown:
                 PlayNextEpisode();
-                ShowControlBar();
+                ShowControlBarTemporarily();
                 break;
 
             case Keys.P:
             case Keys.PageUp:
                 PlayPreviousEpisode();
-                ShowControlBar();
+                ShowControlBarTemporarily();
                 break;
 
             default:
@@ -825,7 +884,7 @@ public class PlayerPage : UserControl
         fullscreenForm.MouseMove += (s, e) =>
         {
             // 鼠标在底部区域时显示控制栏
-            if (e.Y > fullscreenForm.ClientSize.Height - 100)
+            if (e.Y > fullscreenForm.ClientSize.Height - 80)
             {
                 ShowControlBar();
             }
@@ -846,7 +905,7 @@ public class PlayerPage : UserControl
         danmakuOverlay?.AttachTo(videoContainer);
 
         isFullscreen = true;
-        StartHideTimer();
+        HideControlBar();
 
         Console.WriteLine("[全屏] ✓ 已进入全屏");
     }
@@ -891,7 +950,6 @@ public class PlayerPage : UserControl
         danmakuOverlay?.AttachTo(videoContainer);
 
         isFullscreen = false;
-        isControlBarVisible = true;
         controlBar!.Visible = true;
         Cursor.Show();
 

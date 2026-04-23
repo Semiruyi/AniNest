@@ -59,6 +59,7 @@ public class PotPlayerControlBar : UserControl
     public event EventHandler? SettingsClicked;
     public event EventHandler? PlaylistClicked;
     public event EventHandler<ProgressChangedEventArgs>? ProgressChanged;
+    public event EventHandler? ProgressBarDragEnded;
     public event EventHandler<int>? VolumeChanged;
     public event EventHandler<bool>? MuteChanged;
 
@@ -234,6 +235,7 @@ public class PotPlayerControlBar : UserControl
             Size = new Size(300, 26)
         };
         progressBar.ProgressChanged += (s, e) => ProgressChanged?.Invoke(this, e);
+        progressBar.DragEnded += (s, e) => ProgressBarDragEnded?.Invoke(this, e);
 
         // 右侧按钮
         int rightButtonSize = 35;
@@ -364,6 +366,8 @@ public class PotPlayerControlBar : UserControl
     }
 
     public bool IsProgressDragging => progressBar?.IsDragging ?? false;
+
+    public bool IsInteracting => progressBar?.IsDragging ?? false;
 
     private string FormatTime(long milliseconds)
     {
