@@ -224,7 +224,18 @@ public class PlayerPage : UserControl
     {
         if (videoContainer != null)
         {
-            videoContainer.MouseDoubleClick += (s, e) => mediaController.TogglePlayPause();
+            videoContainer.MouseDoubleClick += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Right)
+                {
+                    fullscreenManager.ToggleFullscreen(videoContainer);
+                    if (controlBar != null) controlBar.Visible = !fullscreenManager.IsFullscreen;
+                }
+                else
+                {
+                    mediaController.TogglePlayPause();
+                }
+            };
             videoContainer.MouseMove += (s, e) => UpdateControlBarVisibility();
             videoContainer.MouseLeave += (s, e) => UpdateControlBarVisibility();
         }
