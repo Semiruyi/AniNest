@@ -84,12 +84,15 @@ public partial class MainPage : UserControl
 
     private void AddFolderCard(string folderName, string folderPath, int videoCount = 0)
     {
+        var videoFiles = VideoScanner.GetVideoFiles(folderPath);
+        double progressPercent = settingsService.GetFolderPlayedPercent(folderPath, videoFiles);
+
         var card = new FolderCard
         {
             FolderName = folderName,
             FolderPath = folderPath,
             VideoCount = videoCount,
-            ProgressPercent = 0
+            ProgressPercent = progressPercent
         };
 
         // 加载封面图
@@ -166,6 +169,8 @@ public partial class MainPage : UserControl
         {
             int count = VideoScanner.CountVideosInFolder(folderPath);
             card.VideoCount = count;
+            var files = VideoScanner.GetVideoFiles(folderPath);
+            card.ProgressPercent = settingsService.GetFolderPlayedPercent(folderPath, files);
         };
         contextMenu.Items.Add(refreshItem);
         

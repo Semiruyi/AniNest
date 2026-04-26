@@ -13,6 +13,7 @@ public class MediaPlayerController : IDisposable
     public bool IsPlaying => mediaPlayer?.IsPlaying ?? false;
     public long Time => mediaPlayer?.Time ?? 0;
     public long Length => mediaPlayer?.Length ?? 0;
+    public string? CurrentFilePath { get; private set; }
 
     public event EventHandler? Playing;
     public event EventHandler? Paused;
@@ -25,7 +26,11 @@ public class MediaPlayerController : IDisposable
         mediaPlayer = new MediaPlayer(libVLC);
         videoView.MediaPlayer = mediaPlayer;
 
-        mediaPlayer.Playing += (s, e) => Playing?.Invoke(this, EventArgs.Empty);
+        mediaPlayer.Playing += (s, e) =>
+        {
+            Console.WriteLine("[MediaPlayerController] Playing 事件触发");
+            Playing?.Invoke(this, EventArgs.Empty);
+        };
         mediaPlayer.Paused += (s, e) => Paused?.Invoke(this, EventArgs.Empty);
         mediaPlayer.Stopped += (s, e) => Stopped?.Invoke(this, EventArgs.Empty);
 
@@ -52,6 +57,8 @@ public class MediaPlayerController : IDisposable
         if (mediaPlayer == null || libVLC == null) return;
 
         Console.WriteLine($"[MediaPlayerController] 开始播放: {Path.GetFileName(filePath)}");
+        CurrentFilePath = filePath;
+
         var media = new Media(libVLC, filePath);
         mediaPlayer.Play(media);
     }
@@ -90,7 +97,9 @@ public class MediaPlayerController : IDisposable
     public void SeekTo(long time)
     {
         if (mediaPlayer == null || mediaPlayer.Length <= 0) return;
-        mediaPlayer.Time = Math.Max(0, Math.Min(mediaPlayer.Length, time));
+        long target = Math.Max(0, Math.Min(mediaPlayer.Length, time));
+        Console.WriteLine($"[MediaPlayerController] SeekTo {target}ms");
+        mediaPlayer.Time = target;
     }
 
     public static string FormatTime(long milliseconds)

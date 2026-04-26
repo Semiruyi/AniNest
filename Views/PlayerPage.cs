@@ -20,6 +20,12 @@ public class PlayerPage : UserControl
     private readonly MediaPlayerController mediaController = new();
     private readonly FullscreenManager fullscreenManager = new();
     private readonly PlayerInputHandler inputHandler = new();
+    private readonly SettingsService settingsService = new();
+    private readonly System.Windows.Forms.Timer saveProgressTimer;
+
+    private string currentFolderPath = "";
+    private string currentFolderName = "";
+    private long pendingSeekTime = -1;
 
     public event EventHandler? BackRequested;
     public event KeyEventHandler? KeyDownHandler;
@@ -40,6 +46,11 @@ public class PlayerPage : UserControl
         SetupFullscreenManager();
         SetupInputHandler();
         SetupMouseDetection();
+
+        // 定时保存播放进度（每5秒）
+        saveProgressTimer = new System.Windows.Forms.Timer { Interval = 5000 };
+        saveProgressTimer.Tick += SaveProgressTimer_Tick;
+        saveProgressTimer.Start();
 
         Console.WriteLine("[PlayerPage] 初始化完成");
     }
@@ -62,8 +73,13 @@ public class PlayerPage : UserControl
         videoView.Dock = DockStyle.Fill;
 
         playlistPanel = new PlaylistPanel();
-        playlistPanel.BackClicked += (s, e) => BackRequested?.Invoke(this, EventArgs.Empty);
-        playlistPanel.EpisodeChanged += (s, filePath) => mediaController.Play(filePath);
+        playlistPanel.BackClicked += (s, e) => SaveCurrentProgressAndGoBack();
+        playlistPanel.EpisodeChanged += (s, filePath) =>
+        {
+            Console.WriteLine($"[PlayerPage] EpisodeChanged: {Path.GetFileName(filePath)}");
+            SaveCurrentVideoProgress();
+            PlayVideo(filePath, true);
+        };
 
         this.Controls.Add(videoContainer);
         this.Controls.Add(playlistPanel);
@@ -116,7 +132,29 @@ public class PlayerPage : UserControl
         EnableWindow(videoView.Handle, false);
 
         mediaController.Initialize(videoView);
-        mediaController.Playing += (s, e) => this.BeginInvoke(() => controlBar?.UpdatePlayPauseButton(true));
+        mediaController.Playing += (s, e) =>
+        {
+            Console.WriteLine("[PlayerPage] mediaController.Playing 事件");
+            this.BeginInvoke(() =>
+            {
+                // 如果有待seek的时间，延迟一点再执行，等 Length 准备好
+                if (pendingSeekTime > 0)
+                {
+                    long targetTime = pendingSeekTime;
+                    pendingSeekTime = -1;
+                    var seekTimer = new System.Windows.Forms.Timer { Interval = 300 };
+                    seekTimer.Tick += (_, _) =>
+                    {
+                        seekTimer.Stop();
+                        seekTimer.Dispose();
+                        Console.WriteLine($"[PlayerPage] 延迟 seek 到 {targetTime}ms");
+                        mediaController.SeekTo(targetTime);
+                    };
+                    seekTimer.Start();
+                }
+                controlBar?.UpdatePlayPauseButton(true);
+            });
+        };
         mediaController.Paused += (s, e) => this.BeginInvoke(() => controlBar?.UpdatePlayPauseButton(false));
         mediaController.Stopped += (s, e) => this.BeginInvoke(() => controlBar?.UpdatePlayPauseButton(false));
         mediaController.ProgressUpdated += (s, e) =>
@@ -175,7 +213,7 @@ public class PlayerPage : UserControl
             if (controlBar != null) controlBar.Visible = !fullscreenManager.IsFullscreen;
         };
         inputHandler.ExitFullscreen += (s, e) => fullscreenManager.ExitFullscreen();
-        inputHandler.Back += (s, e) => BackRequested?.Invoke(this, EventArgs.Empty);
+        inputHandler.Back += (s, e) => SaveCurrentProgressAndGoBack();
         inputHandler.NextEpisode += (s, e) => playlistPanel?.PlayNext();
         inputHandler.PreviousEpisode += (s, e) => playlistPanel?.PlayPrevious();
     }
@@ -256,18 +294,111 @@ public class PlayerPage : UserControl
     {
         Console.WriteLine($"[PlayerPage] 加载文件夹: {folderPath}");
 
+        currentFolderPath = folderPath;
+        currentFolderName = folderName;
+
+        // 加载播放列表（不触发播放）
         playlistPanel?.LoadFolder(folderPath);
 
-        var firstPath = playlistPanel?.FirstEpisodePath;
-        if (firstPath != null)
+        // 获取文件夹进度，找到上次播放的视频
+        var folderProgress = settingsService.GetFolderProgress(folderPath);
+        string? targetVideoPath = folderProgress?.LastVideoPath;
+
+        // 如果上次播放的视频已不存在，回退到第一个
+        if (string.IsNullOrEmpty(targetVideoPath) || !File.Exists(targetVideoPath))
         {
-            mediaController.Play(firstPath);
+            targetVideoPath = playlistPanel?.FirstEpisodePath;
         }
+
+        if (string.IsNullOrEmpty(targetVideoPath))
+        {
+            Console.WriteLine("[PlayerPage] 没有可播放的视频");
+            return;
+        }
+
+        // 选中目标视频（不触发 EpisodeChanged）
+        playlistPanel?.SelectVideo(targetVideoPath);
+
+        // 获取该视频的上次播放时间点
+        long startTime = 0;
+        var videoProgress = settingsService.GetVideoProgress(targetVideoPath);
+        if (videoProgress != null)
+        {
+            startTime = videoProgress.Position;
+            // 如果已经播放到结尾附近（90%以上），从头开始
+            if (videoProgress.Duration > 0 && startTime > videoProgress.Duration * 0.9)
+            {
+                startTime = 0;
+            }
+        }
+
+        Console.WriteLine($"[PlayerPage] 准备播放: {Path.GetFileName(targetVideoPath)}, startTime={startTime}ms");
+        PlayVideo(targetVideoPath, false, startTime);
+    }
+
+    private void PlayVideo(string filePath, bool fromUserSelection, long startTime = 0)
+    {
+        Console.WriteLine($"[PlayerPage] PlayVideo 调用: {Path.GetFileName(filePath)}, fromUserSelection={fromUserSelection}, startTime={startTime}");
+
+        // 用户手动选择时，从保存的进度恢复（如果存在）
+        if (fromUserSelection)
+        {
+            var progress = settingsService.GetVideoProgress(filePath);
+            if (progress != null)
+            {
+                startTime = progress.Position;
+                if (progress.Duration > 0 && startTime > progress.Duration * 0.9)
+                {
+                    startTime = 0;
+                }
+            }
+            else
+            {
+                startTime = 0;
+            }
+        }
+
+        pendingSeekTime = startTime;
+        mediaController.Play(filePath);
+        settingsService.SetFolderProgress(currentFolderPath, filePath);
+        settingsService.MarkVideoPlayed(filePath);
+        playlistPanel?.RefreshPlayStatus();
+    }
+
+    private void SaveCurrentVideoProgress()
+    {
+        string? filePath = mediaController.CurrentFilePath;
+        if (string.IsNullOrEmpty(filePath)) return;
+
+        long time = mediaController.Time;
+        long length = mediaController.Length;
+
+        if (length > 0)
+        {
+            settingsService.SetVideoProgress(filePath, time, length);
+            Console.WriteLine($"[PlayerPage] 保存进度: {Path.GetFileName(filePath)} - {MediaPlayerController.FormatTime(time)} / {MediaPlayerController.FormatTime(length)}");
+        }
+    }
+
+    private void SaveCurrentProgressAndGoBack()
+    {
+        SaveCurrentVideoProgress();
+        BackRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void SaveProgressTimer_Tick(object? sender, EventArgs e)
+    {
+        SaveCurrentVideoProgress();
     }
 
     protected override void OnHandleDestroyed(EventArgs e)
     {
         Console.WriteLine("[PlayerPage] 正在销毁资源...");
+
+        saveProgressTimer?.Stop();
+        saveProgressTimer?.Dispose();
+
+        SaveCurrentVideoProgress();
 
         fullscreenManager.Dispose();
         mediaController.Dispose();

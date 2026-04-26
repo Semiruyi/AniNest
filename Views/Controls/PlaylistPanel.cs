@@ -13,6 +13,8 @@ public class PlaylistPanel : UserControl
 
     private string[] videoFiles = Array.Empty<string>();
     private int lastSelectedIndex = -1;
+    private bool suspendEpisodeEvent = false;
+    private SettingsService settingsService = new();
 
     public event EventHandler? BackClicked;
     public event EventHandler<string>? EpisodeChanged;
@@ -58,6 +60,8 @@ public class PlaylistPanel : UserControl
             BorderStyle = BorderStyle.None,
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
         };
+        episodeList.DrawMode = DrawMode.OwnerDrawFixed;
+        episodeList.DrawItem += EpisodeList_DrawItem;
         episodeList.SelectedIndexChanged += EpisodeList_SelectedIndexChanged;
 
         panel.Controls.Add(backButton);
@@ -65,6 +69,43 @@ public class PlaylistPanel : UserControl
         this.Controls.Add(panel);
 
         this.Resize += PlaylistPanel_Resize;
+    }
+
+    private void EpisodeList_DrawItem(object? sender, DrawItemEventArgs e)
+    {
+        if (episodeList == null || e.Index < 0 || e.Index >= videoFiles.Length)
+            return;
+
+        e.DrawBackground();
+
+        string filePath = videoFiles[e.Index];
+        bool isPlayed = settingsService.IsVideoPlayed(filePath);
+        bool isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+
+        // 背景色
+        Color backColor = isSelected ? Color.FromArgb(0, 122, 204) : Color.FromArgb(40, 40, 40);
+        using (var brush = new SolidBrush(backColor))
+        {
+            e.Graphics.FillRectangle(brush, e.Bounds);
+        }
+
+        // 文字颜色
+        Color textColor = isSelected ? Color.White : (isPlayed ? Color.FromArgb(160, 160, 160) : Color.White);
+        using (var brush = new SolidBrush(textColor))
+        {
+            string text = episodeList.Items[e.Index]?.ToString() ?? "";
+            var rect = new Rectangle(e.Bounds.X + 5, e.Bounds.Y, e.Bounds.Width - 10, e.Bounds.Height);
+            e.Graphics.DrawString(text, e.Font ?? episodeList.Font, brush, rect);
+        }
+
+        // 播放过标记（小圆点）
+        if (isPlayed && !isSelected)
+        {
+            using var brush = new SolidBrush(Color.FromArgb(100, 180, 255));
+            e.Graphics.FillEllipse(brush, e.Bounds.X + e.Bounds.Width - 18, e.Bounds.Y + (e.Bounds.Height - 8) / 2, 8, 8);
+        }
+
+        e.DrawFocusRectangle();
     }
 
     private void PlaylistPanel_Resize(object? sender, EventArgs e)
@@ -82,22 +123,55 @@ public class PlaylistPanel : UserControl
         videoFiles = VideoScanner.GetVideoFiles(folderPath);
         Console.WriteLine($"[PlaylistPanel] 找到 {videoFiles.Length} 个视频文件");
 
+        suspendEpisodeEvent = true;
         episodeList!.Items.Clear();
         for (int i = 0; i < videoFiles.Length; i++)
         {
             string fileName = Path.GetFileNameWithoutExtension(videoFiles[i]);
             episodeList.Items.Add($"{i + 1:00}. {fileName}");
         }
-
         lastSelectedIndex = -1;
+        suspendEpisodeEvent = false;
+    }
 
-        if (videoFiles.Length > 0)
+    public void SelectVideo(string? videoPath)
+    {
+        if (episodeList == null) return;
+
+        suspendEpisodeEvent = true;
+
+        if (string.IsNullOrEmpty(videoPath))
         {
-            episodeList.SelectedIndex = 0;
+            if (videoFiles.Length > 0)
+                episodeList.SelectedIndex = 0;
         }
+        else
+        {
+            int index = Array.IndexOf(videoFiles, videoPath);
+            if (index >= 0)
+            {
+                episodeList.SelectedIndex = index;
+            }
+            else if (videoFiles.Length > 0)
+            {
+                episodeList.SelectedIndex = 0;
+            }
+        }
+
+        lastSelectedIndex = episodeList.SelectedIndex;
+        suspendEpisodeEvent = false;
     }
 
     public string? FirstEpisodePath => videoFiles.Length > 0 ? videoFiles[0] : null;
+
+    public string? CurrentEpisodePath
+    {
+        get
+        {
+            if (episodeList == null || episodeList.SelectedIndex < 0) return null;
+            return videoFiles[episodeList.SelectedIndex];
+        }
+    }
 
     public void PlayNext()
     {
@@ -126,9 +200,14 @@ public class PlaylistPanel : UserControl
         this.Visible = !this.Visible;
     }
 
+    public void RefreshPlayStatus()
+    {
+        episodeList?.Invalidate();
+    }
+
     private void EpisodeList_SelectedIndexChanged(object? sender, EventArgs e)
     {
-        if (episodeList == null) return;
+        if (episodeList == null || suspendEpisodeEvent) return;
 
         int currentIndex = episodeList.SelectedIndex;
 

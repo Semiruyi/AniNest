@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Windows.Forms;
 using LocalPlayer.Models;
@@ -92,5 +93,77 @@ public class SettingsService
     public List<FolderInfo> GetFolders()
     {
         return Load().Folders;
+    }
+
+    // ========== 播放进度相关 ==========
+
+    public VideoProgress? GetVideoProgress(string filePath)
+    {
+        var settings = Load();
+        if (settings.VideoProgress.TryGetValue(filePath, out var progress))
+            return progress;
+        return null;
+    }
+
+    public void SetVideoProgress(string filePath, long position, long duration)
+    {
+        var settings = Load();
+        var progress = new VideoProgress
+        {
+            FilePath = filePath,
+            Position = position,
+            Duration = duration,
+            IsPlayed = true,
+            LastPlayed = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        };
+        settings.VideoProgress[filePath] = progress;
+        Save();
+    }
+
+    public void MarkVideoPlayed(string filePath)
+    {
+        var settings = Load();
+        if (!settings.VideoProgress.TryGetValue(filePath, out var progress))
+        {
+            progress = new VideoProgress { FilePath = filePath };
+            settings.VideoProgress[filePath] = progress;
+        }
+        progress.IsPlayed = true;
+        progress.LastPlayed = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        Save();
+    }
+
+    public bool IsVideoPlayed(string filePath)
+    {
+        var settings = Load();
+        return settings.VideoProgress.TryGetValue(filePath, out var progress) && progress.IsPlayed;
+    }
+
+    public FolderProgress? GetFolderProgress(string folderPath)
+    {
+        var settings = Load();
+        if (settings.FolderProgress.TryGetValue(folderPath, out var progress))
+            return progress;
+        return null;
+    }
+
+    public void SetFolderProgress(string folderPath, string lastVideoPath)
+    {
+        var settings = Load();
+        settings.FolderProgress[folderPath] = new FolderProgress
+        {
+            FolderPath = folderPath,
+            LastVideoPath = lastVideoPath,
+            LastPlayed = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        };
+        Save();
+    }
+
+    public double GetFolderPlayedPercent(string folderPath, string[] videoFiles)
+    {
+        var settings = Load();
+        if (videoFiles.Length == 0) return 0;
+        int playedCount = videoFiles.Count(f => settings.VideoProgress.TryGetValue(f, out var p) && p.IsPlayed);
+        return (double)playedCount / videoFiles.Length * 100;
     }
 }
