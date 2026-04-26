@@ -1,16 +1,14 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
-using LibVLCSharp.Shared;
 using LibVLCSharp.WinForms;
+using LocalPlayer.Services;
 using LocalPlayer.Views.Controls;
 
 namespace LocalPlayer.Views;
 
 public class PlayerPage : UserControl
 {
-    private LibVLC? libVLC;
-    private MediaPlayer? mediaPlayer;
     private VideoView? videoView;
     private Panel? rightPanel;
     private ListBox? episodeList;
@@ -19,11 +17,6 @@ public class PlayerPage : UserControl
     // 控制栏
     private PotPlayerControlBar? controlBar;
     private System.Windows.Forms.Timer? hideControlBarTimer;
-    private System.Windows.Forms.Timer? updateTimer;
-    private bool isControlBarVisible = true;
-
-    private string[] videoFiles = Array.Empty<string>();
-    private string currentFolderPath = "";
 
     // 双击检测相关
     private DateTime lastClickTime = DateTime.MinValue;
@@ -31,19 +24,14 @@ public class PlayerPage : UserControl
     private bool wasMouseDown = false;
     private System.Windows.Forms.Timer? mouseCheckTimer;
 
-    // 全屏相关
-    private bool isFullscreen = false;
-    private Form? fullscreenForm = null;
-    private Form? mainForm = null;
-    private Control? originalParent = null;
-    private int originalIndex = -1;
-    private DockStyle originalDock;
-    private Size originalSize;
-    private Point originalLocation;
-
-    private int lastSelectedIndex = -1;
-
     private Panel? videoContainer;
+
+    private readonly MediaPlayerController mediaController = new();
+    private readonly FullscreenManager fullscreenManager = new();
+
+    private string[] videoFiles = Array.Empty<string>();
+    private string currentFolderPath = "";
+    private int lastSelectedIndex = -1;
 
     public event EventHandler? BackRequested;
     public event KeyEventHandler? KeyDownHandler;
@@ -55,35 +43,33 @@ public class PlayerPage : UserControl
         this.BackColor = Color.FromArgb(20, 20, 20);
         this.Dock = DockStyle.Fill;
 
-        SetupControlBar();  // 先创建控制栏
-        SetupUI();          // 再创建 UI（会使用 controlBar）
+        SetupControlBar();
+        SetupUI();
         SetupVLC();
         SetupMouseDetection();
         SetupTimers();
+        SetupFullscreenManager();
 
         Console.WriteLine("[PlayerPage] 初始化完成");
     }
+
     private void SetupUI()
     {
-        // 左侧视频区域
         videoView = new VideoView
         {
             Dock = DockStyle.None,
             BackColor = Color.Black
         };
 
-        // 创建视频容器（用于容纳 VideoView 和控制栏）
         videoContainer = new Panel
         {
             Dock = DockStyle.None,
             BackColor = Color.Black
         };
 
-        // 将 VideoView 添加到容器
         videoContainer.Controls.Add(videoView);
         videoView.Dock = DockStyle.Fill;
 
-        // 右侧选集面板
         rightPanel = new Panel
         {
             Dock = DockStyle.Right,
@@ -91,7 +77,6 @@ public class PlayerPage : UserControl
             BackColor = Color.FromArgb(30, 30, 30)
         };
 
-        // 返回按钮
         backButton = new Button
         {
             Text = "← 返回",
@@ -106,7 +91,6 @@ public class PlayerPage : UserControl
         backButton.FlatAppearance.BorderSize = 0;
         backButton.Click += (s, e) => BackRequested?.Invoke(this, EventArgs.Empty);
 
-        // 选集列表
         episodeList = new ListBox
         {
             Location = new Point(10, 60),
@@ -122,11 +106,9 @@ public class PlayerPage : UserControl
         rightPanel.Controls.Add(backButton);
         rightPanel.Controls.Add(episodeList);
 
-        // 将视频容器添加到主控件
         this.Controls.Add(videoContainer);
         this.Controls.Add(rightPanel);
 
-        // 将控制栏添加到视频容器（在添加到主控件之后）
         if (controlBar != null)
         {
             videoContainer.Controls.Add(controlBar);
@@ -137,11 +119,8 @@ public class PlayerPage : UserControl
         }
 
         this.Resize += PlayerPage_Resize;
-
-        // 初始化布局
         PlayerPage_Resize(this, EventArgs.Empty);
     }
-
 
     private void SetupControlBar()
     {
@@ -152,86 +131,100 @@ public class PlayerPage : UserControl
             Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
         };
 
-        // 绑定控制栏事件
-        controlBar.PlayPauseClicked += ControlBar_PlayPauseClicked;
-        controlBar.StopClicked += ControlBar_StopClicked;
-        controlBar.PreviousClicked += ControlBar_PreviousClicked;
-        controlBar.NextClicked += ControlBar_NextClicked;
-        controlBar.FullscreenClicked += ControlBar_FullscreenClicked;
-        controlBar.SettingsClicked += ControlBar_SettingsClicked;
-        controlBar.PlaylistClicked += ControlBar_PlaylistClicked;
-        controlBar.VolumeChanged += ControlBar_VolumeChanged;
-        controlBar.MuteChanged += ControlBar_MuteChanged;
-        controlBar.ProgressChanged += ControlBar_ProgressChanged;
-
-        // 控制栏作为视频区域的子控件（叠加层）
-        // 注意：不要在这里添加到 Controls，稍后在 SetupUI 中添加
-    }
-
-    private void SetupTimers()
-    {
-        // 自动隐藏控制栏的定时器
-        hideControlBarTimer = new System.Windows.Forms.Timer
+        controlBar.PlayPauseClicked += (s, e) => { mediaController.TogglePlayPause(); ShowControlBar(); };
+        controlBar.StopClicked += (s, e) => { mediaController.Stop(); ShowControlBar(); };
+        controlBar.PreviousClicked += (s, e) => { PlayPreviousEpisode(); ShowControlBar(); };
+        controlBar.NextClicked += (s, e) => { PlayNextEpisode(); ShowControlBar(); };
+        controlBar.FullscreenClicked += (s, e) => fullscreenManager.ToggleFullscreen(videoContainer!, ShowControlBar);
+        controlBar.SettingsClicked += (s, e) => Console.WriteLine("[控制栏] 设置按钮点击");
+        controlBar.PlaylistClicked += (s, e) =>
         {
-            Interval = 3000
+            if (rightPanel != null)
+            {
+                rightPanel.Visible = !rightPanel.Visible;
+                PlayerPage_Resize(this, EventArgs.Empty);
+            }
         };
-        hideControlBarTimer.Tick += HideControlBarTimer_Tick;
-
-        // 更新进度的定时器
-        updateTimer = new System.Windows.Forms.Timer
-        {
-            Interval = 200
-        };
-        updateTimer.Tick += UpdateTimer_Tick;
-        updateTimer.Start();
+        controlBar.VolumeChanged += (s, volume) => mediaController.SetVolume(volume);
+        controlBar.MuteChanged += (s, muted) => mediaController.SetMuted(muted);
+        controlBar.ProgressChanged += (s, e) => mediaController.SeekTo(e.NewTime);
     }
 
     private void SetupVLC()
     {
-        libVLC = new LibVLC();
-        mediaPlayer = new MediaPlayer(libVLC);
+        if (videoView == null) return;
 
-        if (videoView != null)
+        mediaController.Initialize(videoView);
+        mediaController.Playing += (s, e) => this.BeginInvoke(() => controlBar?.UpdatePlayPauseButton(true));
+        mediaController.Paused += (s, e) => this.BeginInvoke(() => controlBar?.UpdatePlayPauseButton(false));
+        mediaController.Stopped += (s, e) => this.BeginInvoke(() => controlBar?.UpdatePlayPauseButton(false));
+        mediaController.ProgressUpdated += (s, e) =>
         {
-            videoView.MediaPlayer = mediaPlayer;
-        }
-
-        // 监听播放状态变化
-        mediaPlayer.Playing += (s, e) =>
-        {
-            this.BeginInvoke(new Action(() =>
+            if (controlBar != null && !controlBar.IsProgressDragging)
             {
-                controlBar?.UpdatePlayPauseButton(true);
-            }));
+                this.BeginInvoke(() => controlBar.UpdateProgress(e.CurrentTime, e.TotalTime, 0));
+            }
         };
+    }
 
-        mediaPlayer.Paused += (s, e) =>
+    private void SetupFullscreenManager()
+    {
+        fullscreenManager.KeyDown += (s, e) =>
         {
-            this.BeginInvoke(new Action(() =>
+            switch (e.KeyCode)
             {
-                controlBar?.UpdatePlayPauseButton(false);
-            }));
+                case Keys.Escape:
+                case Keys.F:
+                    fullscreenManager.ExitFullscreen();
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    break;
+                case Keys.Space:
+                    mediaController.TogglePlayPause();
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    break;
+                case Keys.Left:
+                    mediaController.SeekBackward(5000);
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    break;
+                case Keys.Right:
+                    mediaController.SeekForward(5000);
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    break;
+                case Keys.Up:
+                    mediaController.IncreaseVolume(10);
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    break;
+                case Keys.Down:
+                    mediaController.DecreaseVolume(10);
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    break;
+            }
         };
-
-        mediaPlayer.Stopped += (s, e) =>
+        fullscreenManager.Exited += (s, e) =>
         {
-            this.BeginInvoke(new Action(() =>
-            {
-                controlBar?.UpdatePlayPauseButton(false);
-            }));
+            if (controlBar != null) controlBar.Visible = true;
+            Cursor.Show();
         };
+    }
 
-        Console.WriteLine("[VLC] 初始化完成");
+    private void SetupTimers()
+    {
+        hideControlBarTimer = new System.Windows.Forms.Timer { Interval = 3000 };
+        hideControlBarTimer.Tick += HideControlBarTimer_Tick;
     }
 
     private void SetupMouseDetection()
     {
-        mouseCheckTimer = new System.Windows.Forms.Timer();
-        mouseCheckTimer.Interval = 50;
+        mouseCheckTimer = new System.Windows.Forms.Timer { Interval = 50 };
         mouseCheckTimer.Tick += MouseCheckTimer_Tick;
         mouseCheckTimer.Start();
 
-        // 在视频区域和控制栏上处理鼠标移动
         if (videoView != null)
         {
             videoView.MouseMove += (s, e) => ShowControlBar();
@@ -244,165 +237,9 @@ public class PlayerPage : UserControl
 
     private void PlayerPage_MouseMove(object? sender, MouseEventArgs e)
     {
-        // 检查鼠标是否在底部区域（控制栏区域）
         if (controlBar != null && e.Y > this.ClientSize.Height - 100)
         {
             ShowControlBar();
-        }
-    }
-
-    // 控制栏事件处理
-    private void ControlBar_PlayPauseClicked(object? sender, EventArgs e)
-    {
-        TogglePlayPause();
-        ShowControlBar();
-    }
-
-    private void ControlBar_StopClicked(object? sender, EventArgs e)
-    {
-        Stop();
-        ShowControlBar();
-    }
-
-    private void ControlBar_PreviousClicked(object? sender, EventArgs e)
-    {
-        PlayPreviousEpisode();
-        ShowControlBar();
-    }
-
-    private void ControlBar_NextClicked(object? sender, EventArgs e)
-    {
-        PlayNextEpisode();
-        ShowControlBar();
-    }
-
-    private void ControlBar_FullscreenClicked(object? sender, EventArgs e)
-    {
-        ToggleFullScreen();
-    }
-
-    private void ControlBar_SettingsClicked(object? sender, EventArgs e)
-    {
-        Console.WriteLine("[控制栏] 设置按钮点击");
-        // TODO: 显示设置菜单
-    }
-
-    private void ControlBar_PlaylistClicked(object? sender, EventArgs e)
-    {
-        Console.WriteLine("[控制栏] 播放列表按钮点击");
-        // 切换右侧面板显示
-        if (rightPanel != null)
-        {
-            rightPanel.Visible = !rightPanel.Visible;
-            PlayerPage_Resize(this, EventArgs.Empty);
-        }
-    }
-
-    private void ControlBar_VolumeChanged(object? sender, int volume)
-    {
-        if (mediaPlayer != null)
-        {
-            mediaPlayer.Volume = volume;
-            Console.WriteLine($"[音量] 设置为 {volume}%");
-        }
-    }
-
-    private void ControlBar_MuteChanged(object? sender, bool muted)
-    {
-        if (mediaPlayer != null)
-        {
-            mediaPlayer.Mute = muted;
-            Console.WriteLine($"[静音] {(muted ? "开启" : "关闭")}");
-        }
-    }
-
-    private void ControlBar_ProgressChanged(object? sender, ProgressChangedEventArgs e)
-    {
-        if (mediaPlayer != null && mediaPlayer.Length > 0)
-        {
-            mediaPlayer.Time = e.NewTime;
-            Console.WriteLine($"[进度] 跳转到 {FormatTime(e.NewTime)}");
-        }
-    }
-
-    // 定时器事件
-    private void UpdateTimer_Tick(object? sender, EventArgs e)
-    {
-        if (mediaPlayer != null && controlBar != null && mediaPlayer.Length > 0)
-        {
-            // 只在非拖动状态下更新进度条
-            if (!controlBar.IsProgressDragging)
-            {
-                long currentTime = mediaPlayer.Time;
-                long totalTime = mediaPlayer.Length;
-
-                // Buffering 是事件，不能直接读取值
-                // 我们暂时不使用缓冲百分比，或者可以自己跟踪
-                controlBar.UpdateProgress(currentTime, totalTime, 0);
-            }
-        }
-    }
-
-    private void HideControlBarTimer_Tick(object? sender, EventArgs e)
-    {
-        // 检查鼠标是否在控制栏上
-        if (controlBar != null && controlBar.Visible)
-        {
-            Point mousePos = controlBar.PointToClient(Cursor.Position);
-            bool isMouseOverControlBar = controlBar.ClientRectangle.Contains(mousePos);
-
-            // 检查鼠标是否在视频容器底部区域
-            bool isMouseNearBottom = false;
-            if (videoContainer != null)
-            {
-                Point containerMousePos = videoContainer.PointToClient(Cursor.Position);
-                isMouseNearBottom = containerMousePos.Y > videoContainer.Height - 100;
-            }
-
-            if (!isMouseOverControlBar && !isMouseNearBottom && !controlBar.IsProgressDragging)
-            {
-                controlBar.Visible = false;
-                isControlBarVisible = false;
-
-                // 全屏时也隐藏鼠标
-                if (isFullscreen)
-                {
-                    Cursor.Hide();
-                }
-            }
-        }
-        hideControlBarTimer?.Stop();
-    }
-
-    // 控制栏显示/隐藏
-    private void ShowControlBar()
-    {
-        if (controlBar != null)
-        {
-            if (!controlBar.Visible)
-            {
-                controlBar.Visible = true;
-                Cursor.Show();
-            }
-        }
-
-        StartHideTimer();
-    }
-
-    private void StartHideTimer()
-    {
-        hideControlBarTimer?.Stop();
-        hideControlBarTimer?.Start();
-    }
-
-    // 停止播放
-    private void Stop()
-    {
-        if (mediaPlayer != null)
-        {
-            mediaPlayer.Stop();
-            controlBar?.UpdatePlayPauseButton(false);
-            controlBar?.UpdateProgress(0, 0);
         }
     }
 
@@ -438,7 +275,6 @@ public class PlayerPage : UserControl
         }
     }
 
-    // 修改 HandleVideoClick 方法
     private void HandleVideoClick()
     {
         DateTime now = DateTime.Now;
@@ -447,23 +283,63 @@ public class PlayerPage : UserControl
         if (timeSinceLastClick < doubleClickInterval && timeSinceLastClick.TotalMilliseconds > 0)
         {
             Console.WriteLine($"[视频区域] 检测到双击 (间隔 {timeSinceLastClick.TotalMilliseconds:F0}ms)");
-
-            TogglePlayPause();
-
+            mediaController.TogglePlayPause();
             lastClickTime = DateTime.MinValue;
         }
         else
         {
-            // 单击：只显示控制栏，不隐藏
             Console.WriteLine("[视频区域] 单击");
             ShowControlBar();
-
             lastClickTime = now;
         }
     }
+
+    private void HideControlBarTimer_Tick(object? sender, EventArgs e)
+    {
+        if (controlBar != null && controlBar.Visible)
+        {
+            Point mousePos = controlBar.PointToClient(Cursor.Position);
+            bool isMouseOverControlBar = controlBar.ClientRectangle.Contains(mousePos);
+
+            bool isMouseNearBottom = false;
+            if (videoContainer != null)
+            {
+                Point containerMousePos = videoContainer.PointToClient(Cursor.Position);
+                isMouseNearBottom = containerMousePos.Y > videoContainer.Height - 100;
+            }
+
+            if (!isMouseOverControlBar && !isMouseNearBottom && !controlBar.IsProgressDragging)
+            {
+                controlBar.Visible = false;
+
+                if (fullscreenManager.IsFullscreen)
+                {
+                    Cursor.Hide();
+                }
+            }
+        }
+        hideControlBarTimer?.Stop();
+    }
+
+    private void ShowControlBar()
+    {
+        if (controlBar != null && !controlBar.Visible)
+        {
+            controlBar.Visible = true;
+            Cursor.Show();
+        }
+        StartHideTimer();
+    }
+
+    private void StartHideTimer()
+    {
+        hideControlBarTimer?.Stop();
+        hideControlBarTimer?.Start();
+    }
+
     private void PlayerPage_Resize(object? sender, EventArgs e)
     {
-        if (!isFullscreen)
+        if (!fullscreenManager.IsFullscreen)
         {
             if (videoContainer != null)
             {
@@ -496,72 +372,56 @@ public class PlayerPage : UserControl
         switch (e.KeyCode)
         {
             case Keys.Space:
-                TogglePlayPause();
+                mediaController.TogglePlayPause();
                 ShowControlBar();
                 break;
-
             case Keys.Left:
-                SeekBackward(5000);
+                mediaController.SeekBackward(5000);
                 ShowControlBar();
                 break;
-
             case Keys.Right:
-                SeekForward(5000);
+                mediaController.SeekForward(5000);
                 ShowControlBar();
                 break;
-
             case Keys.Up:
-                IncreaseVolume(10);
+                mediaController.IncreaseVolume(10);
                 ShowControlBar();
                 break;
-
             case Keys.Down:
-                DecreaseVolume(10);
+                mediaController.DecreaseVolume(10);
                 ShowControlBar();
                 break;
-
             case Keys.F:
-                ToggleFullScreen();
+                fullscreenManager.ToggleFullscreen(videoContainer!, ShowControlBar);
                 break;
-
             case Keys.Escape:
-                if (isFullscreen)
-                {
-                    ToggleFullScreen();
-                }
+                if (fullscreenManager.IsFullscreen)
+                    fullscreenManager.ExitFullscreen();
                 else
-                {
                     BackRequested?.Invoke(this, EventArgs.Empty);
-                }
                 break;
-
             case Keys.M:
-                ToggleMute();
+                mediaController.ToggleMute();
                 ShowControlBar();
                 break;
-
             case Keys.J:
-                SeekBackward(10000);
+                mediaController.SeekBackward(10000);
                 ShowControlBar();
                 break;
-
             case Keys.L:
-                SeekForward(10000);
+                mediaController.SeekForward(10000);
                 ShowControlBar();
                 break;
-
             case Keys.N:
             case Keys.PageDown:
                 PlayNextEpisode();
                 ShowControlBar();
                 break;
-
             case Keys.P:
             case Keys.PageUp:
                 PlayPreviousEpisode();
                 ShowControlBar();
                 break;
-
             default:
                 handled = false;
                 break;
@@ -587,217 +447,52 @@ public class PlayerPage : UserControl
                keyCode == Keys.PageUp || keyCode == Keys.PageDown;
     }
 
-    public void TogglePlayPause()
+    public void LoadFolder(string folderPath, string folderName)
     {
-        if (mediaPlayer == null) return;
+        currentFolderPath = folderPath;
+        Console.WriteLine($"[PlayerPage] 加载文件夹: {folderPath}");
 
-        if (mediaPlayer.IsPlaying)
+        videoFiles = VideoScanner.GetVideoFiles(folderPath);
+        Console.WriteLine($"[PlayerPage] 找到 {videoFiles.Length} 个视频文件");
+
+        episodeList!.Items.Clear();
+        for (int i = 0; i < videoFiles.Length; i++)
         {
-            mediaPlayer.Pause();
+            string fileName = Path.GetFileNameWithoutExtension(videoFiles[i]);
+            episodeList.Items.Add($"{i + 1:00}. {fileName}");
         }
-        else
+
+        if (videoFiles.Length > 0)
         {
-            mediaPlayer.Play();
-        }
-    }
-
-    private void SeekForward(long milliseconds)
-    {
-        if (mediaPlayer == null || mediaPlayer.Length <= 0) return;
-
-        long currentTime = mediaPlayer.Time;
-        long totalLength = mediaPlayer.Length;
-        long newTime = Math.Min(totalLength, currentTime + milliseconds);
-        mediaPlayer.Time = newTime;
-    }
-
-    private void SeekBackward(long milliseconds)
-    {
-        if (mediaPlayer == null || mediaPlayer.Length <= 0) return;
-
-        long currentTime = mediaPlayer.Time;
-        long newTime = Math.Max(0, currentTime - milliseconds);
-        mediaPlayer.Time = newTime;
-    }
-
-    private void IncreaseVolume(int amount)
-    {
-        if (mediaPlayer == null) return;
-
-        int newVolume = Math.Min(100, mediaPlayer.Volume + amount);
-        mediaPlayer.Volume = newVolume;
-        controlBar?.SetVolume(newVolume);
-    }
-
-    private void DecreaseVolume(int amount)
-    {
-        if (mediaPlayer == null) return;
-
-        int newVolume = Math.Max(0, mediaPlayer.Volume - amount);
-        mediaPlayer.Volume = newVolume;
-        controlBar?.SetVolume(newVolume);
-    }
-
-    private void ToggleMute()
-    {
-        if (mediaPlayer == null) return;
-
-        mediaPlayer.Mute = !mediaPlayer.Mute;
-        controlBar?.SetMuted(mediaPlayer.Mute);
-    }
-
-    private void ToggleFullScreen()
-    {
-        if (mediaPlayer == null || videoView == null) return;
-
-        if (!isFullscreen)
-        {
-            EnterFullScreen();
-        }
-        else
-        {
-            ExitFullScreen();
+            mediaController.Play(videoFiles[0]);
+            episodeList.SelectedIndex = 0;
         }
     }
 
-    private void EnterFullScreen()
+    private void EpisodeList_SelectedIndexChanged(object? sender, EventArgs e)
     {
-        Console.WriteLine("[全屏] 进入全屏模式");
+        if (episodeList == null) return;
 
-        mainForm = this.FindForm();
-        if (mainForm == null) return;
+        int currentIndex = episodeList.SelectedIndex;
 
-        // 找到视频容器
-        Panel? videoContainer = videoView?.Parent as Panel;
-        if (videoContainer == null) return;
-
-        // 保存视频容器的原始状态
-        originalParent = videoContainer.Parent;
-        originalIndex = originalParent!.Controls.GetChildIndex(videoContainer);
-        originalDock = videoContainer.Dock;
-        originalSize = videoContainer.Size;
-        originalLocation = videoContainer.Location;
-
-        // 创建全屏窗体
-        fullscreenForm = new Form
+        if (currentIndex == lastSelectedIndex)
         {
-            FormBorderStyle = FormBorderStyle.None,
-            WindowState = FormWindowState.Maximized,
-            TopMost = true,
-            BackColor = Color.Black,
-            KeyPreview = true
-        };
-
-        fullscreenForm.KeyDown += FullscreenForm_KeyDown;
-        fullscreenForm.MouseMove += (s, e) =>
-        {
-            // 鼠标在底部区域时显示控制栏
-            if (e.Y > fullscreenForm.ClientSize.Height - 100)
-            {
-                ShowControlBar();
-            }
-        };
-
-        // 将整个视频容器移到全屏窗体
-        originalParent.Controls.Remove(videoContainer);
-        fullscreenForm.Controls.Add(videoContainer);
-        videoContainer.Dock = DockStyle.Fill;
-
-        mainForm.Hide();
-        fullscreenForm.Show();
-
-        videoContainer.Invalidate();
-        videoContainer.Update();
-
-        isFullscreen = true;
-        StartHideTimer();
-
-        Console.WriteLine("[全屏] ✓ 已进入全屏");
-    }
-
-
-    private void ExitFullScreen()
-    {
-        Console.WriteLine("[全屏] 退出全屏模式");
-
-        if (fullscreenForm == null || originalParent == null || mainForm == null)
+            Console.WriteLine($"[选集] 索引未变化，仍为第 {currentIndex + 1} 集");
             return;
+        }
 
-        // 找到视频容器
-        Panel? videoContainer = videoView?.Parent as Panel;
-        if (videoContainer == null) return;
+        Console.WriteLine($"[选集] 集数变化: 第 {lastSelectedIndex + 1} 集 -> 第 {currentIndex + 1} 集");
 
-        // 从全屏窗体中移除视频容器
-        fullscreenForm.Controls.Remove(videoContainer);
-
-        // 恢复视频容器到原始容器
-        originalParent.Controls.Add(videoContainer);
-        originalParent.Controls.SetChildIndex(videoContainer, originalIndex);
-
-        // 恢复视频容器的原始属性
-        videoContainer.Dock = originalDock;
-        videoContainer.Size = originalSize;
-        videoContainer.Location = originalLocation;
-
-        // 关闭全屏窗体
-        fullscreenForm.Close();
-        fullscreenForm.Dispose();
-        fullscreenForm = null;
-
-        // 显示主窗体
-        mainForm.Show();
-        mainForm.Focus();
-
-        videoContainer.Invalidate();
-        videoContainer.Update();
-
-        isFullscreen = false;
-        isControlBarVisible = true;
-        controlBar!.Visible = true;
-        Cursor.Show();
-
-        Console.WriteLine("[全屏] ✓ 已退出全屏");
-    }
-    private void FullscreenForm_KeyDown(object? sender, KeyEventArgs e)
-    {
-        switch (e.KeyCode)
+        if (currentIndex >= 0 && currentIndex < videoFiles.Length)
         {
-            case Keys.Escape:
-            case Keys.F:
-                ToggleFullScreen();
-                e.Handled = true;
-                e.SuppressKeyPress = true;
-                break;
-
-            case Keys.Space:
-                TogglePlayPause();
-                e.Handled = true;
-                e.SuppressKeyPress = true;
-                break;
-
-            case Keys.Left:
-                SeekBackward(5000);
-                e.Handled = true;
-                e.SuppressKeyPress = true;
-                break;
-
-            case Keys.Right:
-                SeekForward(5000);
-                e.Handled = true;
-                e.SuppressKeyPress = true;
-                break;
-
-            case Keys.Up:
-                IncreaseVolume(10);
-                e.Handled = true;
-                e.SuppressKeyPress = true;
-                break;
-
-            case Keys.Down:
-                DecreaseVolume(10);
-                e.Handled = true;
-                e.SuppressKeyPress = true;
-                break;
+            string fileName = Path.GetFileName(videoFiles[currentIndex]);
+            Console.WriteLine($"[选集] 切换到第 {currentIndex + 1} 集: {fileName}");
+            mediaController.Play(videoFiles[currentIndex]);
+            lastSelectedIndex = currentIndex;
+        }
+        else
+        {
+            Console.WriteLine($"[选集] 无效的索引: {currentIndex}");
         }
     }
 
@@ -823,77 +518,6 @@ public class PlayerPage : UserControl
         }
     }
 
-    private string FormatTime(long milliseconds)
-    {
-        TimeSpan time = TimeSpan.FromMilliseconds(milliseconds);
-        if (time.TotalHours >= 1)
-            return time.ToString(@"hh\:mm\:ss");
-        else
-            return time.ToString(@"mm\:ss");
-    }
-
-    public void LoadFolder(string folderPath, string folderName)
-    {
-        currentFolderPath = folderPath;
-        Console.WriteLine($"[PlayerPage] 加载文件夹: {folderPath}");
-
-        videoFiles = Services.VideoScanner.GetVideoFiles(folderPath);
-        Console.WriteLine($"[PlayerPage] 找到 {videoFiles.Length} 个视频文件");
-
-        episodeList!.Items.Clear();
-        for (int i = 0; i < videoFiles.Length; i++)
-        {
-            string fileName = Path.GetFileNameWithoutExtension(videoFiles[i]);
-            episodeList.Items.Add($"{i + 1:00}. {fileName}");
-        }
-
-        if (videoFiles.Length > 0)
-        {
-            PlayVideo(videoFiles[0]);
-            episodeList.SelectedIndex = 0;
-        }
-    }
-
-    private void PlayVideo(string filePath)
-    {
-        if (mediaPlayer == null || libVLC == null) return;
-
-        Console.WriteLine($"[VLC] 开始播放: {Path.GetFileName(filePath)}");
-        var media = new Media(libVLC, filePath);
-        mediaPlayer.Play(media);
-    }
-
-    private void EpisodeList_SelectedIndexChanged(object? sender, EventArgs e)
-    {
-        if (episodeList == null) return;
-
-        int currentIndex = episodeList.SelectedIndex;
-
-        // 检查是否真的有变化
-        if (currentIndex == lastSelectedIndex)
-        {
-            Console.WriteLine($"[选集] 索引未变化，仍为第 {currentIndex + 1} 集");
-            return;
-        }
-
-        Console.WriteLine($"[选集] 集数变化: 第 {lastSelectedIndex + 1} 集 -> 第 {currentIndex + 1} 集");
-
-        if (currentIndex >= 0 && currentIndex < videoFiles.Length)
-        {
-            string fileName = Path.GetFileName(videoFiles[currentIndex]);
-            Console.WriteLine($"[选集] 切换到第 {currentIndex + 1} 集: {fileName}");
-
-            PlayVideo(videoFiles[currentIndex]);
-
-            // 更新上次选中的索引
-            lastSelectedIndex = currentIndex;
-        }
-        else
-        {
-            Console.WriteLine($"[选集] 无效的索引: {currentIndex}");
-        }
-    }
-
     protected override void OnHandleDestroyed(EventArgs e)
     {
         Console.WriteLine("[PlayerPage] 正在销毁资源...");
@@ -902,17 +526,10 @@ public class PlayerPage : UserControl
         mouseCheckTimer?.Dispose();
         hideControlBarTimer?.Stop();
         hideControlBarTimer?.Dispose();
-        updateTimer?.Stop();
-        updateTimer?.Dispose();
 
-        if (isFullscreen)
-        {
-            ExitFullScreen();
-        }
+        fullscreenManager.Dispose();
+        mediaController.Dispose();
 
-        mediaPlayer?.Stop();
-        mediaPlayer?.Dispose();
-        libVLC?.Dispose();
         base.OnHandleDestroyed(e);
     }
 }
