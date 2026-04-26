@@ -18,8 +18,16 @@
 
         <!-- 视频区 -->
         <Grid x:Name="VideoContainer" Grid.Row="0" Grid.Column="0" Background="Black"
-              GotFocus="VideoContainer_GotFocus" LostFocus="VideoContainer_LostFocus">
-            <vlc:VideoView x:Name="VideoView" GotFocus="VideoView_GotFocus" LostFocus="VideoView_LostFocus"/>
+              GotFocus="VideoContainer_GotFocus" LostFocus="VideoContainer_LostFocus"
+              MouseLeftButtonDown="VideoContainer_MouseLeftButtonDown"
+              MouseRightButtonDown="VideoContainer_MouseRightButtonDown">
+            <vlc:VideoView x:Name="VideoView" GotFocus="VideoView_GotFocus" LostFocus="VideoView_LostFocus">
+                <!-- 透明覆盖层：LibVLCSharp.WPF 会把 Content 渲染到视频上方的透明窗口中，
+                     用于绕过 Airspace 限制并拦截鼠标事件 -->
+                <Grid Background="Transparent"
+                      MouseLeftButtonDown="OverlayGrid_MouseLeftButtonDown"
+                      MouseRightButtonDown="OverlayGrid_MouseRightButtonDown"/>
+            </vlc:VideoView>
         </Grid>
 
         <!-- 播放列表 -->

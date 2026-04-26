@@ -85,6 +85,11 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         Log($"Loaded 后尝试设置焦点到 PlayerPage");
 
         mediaController.Initialize(VideoView);
+
+        // 在 WPF 层面试试（大概率被 VideoView 的 Airspace 拦截，仅用于日志对比）
+        VideoContainer.MouseLeftButtonDown += VideoContainer_MouseLeftButtonDown;
+        VideoContainer.MouseRightButtonDown += VideoContainer_MouseRightButtonDown;
+
         mediaController.Playing += (s, ev) =>
         {
             Dispatcher.Invoke(() =>
@@ -381,6 +386,78 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
 
 
+    private void VideoContainer_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (e.Handled) return;
+        Log($"VideoContainer MouseLeftButtonDown (WPF): ClickCount={e.ClickCount}");
+        if (e.ClickCount >= 2)
+        {
+            Log("VideoContainer 左键双击 -> TogglePlayPause");
+            mediaController.TogglePlayPause();
+            e.Handled = true;
+        }
+    }
+
+    private void VideoContainer_MouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (e.Handled) return;
+
+        var now = DateTime.Now;
+        var position = e.GetPosition(this);
+        Log($"VideoContainer MouseRightButtonDown (WPF): ClickCount={e.ClickCount}, Time={now:HH:mm:ss.fff}");
+
+        if (e.ClickCount >= 2)
+        {
+            Log("VideoContainer 右键双击 -> ToggleFullscreen");
+            ToggleFullscreen();
+            e.Handled = true;
+            return;
+        }
+
+        // 备选：如果 ClickCount 不可靠，用时间差检测（要求间隔 >50ms 且 <500ms，避免同一毫秒的重复事件误判）
+        var elapsed = now - lastRightClickTime;
+        var dx = position.X - lastRightClickPosition.X;
+        var dy = position.Y - lastRightClickPosition.Y;
+        var distance = Math.Sqrt(dx * dx + dy * dy);
+        if (elapsed.TotalMilliseconds > 50 && elapsed.TotalMilliseconds < 500 && distance < 10)
+        {
+            Log("VideoContainer 右键双击(备选检测) -> ToggleFullscreen");
+            ToggleFullscreen();
+            e.Handled = true;
+            return;
+        }
+
+        lastRightClickTime = now;
+        lastRightClickPosition = position;
+    }
+
+    private DateTime lastRightClickTime = DateTime.MinValue;
+    private System.Windows.Point lastRightClickPosition;
+
+    private void OverlayGrid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (e.Handled) return;
+        Log($"OverlayGrid MouseLeftButtonDown: ClickCount={e.ClickCount}");
+        if (e.ClickCount >= 2)
+        {
+            Log("OverlayGrid 左键双击 -> TogglePlayPause");
+            mediaController.TogglePlayPause();
+            e.Handled = true;
+        }
+    }
+
+    private void OverlayGrid_MouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (e.Handled) return;
+        Log($"OverlayGrid MouseRightButtonDown: ClickCount={e.ClickCount}");
+        if (e.ClickCount >= 2)
+        {
+            Log("OverlayGrid 右键双击 -> ToggleFullscreen");
+            ToggleFullscreen();
+            e.Handled = true;
+        }
+    }
+
     private void PlayerPage_GotKeyboardFocus(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e)
     {
         Log($"GotKeyboardFocus: NewFocus={e.NewFocus?.GetType().Name}, OldFocus={e.OldFocus?.GetType().Name}");
@@ -456,6 +533,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         saveProgressTimer.Stop();
         controlBarHideTimer?.Stop();
         SaveCurrentProgress();
+
         mediaController.Dispose();
     }
 }

@@ -42,6 +42,12 @@ public class MediaPlayerController : IDisposable
             Log("LibVLC 创建成功");
             mediaPlayer = new MediaPlayer(libVLC);
             Log("MediaPlayer 创建成功");
+
+            // 禁用 VLC 内置的鼠标和键盘事件处理，让 WPF 层自己接管
+            mediaPlayer.EnableMouseInput = false;
+            mediaPlayer.EnableKeyInput = false;
+            Log("已禁用 VLC 内置鼠标/键盘输入");
+
             videoView.MediaPlayer = mediaPlayer;
             Log("VideoView 已关联 MediaPlayer");
         }
