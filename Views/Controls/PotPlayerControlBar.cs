@@ -192,7 +192,7 @@ public class PotPlayerControlBar : UserControl
         currentTimeLabel = new Label
         {
             Location = new Point(195, labelCenterY),
-            Size = new Size(55, 20),
+            AutoSize = true,
             ForeColor = textColor,
             Font = new Font("Segoe UI", 10),
             Text = "00:00",
@@ -203,7 +203,7 @@ public class PotPlayerControlBar : UserControl
         separatorLabel = new Label
         {
             Location = new Point(252, labelCenterY),
-            Size = new Size(10, 20),
+            AutoSize = true,
             ForeColor = textColor,
             Font = new Font("Segoe UI", 10),
             Text = "/",
@@ -214,7 +214,7 @@ public class PotPlayerControlBar : UserControl
         totalTimeLabel = new Label
         {
             Location = new Point(264, labelCenterY),
-            Size = new Size(55, 20),
+            AutoSize = true,
             ForeColor = Color.FromArgb(150, 150, 150),
             Font = new Font("Segoe UI", 10),
             Text = "00:00",
@@ -254,6 +254,7 @@ public class PotPlayerControlBar : UserControl
             currentTimeLabel, separatorLabel, totalTimeLabel,
             progressBar, settingsButton, playlistButton, fullscreenButton
         });
+
     }
 
     protected override void OnResize(EventArgs e)
@@ -265,7 +266,6 @@ public class PotPlayerControlBar : UserControl
             int buttonSize = 40;
             int rightButtonSize = 35;
             int centerY = (this.Height - buttonSize) / 2;
-            int labelCenterY = (this.Height - 20) / 2;
             int progressBarCenterY = (this.Height - 26) / 2;
             int rightButtonCenterY = (this.Height - rightButtonSize) / 2;
             
@@ -274,18 +274,30 @@ public class PotPlayerControlBar : UserControl
             if (previousButton != null) previousButton.Location = new Point(100, centerY);
             if (nextButton != null) nextButton.Location = new Point(145, centerY);
             
-            if (currentTimeLabel != null) currentTimeLabel.Location = new Point(195, labelCenterY);
-            if (separatorLabel != null) separatorLabel.Location = new Point(252, labelCenterY);
-            if (totalTimeLabel != null) totalTimeLabel.Location = new Point(264, labelCenterY);
+            // 时间标签垂直居中
+            if (currentTimeLabel != null) currentTimeLabel.Top = (this.Height - currentTimeLabel.Height) / 2;
+            if (separatorLabel != null) separatorLabel.Top = (this.Height - separatorLabel.Height) / 2;
+            if (totalTimeLabel != null) totalTimeLabel.Top = (this.Height - totalTimeLabel.Height) / 2;
+
+            // 时间标签水平位置：紧跟 nextButton 右侧
+            int labelSpacing = 6;
+            int nextRight = nextButton?.Right ?? 185;
+
+            if (currentTimeLabel != null) currentTimeLabel.Left = nextRight + labelSpacing;
+            if (separatorLabel != null) separatorLabel.Left = (currentTimeLabel?.Right ?? 0) + labelSpacing;
+            if (totalTimeLabel != null) totalTimeLabel.Left = (separatorLabel?.Right ?? 0) + labelSpacing;
             
-            int leftWidth = 330;
+            // 右侧按钮
             int rightMargin = 10;
             int buttonSpacing = 5;
             int rightButtonTotalWidth = 3 * 35 + 2 * buttonSpacing;
             int rightStart = this.Width - rightButtonTotalWidth - rightMargin;
 
-            progressBar.Width = Math.Max(200, rightStart - leftWidth - 10);
-            progressBar.Location = new Point(330, progressBarCenterY);
+            // 进度条位置紧跟时间标签区域
+            int progressBarSpacing = 10;
+            int progressBarX = (totalTimeLabel?.Right ?? 0) + progressBarSpacing;
+            progressBar.Width = Math.Max(200, rightStart - progressBarX - progressBarSpacing);
+            progressBar.Location = new Point(progressBarX, progressBarCenterY);
             
             if (settingsButton != null) settingsButton.Location = new Point(rightStart, rightButtonCenterY);
             if (playlistButton != null) playlistButton.Location = new Point(rightStart + 35 + buttonSpacing, rightButtonCenterY);
@@ -326,6 +338,8 @@ public class PotPlayerControlBar : UserControl
         if (totalTimeLabel != null)
             totalTimeLabel.Text = FormatTime(total);
     }
+
+
 
     public void UpdateProgress(long current, long total, int bufferPercent = 0)
     {
