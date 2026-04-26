@@ -35,7 +35,8 @@ public partial class MainPage : System.Windows.Controls.UserControl
             if (Directory.Exists(folder.Path))
             {
                 int count = VideoScanner.CountVideosInFolder(folder.Path);
-                items.Add(new FolderListItem(folder.Name, folder.Path, count));
+                string? coverPath = GetCoverPath(folder.Path);
+                items.Add(new FolderListItem(folder.Name, folder.Path, count, coverPath));
             }
             else
             {
@@ -44,6 +45,17 @@ public partial class MainPage : System.Windows.Controls.UserControl
         }
 
         FolderList.ItemsSource = items;
+    }
+
+    private static string? GetCoverPath(string folderPath)
+    {
+        string specificCover = Path.Combine(folderPath, "cover.jpg");
+        if (File.Exists(specificCover))
+        {
+            return specificCover;
+        }
+
+        return VideoScanner.FindCoverImage(folderPath);
     }
 
     private void FolderCard_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -95,4 +107,4 @@ public partial class MainPage : System.Windows.Controls.UserControl
     }
 }
 
-public record FolderListItem(string Name, string Path, int VideoCount);
+public record FolderListItem(string Name, string Path, int VideoCount, string? CoverPath);
