@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using LibVLCSharp.WinForms;
 using LocalPlayer.Services;
@@ -18,12 +19,6 @@ public class PlayerPage : UserControl
     private PotPlayerControlBar? controlBar;
     private System.Windows.Forms.Timer? hideControlBarTimer;
 
-    // 双击检测相关
-    private DateTime lastClickTime = DateTime.MinValue;
-    private readonly TimeSpan doubleClickInterval = TimeSpan.FromMilliseconds(500);
-    private bool wasMouseDown = false;
-    private System.Windows.Forms.Timer? mouseCheckTimer;
-
     private Panel? videoContainer;
 
     private readonly MediaPlayerController mediaController = new();
@@ -36,6 +31,9 @@ public class PlayerPage : UserControl
     public event EventHandler? BackRequested;
     public event KeyEventHandler? KeyDownHandler;
 
+    [DllImport("user32.dll")]
+    private static extern bool EnableWindow(IntPtr hWnd, bool bEnable);
+
     public PlayerPage()
     {
         Console.WriteLine("[PlayerPage] 构造函数开始");
@@ -46,9 +44,9 @@ public class PlayerPage : UserControl
         SetupControlBar();
         SetupUI();
         SetupVLC();
-        SetupMouseDetection();
         SetupTimers();
         SetupFullscreenManager();
+        SetupMouseDetection();
 
         Console.WriteLine("[PlayerPage] 初始化完成");
     }
@@ -152,6 +150,9 @@ public class PlayerPage : UserControl
     {
         if (videoView == null) return;
 
+        // 禁用 VideoView 的鼠标/键盘输入，让事件落到父容器 videoContainer 上
+        EnableWindow(videoView.Handle, false);
+
         mediaController.Initialize(videoView);
         mediaController.Playing += (s, e) => this.BeginInvoke(() => controlBar?.UpdatePlayPauseButton(true));
         mediaController.Paused += (s, e) => this.BeginInvoke(() => controlBar?.UpdatePlayPauseButton(false));
@@ -210,18 +211,16 @@ public class PlayerPage : UserControl
 
     private void SetupMouseDetection()
     {
-        mouseCheckTimer = new System.Windows.Forms.Timer { Interval = 50 };
-        mouseCheckTimer.Tick += MouseCheckTimer_Tick;
-        mouseCheckTimer.Start();
-
-        if (videoView != null)
+        if (videoContainer != null)
         {
-            videoView.MouseMove += (s, e) => ShowControlBar();
+            videoContainer.MouseClick += (s, e) => ShowControlBar();
+            videoContainer.MouseDoubleClick += (s, e) => mediaController.TogglePlayPause();
+            videoContainer.MouseMove += (s, e) => ShowControlBar();
         }
 
         this.MouseMove += PlayerPage_MouseMove;
 
-        Console.WriteLine("[鼠标检测] 定时器已启动");
+        Console.WriteLine("[鼠标检测] 事件绑定完成");
     }
 
     private void PlayerPage_MouseMove(object? sender, MouseEventArgs e)
@@ -229,57 +228,6 @@ public class PlayerPage : UserControl
         if (controlBar != null && e.Y > this.ClientSize.Height - 100)
         {
             ShowControlBar();
-        }
-    }
-
-    private void MouseCheckTimer_Tick(object? sender, EventArgs e)
-    {
-        bool isMouseDown = (Control.MouseButtons & MouseButtons.Left) != 0;
-
-        if (isMouseDown && !wasMouseDown)
-        {
-            if (videoView != null && IsMouseOverVideoView())
-            {
-                Console.WriteLine("[鼠标检测] 检测到鼠标左键按下在视频区域");
-                HandleVideoClick();
-            }
-        }
-
-        wasMouseDown = isMouseDown;
-    }
-
-    private bool IsMouseOverVideoView()
-    {
-        if (videoView == null) return false;
-
-        try
-        {
-            Point screenMousePos = Control.MousePosition;
-            Point clientMousePos = videoView.PointToClient(screenMousePos);
-            return videoView.ClientRectangle.Contains(clientMousePos);
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private void HandleVideoClick()
-    {
-        DateTime now = DateTime.Now;
-        TimeSpan timeSinceLastClick = now - lastClickTime;
-
-        if (timeSinceLastClick < doubleClickInterval && timeSinceLastClick.TotalMilliseconds > 0)
-        {
-            Console.WriteLine($"[视频区域] 检测到双击 (间隔 {timeSinceLastClick.TotalMilliseconds:F0}ms)");
-            mediaController.TogglePlayPause();
-            lastClickTime = DateTime.MinValue;
-        }
-        else
-        {
-            Console.WriteLine("[视频区域] 单击");
-            ShowControlBar();
-            lastClickTime = now;
         }
     }
 
@@ -500,8 +448,6 @@ public class PlayerPage : UserControl
     {
         Console.WriteLine("[PlayerPage] 正在销毁资源...");
 
-        mouseCheckTimer?.Stop();
-        mouseCheckTimer?.Dispose();
         hideControlBarTimer?.Stop();
         hideControlBarTimer?.Dispose();
 
