@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace LocalPlayer.Views.Controls;
@@ -35,6 +36,12 @@ public class EpisodeButton : Control
     private static readonly Color PlayedColor = Color.FromArgb(92, 159, 214);
     private static readonly Color HoverColor = Color.FromArgb(0, 150, 240);
 
+    [DllImport("winmm.dll")]
+    private static extern int timeBeginPeriod(int uPeriod);
+
+    [DllImport("winmm.dll")]
+    private static extern int timeEndPeriod(int uPeriod);
+
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public int EpisodeIndex { get; set; }
     
@@ -62,7 +69,11 @@ public class EpisodeButton : Control
         Cursor = Cursors.Hand;
         Font = new Font("微软雅黑", 11, FontStyle.Bold);
 
-        animTimer = new System.Windows.Forms.Timer { Interval = 16 };
+        // 提高系统计时器精度到 1ms，这样 WinForms Timer 才能突破 64Hz 限制
+        timeBeginPeriod(1);
+
+        // 6ms ≈ 166fps，在 160Hz 显示器上接近满帧
+        animTimer = new System.Windows.Forms.Timer { Interval = 6 };
         animTimer.Tick += AnimTimer_Tick;
     }
 
@@ -96,7 +107,7 @@ public class EpisodeButton : Control
         if (e.Button == MouseButtons.Left)
         {
             isPressed = true;
-            pressTarget = 0.88f;
+            pressTarget = 0.96f;  // iOS 风格：按下只轻微缩小到 96%
             pressVelocity = 0;
             EnsureTimerRunning();
         }
@@ -123,7 +134,7 @@ public class EpisodeButton : Control
     {
         bool animating = false;
 
-        // 悬浮放大动画（平滑插值）
+        // 悬浮放大动画（原来的线性逼近）
         if (Math.Abs(hoverTarget - hoverScale) > 0.001f)
         {
             hoverScale += (hoverTarget - hoverScale) * 0.18f;
@@ -134,11 +145,11 @@ public class EpisodeButton : Control
             hoverScale = hoverTarget;
         }
 
-        // 按下Q弹动画（弹簧物理）
+        // 按下/松开弹簧动画（iOS 风格：阻尼更小，回弹时有过冲）
         if (Math.Abs(pressTarget - pressScale) > 0.001f || Math.Abs(pressVelocity) > 0.001f)
         {
-            const float tension = 0.3f;
-            const float damping = 0.72f;
+            const float tension = 0.35f;
+            const float damping = 0.55f;  // 阻尼更小 → 回弹时带过冲（overshoot）
             pressVelocity += (pressTarget - pressScale) * tension;
             pressVelocity *= damping;
             pressScale += pressVelocity;
@@ -182,7 +193,7 @@ public class EpisodeButton : Control
             _ => UnplayedColor
         };
 
-        // 悬浮时变蓝色高亮（即使播放过或未播放都统一变亮蓝）
+        // 悬浮时变蓝色高亮
         if (isHovered)
         {
             baseColor = HoverColor;
@@ -195,27 +206,20 @@ public class EpisodeButton : Control
         }
 
         int radius = 10;
-        var rect = new Rectangle(0, 0, Width - 1, Height - 1);
+        var bgRect = new Rectangle(0, 0, Width - 1, Height - 1);
 
-        using (var path = GetRoundedRectangle(rect, radius))
+        using (var path = GetRoundedRectangle(bgRect, radius))
         using (var brush = new SolidBrush(baseColor))
         {
             e.Graphics.FillPath(brush, path);
         }
 
-        // 悬浮时绘制边框高亮
-        if (isHovered)
-        {
-            using (var path = GetRoundedRectangle(rect, radius))
-            using (var pen = new Pen(Color.FromArgb(180, 210, 255), 2f))
-            {
-                e.Graphics.DrawPath(pen, path);
-            }
-        }
-
-        // 绘制数字
+        // 绘制数字——使用固定的 normalSize 区域，这样按钮缩放时文字位置不动
         string text = EpisodeIndex.ToString();
-        TextRenderer.DrawText(e.Graphics, text, Font, rect, Color.White,
+        int textOffsetX = (Width - normalSize.Width) / 2;
+        int textOffsetY = (Height - normalSize.Height) / 2;
+        var textRect = new Rectangle(textOffsetX, textOffsetY, normalSize.Width, normalSize.Height);
+        TextRenderer.DrawText(e.Graphics, text, Font, textRect, Color.White,
             TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
     }
 
@@ -237,6 +241,7 @@ public class EpisodeButton : Control
         {
             animTimer?.Stop();
             animTimer?.Dispose();
+            timeEndPeriod(1);
         }
         base.Dispose(disposing);
     }
