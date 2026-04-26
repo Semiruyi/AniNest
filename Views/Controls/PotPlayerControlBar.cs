@@ -34,7 +34,6 @@ public class PotPlayerControlBar : UserControl
     private Label? separatorLabel;
 
     // 右侧控制
-    private PotPlayerVolumeControl? volumeControl;
     private Button? settingsButton;
     private Button? playlistButton;
     private Button? fullscreenButton;
@@ -59,8 +58,6 @@ public class PotPlayerControlBar : UserControl
     public event EventHandler? SettingsClicked;
     public event EventHandler? PlaylistClicked;
     public event EventHandler<ProgressChangedEventArgs>? ProgressChanged;
-    public event EventHandler<int>? VolumeChanged;
-    public event EventHandler<bool>? MuteChanged;
 
     public PotPlayerControlBar()
     {
@@ -251,20 +248,11 @@ public class PotPlayerControlBar : UserControl
         fullscreenButton = CreateImageButton(fullscreenIcon, "⛶", 0, rightButtonCenterY, rightButtonSize);
         fullscreenButton.Click += (s, e) => FullscreenClicked?.Invoke(this, EventArgs.Empty);
 
-        // 音量控制
-        volumeControl = new PotPlayerVolumeControl
-        {
-            Location = new Point(0, rightButtonCenterY),
-            Size = new Size(rightButtonSize, rightButtonSize)
-        };
-        volumeControl.VolumeChanged += (s, v) => VolumeChanged?.Invoke(this, v);
-        volumeControl.MuteChanged += (s, m) => MuteChanged?.Invoke(this, m);
-
         // 添加到控件集合
         this.Controls.AddRange(new Control[] {
             playPauseButton, stopButton, previousButton, nextButton,
             currentTimeLabel, separatorLabel, totalTimeLabel,
-            progressBar, settingsButton, playlistButton, fullscreenButton, volumeControl
+            progressBar, settingsButton, playlistButton, fullscreenButton
         });
     }
 
@@ -291,17 +279,17 @@ public class PotPlayerControlBar : UserControl
             if (totalTimeLabel != null) totalTimeLabel.Location = new Point(264, labelCenterY);
             
             int leftWidth = 330;
-            int rightWidth = 180;
-            int availableWidth = this.Width - leftWidth - rightWidth;
-            progressBar.Width = Math.Max(200, availableWidth);
+            int rightMargin = 10;
+            int buttonSpacing = 5;
+            int rightButtonTotalWidth = 3 * 35 + 2 * buttonSpacing;
+            int rightStart = this.Width - rightButtonTotalWidth - rightMargin;
+
+            progressBar.Width = Math.Max(200, rightStart - leftWidth - 10);
             progressBar.Location = new Point(330, progressBarCenterY);
             
-            int rightStart = progressBar.Right + 10;
-            
             if (settingsButton != null) settingsButton.Location = new Point(rightStart, rightButtonCenterY);
-            if (playlistButton != null) playlistButton.Location = new Point(rightStart + 40, rightButtonCenterY);
-            if (fullscreenButton != null) fullscreenButton.Location = new Point(rightStart + 80, rightButtonCenterY);
-            if (volumeControl != null) volumeControl.Location = new Point(rightStart + 120, rightButtonCenterY);
+            if (playlistButton != null) playlistButton.Location = new Point(rightStart + 35 + buttonSpacing, rightButtonCenterY);
+            if (fullscreenButton != null) fullscreenButton.Location = new Point(rightStart + 2 * (35 + buttonSpacing), rightButtonCenterY);
         }
     }
 
@@ -349,18 +337,6 @@ public class PotPlayerControlBar : UserControl
         }
 
         UpdateTime(current, total);
-    }
-
-    public void SetVolume(int volume)
-    {
-        if (volumeControl != null)
-            volumeControl.Volume = volume;
-    }
-
-    public void SetMuted(bool muted)
-    {
-        if (volumeControl != null)
-            volumeControl.IsMuted = muted;
     }
 
     public bool IsProgressDragging => progressBar?.IsDragging ?? false;
@@ -548,183 +524,6 @@ public class PotPlayerProgressBar : Control
             {
                 g.FillRectangle(hoverBrush, 0, trackY, (int)hoverPosition, trackHeight);
             }
-        }
-    }
-}
-
-// PotPlayer 风格的音量控制
-public class PotPlayerVolumeControl : UserControl
-{
-    private int volume = 100;
-    private bool isMuted = false;
-    private int volumeBeforeMute = 100;
-
-    private Button? volumeButton;
-    private TrackBar? volumeSlider;
-    private Timer? hideSliderTimer;
-
-    private readonly Color backgroundColor = Color.FromArgb(32, 32, 32);
-    private readonly Color textColor = Color.FromArgb(200, 200, 200);
-
-    public event EventHandler<int>? VolumeChanged;
-    public event EventHandler<bool>? MuteChanged;
-
-    public PotPlayerVolumeControl()
-    {
-        this.Size = new Size(35, 35);
-        this.BackColor = backgroundColor;
-
-        InitializeComponents();
-    }
-
-    private void InitializeComponents()
-    {
-        volumeButton = new Button
-        {
-            Size = new Size(35, 35),
-            Location = new Point(0, 0),
-            FlatStyle = FlatStyle.Flat,
-            BackColor = backgroundColor,
-            ForeColor = textColor,
-            Font = new Font("Segoe UI", 12),
-            Text = "🔊",
-            Cursor = Cursors.Hand,
-            TextAlign = ContentAlignment.MiddleCenter
-        };
-        volumeButton.FlatAppearance.BorderSize = 0;
-        volumeButton.Click += VolumeButton_Click;
-        volumeButton.MouseEnter += (s, e) => ShowVolumeSlider();
-
-        volumeSlider = new TrackBar
-        {
-            Location = new Point(-65, -5),
-            Size = new Size(100, 30),
-            Minimum = 0,
-            Maximum = 100,
-            Value = volume,
-            TickStyle = TickStyle.None,
-            BackColor = Color.FromArgb(45, 45, 45),
-            Visible = false
-        };
-        volumeSlider.ValueChanged += VolumeSlider_ValueChanged;
-        volumeSlider.MouseLeave += (s, e) => HideVolumeSlider();
-
-        hideSliderTimer = new Timer { Interval = 500 };
-        hideSliderTimer.Tick += HideSliderTimer_Tick;
-
-        this.Controls.Add(volumeSlider);
-        this.Controls.Add(volumeButton);
-    }
-
-    private void HideSliderTimer_Tick(object? sender, EventArgs e)
-    {
-        if (volumeSlider != null && !volumeSlider.ClientRectangle.Contains(volumeSlider.PointToClient(Cursor.Position)))
-        {
-            HideVolumeSlider();
-        }
-        hideSliderTimer?.Stop();
-    }
-
-    private void VolumeButton_Click(object? sender, EventArgs e)
-    {
-        if (volumeSlider == null) return;
-        
-        if (isMuted)
-        {
-            isMuted = false;
-            volume = volumeBeforeMute;
-            volumeSlider.Value = volume;
-        }
-        else
-        {
-            isMuted = true;
-            volumeBeforeMute = volume;
-            volume = 0;
-            volumeSlider.Value = 0;
-        }
-
-        UpdateVolumeIcon();
-        VolumeChanged?.Invoke(this, volume);
-        MuteChanged?.Invoke(this, isMuted);
-    }
-
-    private void VolumeSlider_ValueChanged(object? sender, EventArgs e)
-    {
-        if (volumeSlider == null) return;
-        
-        volume = volumeSlider.Value;
-        isMuted = (volume == 0);
-        UpdateVolumeIcon();
-        VolumeChanged?.Invoke(this, volume);
-        MuteChanged?.Invoke(this, isMuted);
-    }
-
-    private void ShowVolumeSlider()
-    {
-        if (volumeSlider != null)
-        {
-            volumeSlider.Visible = true;
-            volumeSlider.BringToFront();
-        }
-        hideSliderTimer?.Stop();
-    }
-
-    private void HideVolumeSlider()
-    {
-        hideSliderTimer?.Start();
-    }
-
-    private void UpdateVolumeIcon()
-    {
-        if (volumeButton == null) return;
-        
-        if (isMuted || volume == 0)
-            volumeButton.Text = "🔇";
-        else if (volume < 30)
-            volumeButton.Text = "🔈";
-        else if (volume < 70)
-            volumeButton.Text = "🔉";
-        else
-            volumeButton.Text = "🔊";
-    }
-
-    [Browsable(false)]
-    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public int Volume
-    {
-        get => volume;
-        set
-        {
-            volume = Math.Max(0, Math.Min(100, value));
-            if (volumeSlider != null)
-                volumeSlider.Value = volume;
-            isMuted = (volume == 0);
-            UpdateVolumeIcon();
-        }
-    }
-
-    [Browsable(false)]
-    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public bool IsMuted
-    {
-        get => isMuted;
-        set
-        {
-            isMuted = value;
-            if (volumeSlider == null) return;
-            
-            if (isMuted)
-            {
-                volumeBeforeMute = volume;
-                volume = 0;
-                volumeSlider.Value = 0;
-            }
-            else
-            {
-                volume = volumeBeforeMute;
-                volumeSlider.Value = volume;
-            }
-            UpdateVolumeIcon();
         }
     }
 }

@@ -13,8 +13,6 @@ public class MediaPlayerController : IDisposable
     public bool IsPlaying => mediaPlayer?.IsPlaying ?? false;
     public long Time => mediaPlayer?.Time ?? 0;
     public long Length => mediaPlayer?.Length ?? 0;
-    public int Volume => mediaPlayer?.Volume ?? 0;
-    public bool IsMuted => mediaPlayer?.Mute ?? false;
 
     public event EventHandler? Playing;
     public event EventHandler? Paused;
@@ -87,36 +85,6 @@ public class MediaPlayerController : IDisposable
 
         long newTime = Math.Max(0, mediaPlayer.Time - milliseconds);
         mediaPlayer.Time = newTime;
-    }
-
-    public void SetVolume(int volume)
-    {
-        if (mediaPlayer == null) return;
-        mediaPlayer.Volume = Math.Max(0, Math.Min(100, volume));
-    }
-
-    public void IncreaseVolume(int amount)
-    {
-        if (mediaPlayer == null) return;
-        mediaPlayer.Volume = Math.Min(100, mediaPlayer.Volume + amount);
-    }
-
-    public void DecreaseVolume(int amount)
-    {
-        if (mediaPlayer == null) return;
-        mediaPlayer.Volume = Math.Max(0, mediaPlayer.Volume - amount);
-    }
-
-    public void ToggleMute()
-    {
-        if (mediaPlayer == null) return;
-        mediaPlayer.Mute = !mediaPlayer.Mute;
-    }
-
-    public void SetMuted(bool muted)
-    {
-        if (mediaPlayer == null) return;
-        mediaPlayer.Mute = muted;
     }
 
     public void SeekTo(long time)

@@ -145,8 +145,6 @@ public class PlayerPage : UserControl
                 PlayerPage_Resize(this, EventArgs.Empty);
             }
         };
-        controlBar.VolumeChanged += (s, volume) => mediaController.SetVolume(volume);
-        controlBar.MuteChanged += (s, muted) => mediaController.SetMuted(muted);
         controlBar.ProgressChanged += (s, e) => mediaController.SeekTo(e.NewTime);
     }
 
@@ -194,16 +192,7 @@ public class PlayerPage : UserControl
                     e.Handled = true;
                     e.SuppressKeyPress = true;
                     break;
-                case Keys.Up:
-                    mediaController.IncreaseVolume(10);
-                    e.Handled = true;
-                    e.SuppressKeyPress = true;
-                    break;
-                case Keys.Down:
-                    mediaController.DecreaseVolume(10);
-                    e.Handled = true;
-                    e.SuppressKeyPress = true;
-                    break;
+
             }
         };
         fullscreenManager.Exited += (s, e) =>
@@ -383,14 +372,7 @@ public class PlayerPage : UserControl
                 mediaController.SeekForward(5000);
                 ShowControlBar();
                 break;
-            case Keys.Up:
-                mediaController.IncreaseVolume(10);
-                ShowControlBar();
-                break;
-            case Keys.Down:
-                mediaController.DecreaseVolume(10);
-                ShowControlBar();
-                break;
+
             case Keys.F:
                 fullscreenManager.ToggleFullscreen(videoContainer!, ShowControlBar);
                 break;
@@ -400,10 +382,7 @@ public class PlayerPage : UserControl
                 else
                     BackRequested?.Invoke(this, EventArgs.Empty);
                 break;
-            case Keys.M:
-                mediaController.ToggleMute();
-                ShowControlBar();
-                break;
+
             case Keys.J:
                 mediaController.SeekBackward(10000);
                 ShowControlBar();
@@ -439,9 +418,8 @@ public class PlayerPage : UserControl
     private bool IsFunctionKey(Keys keyCode)
     {
         return keyCode == Keys.Left || keyCode == Keys.Right ||
-               keyCode == Keys.Up || keyCode == Keys.Down ||
                keyCode == Keys.Space || keyCode == Keys.F ||
-               keyCode == Keys.Escape || keyCode == Keys.M ||
+               keyCode == Keys.Escape ||
                keyCode == Keys.J || keyCode == Keys.L ||
                keyCode == Keys.N || keyCode == Keys.P ||
                keyCode == Keys.PageUp || keyCode == Keys.PageDown;
