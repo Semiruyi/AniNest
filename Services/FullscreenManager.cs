@@ -15,6 +15,31 @@ public class FullscreenManager : IDisposable
     private Size originalSize;
     private Point originalLocation;
 
+    private class FullscreenForm : Form
+    {
+        public FullscreenForm()
+        {
+            FormBorderStyle = FormBorderStyle.None;
+            WindowState = FormWindowState.Maximized;
+            TopMost = true;
+            BackColor = Color.Black;
+            KeyPreview = true;
+        }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            // WinForms 默认会用方向键做焦点导航，导致 KeyDown 事件不触发
+            // 这里直接拦截方向键，手动触发 KeyDown 事件
+            if (keyData == Keys.Left || keyData == Keys.Right || keyData == Keys.Up || keyData == Keys.Down)
+            {
+                var e = new KeyEventArgs(keyData);
+                OnKeyDown(e);
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+    }
+
     public bool IsFullscreen { get; private set; }
 
     public event EventHandler<KeyEventArgs>? KeyDown;
@@ -36,15 +61,7 @@ public class FullscreenManager : IDisposable
         originalSize = videoContainer.Size;
         originalLocation = videoContainer.Location;
 
-        fullscreenForm = new Form
-        {
-            FormBorderStyle = FormBorderStyle.None,
-            WindowState = FormWindowState.Maximized,
-            TopMost = true,
-            BackColor = Color.Black,
-            KeyPreview = true
-        };
-
+        fullscreenForm = new FullscreenForm();
         fullscreenForm.KeyDown += FullscreenForm_KeyDown;
 
         originalParent.Controls.Remove(videoContainer);
