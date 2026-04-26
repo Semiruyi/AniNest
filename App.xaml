@@ -10,59 +10,70 @@
             <SolidColorBrush x:Key="SurfaceLight" Color="#FF1E1E1E"/>
             <SolidColorBrush x:Key="AccentBlue" Color="#FF3B82F6"/>
             <SolidColorBrush x:Key="AccentBlueHover" Color="#FF60A5FA"/>
+            <SolidColorBrush x:Key="AccentBlueActive" Color="#FF93C5FD"/>
             <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFFFF"/>
-            <SolidColorBrush x:Key="TextSecondary" Color="#99FFFFFF"/>
+            <SolidColorBrush x:Key="TextSecondary" Color="#AAFFFFFF"/>
             <SolidColorBrush x:Key="HoverBackground" Color="#22FFFFFF"/>
             <SolidColorBrush x:Key="PressedBackground" Color="#33FFFFFF"/>
 
             <!-- 动画缓动 -->
-            <CircleEase x:Key="CircleEaseOut" EasingMode="EaseOut"/>
-            <CircleEase x:Key="CircleEaseInOut" EasingMode="EaseInOut"/>
+            <CircleEase x:Key="EaseOut" EasingMode="EaseOut"/>
+            <CircleEase x:Key="EaseInOut" EasingMode="EaseInOut"/>
 
-            <!-- 图标按钮样式（通用） -->
+            <!-- 图标按钮：hover 放大 + 背景浮现 -->
             <Style x:Key="IconButton" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Width" Value="36"/>
-                <Setter Property="Height" Value="36"/>
+                <Setter Property="Width" Value="34"/>
+                <Setter Property="Height" Value="34"/>
                 <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Opacity" Value="0.8"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid x:Name="ButtonGrid" RenderTransformOrigin="0.5,0.5">
+                            <Grid x:Name="ButtonGrid" RenderTransformOrigin="0.5,0.5" Width="34" Height="34">
                                 <Grid.RenderTransform>
                                     <ScaleTransform ScaleX="1" ScaleY="1"/>
                                 </Grid.RenderTransform>
-                                <Border x:Name="ButtonBg" Background="Transparent" CornerRadius="6"/>
+                                <Ellipse x:Name="HoverBg" Fill="{StaticResource HoverBackground}" Width="34" Height="34" Opacity="0"/>
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
                             <ControlTemplate.Triggers>
-                                <EventTrigger RoutedEvent="MouseEnter">
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                To="1.2" Duration="0:0:0.12" EasingFunction="{StaticResource CircleEaseOut}"/>
-                                            <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                To="1.2" Duration="0:0:0.12" EasingFunction="{StaticResource CircleEaseOut}"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </EventTrigger>
-                                <EventTrigger RoutedEvent="MouseLeave">
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                To="1" Duration="0:0:0.15" EasingFunction="{StaticResource CircleEaseOut}"/>
-                                            <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                To="1" Duration="0:0:0.15" EasingFunction="{StaticResource CircleEaseOut}"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </EventTrigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Opacity" Value="1"/>
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                    To="1.2" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
+                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                    To="1.2" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
+                                                <DoubleAnimation Storyboard.TargetName="HoverBg"
+                                                    Storyboard.TargetProperty="Opacity"
+                                                    To="1" Duration="0:0:0.12"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                    To="1" Duration="0:0:0.18" EasingFunction="{StaticResource EaseOut}"/>
+                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                    To="1" Duration="0:0:0.18" EasingFunction="{StaticResource EaseOut}"/>
+                                                <DoubleAnimation Storyboard.TargetName="HoverBg"
+                                                    Storyboard.TargetProperty="Opacity"
+                                                    To="0" Duration="0:0:0.18"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.ExitActions>
+                                </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="ButtonBg" Property="Background" Value="{StaticResource PressedBackground}"/>
+                                    <Setter Property="Opacity" Value="0.6"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -70,10 +81,65 @@
                 </Setter>
             </Style>
 
-            <!-- 播放主按钮（更大） -->
-            <Style x:Key="PlayButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
-                <Setter Property="Width" Value="48"/>
-                <Setter Property="Height" Value="48"/>
+            <!-- 播放主按钮：比普通按钮大，透明背景 -->
+            <Style x:Key="PlayButton" TargetType="Button">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Width" Value="40"/>
+                <Setter Property="Height" Value="40"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Opacity" Value="0.85"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid x:Name="ButtonGrid" RenderTransformOrigin="0.5,0.5" Width="40" Height="40">
+                                <Grid.RenderTransform>
+                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                </Grid.RenderTransform>
+                                <Ellipse x:Name="HoverBg" Fill="{StaticResource HoverBackground}" Width="40" Height="40" Opacity="0"/>
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Opacity" Value="1"/>
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                    To="1.2" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
+                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                    To="1.2" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
+                                                <DoubleAnimation Storyboard.TargetName="HoverBg"
+                                                    Storyboard.TargetProperty="Opacity"
+                                                    To="1" Duration="0:0:0.12"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                    To="1" Duration="0:0:0.18" EasingFunction="{StaticResource EaseOut}"/>
+                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                    To="1" Duration="0:0:0.18" EasingFunction="{StaticResource EaseOut}"/>
+                                                <DoubleAnimation Storyboard.TargetName="HoverBg"
+                                                    Storyboard.TargetProperty="Opacity"
+                                                    To="0" Duration="0:0:0.18"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.ExitActions>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter Property="Opacity" Value="0.6"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
 
             <!-- 进度条已播放轨道 -->
@@ -84,7 +150,7 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="RepeatButton">
-                            <Border Background="{StaticResource AccentBlue}" Height="4" CornerRadius="2"/>
+                            <Border Background="{StaticResource AccentBlue}" Height="4" CornerRadius="2" VerticalAlignment="Center"/>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
@@ -98,13 +164,13 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="RepeatButton">
-                            <Border Background="#33FFFFFF" Height="4" CornerRadius="2"/>
+                            <Border Background="#33FFFFFF" Height="4" CornerRadius="2" VerticalAlignment="Center"/>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
             </Style>
 
-            <!-- 进度条 Thumb -->
+            <!-- 进度条 Thumb：平时显示，hover 放大 -->
             <Style x:Key="SliderThumb" TargetType="Thumb">
                 <Setter Property="Width" Value="12"/>
                 <Setter Property="Height" Value="12"/>
@@ -116,16 +182,16 @@
                                 <Grid.RenderTransform>
                                     <ScaleTransform ScaleX="1" ScaleY="1"/>
                                 </Grid.RenderTransform>
-                                <Ellipse x:Name="ThumbBg" Fill="{StaticResource TextPrimary}" Width="12" Height="12"/>
-                                <Ellipse x:Name="ThumbGlow" Fill="{StaticResource AccentBlue}" Width="12" Height="12" Opacity="0"/>
+                                <Ellipse x:Name="ThumbShadow" Fill="{StaticResource AccentBlue}" Width="14" Height="14" Opacity="0.25"/>
+                                <Ellipse x:Name="ThumbBg" Fill="White" Width="10" Height="10"/>
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="ThumbBg" Property="Width" Value="16"/>
-                                    <Setter TargetName="ThumbBg" Property="Height" Value="16"/>
-                                    <Setter TargetName="ThumbGlow" Property="Width" Value="16"/>
-                                    <Setter TargetName="ThumbGlow" Property="Height" Value="16"/>
-                                    <Setter TargetName="ThumbGlow" Property="Opacity" Value="0.4"/>
+                                    <Setter TargetName="ThumbBg" Property="Width" Value="12"/>
+                                    <Setter TargetName="ThumbBg" Property="Height" Value="12"/>
+                                    <Setter TargetName="ThumbShadow" Property="Width" Value="18"/>
+                                    <Setter TargetName="ThumbShadow" Property="Height" Value="18"/>
+                                    <Setter TargetName="ThumbShadow" Property="Opacity" Value="0.4"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -137,13 +203,15 @@
             <Style x:Key="ModernSlider" TargetType="Slider">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="Foreground" Value="{StaticResource AccentBlue}"/>
-                <Setter Property="Height" Value="20"/>
+                <Setter Property="Height" Value="18"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Slider">
-                            <Grid x:Name="GridRoot" VerticalAlignment="Center" Height="20">
-                                <Track x:Name="PART_Track" Height="4">
+                            <Grid x:Name="GridRoot" VerticalAlignment="Center" Height="18">
+                                <!-- 底层轨道背景 -->
+                                <Border Background="#33FFFFFF" Height="4" CornerRadius="2" VerticalAlignment="Center"/>
+                                <Track x:Name="PART_Track" VerticalAlignment="Center">
                                     <Track.DecreaseRepeatButton>
                                         <RepeatButton Style="{StaticResource SliderDecreaseButton}" Command="Slider.DecreaseLarge"/>
                                     </Track.DecreaseRepeatButton>
@@ -157,7 +225,7 @@
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="PART_Track" Property="Height" Value="6"/>
+                                    <Setter TargetName="PART_Track" Property="Height" Value="18"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>

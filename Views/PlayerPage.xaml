@@ -65,75 +65,76 @@
         </Border>
 
         <!-- 控制栏 -->
-        <Grid x:Name="ControlBar" Grid.Row="1" Grid.Column="0" Height="90">
+        <Grid x:Name="ControlBar" Grid.Row="1" Grid.Column="0" Height="68">
             <Grid.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                     <GradientStop Color="#000A0A0A" Offset="0"/>
-                    <GradientStop Color="#E60A0A0A" Offset="0.45"/>
-                    <GradientStop Color="#F20A0A0A" Offset="1"/>
+                    <GradientStop Color="#DD0A0A0A" Offset="0.5"/>
+                    <GradientStop Color="#EE0A0A0A" Offset="1"/>
                 </LinearGradientBrush>
             </Grid.Background>
 
-            <!-- 进度条 + 时间 -->
-            <Grid Margin="24,10,24,0" VerticalAlignment="Top" Height="32">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock x:Name="CurrentTimeText" Grid.Column="0" Text="00:00"
-                           Foreground="{StaticResource TextSecondary}" FontSize="12"
-                           VerticalAlignment="Center" Margin="0,0,12,0" FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif"/>
-                <Slider x:Name="ProgressSlider" Grid.Column="1"
+            <Grid Margin="16,6,16,0" VerticalAlignment="Top">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- 进度条：全宽居中 -->
+                <Slider x:Name="ProgressSlider" Grid.Row="0"
                         Style="{StaticResource ModernSlider}"
                         PreviewMouseDown="ProgressSlider_PreviewMouseDown"
                         PreviewMouseUp="ProgressSlider_PreviewMouseUp"
                         ValueChanged="ProgressSlider_ValueChanged"
-                        VerticalAlignment="Center"/>
-                <TextBlock x:Name="TotalTimeText" Grid.Column="2" Text="00:00"
-                           Foreground="{StaticResource TextSecondary}" FontSize="12"
-                           VerticalAlignment="Center" Margin="12,0,0,0" FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif"/>
-            </Grid>
+                        Margin="0,0,0,2"/>
 
-            <!-- 按钮行 -->
-            <Grid Margin="24,46,24,12" VerticalAlignment="Bottom">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+                <!-- 底部按钮行 -->
+                <Grid Grid.Row="1" Margin="0,4,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                <!-- 左侧播放控制 -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left">
-                    <Button x:Name="PreviousBtn" Style="{StaticResource IconButton}" Click="PreviousBtn_Click" ToolTip="上一集 (P)">
-                        <Image Source="/Resources/Icons/previous.png" Width="18" Height="18"/>
-                    </Button>
-                    <Button x:Name="PlayPauseBtn" Style="{StaticResource PlayButton}" Click="PlayPauseBtn_Click" Margin="8,0" ToolTip="播放/暂停 (Space)">
-                        <Image x:Name="PlayPauseIcon" Source="/Resources/Icons/play.png" Width="28" Height="28"/>
-                    </Button>
-                    <Button x:Name="NextBtn" Style="{StaticResource IconButton}" Click="NextBtn_Click" ToolTip="下一集 (N)">
-                        <Image Source="/Resources/Icons/next.png" Width="18" Height="18"/>
-                    </Button>
-                    <Button x:Name="StopBtn" Style="{StaticResource IconButton}" Click="StopBtn_Click" Margin="12,0,0,0" ToolTip="停止">
-                        <Image Source="/Resources/Icons/stop.png" Width="18" Height="18"/>
-                    </Button>
-                </StackPanel>
+                    <!-- 左侧：播放控制 + 时间 -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                        <Button x:Name="PreviousBtn" Style="{StaticResource IconButton}" Click="PreviousBtn_Click" ToolTip="上一集 (P)">
+                            <Image Source="/Resources/Icons/previous.png" Width="16" Height="16"/>
+                        </Button>
+                        <Button x:Name="PlayPauseBtn" Style="{StaticResource PlayButton}" Click="PlayPauseBtn_Click" Margin="4,0" ToolTip="播放/暂停 (Space)">
+                            <Image x:Name="PlayPauseIcon" Source="/Resources/Icons/play.png" Width="22" Height="22"/>
+                        </Button>
+                        <Button x:Name="NextBtn" Style="{StaticResource IconButton}" Click="NextBtn_Click" ToolTip="下一集 (N)">
+                            <Image Source="/Resources/Icons/next.png" Width="16" Height="16"/>
+                        </Button>
+                        <Button x:Name="StopBtn" Style="{StaticResource IconButton}" Click="StopBtn_Click" Margin="4,0,0,0" ToolTip="停止">
+                            <Image Source="/Resources/Icons/stop.png" Width="16" Height="16"/>
+                        </Button>
+                        <TextBlock x:Name="CurrentTimeText" Text="00:00"
+                                   Foreground="{StaticResource TextSecondary}" FontSize="11"
+                                   VerticalAlignment="Center" Margin="12,0,0,0" FontFamily="Segoe UI, Microsoft YaHei, sans-serif"/>
+                        <TextBlock Text=" / " Foreground="#66FFFFFF" FontSize="11"
+                                   VerticalAlignment="Center" Margin="2,0"/>
+                        <TextBlock x:Name="TotalTimeText" Text="00:00"
+                                   Foreground="{StaticResource TextSecondary}" FontSize="11"
+                                   VerticalAlignment="Center" FontFamily="Segoe UI, Microsoft YaHei, sans-serif"/>
+                    </StackPanel>
 
-                <!-- 右侧功能 -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button x:Name="VolumeBtn" Style="{StaticResource IconButton}" ToolTip="音量">
-                        <Image x:Name="VolumeIcon" Source="/Resources/Icons/volume.png" Width="20" Height="20"/>
-                    </Button>
-                    <Button x:Name="PlaylistToggleBtn" Style="{StaticResource IconButton}" Click="PlaylistToggleBtn_Click" Margin="8,0,0,0" ToolTip="播放列表">
-                        <Image Source="/Resources/Icons/playlist.png" Width="20" Height="20"/>
-                    </Button>
-                    <Button x:Name="FullscreenBtn" Style="{StaticResource IconButton}" Click="FullscreenBtn_Click" Margin="8,0,0,0" ToolTip="全屏 (F)">
-                        <Image x:Name="FullscreenIcon" Source="/Resources/Icons/fullScreen.png" Width="20" Height="20"/>
-                    </Button>
-                    <Button x:Name="BackBtn" Style="{StaticResource IconButton}" Click="BackBtn_Click" Margin="8,0,0,0" ToolTip="返回 (Esc)">
-                        <Image Source="/Resources/Icons/back.png" Width="20" Height="20"/>
-                    </Button>
-                </StackPanel>
+                    <!-- 中间留空，进度条已占满全宽 -->
+
+                    <!-- 右侧：菜单 + 全屏 -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button x:Name="PlaylistToggleBtn" Style="{StaticResource IconButton}" Click="PlaylistToggleBtn_Click" ToolTip="播放列表">
+                            <Image Source="/Resources/Icons/playlist.png" Width="18" Height="18"/>
+                        </Button>
+                        <Button x:Name="FullscreenBtn" Style="{StaticResource IconButton}" Click="FullscreenBtn_Click" Margin="4,0,0,0" ToolTip="全屏 (F)">
+                            <Image x:Name="FullscreenIcon" Source="/Resources/Icons/fullScreen.png" Width="18" Height="18"/>
+                        </Button>
+                        <Button x:Name="BackBtn" Style="{StaticResource IconButton}" Click="BackBtn_Click" Margin="4,0,0,0" ToolTip="返回 (Esc)">
+                            <Image Source="/Resources/Icons/back.png" Width="18" Height="18"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
             </Grid>
         </Grid>
     </Grid>
