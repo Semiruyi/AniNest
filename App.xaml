@@ -4,9 +4,166 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <ResourceDictionary>
-            <SolidColorBrush x:Key="BackgroundDark" Color="#FF141414"/>
-            <SolidColorBrush x:Key="SurfaceDark" Color="#FF1E1E1E"/>
-            <SolidColorBrush x:Key="AccentBlue" Color="#FF007ACC"/>
+            <!-- 核心颜色 -->
+            <SolidColorBrush x:Key="BackgroundDark" Color="#FF0A0A0A"/>
+            <SolidColorBrush x:Key="SurfaceDark" Color="#FF141414"/>
+            <SolidColorBrush x:Key="SurfaceLight" Color="#FF1E1E1E"/>
+            <SolidColorBrush x:Key="AccentBlue" Color="#FF3B82F6"/>
+            <SolidColorBrush x:Key="AccentBlueHover" Color="#FF60A5FA"/>
+            <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFFFF"/>
+            <SolidColorBrush x:Key="TextSecondary" Color="#99FFFFFF"/>
+            <SolidColorBrush x:Key="HoverBackground" Color="#22FFFFFF"/>
+            <SolidColorBrush x:Key="PressedBackground" Color="#33FFFFFF"/>
+
+            <!-- 动画缓动 -->
+            <CircleEase x:Key="CircleEaseOut" EasingMode="EaseOut"/>
+            <CircleEase x:Key="CircleEaseInOut" EasingMode="EaseInOut"/>
+
+            <!-- 图标按钮样式（通用） -->
+            <Style x:Key="IconButton" TargetType="Button">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Width" Value="36"/>
+                <Setter Property="Height" Value="36"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid x:Name="ButtonGrid" RenderTransformOrigin="0.5,0.5">
+                                <Grid.RenderTransform>
+                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                </Grid.RenderTransform>
+                                <Border x:Name="ButtonBg" Background="Transparent" CornerRadius="6"/>
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <EventTrigger RoutedEvent="MouseEnter">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                To="1.2" Duration="0:0:0.12" EasingFunction="{StaticResource CircleEaseOut}"/>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                To="1.2" Duration="0:0:0.12" EasingFunction="{StaticResource CircleEaseOut}"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="MouseLeave">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                To="1" Duration="0:0:0.15" EasingFunction="{StaticResource CircleEaseOut}"/>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                To="1" Duration="0:0:0.15" EasingFunction="{StaticResource CircleEaseOut}"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="ButtonBg" Property="Background" Value="{StaticResource PressedBackground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 播放主按钮（更大） -->
+            <Style x:Key="PlayButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
+                <Setter Property="Width" Value="48"/>
+                <Setter Property="Height" Value="48"/>
+            </Style>
+
+            <!-- 进度条已播放轨道 -->
+            <Style x:Key="SliderDecreaseButton" TargetType="RepeatButton">
+                <Setter Property="OverridesDefaultStyle" Value="true"/>
+                <Setter Property="IsTabStop" Value="false"/>
+                <Setter Property="Focusable" Value="false"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RepeatButton">
+                            <Border Background="{StaticResource AccentBlue}" Height="4" CornerRadius="2"/>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 进度条未播放轨道 -->
+            <Style x:Key="SliderIncreaseButton" TargetType="RepeatButton">
+                <Setter Property="OverridesDefaultStyle" Value="true"/>
+                <Setter Property="IsTabStop" Value="false"/>
+                <Setter Property="Focusable" Value="false"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RepeatButton">
+                            <Border Background="#33FFFFFF" Height="4" CornerRadius="2"/>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 进度条 Thumb -->
+            <Style x:Key="SliderThumb" TargetType="Thumb">
+                <Setter Property="Width" Value="12"/>
+                <Setter Property="Height" Value="12"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Thumb">
+                            <Grid x:Name="ThumbGrid" RenderTransformOrigin="0.5,0.5">
+                                <Grid.RenderTransform>
+                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                </Grid.RenderTransform>
+                                <Ellipse x:Name="ThumbBg" Fill="{StaticResource TextPrimary}" Width="12" Height="12"/>
+                                <Ellipse x:Name="ThumbGlow" Fill="{StaticResource AccentBlue}" Width="12" Height="12" Opacity="0"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="ThumbBg" Property="Width" Value="16"/>
+                                    <Setter TargetName="ThumbBg" Property="Height" Value="16"/>
+                                    <Setter TargetName="ThumbGlow" Property="Width" Value="16"/>
+                                    <Setter TargetName="ThumbGlow" Property="Height" Value="16"/>
+                                    <Setter TargetName="ThumbGlow" Property="Opacity" Value="0.4"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 现代进度条 -->
+            <Style x:Key="ModernSlider" TargetType="Slider">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="{StaticResource AccentBlue}"/>
+                <Setter Property="Height" Value="20"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Slider">
+                            <Grid x:Name="GridRoot" VerticalAlignment="Center" Height="20">
+                                <Track x:Name="PART_Track" Height="4">
+                                    <Track.DecreaseRepeatButton>
+                                        <RepeatButton Style="{StaticResource SliderDecreaseButton}" Command="Slider.DecreaseLarge"/>
+                                    </Track.DecreaseRepeatButton>
+                                    <Track.IncreaseRepeatButton>
+                                        <RepeatButton Style="{StaticResource SliderIncreaseButton}" Command="Slider.IncreaseLarge"/>
+                                    </Track.IncreaseRepeatButton>
+                                    <Track.Thumb>
+                                        <Thumb Style="{StaticResource SliderThumb}"/>
+                                    </Track.Thumb>
+                                </Track>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="PART_Track" Property="Height" Value="6"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

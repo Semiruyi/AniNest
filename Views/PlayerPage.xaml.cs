@@ -40,18 +40,27 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private WindowStyle savedWindowStyle;
     private ResizeMode savedResizeMode;
     private bool isFullscreen = false;
-    private DispatcherTimer? controlBarHideTimer;
 
     public event EventHandler? BackRequested;
 
     public PlayerPage()
     {
-        InitializeComponent();
+        try
+        {
+            Log("PlayerPage 构造函数开始");
+            InitializeComponent();
+            Log("InitializeComponent 完成");
+        }
+        catch (Exception ex)
+        {
+            Log($"PlayerPage 构造函数异常: {ex.GetType().Name}: {ex.Message}");
+            Log($"StackTrace: {ex.StackTrace}");
+            throw;
+        }
         Loaded += PlayerPage_Loaded;
         Unloaded += PlayerPage_Unloaded;
         GotKeyboardFocus += PlayerPage_GotKeyboardFocus;
         LostKeyboardFocus += PlayerPage_LostKeyboardFocus;
-        MouseMove += PlayerPage_MouseMove;
 
         saveProgressTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         saveProgressTimer.Tick += SaveProgressTimer_Tick;
@@ -73,7 +82,9 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     private void PlayerPage_Loaded(object sender, RoutedEventArgs e)
     {
-        Log("Loaded 事件触发");
+        try
+        {
+            Log("Loaded 事件触发");
 
         parentWindow = Window.GetWindow(this);
         Log($"获取父窗口: {parentWindow?.GetType().Name}");
@@ -94,7 +105,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         {
             Dispatcher.Invoke(() =>
             {
-                PlayPauseBtn.Content = "⏸";
+                PlayPauseIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
+                    new Uri("pack://application:,,,/Resources/Icons/pause.png"));
                 if (pendingSeek && pendingSeekTime > 0)
                 {
                     var seekTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
@@ -110,9 +122,17 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             });
         };
         mediaController.Paused += (s, ev) =>
-            Dispatcher.Invoke(() => PlayPauseBtn.Content = "▶");
+            Dispatcher.Invoke(() =>
+            {
+                PlayPauseIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
+                    new Uri("pack://application:,,,/Resources/Icons/play.png"));
+            });
         mediaController.Stopped += (s, ev) =>
-            Dispatcher.Invoke(() => PlayPauseBtn.Content = "▶");
+            Dispatcher.Invoke(() =>
+            {
+                PlayPauseIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
+                    new Uri("pack://application:,,,/Resources/Icons/play.png"));
+            });
         mediaController.ProgressUpdated += (s, ev) =>
         {
             if (!isProgressDragging)
@@ -129,14 +149,21 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         saveProgressTimer.Start();
 
-        if (pendingLoadFolderPath != null)
+            if (pendingLoadFolderPath != null)
+            {
+                var path = pendingLoadFolderPath;
+                var name = pendingLoadFolderName ?? "";
+                pendingLoadFolderPath = null;
+                pendingLoadFolderName = null;
+                Log("Loaded 后执行暂存的 LoadFolder");
+                LoadFolder(path, name);
+            }
+        }
+        catch (Exception ex)
         {
-            var path = pendingLoadFolderPath;
-            var name = pendingLoadFolderName ?? "";
-            pendingLoadFolderPath = null;
-            pendingLoadFolderName = null;
-            Log("Loaded 后执行暂存的 LoadFolder");
-            LoadFolder(path, name);
+            Log($"PlayerPage_Loaded 异常: {ex.GetType().Name}: {ex.Message}");
+            Log($"StackTrace: {ex.StackTrace}");
+            throw;
         }
     }
 
@@ -229,6 +256,24 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         Log("PlayPauseBtn 被点击");
         mediaController.TogglePlayPause();
+    }
+
+    private void PreviousBtn_Click(object sender, RoutedEventArgs e)
+    {
+        Log("PreviousBtn 被点击");
+        PlayPrevious();
+    }
+
+    private void NextBtn_Click(object sender, RoutedEventArgs e)
+    {
+        Log("NextBtn 被点击");
+        PlayNext();
+    }
+
+    private void FullscreenBtn_Click(object sender, RoutedEventArgs e)
+    {
+        Log("FullscreenBtn 被点击");
+        ToggleFullscreen();
     }
 
     private void StopBtn_Click(object sender, RoutedEventArgs e)
@@ -343,6 +388,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         PlaylistBorder.Visibility = Visibility.Collapsed;
         ControlBar.Visibility = Visibility.Collapsed;
+        FullscreenIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
+            new Uri("pack://application:,,,/Resources/Icons/exitFullScreen.png"));
 
         isFullscreen = true;
         Log("✓ 已进入全屏");
@@ -363,28 +410,12 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         PlaylistBorder.Visibility = Visibility.Visible;
         ControlBar.Visibility = Visibility.Visible;
+        FullscreenIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
+            new Uri("pack://application:,,,/Resources/Icons/fullScreen.png"));
 
         isFullscreen = false;
         Log("✓ 已退出全屏");
     }
-
-    private void PlayerPage_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        if (!isFullscreen) return;
-
-        ControlBar.Visibility = Visibility.Visible;
-
-        controlBarHideTimer?.Stop();
-        controlBarHideTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
-        controlBarHideTimer.Tick += (_, _) =>
-        {
-            ControlBar.Visibility = Visibility.Collapsed;
-            controlBarHideTimer?.Stop();
-        };
-        controlBarHideTimer.Start();
-    }
-
-
 
     private void VideoContainer_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
@@ -531,7 +562,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     public void Dispose()
     {
         saveProgressTimer.Stop();
-        controlBarHideTimer?.Stop();
         SaveCurrentProgress();
 
         mediaController.Dispose();
