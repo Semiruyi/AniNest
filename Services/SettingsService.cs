@@ -27,6 +27,11 @@ public class SettingsService
         Console.WriteLine($"[Settings] 路径: {settingsPath}");
     }
 
+    public void Reload()
+    {
+        settings = null;
+    }
+
     public AppSettings Load()
     {
         if (settings != null)

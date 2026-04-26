@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using LocalPlayer.Services;
@@ -8,13 +9,14 @@ namespace LocalPlayer.Views.Controls;
 public class PlaylistPanel : UserControl
 {
     private Panel? panel;
-    private ListBox? episodeList;
+    private Panel? buttonsPanel;
     private Button? backButton;
+    private readonly List<EpisodeButton> episodeButtons = new();
 
     private string[] videoFiles = Array.Empty<string>();
     private int lastSelectedIndex = -1;
     private bool suspendEpisodeEvent = false;
-    private SettingsService settingsService = new();
+    private readonly SettingsService settingsService = new();
 
     public event EventHandler? BackClicked;
     public event EventHandler<string>? EpisodeChanged;
@@ -50,69 +52,26 @@ public class PlaylistPanel : UserControl
         backButton.FlatAppearance.BorderSize = 0;
         backButton.Click += (s, e) => BackClicked?.Invoke(this, EventArgs.Empty);
 
-        episodeList = new ListBox
+        buttonsPanel = new Panel
         {
-            Location = new Point(10, 60),
-            Size = new Size(this.Width - 20, 400),
-            BackColor = Color.FromArgb(40, 40, 40),
-            ForeColor = Color.White,
-            Font = new Font("微软雅黑", 11),
-            BorderStyle = BorderStyle.None,
-            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
+            Location = new Point(0, 55),
+            Size = new Size(this.Width, this.Height - 55),
+            BackColor = Color.FromArgb(30, 30, 30),
+            AutoScroll = true
         };
-        episodeList.DrawMode = DrawMode.OwnerDrawFixed;
-        episodeList.DrawItem += EpisodeList_DrawItem;
-        episodeList.SelectedIndexChanged += EpisodeList_SelectedIndexChanged;
 
         panel.Controls.Add(backButton);
-        panel.Controls.Add(episodeList);
+        panel.Controls.Add(buttonsPanel);
         this.Controls.Add(panel);
 
         this.Resize += PlaylistPanel_Resize;
     }
 
-    private void EpisodeList_DrawItem(object? sender, DrawItemEventArgs e)
-    {
-        if (episodeList == null || e.Index < 0 || e.Index >= videoFiles.Length)
-            return;
-
-        e.DrawBackground();
-
-        string filePath = videoFiles[e.Index];
-        bool isPlayed = settingsService.IsVideoPlayed(filePath);
-        bool isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
-
-        // 背景色
-        Color backColor = isSelected ? Color.FromArgb(0, 122, 204) : Color.FromArgb(40, 40, 40);
-        using (var brush = new SolidBrush(backColor))
-        {
-            e.Graphics.FillRectangle(brush, e.Bounds);
-        }
-
-        // 文字颜色
-        Color textColor = isSelected ? Color.White : (isPlayed ? Color.FromArgb(160, 160, 160) : Color.White);
-        using (var brush = new SolidBrush(textColor))
-        {
-            string text = episodeList.Items[e.Index]?.ToString() ?? "";
-            var rect = new Rectangle(e.Bounds.X + 5, e.Bounds.Y, e.Bounds.Width - 10, e.Bounds.Height);
-            e.Graphics.DrawString(text, e.Font ?? episodeList.Font, brush, rect);
-        }
-
-        // 播放过标记（小圆点）
-        if (isPlayed && !isSelected)
-        {
-            using var brush = new SolidBrush(Color.FromArgb(100, 180, 255));
-            e.Graphics.FillEllipse(brush, e.Bounds.X + e.Bounds.Width - 18, e.Bounds.Y + (e.Bounds.Height - 8) / 2, 8, 8);
-        }
-
-        e.DrawFocusRectangle();
-    }
-
     private void PlaylistPanel_Resize(object? sender, EventArgs e)
     {
-        if (episodeList != null)
+        if (buttonsPanel != null)
         {
-            episodeList.Height = this.Height - 120;
+            buttonsPanel.Size = new Size(this.Width, this.Height - 55);
         }
     }
 
@@ -123,42 +82,110 @@ public class PlaylistPanel : UserControl
         videoFiles = VideoScanner.GetVideoFiles(folderPath);
         Console.WriteLine($"[PlaylistPanel] 找到 {videoFiles.Length} 个视频文件");
 
-        suspendEpisodeEvent = true;
-        episodeList!.Items.Clear();
+        // 清除旧按钮
+        foreach (var btn in episodeButtons)
+        {
+            btn.Dispose();
+        }
+        episodeButtons.Clear();
+
+        const int buttonSize = 60;
+        const int gap = 8;
+        const int padding = 10;
+        const int buttonsPerRow = 4;
+
         for (int i = 0; i < videoFiles.Length; i++)
         {
-            string fileName = Path.GetFileNameWithoutExtension(videoFiles[i]);
-            episodeList.Items.Add($"{i + 1:00}. {fileName}");
+            int row = i / buttonsPerRow;
+            int col = i % buttonsPerRow;
+            int x = padding + col * (buttonSize + gap);
+            int y = padding + row * (buttonSize + gap);
+
+            var btn = new EpisodeButton
+            {
+                EpisodeIndex = i + 1,
+                FilePath = videoFiles[i],
+                PlayState = settingsService.IsVideoPlayed(videoFiles[i])
+                    ? EpisodePlayState.Played
+                    : EpisodePlayState.Unplayed
+            };
+            btn.SetNormalBounds(new Rectangle(x, y, buttonSize, buttonSize));
+            btn.MouseClick += EpisodeButton_Click;
+
+            buttonsPanel?.Controls.Add(btn);
+            episodeButtons.Add(btn);
         }
+
         lastSelectedIndex = -1;
-        suspendEpisodeEvent = false;
+    }
+
+    private void EpisodeButton_Click(object? sender, MouseEventArgs e)
+    {
+        if (sender is not EpisodeButton btn || suspendEpisodeEvent) return;
+
+        int index = episodeButtons.IndexOf(btn);
+        if (index < 0) return;
+
+        if (index == lastSelectedIndex)
+        {
+            Console.WriteLine($"[PlaylistPanel] 索引未变化，仍为第 {index + 1} 集");
+            return;
+        }
+
+        // 重新加载设置，确保获取其他组件（如 PlayerPage）更新后的播放状态
+        settingsService.Reload();
+
+        // 把之前正在播放的按钮恢复为对应状态
+        if (lastSelectedIndex >= 0 && lastSelectedIndex < episodeButtons.Count)
+        {
+            var prevBtn = episodeButtons[lastSelectedIndex];
+            bool wasPlayed = settingsService.IsVideoPlayed(prevBtn.FilePath);
+            prevBtn.PlayState = wasPlayed ? EpisodePlayState.Played : EpisodePlayState.Unplayed;
+        }
+
+        // 新按钮设为播放中
+        btn.PlayState = EpisodePlayState.Playing;
+
+        Console.WriteLine($"[PlaylistPanel] 集数变化: 第 {lastSelectedIndex + 1} 集 -> 第 {index + 1} 集");
+        Console.WriteLine($"[PlaylistPanel] 切换到第 {index + 1} 集: {Path.GetFileName(videoFiles[index])}");
+
+        // 必须先更新 lastSelectedIndex，再触发事件！
+        // 因为外部 handler 可能调用 RefreshPlayStatus，它会依赖 lastSelectedIndex
+        lastSelectedIndex = index;
+        EpisodeChanged?.Invoke(this, videoFiles[index]);
     }
 
     public void SelectVideo(string? videoPath)
     {
-        if (episodeList == null) return;
-
         suspendEpisodeEvent = true;
 
-        if (string.IsNullOrEmpty(videoPath))
+        // 重置所有按钮状态
+        foreach (var btn in episodeButtons)
         {
-            if (videoFiles.Length > 0)
-                episodeList.SelectedIndex = 0;
-        }
-        else
-        {
-            int index = Array.IndexOf(videoFiles, videoPath);
-            if (index >= 0)
-            {
-                episodeList.SelectedIndex = index;
-            }
-            else if (videoFiles.Length > 0)
-            {
-                episodeList.SelectedIndex = 0;
-            }
+            bool isPlayed = settingsService.IsVideoPlayed(btn.FilePath);
+            btn.PlayState = isPlayed ? EpisodePlayState.Played : EpisodePlayState.Unplayed;
         }
 
-        lastSelectedIndex = episodeList.SelectedIndex;
+        if (!string.IsNullOrEmpty(videoPath))
+        {
+            int index = Array.IndexOf(videoFiles, videoPath);
+            if (index >= 0 && index < episodeButtons.Count)
+            {
+                episodeButtons[index].PlayState = EpisodePlayState.Playing;
+                lastSelectedIndex = index;
+            }
+            else if (episodeButtons.Count > 0)
+            {
+                episodeButtons[0].PlayState = EpisodePlayState.Playing;
+                lastSelectedIndex = 0;
+            }
+        }
+        else if (episodeButtons.Count > 0)
+        {
+            episodeButtons[0].PlayState = EpisodePlayState.Playing;
+            lastSelectedIndex = 0;
+        }
+
         suspendEpisodeEvent = false;
     }
 
@@ -168,30 +195,30 @@ public class PlaylistPanel : UserControl
     {
         get
         {
-            if (episodeList == null || episodeList.SelectedIndex < 0) return null;
-            return videoFiles[episodeList.SelectedIndex];
+            if (lastSelectedIndex < 0 || lastSelectedIndex >= videoFiles.Length) return null;
+            return videoFiles[lastSelectedIndex];
         }
     }
 
     public void PlayNext()
     {
-        if (episodeList == null || episodeList.Items.Count == 0) return;
+        if (episodeButtons.Count == 0) return;
 
-        int nextIndex = episodeList.SelectedIndex + 1;
-        if (nextIndex < episodeList.Items.Count)
+        int nextIndex = lastSelectedIndex + 1;
+        if (nextIndex < episodeButtons.Count)
         {
-            episodeList.SelectedIndex = nextIndex;
+            EpisodeButton_Click(episodeButtons[nextIndex], new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
         }
     }
 
     public void PlayPrevious()
     {
-        if (episodeList == null || episodeList.Items.Count == 0) return;
+        if (episodeButtons.Count == 0) return;
 
-        int prevIndex = episodeList.SelectedIndex - 1;
+        int prevIndex = lastSelectedIndex - 1;
         if (prevIndex >= 0)
         {
-            episodeList.SelectedIndex = prevIndex;
+            EpisodeButton_Click(episodeButtons[prevIndex], new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
         }
     }
 
@@ -202,33 +229,21 @@ public class PlaylistPanel : UserControl
 
     public void RefreshPlayStatus()
     {
-        episodeList?.Invalidate();
-    }
+        // 重新加载设置，确保获取 PlayerPage 更新后的播放状态
+        settingsService.Reload();
 
-    private void EpisodeList_SelectedIndexChanged(object? sender, EventArgs e)
-    {
-        if (episodeList == null || suspendEpisodeEvent) return;
-
-        int currentIndex = episodeList.SelectedIndex;
-
-        if (currentIndex == lastSelectedIndex)
+        for (int i = 0; i < episodeButtons.Count; i++)
         {
-            Console.WriteLine($"[PlaylistPanel] 索引未变化，仍为第 {currentIndex + 1} 集");
-            return;
-        }
-
-        Console.WriteLine($"[PlaylistPanel] 集数变化: 第 {lastSelectedIndex + 1} 集 -> 第 {currentIndex + 1} 集");
-
-        if (currentIndex >= 0 && currentIndex < videoFiles.Length)
-        {
-            string fileName = Path.GetFileName(videoFiles[currentIndex]);
-            Console.WriteLine($"[PlaylistPanel] 切换到第 {currentIndex + 1} 集: {fileName}");
-            EpisodeChanged?.Invoke(this, videoFiles[currentIndex]);
-            lastSelectedIndex = currentIndex;
-        }
-        else
-        {
-            Console.WriteLine($"[PlaylistPanel] 无效的索引: {currentIndex}");
+            var btn = episodeButtons[i];
+            if (i == lastSelectedIndex)
+            {
+                btn.PlayState = EpisodePlayState.Playing;
+            }
+            else
+            {
+                bool isPlayed = settingsService.IsVideoPlayed(btn.FilePath);
+                btn.PlayState = isPlayed ? EpisodePlayState.Played : EpisodePlayState.Unplayed;
+            }
         }
     }
 }
