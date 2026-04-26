@@ -16,7 +16,6 @@ public class PlayerPage : UserControl
 
     // 控制栏
     private PotPlayerControlBar? controlBar;
-    private System.Windows.Forms.Timer? hideControlBarTimer;
 
     private readonly MediaPlayerController mediaController = new();
     private readonly FullscreenManager fullscreenManager = new();
@@ -38,7 +37,6 @@ public class PlayerPage : UserControl
         SetupControlBar();
         SetupUI();
         SetupVLC();
-        SetupTimers();
         SetupFullscreenManager();
         SetupInputHandler();
         SetupMouseDetection();
@@ -92,11 +90,11 @@ public class PlayerPage : UserControl
             Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
         };
 
-        controlBar.PlayPauseClicked += (s, e) => { mediaController.TogglePlayPause(); ShowControlBar(); };
-        controlBar.StopClicked += (s, e) => { mediaController.Stop(); ShowControlBar(); };
-        controlBar.PreviousClicked += (s, e) => { playlistPanel?.PlayPrevious(); ShowControlBar(); };
-        controlBar.NextClicked += (s, e) => { playlistPanel?.PlayNext(); ShowControlBar(); };
-        controlBar.FullscreenClicked += (s, e) => fullscreenManager.ToggleFullscreen(videoContainer!, ShowControlBar);
+        controlBar.PlayPauseClicked += (s, e) => mediaController.TogglePlayPause();
+        controlBar.StopClicked += (s, e) => mediaController.Stop();
+        controlBar.PreviousClicked += (s, e) => playlistPanel?.PlayPrevious();
+        controlBar.NextClicked += (s, e) => playlistPanel?.PlayNext();
+        controlBar.FullscreenClicked += (s, e) => fullscreenManager.ToggleFullscreen(videoContainer!);
         controlBar.SettingsClicked += (s, e) => Console.WriteLine("[控制栏] 设置按钮点击");
         controlBar.PlaylistClicked += (s, e) =>
         {
@@ -157,92 +155,30 @@ public class PlayerPage : UserControl
         };
         fullscreenManager.Exited += (s, e) =>
         {
-            if (controlBar != null) controlBar.Visible = true;
             Cursor.Show();
         };
     }
 
     private void SetupInputHandler()
     {
-        inputHandler.TogglePlayPause += (s, e) => { mediaController.TogglePlayPause(); ShowControlBar(); };
-        inputHandler.SeekForward += (s, e) => { mediaController.SeekForward(5000); ShowControlBar(); };
-        inputHandler.SeekBackward += (s, e) => { mediaController.SeekBackward(5000); ShowControlBar(); };
-        inputHandler.ToggleFullscreen += (s, e) => fullscreenManager.ToggleFullscreen(videoContainer!, ShowControlBar);
+        inputHandler.TogglePlayPause += (s, e) => mediaController.TogglePlayPause();
+        inputHandler.SeekForward += (s, e) => mediaController.SeekForward(5000);
+        inputHandler.SeekBackward += (s, e) => mediaController.SeekBackward(5000);
+        inputHandler.ToggleFullscreen += (s, e) => fullscreenManager.ToggleFullscreen(videoContainer!);
         inputHandler.ExitFullscreen += (s, e) => fullscreenManager.ExitFullscreen();
         inputHandler.Back += (s, e) => BackRequested?.Invoke(this, EventArgs.Empty);
-        inputHandler.NextEpisode += (s, e) => { playlistPanel?.PlayNext(); ShowControlBar(); };
-        inputHandler.PreviousEpisode += (s, e) => { playlistPanel?.PlayPrevious(); ShowControlBar(); };
-    }
-
-    private void SetupTimers()
-    {
-        hideControlBarTimer = new System.Windows.Forms.Timer { Interval = 3000 };
-        hideControlBarTimer.Tick += HideControlBarTimer_Tick;
+        inputHandler.NextEpisode += (s, e) => playlistPanel?.PlayNext();
+        inputHandler.PreviousEpisode += (s, e) => playlistPanel?.PlayPrevious();
     }
 
     private void SetupMouseDetection()
     {
         if (videoContainer != null)
         {
-            videoContainer.MouseClick += (s, e) => ShowControlBar();
             videoContainer.MouseDoubleClick += (s, e) => mediaController.TogglePlayPause();
-            videoContainer.MouseMove += (s, e) => ShowControlBar();
         }
-
-        this.MouseMove += PlayerPage_MouseMove;
 
         Console.WriteLine("[鼠标检测] 事件绑定完成");
-    }
-
-    private void PlayerPage_MouseMove(object? sender, MouseEventArgs e)
-    {
-        if (controlBar != null && e.Y > this.ClientSize.Height - 100)
-        {
-            ShowControlBar();
-        }
-    }
-
-    private void HideControlBarTimer_Tick(object? sender, EventArgs e)
-    {
-        if (controlBar != null && controlBar.Visible)
-        {
-            Point mousePos = controlBar.PointToClient(Cursor.Position);
-            bool isMouseOverControlBar = controlBar.ClientRectangle.Contains(mousePos);
-
-            bool isMouseNearBottom = false;
-            if (videoContainer != null)
-            {
-                Point containerMousePos = videoContainer.PointToClient(Cursor.Position);
-                isMouseNearBottom = containerMousePos.Y > videoContainer.Height - 100;
-            }
-
-            if (!isMouseOverControlBar && !isMouseNearBottom && !controlBar.IsProgressDragging)
-            {
-                controlBar.Visible = false;
-
-                if (fullscreenManager.IsFullscreen)
-                {
-                    Cursor.Hide();
-                }
-            }
-        }
-        hideControlBarTimer?.Stop();
-    }
-
-    private void ShowControlBar()
-    {
-        if (controlBar != null && !controlBar.Visible)
-        {
-            controlBar.Visible = true;
-            Cursor.Show();
-        }
-        StartHideTimer();
-    }
-
-    private void StartHideTimer()
-    {
-        hideControlBarTimer?.Stop();
-        hideControlBarTimer?.Start();
     }
 
     private void PlayerPage_Resize(object? sender, EventArgs e)
@@ -291,9 +227,6 @@ public class PlayerPage : UserControl
     protected override void OnHandleDestroyed(EventArgs e)
     {
         Console.WriteLine("[PlayerPage] 正在销毁资源...");
-
-        hideControlBarTimer?.Stop();
-        hideControlBarTimer?.Dispose();
 
         fullscreenManager.Dispose();
         mediaController.Dispose();

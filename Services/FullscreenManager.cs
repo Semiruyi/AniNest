@@ -20,7 +20,7 @@ public class FullscreenManager : IDisposable
     public event EventHandler<KeyEventArgs>? KeyDown;
     public event EventHandler? Exited;
 
-    public void EnterFullscreen(Control videoContainer, Action showControlBarAction)
+    public void EnterFullscreen(Control videoContainer)
     {
         if (IsFullscreen || videoContainer == null) return;
 
@@ -46,13 +46,6 @@ public class FullscreenManager : IDisposable
         };
 
         fullscreenForm.KeyDown += FullscreenForm_KeyDown;
-        fullscreenForm.MouseMove += (s, e) =>
-        {
-            if (e.Y > fullscreenForm.ClientSize.Height - 100)
-            {
-                showControlBarAction?.Invoke();
-            }
-        };
 
         originalParent.Controls.Remove(videoContainer);
         fullscreenForm.Controls.Add(videoContainer);
@@ -103,10 +96,10 @@ public class FullscreenManager : IDisposable
         Console.WriteLine("[FullscreenManager] ✓ 已退出全屏");
     }
 
-    public void ToggleFullscreen(Control videoContainer, Action showControlBarAction)
+    public void ToggleFullscreen(Control videoContainer)
     {
         if (!IsFullscreen)
-            EnterFullscreen(videoContainer, showControlBarAction);
+            EnterFullscreen(videoContainer);
         else
             ExitFullscreen();
     }
