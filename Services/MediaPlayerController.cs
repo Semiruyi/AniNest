@@ -8,6 +8,17 @@ namespace LocalPlayer.Services;
 
 public class MediaPlayerController : IDisposable
 {
+    private static readonly string LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "player.log");
+
+    private static void Log(string message)
+    {
+        try
+        {
+            File.AppendAllText(LogFile, $"[{DateTime.Now:HH:mm:ss.fff}] [MediaPlayerController] {message}{Environment.NewLine}");
+        }
+        catch { }
+    }
+
     private LibVLC? libVLC;
     private MediaPlayer? mediaPlayer;
     private DispatcherTimer? updateTimer;
@@ -24,13 +35,26 @@ public class MediaPlayerController : IDisposable
 
     public void Initialize(VideoView videoView)
     {
-        libVLC = new LibVLC();
-        mediaPlayer = new MediaPlayer(libVLC);
-        videoView.MediaPlayer = mediaPlayer;
+        try
+        {
+            Log("开始初始化 LibVLC...");
+            libVLC = new LibVLC();
+            Log("LibVLC 创建成功");
+            mediaPlayer = new MediaPlayer(libVLC);
+            Log("MediaPlayer 创建成功");
+            videoView.MediaPlayer = mediaPlayer;
+            Log("VideoView 已关联 MediaPlayer");
+        }
+        catch (Exception ex)
+        {
+            Log($"初始化失败: {ex.Message}");
+            Log($"异常堆栈: {ex.StackTrace}");
+            throw;
+        }
 
         mediaPlayer.Playing += (s, e) =>
         {
-            Console.WriteLine("[MediaPlayerController] Playing 事件触发");
+            Log("Playing 事件触发");
             Playing?.Invoke(this, EventArgs.Empty);
         };
         mediaPlayer.Paused += (s, e) => Paused?.Invoke(this, EventArgs.Empty);
@@ -40,7 +64,7 @@ public class MediaPlayerController : IDisposable
         updateTimer.Tick += UpdateTimer_Tick;
         updateTimer.Start();
 
-        Console.WriteLine("[MediaPlayerController] VLC 初始化完成");
+        Log("VLC 初始化完成");
     }
 
     private void UpdateTimer_Tick(object? sender, EventArgs e)
@@ -56,13 +80,19 @@ public class MediaPlayerController : IDisposable
 
     public void Play(string filePath)
     {
-        if (mediaPlayer == null || libVLC == null) return;
+        Log($"Play 被调用: {filePath}");
+        if (mediaPlayer == null || libVLC == null)
+        {
+            Log($"Play 提前返回，mediaPlayer={mediaPlayer}, libVLC={libVLC}");
+            return;
+        }
 
-        Console.WriteLine($"[MediaPlayerController] 开始播放: {Path.GetFileName(filePath)}");
+        Log($"开始播放: {Path.GetFileName(filePath)}");
         CurrentFilePath = filePath;
 
         var media = new Media(libVLC, filePath);
-        mediaPlayer.Play(media);
+        bool result = mediaPlayer.Play(media);
+        Log($"mediaPlayer.Play 返回: {result}");
     }
 
     public void TogglePlayPause()

@@ -10,6 +10,17 @@ namespace LocalPlayer.Views;
 
 public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposable
 {
+    private static readonly string LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "player.log");
+
+    private static void Log(string message)
+    {
+        try
+        {
+            File.AppendAllText(LogFile, $"[{DateTime.Now:HH:mm:ss.fff}] [PlayerPage] {message}{Environment.NewLine}");
+        }
+        catch { }
+    }
+
     private readonly MediaPlayerController mediaController = new();
     private readonly SettingsService settingsService = new();
     private readonly DispatcherTimer saveProgressTimer;
@@ -17,6 +28,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private string currentFolderPath = "";
     private string currentFolderName = "";
     private string[] videoFiles = Array.Empty<string>();
+    private string? pendingLoadFolderPath;
+    private string? pendingLoadFolderName;
     private bool isProgressDragging = false;
     private bool pendingSeek = false;
     private long pendingSeekTime = 0;
@@ -35,6 +48,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     private void PlayerPage_Loaded(object sender, RoutedEventArgs e)
     {
+        Log("Loaded 事件触发");
         mediaController.Initialize(VideoView);
         mediaController.Playing += (s, ev) =>
         {
@@ -74,6 +88,16 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         };
 
         saveProgressTimer.Start();
+
+        if (pendingLoadFolderPath != null)
+        {
+            var path = pendingLoadFolderPath;
+            var name = pendingLoadFolderName ?? "";
+            pendingLoadFolderPath = null;
+            pendingLoadFolderName = null;
+            Log("Loaded 后执行暂存的 LoadFolder");
+            LoadFolder(path, name);
+        }
     }
 
     private void PlayerPage_Unloaded(object sender, RoutedEventArgs e)
@@ -83,10 +107,25 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     public void LoadFolder(string folderPath, string folderName)
     {
+        Log($"LoadFolder 被调用: {folderPath}, IsLoaded={IsLoaded}");
+
+        if (!IsLoaded)
+        {
+            pendingLoadFolderPath = folderPath;
+            pendingLoadFolderName = folderName;
+            Log("页面尚未 Loaded，暂存文件夹信息");
+            return;
+        }
+
         currentFolderPath = folderPath;
         currentFolderName = folderName;
 
         videoFiles = VideoScanner.GetVideoFiles(folderPath);
+        Log($"扫描到 {videoFiles.Length} 个视频文件");
+        foreach (var f in videoFiles)
+        {
+            Log($"  - {f}");
+        }
         PlaylistBox.Items.Clear();
         foreach (var file in videoFiles)
         {
@@ -126,6 +165,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     private void PlayVideo(string filePath)
     {
+        Log($"PlayVideo 被调用: {filePath}");
         long startTime = 0;
         var progress = settingsService.GetVideoProgress(filePath);
         if (progress != null)
