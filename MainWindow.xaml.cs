@@ -1,5 +1,7 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using LocalPlayer.Views;
 
 namespace LocalPlayer;
@@ -16,8 +18,22 @@ public partial class MainWindow : Window
         KeyDown += MainWindow_KeyDown;
     }
 
+    private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+    private const int DWMWA_CAPTION_COLOR = 35;
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(nint hwnd, int attr, ref int attrValue, int attrSize);
+
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
+        nint hwnd = new WindowInteropHelper(this).Handle;
+
+        int darkMode = 1;
+        DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref darkMode, sizeof(int));
+
+        int captionColor = 0x00000000;
+        DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, ref captionColor, sizeof(int));
+
         ShowMainPage();
     }
 
