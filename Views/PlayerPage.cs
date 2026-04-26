@@ -11,22 +11,16 @@ namespace LocalPlayer.Views;
 public class PlayerPage : UserControl
 {
     private VideoView? videoView;
-    private Panel? rightPanel;
-    private ListBox? episodeList;
-    private Button? backButton;
+    private Panel? videoContainer;
+    private PlaylistPanel? playlistPanel;
 
     // 控制栏
     private PotPlayerControlBar? controlBar;
     private System.Windows.Forms.Timer? hideControlBarTimer;
 
-    private Panel? videoContainer;
-
     private readonly MediaPlayerController mediaController = new();
     private readonly FullscreenManager fullscreenManager = new();
-
-    private string[] videoFiles = Array.Empty<string>();
-    private string currentFolderPath = "";
-    private int lastSelectedIndex = -1;
+    private readonly PlayerInputHandler inputHandler = new();
 
     public event EventHandler? BackRequested;
     public event KeyEventHandler? KeyDownHandler;
@@ -46,6 +40,7 @@ public class PlayerPage : UserControl
         SetupVLC();
         SetupTimers();
         SetupFullscreenManager();
+        SetupInputHandler();
         SetupMouseDetection();
 
         Console.WriteLine("[PlayerPage] 初始化完成");
@@ -68,44 +63,12 @@ public class PlayerPage : UserControl
         videoContainer.Controls.Add(videoView);
         videoView.Dock = DockStyle.Fill;
 
-        rightPanel = new Panel
-        {
-            Dock = DockStyle.Right,
-            Width = 300,
-            BackColor = Color.FromArgb(30, 30, 30)
-        };
-
-        backButton = new Button
-        {
-            Text = "← 返回",
-            Font = new Font("微软雅黑", 12),
-            ForeColor = Color.White,
-            BackColor = Color.FromArgb(0, 122, 204),
-            FlatStyle = FlatStyle.Flat,
-            Location = new Point(10, 10),
-            Size = new Size(100, 35),
-            Cursor = Cursors.Hand
-        };
-        backButton.FlatAppearance.BorderSize = 0;
-        backButton.Click += (s, e) => BackRequested?.Invoke(this, EventArgs.Empty);
-
-        episodeList = new ListBox
-        {
-            Location = new Point(10, 60),
-            Size = new Size(rightPanel.Width - 20, 400),
-            BackColor = Color.FromArgb(40, 40, 40),
-            ForeColor = Color.White,
-            Font = new Font("微软雅黑", 11),
-            BorderStyle = BorderStyle.None,
-            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-        };
-        episodeList.SelectedIndexChanged += EpisodeList_SelectedIndexChanged;
-
-        rightPanel.Controls.Add(backButton);
-        rightPanel.Controls.Add(episodeList);
+        playlistPanel = new PlaylistPanel();
+        playlistPanel.BackClicked += (s, e) => BackRequested?.Invoke(this, EventArgs.Empty);
+        playlistPanel.EpisodeChanged += (s, filePath) => mediaController.Play(filePath);
 
         this.Controls.Add(videoContainer);
-        this.Controls.Add(rightPanel);
+        this.Controls.Add(playlistPanel);
 
         if (controlBar != null)
         {
@@ -131,17 +94,14 @@ public class PlayerPage : UserControl
 
         controlBar.PlayPauseClicked += (s, e) => { mediaController.TogglePlayPause(); ShowControlBar(); };
         controlBar.StopClicked += (s, e) => { mediaController.Stop(); ShowControlBar(); };
-        controlBar.PreviousClicked += (s, e) => { PlayPreviousEpisode(); ShowControlBar(); };
-        controlBar.NextClicked += (s, e) => { PlayNextEpisode(); ShowControlBar(); };
+        controlBar.PreviousClicked += (s, e) => { playlistPanel?.PlayPrevious(); ShowControlBar(); };
+        controlBar.NextClicked += (s, e) => { playlistPanel?.PlayNext(); ShowControlBar(); };
         controlBar.FullscreenClicked += (s, e) => fullscreenManager.ToggleFullscreen(videoContainer!, ShowControlBar);
         controlBar.SettingsClicked += (s, e) => Console.WriteLine("[控制栏] 设置按钮点击");
         controlBar.PlaylistClicked += (s, e) =>
         {
-            if (rightPanel != null)
-            {
-                rightPanel.Visible = !rightPanel.Visible;
-                PlayerPage_Resize(this, EventArgs.Empty);
-            }
+            playlistPanel?.ToggleVisibility();
+            PlayerPage_Resize(this, EventArgs.Empty);
         };
         controlBar.ProgressChanged += (s, e) => mediaController.SeekTo(e.NewTime);
     }
@@ -193,7 +153,6 @@ public class PlayerPage : UserControl
                     e.Handled = true;
                     e.SuppressKeyPress = true;
                     break;
-
             }
         };
         fullscreenManager.Exited += (s, e) =>
@@ -201,6 +160,18 @@ public class PlayerPage : UserControl
             if (controlBar != null) controlBar.Visible = true;
             Cursor.Show();
         };
+    }
+
+    private void SetupInputHandler()
+    {
+        inputHandler.TogglePlayPause += (s, e) => { mediaController.TogglePlayPause(); ShowControlBar(); };
+        inputHandler.SeekForward += (s, e) => { mediaController.SeekForward(5000); ShowControlBar(); };
+        inputHandler.SeekBackward += (s, e) => { mediaController.SeekBackward(5000); ShowControlBar(); };
+        inputHandler.ToggleFullscreen += (s, e) => fullscreenManager.ToggleFullscreen(videoContainer!, ShowControlBar);
+        inputHandler.ExitFullscreen += (s, e) => fullscreenManager.ExitFullscreen();
+        inputHandler.Back += (s, e) => BackRequested?.Invoke(this, EventArgs.Empty);
+        inputHandler.NextEpisode += (s, e) => { playlistPanel?.PlayNext(); ShowControlBar(); };
+        inputHandler.PreviousEpisode += (s, e) => { playlistPanel?.PlayPrevious(); ShowControlBar(); };
     }
 
     private void SetupTimers()
@@ -280,81 +251,22 @@ public class PlayerPage : UserControl
         {
             if (videoContainer != null)
             {
-                int rightWidth = rightPanel?.Visible == true ? rightPanel.Width : 0;
+                int rightWidth = playlistPanel?.Visible == true ? playlistPanel.Width : 0;
                 videoContainer.Size = new Size(this.ClientSize.Width - rightWidth, this.ClientSize.Height);
                 videoContainer.Location = new Point(0, 0);
             }
 
-            if (rightPanel != null)
+            if (playlistPanel != null)
             {
-                rightPanel.Height = this.ClientSize.Height;
-                rightPanel.Location = new Point(this.ClientSize.Width - rightPanel.Width, 0);
-                if (episodeList != null)
-                {
-                    episodeList.Height = rightPanel.Height - 120;
-                }
+                playlistPanel.Height = this.ClientSize.Height;
+                playlistPanel.Location = new Point(this.ClientSize.Width - playlistPanel.Width, 0);
             }
         }
     }
 
     public void HandleKeyDown(KeyEventArgs e)
     {
-        if (IsFunctionKey(e.KeyCode))
-        {
-            Console.WriteLine($"[PlayerPage] 处理按键: {e.KeyCode}");
-        }
-
-        bool handled = true;
-
-        switch (e.KeyCode)
-        {
-            case Keys.Space:
-                mediaController.TogglePlayPause();
-                ShowControlBar();
-                break;
-            case Keys.Left:
-                mediaController.SeekBackward(5000);
-                ShowControlBar();
-                break;
-            case Keys.Right:
-                mediaController.SeekForward(5000);
-                ShowControlBar();
-                break;
-
-            case Keys.F:
-                fullscreenManager.ToggleFullscreen(videoContainer!, ShowControlBar);
-                break;
-            case Keys.Escape:
-                if (fullscreenManager.IsFullscreen)
-                    fullscreenManager.ExitFullscreen();
-                else
-                    BackRequested?.Invoke(this, EventArgs.Empty);
-                break;
-
-            case Keys.J:
-                mediaController.SeekBackward(10000);
-                ShowControlBar();
-                break;
-            case Keys.L:
-                mediaController.SeekForward(10000);
-                ShowControlBar();
-                break;
-            case Keys.N:
-            case Keys.PageDown:
-                PlayNextEpisode();
-                ShowControlBar();
-                break;
-            case Keys.P:
-            case Keys.PageUp:
-                PlayPreviousEpisode();
-                ShowControlBar();
-                break;
-            default:
-                handled = false;
-                break;
-        }
-
-        if (handled)
+        if (inputHandler.HandleKeyDown(e, fullscreenManager.IsFullscreen))
         {
             e.SuppressKeyPress = true;
             e.Handled = true;
@@ -363,84 +275,16 @@ public class PlayerPage : UserControl
         KeyDownHandler?.Invoke(this, e);
     }
 
-    private bool IsFunctionKey(Keys keyCode)
-    {
-        return keyCode == Keys.Left || keyCode == Keys.Right ||
-               keyCode == Keys.Space || keyCode == Keys.F ||
-               keyCode == Keys.Escape ||
-               keyCode == Keys.J || keyCode == Keys.L ||
-               keyCode == Keys.N || keyCode == Keys.P ||
-               keyCode == Keys.PageUp || keyCode == Keys.PageDown;
-    }
-
     public void LoadFolder(string folderPath, string folderName)
     {
-        currentFolderPath = folderPath;
         Console.WriteLine($"[PlayerPage] 加载文件夹: {folderPath}");
 
-        videoFiles = VideoScanner.GetVideoFiles(folderPath);
-        Console.WriteLine($"[PlayerPage] 找到 {videoFiles.Length} 个视频文件");
+        playlistPanel?.LoadFolder(folderPath);
 
-        episodeList!.Items.Clear();
-        for (int i = 0; i < videoFiles.Length; i++)
+        var firstPath = playlistPanel?.FirstEpisodePath;
+        if (firstPath != null)
         {
-            string fileName = Path.GetFileNameWithoutExtension(videoFiles[i]);
-            episodeList.Items.Add($"{i + 1:00}. {fileName}");
-        }
-
-        if (videoFiles.Length > 0)
-        {
-            mediaController.Play(videoFiles[0]);
-            episodeList.SelectedIndex = 0;
-        }
-    }
-
-    private void EpisodeList_SelectedIndexChanged(object? sender, EventArgs e)
-    {
-        if (episodeList == null) return;
-
-        int currentIndex = episodeList.SelectedIndex;
-
-        if (currentIndex == lastSelectedIndex)
-        {
-            Console.WriteLine($"[选集] 索引未变化，仍为第 {currentIndex + 1} 集");
-            return;
-        }
-
-        Console.WriteLine($"[选集] 集数变化: 第 {lastSelectedIndex + 1} 集 -> 第 {currentIndex + 1} 集");
-
-        if (currentIndex >= 0 && currentIndex < videoFiles.Length)
-        {
-            string fileName = Path.GetFileName(videoFiles[currentIndex]);
-            Console.WriteLine($"[选集] 切换到第 {currentIndex + 1} 集: {fileName}");
-            mediaController.Play(videoFiles[currentIndex]);
-            lastSelectedIndex = currentIndex;
-        }
-        else
-        {
-            Console.WriteLine($"[选集] 无效的索引: {currentIndex}");
-        }
-    }
-
-    private void PlayNextEpisode()
-    {
-        if (episodeList == null || episodeList.Items.Count == 0) return;
-
-        int nextIndex = episodeList.SelectedIndex + 1;
-        if (nextIndex < episodeList.Items.Count)
-        {
-            episodeList.SelectedIndex = nextIndex;
-        }
-    }
-
-    private void PlayPreviousEpisode()
-    {
-        if (episodeList == null || episodeList.Items.Count == 0) return;
-
-        int prevIndex = episodeList.SelectedIndex - 1;
-        if (prevIndex >= 0)
-        {
-            episodeList.SelectedIndex = prevIndex;
+            mediaController.Play(firstPath);
         }
     }
 
