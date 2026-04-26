@@ -63,7 +63,7 @@
         </Border>
 
         <!-- 控制栏 -->
-        <Grid Grid.Row="1" Grid.Column="0" Height="65" Background="{StaticResource SurfaceDark}">
+        <Grid x:Name="ControlBar" Grid.Row="1" Grid.Column="0" Height="65" Background="{StaticResource SurfaceDark}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>

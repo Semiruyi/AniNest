@@ -35,6 +35,13 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private bool pendingSeek = false;
     private long pendingSeekTime = 0;
 
+    private Window? parentWindow;
+    private WindowState savedWindowState;
+    private WindowStyle savedWindowStyle;
+    private ResizeMode savedResizeMode;
+    private bool isFullscreen = false;
+    private DispatcherTimer? controlBarHideTimer;
+
     public event EventHandler? BackRequested;
 
     public PlayerPage()
@@ -44,6 +51,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         Unloaded += PlayerPage_Unloaded;
         GotKeyboardFocus += PlayerPage_GotKeyboardFocus;
         LostKeyboardFocus += PlayerPage_LostKeyboardFocus;
+        MouseMove += PlayerPage_MouseMove;
 
         saveProgressTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         saveProgressTimer.Tick += SaveProgressTimer_Tick;
@@ -59,14 +67,16 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         };
         inputHandler.NextEpisode += (_, _) => PlayNext();
         inputHandler.PreviousEpisode += (_, _) => PlayPrevious();
-        // 全屏功能暂由 WPF 侧处理，此处预留事件
-        inputHandler.ToggleFullscreen += (_, _) => Log("ToggleFullscreen 事件触发（未接入全屏管理器）");
-        inputHandler.ExitFullscreen += (_, _) => Log("ExitFullscreen 事件触发（未接入全屏管理器）");
+        inputHandler.ToggleFullscreen += (_, _) => ToggleFullscreen();
+        inputHandler.ExitFullscreen += (_, _) => ExitFullscreen();
     }
 
     private void PlayerPage_Loaded(object sender, RoutedEventArgs e)
     {
         Log("Loaded 事件触发");
+
+        parentWindow = Window.GetWindow(this);
+        Log($"获取父窗口: {parentWindow?.GetType().Name}");
 
         // 尝试夺取焦点，防止 VideoView (WindowsFormsHost) 吃掉键盘事件
         Log($"Loaded 前 FocusedElement={FocusManager.GetFocusedElement(this)}");
@@ -258,7 +268,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         Log($"HandlePreviewKeyDown 被调用: Key={e.Key}, Source={e.Source?.GetType().Name}, OriginalSource={e.OriginalSource?.GetType().Name}");
 
-        if (inputHandler.HandleKeyDown(e, false))
+        if (inputHandler.HandleKeyDown(e, isFullscreen))
         {
             e.Handled = true;
             Log($"按键已处理并标记 Handled: {e.Key}");
@@ -273,7 +283,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         Log($"HandleKeyDown (冒泡) 被调用: Key={e.Key}, Source={e.Source?.GetType().Name}, OriginalSource={e.OriginalSource?.GetType().Name}");
 
-        if (inputHandler.HandleKeyDown(e, false))
+        if (inputHandler.HandleKeyDown(e, isFullscreen))
         {
             e.Handled = true;
             Log($"冒泡按键已处理并标记 Handled: {e.Key}");
@@ -284,7 +294,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         if (e.Handled) return;
         Log($"PlayerPage_PreviewKeyDown: Key={e.Key}, OriginalSource={e.OriginalSource?.GetType().Name}, Handled={e.Handled}");
-        if (inputHandler.HandleKeyDown(e, false))
+        if (inputHandler.HandleKeyDown(e, isFullscreen))
         {
             e.Handled = true;
         }
@@ -294,10 +304,79 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         if (e.Handled) return;
         Log($"PlayerPage_KeyDown: Key={e.Key}, OriginalSource={e.OriginalSource?.GetType().Name}, Handled={e.Handled}");
-        if (inputHandler.HandleKeyDown(e, false))
+        if (inputHandler.HandleKeyDown(e, isFullscreen))
         {
             e.Handled = true;
         }
+    }
+
+    private void ToggleFullscreen()
+    {
+        Log($"ToggleFullscreen 被调用，当前状态 isFullscreen={isFullscreen}");
+        if (isFullscreen)
+            ExitFullscreen();
+        else
+            EnterFullscreen();
+    }
+
+    private void EnterFullscreen()
+    {
+        if (parentWindow == null)
+        {
+            Log("EnterFullscreen 失败: parentWindow 为 null");
+            return;
+        }
+
+        Log("进入全屏模式");
+        savedWindowState = parentWindow.WindowState;
+        savedWindowStyle = parentWindow.WindowStyle;
+        savedResizeMode = parentWindow.ResizeMode;
+
+        parentWindow.WindowStyle = WindowStyle.None;
+        parentWindow.ResizeMode = ResizeMode.NoResize;
+        parentWindow.WindowState = WindowState.Maximized;
+
+        PlaylistBorder.Visibility = Visibility.Collapsed;
+        ControlBar.Visibility = Visibility.Collapsed;
+
+        isFullscreen = true;
+        Log("✓ 已进入全屏");
+    }
+
+    private void ExitFullscreen()
+    {
+        if (!isFullscreen || parentWindow == null)
+        {
+            Log($"ExitFullscreen 提前返回: isFullscreen={isFullscreen}, parentWindow={parentWindow}");
+            return;
+        }
+
+        Log("退出全屏模式");
+        parentWindow.WindowState = savedWindowState;
+        parentWindow.WindowStyle = savedWindowStyle;
+        parentWindow.ResizeMode = savedResizeMode;
+
+        PlaylistBorder.Visibility = Visibility.Visible;
+        ControlBar.Visibility = Visibility.Visible;
+
+        isFullscreen = false;
+        Log("✓ 已退出全屏");
+    }
+
+    private void PlayerPage_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (!isFullscreen) return;
+
+        ControlBar.Visibility = Visibility.Visible;
+
+        controlBarHideTimer?.Stop();
+        controlBarHideTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+        controlBarHideTimer.Tick += (_, _) =>
+        {
+            ControlBar.Visibility = Visibility.Collapsed;
+            controlBarHideTimer?.Stop();
+        };
+        controlBarHideTimer.Start();
     }
 
 
@@ -375,8 +454,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     public void Dispose()
     {
         saveProgressTimer.Stop();
+        controlBarHideTimer?.Stop();
         SaveCurrentProgress();
-
         mediaController.Dispose();
     }
 }
