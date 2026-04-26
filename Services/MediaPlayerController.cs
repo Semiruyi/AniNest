@@ -1,6 +1,8 @@
 using System;
+using System.IO;
+using System.Windows.Threading;
 using LibVLCSharp.Shared;
-using LibVLCSharp.WinForms;
+using LibVLCSharp.WPF;
 
 namespace LocalPlayer.Services;
 
@@ -8,7 +10,7 @@ public class MediaPlayerController : IDisposable
 {
     private LibVLC? libVLC;
     private MediaPlayer? mediaPlayer;
-    private System.Windows.Forms.Timer? updateTimer;
+    private DispatcherTimer? updateTimer;
 
     public bool IsPlaying => mediaPlayer?.IsPlaying ?? false;
     public long Time => mediaPlayer?.Time ?? 0;
@@ -34,7 +36,7 @@ public class MediaPlayerController : IDisposable
         mediaPlayer.Paused += (s, e) => Paused?.Invoke(this, EventArgs.Empty);
         mediaPlayer.Stopped += (s, e) => Stopped?.Invoke(this, EventArgs.Empty);
 
-        updateTimer = new System.Windows.Forms.Timer { Interval = 200 };
+        updateTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
         updateTimer.Tick += UpdateTimer_Tick;
         updateTimer.Start();
 
@@ -114,7 +116,7 @@ public class MediaPlayerController : IDisposable
     public void Dispose()
     {
         updateTimer?.Stop();
-        updateTimer?.Dispose();
+        updateTimer = null;
         updateTimer = null;
 
         mediaPlayer?.Stop();

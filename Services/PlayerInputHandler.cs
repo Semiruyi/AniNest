@@ -1,5 +1,5 @@
 using System;
-using System.Windows.Forms;
+using System.Windows.Input;
 
 namespace LocalPlayer.Services;
 
@@ -14,45 +14,45 @@ public class PlayerInputHandler
     public event EventHandler? NextEpisode;
     public event EventHandler? PreviousEpisode;
 
-    public bool HandleKeyDown(KeyEventArgs e, bool isFullscreen)
+    public bool HandleKeyDown(System.Windows.Input.KeyEventArgs e, bool isFullscreen)
     {
-        if (IsFunctionKey(e.KeyCode))
+        if (IsFunctionKey(e.Key))
         {
-            Console.WriteLine($"[PlayerInputHandler] 处理按键: {e.KeyCode}");
+            Console.WriteLine($"[PlayerInputHandler] 处理按键: {e.Key}");
         }
 
-        switch (e.KeyCode)
+        switch (e.Key)
         {
-            case Keys.Space:
+            case Key.Space:
                 TogglePlayPause?.Invoke(this, EventArgs.Empty);
                 return true;
-            case Keys.Left:
+            case Key.Left:
                 SeekBackward?.Invoke(this, EventArgs.Empty);
                 return true;
-            case Keys.Right:
+            case Key.Right:
                 SeekForward?.Invoke(this, EventArgs.Empty);
                 return true;
-            case Keys.F:
+            case Key.F:
                 ToggleFullscreen?.Invoke(this, EventArgs.Empty);
                 return true;
-            case Keys.Escape:
+            case Key.Escape:
                 if (isFullscreen)
                     ExitFullscreen?.Invoke(this, EventArgs.Empty);
                 else
                     Back?.Invoke(this, EventArgs.Empty);
                 return true;
-            case Keys.J:
+            case Key.J:
                 SeekBackward?.Invoke(this, EventArgs.Empty);
                 return true;
-            case Keys.L:
+            case Key.L:
                 SeekForward?.Invoke(this, EventArgs.Empty);
                 return true;
-            case Keys.N:
-            case Keys.PageDown:
+            case Key.N:
+            case Key.PageDown:
                 NextEpisode?.Invoke(this, EventArgs.Empty);
                 return true;
-            case Keys.P:
-            case Keys.PageUp:
+            case Key.P:
+            case Key.PageUp:
                 PreviousEpisode?.Invoke(this, EventArgs.Empty);
                 return true;
             default:
@@ -60,13 +60,13 @@ public class PlayerInputHandler
         }
     }
 
-    private static bool IsFunctionKey(Keys keyCode)
+    private static bool IsFunctionKey(Key key)
     {
-        return keyCode == Keys.Left || keyCode == Keys.Right ||
-               keyCode == Keys.Space || keyCode == Keys.F ||
-               keyCode == Keys.Escape ||
-               keyCode == Keys.J || keyCode == Keys.L ||
-               keyCode == Keys.N || keyCode == Keys.P ||
-               keyCode == Keys.PageUp || keyCode == Keys.PageDown;
+        return key == Key.Left || key == Key.Right ||
+               key == Key.Space || key == Key.F ||
+               key == Key.Escape ||
+               key == Key.J || key == Key.L ||
+               key == Key.N || key == Key.P ||
+               key == Key.PageUp || key == Key.PageDown;
     }
 }
