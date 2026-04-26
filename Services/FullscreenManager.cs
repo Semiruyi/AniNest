@@ -1,11 +1,23 @@
 using System;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 
 namespace LocalPlayer.Services;
 
 public class FullscreenManager : IDisposable
 {
+    private static readonly string LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "player.log");
+
+    private static void Log(string message)
+    {
+        try
+        {
+            File.AppendAllText(LogFile, $"[{DateTime.Now:HH:mm:ss.fff}] [FullscreenManager] {message}{Environment.NewLine}");
+        }
+        catch { }
+    }
+
     private Form? fullscreenForm;
     private Form? mainForm;
     private Control? videoContainer;
@@ -29,8 +41,16 @@ public class FullscreenManager : IDisposable
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             // WinForms 默认会用方向键做焦点导航，导致 KeyDown 事件不触发
-            // 这里直接拦截方向键，手动触发 KeyDown 事件
-            if (keyData == Keys.Left || keyData == Keys.Right || keyData == Keys.Up || keyData == Keys.Down)
+            // 这里拦截所有播放相关按键，手动触发 KeyDown 事件
+            bool isMediaKey = keyData == Keys.Left || keyData == Keys.Right ||
+                              keyData == Keys.Up || keyData == Keys.Down ||
+                              keyData == Keys.Space || keyData == Keys.F ||
+                              keyData == Keys.Escape ||
+                              keyData == Keys.J || keyData == Keys.L ||
+                              keyData == Keys.N || keyData == Keys.P ||
+                              keyData == Keys.PageDown || keyData == Keys.PageUp;
+
+            if (isMediaKey)
             {
                 var e = new KeyEventArgs(keyData);
                 OnKeyDown(e);
@@ -49,7 +69,7 @@ public class FullscreenManager : IDisposable
     {
         if (IsFullscreen || videoContainer == null) return;
 
-        Console.WriteLine("[FullscreenManager] 进入全屏模式");
+        Log("进入全屏模式");
 
         this.videoContainer = videoContainer;
         mainForm = videoContainer.FindForm();
@@ -76,7 +96,7 @@ public class FullscreenManager : IDisposable
 
         IsFullscreen = true;
 
-        Console.WriteLine("[FullscreenManager] ✓ 已进入全屏");
+        Log("✓ 已进入全屏");
     }
 
     public void ExitFullscreen()
@@ -84,7 +104,7 @@ public class FullscreenManager : IDisposable
         if (!IsFullscreen || fullscreenForm == null || originalParent == null || mainForm == null)
             return;
 
-        Console.WriteLine("[FullscreenManager] 退出全屏模式");
+        Log("退出全屏模式");
 
         if (videoContainer != null)
         {
@@ -110,11 +130,12 @@ public class FullscreenManager : IDisposable
         IsFullscreen = false;
         Exited?.Invoke(this, EventArgs.Empty);
 
-        Console.WriteLine("[FullscreenManager] ✓ 已退出全屏");
+        Log("✓ 已退出全屏");
     }
 
     public void ToggleFullscreen(Control videoContainer)
     {
+        Log($"ToggleFullscreen 被调用，当前状态 IsFullscreen={IsFullscreen}");
         if (!IsFullscreen)
             EnterFullscreen(videoContainer);
         else
@@ -123,6 +144,7 @@ public class FullscreenManager : IDisposable
 
     private void FullscreenForm_KeyDown(object? sender, KeyEventArgs e)
     {
+        Log($"FullscreenForm_KeyDown: KeyCode={e.KeyCode}");
         KeyDown?.Invoke(this, e);
     }
 
