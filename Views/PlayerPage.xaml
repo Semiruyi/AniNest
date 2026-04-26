@@ -107,6 +107,7 @@
                         PreviewMouseDown="ProgressSlider_PreviewMouseDown"
                         PreviewMouseUp="ProgressSlider_PreviewMouseUp"
                         ValueChanged="ProgressSlider_ValueChanged"
+                        LostMouseCapture="ProgressSlider_LostMouseCapture"
                         VerticalAlignment="Center"
                         Margin="10,0"/>
 

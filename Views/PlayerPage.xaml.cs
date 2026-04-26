@@ -297,10 +297,27 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     private void ProgressSlider_PreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
+        if (e.ChangedButton != MouseButton.Left) return;
+
+        // 点击轨道（非 Thumb）时，直接跳转到对应位置
+        if (e.OriginalSource is not System.Windows.Controls.Primitives.Thumb && ProgressSlider.ActualWidth > 0)
+        {
+            System.Windows.Point pos = e.GetPosition(ProgressSlider);
+            double ratio = pos.X / ProgressSlider.ActualWidth;
+            double newValue = ProgressSlider.Minimum + ratio * (ProgressSlider.Maximum - ProgressSlider.Minimum);
+            ProgressSlider.Value = Math.Max(ProgressSlider.Minimum, Math.Min(ProgressSlider.Maximum, newValue));
+        }
+
         isProgressDragging = true;
     }
 
     private void ProgressSlider_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Left) return;
+        isProgressDragging = false;
+    }
+
+    private void ProgressSlider_LostMouseCapture(object sender, System.Windows.Input.MouseEventArgs e)
     {
         isProgressDragging = false;
     }

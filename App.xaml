@@ -211,7 +211,7 @@
                             <Grid x:Name="GridRoot" VerticalAlignment="Center" Height="18">
                                 <!-- 底层轨道背景 -->
                                 <Border Background="#33FFFFFF" Height="4" CornerRadius="2" VerticalAlignment="Center"/>
-                                <Track x:Name="PART_Track" VerticalAlignment="Center">
+                                <Track x:Name="PART_Track" VerticalAlignment="Stretch">
                                     <Track.DecreaseRepeatButton>
                                         <RepeatButton Style="{StaticResource SliderDecreaseButton}" Command="Slider.DecreaseLarge"/>
                                     </Track.DecreaseRepeatButton>
