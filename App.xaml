@@ -24,18 +24,18 @@
             <Style x:Key="IconButton" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Width" Value="34"/>
-                <Setter Property="Height" Value="34"/>
+                <Setter Property="Width" Value="36"/>
+                <Setter Property="Height" Value="36"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Opacity" Value="0.8"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid x:Name="ButtonGrid" RenderTransformOrigin="0.5,0.5" Width="34" Height="34">
+                            <Grid x:Name="ButtonGrid" RenderTransformOrigin="0.5,0.5" Width="36" Height="36">
                                 <Grid.RenderTransform>
                                     <ScaleTransform ScaleX="1" ScaleY="1"/>
                                 </Grid.RenderTransform>
-                                <Ellipse x:Name="HoverBg" Fill="{StaticResource HoverBackground}" Width="34" Height="34" Opacity="0"/>
+                                <Ellipse x:Name="HoverBg" Fill="{StaticResource HoverBackground}" Width="36" Height="36" Opacity="0"/>
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
                             <ControlTemplate.Triggers>
@@ -46,10 +46,10 @@
                                             <Storyboard>
                                                 <DoubleAnimation Storyboard.TargetName="ButtonGrid"
                                                     Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                    To="1.2" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
+                                                    To="1.3" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
                                                 <DoubleAnimation Storyboard.TargetName="ButtonGrid"
                                                     Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                    To="1.2" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
+                                                    To="1.3" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
                                                 <DoubleAnimation Storyboard.TargetName="HoverBg"
                                                     Storyboard.TargetProperty="Opacity"
                                                     To="1" Duration="0:0:0.12"/>
@@ -85,18 +85,18 @@
             <Style x:Key="PlayButton" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Width" Value="40"/>
-                <Setter Property="Height" Value="40"/>
+                <Setter Property="Width" Value="34"/>
+                <Setter Property="Height" Value="34"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Opacity" Value="0.85"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid x:Name="ButtonGrid" RenderTransformOrigin="0.5,0.5" Width="40" Height="40">
+                            <Grid x:Name="ButtonGrid" RenderTransformOrigin="0.5,0.5" Width="34" Height="34">
                                 <Grid.RenderTransform>
                                     <ScaleTransform ScaleX="1" ScaleY="1"/>
                                 </Grid.RenderTransform>
-                                <Ellipse x:Name="HoverBg" Fill="{StaticResource HoverBackground}" Width="40" Height="40" Opacity="0"/>
+                                <Ellipse x:Name="HoverBg" Fill="{StaticResource HoverBackground}" Width="34" Height="34" Opacity="0"/>
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
                             <ControlTemplate.Triggers>
@@ -107,10 +107,10 @@
                                             <Storyboard>
                                                 <DoubleAnimation Storyboard.TargetName="ButtonGrid"
                                                     Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                    To="1.2" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
+                                                    To="1.3" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
                                                 <DoubleAnimation Storyboard.TargetName="ButtonGrid"
                                                     Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                    To="1.2" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
+                                                    To="1.3" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
                                                 <DoubleAnimation Storyboard.TargetName="HoverBg"
                                                     Storyboard.TargetProperty="Opacity"
                                                     To="1" Duration="0:0:0.12"/>
