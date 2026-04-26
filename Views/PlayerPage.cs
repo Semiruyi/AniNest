@@ -94,7 +94,11 @@ public class PlayerPage : UserControl
         controlBar.StopClicked += (s, e) => mediaController.Stop();
         controlBar.PreviousClicked += (s, e) => playlistPanel?.PlayPrevious();
         controlBar.NextClicked += (s, e) => playlistPanel?.PlayNext();
-        controlBar.FullscreenClicked += (s, e) => fullscreenManager.ToggleFullscreen(videoContainer!);
+        controlBar.FullscreenClicked += (s, e) =>
+        {
+            fullscreenManager.ToggleFullscreen(videoContainer!);
+            if (controlBar != null) controlBar.Visible = !fullscreenManager.IsFullscreen;
+        };
         controlBar.SettingsClicked += (s, e) => Console.WriteLine("[控制栏] 设置按钮点击");
         controlBar.PlaylistClicked += (s, e) =>
         {
@@ -155,6 +159,7 @@ public class PlayerPage : UserControl
         };
         fullscreenManager.Exited += (s, e) =>
         {
+            if (controlBar != null) controlBar.Visible = true;
             Cursor.Show();
         };
     }
@@ -164,21 +169,57 @@ public class PlayerPage : UserControl
         inputHandler.TogglePlayPause += (s, e) => mediaController.TogglePlayPause();
         inputHandler.SeekForward += (s, e) => mediaController.SeekForward(5000);
         inputHandler.SeekBackward += (s, e) => mediaController.SeekBackward(5000);
-        inputHandler.ToggleFullscreen += (s, e) => fullscreenManager.ToggleFullscreen(videoContainer!);
+        inputHandler.ToggleFullscreen += (s, e) =>
+        {
+            fullscreenManager.ToggleFullscreen(videoContainer!);
+            if (controlBar != null) controlBar.Visible = !fullscreenManager.IsFullscreen;
+        };
         inputHandler.ExitFullscreen += (s, e) => fullscreenManager.ExitFullscreen();
         inputHandler.Back += (s, e) => BackRequested?.Invoke(this, EventArgs.Empty);
         inputHandler.NextEpisode += (s, e) => playlistPanel?.PlayNext();
         inputHandler.PreviousEpisode += (s, e) => playlistPanel?.PlayPrevious();
     }
 
+    private const int ControlBarHotZoneHeight = 100;
+
     private void SetupMouseDetection()
     {
         if (videoContainer != null)
         {
             videoContainer.MouseDoubleClick += (s, e) => mediaController.TogglePlayPause();
+            videoContainer.MouseMove += (s, e) => UpdateControlBarVisibility();
+            videoContainer.MouseLeave += (s, e) => UpdateControlBarVisibility();
+        }
+
+        if (controlBar != null)
+        {
+            controlBar.MouseMove += (s, e) => UpdateControlBarVisibility();
+            controlBar.MouseLeave += (s, e) => UpdateControlBarVisibility();
         }
 
         Console.WriteLine("[鼠标检测] 事件绑定完成");
+    }
+
+    private void UpdateControlBarVisibility()
+    {
+        if (controlBar == null || videoContainer == null) return;
+
+        // 非全屏时控制栏始终显示
+        if (!fullscreenManager.IsFullscreen)
+        {
+            controlBar.Visible = true;
+            return;
+        }
+
+        // 全屏时使用热点逻辑
+        Point barPos = controlBar.PointToClient(Cursor.Position);
+        bool isOverBar = controlBar.ClientRectangle.Contains(barPos);
+
+        Point containerPos = videoContainer.PointToClient(Cursor.Position);
+        bool isOverHotZone = videoContainer.ClientRectangle.Contains(containerPos)
+                          && containerPos.Y > videoContainer.Height - ControlBarHotZoneHeight;
+
+        controlBar.Visible = isOverBar || isOverHotZone;
     }
 
     private void PlayerPage_Resize(object? sender, EventArgs e)
