@@ -1,8 +1,10 @@
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Threading;
 using LocalPlayer.Services;
 
@@ -158,6 +160,9 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
                 Log("Loaded 后执行暂存的 LoadFolder");
                 LoadFolder(path, name);
             }
+
+            // 阻止 ForegroundWindow 被点击激活，防止它抢走键盘焦点
+            FixForegroundWindowNoActivate();
         }
         catch (Exception ex)
         {
@@ -171,6 +176,98 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         Dispose();
     }
+
+    #region ForegroundWindow 无激活修复
+
+    private static class NativeMethods
+    {
+        public const int GWL_EXSTYLE = -20;
+        public const uint WS_EX_NOACTIVATE = 0x08000000;
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern uint GetWindowLong(IntPtr hWnd, int nIndex);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern uint SetWindowLong(IntPtr hWnd, int nIndex, uint dwNewLong);
+
+        [DllImport("user32.dll")]
+        public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter,
+            int X, int Y, int cx, int cy, uint uFlags);
+
+        public static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
+
+        public const uint SWP_FRAMECHANGED = 0x0020;
+        public const uint SWP_NOMOVE = 0x0002;
+        public const uint SWP_NOSIZE = 0x0001;
+        public const uint SWP_NOZORDER = 0x0004;
+        public const uint SWP_NOACTIVATE = 0x0010;
+    }
+
+    private void FixForegroundWindowNoActivate()
+    {
+        try
+        {
+            var foregroundWindowField = typeof(LibVLCSharp.WPF.VideoView).GetField(
+                "ForegroundWindow", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (foregroundWindowField == null)
+            {
+                Log("FixForegroundWindowNoActivate: 未找到 ForegroundWindow 字段");
+                return;
+            }
+
+            var foregroundWindow = foregroundWindowField.GetValue(VideoView) as Window;
+            if (foregroundWindow == null)
+            {
+                Log("FixForegroundWindowNoActivate: ForegroundWindow 为 null");
+                return;
+            }
+
+            if (foregroundWindow.IsLoaded)
+            {
+                ApplyNoActivate(foregroundWindow);
+            }
+            else
+            {
+                foregroundWindow.Loaded += (s, e) => ApplyNoActivate(foregroundWindow);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"FixForegroundWindowNoActivate 异常: {ex.Message}");
+        }
+    }
+
+    private void ApplyNoActivate(Window foregroundWindow)
+    {
+        try
+        {
+            var helper = new WindowInteropHelper(foregroundWindow);
+            var hwnd = helper.Handle;
+            if (hwnd == IntPtr.Zero)
+            {
+                Log("ApplyNoActivate: HWND 为 0");
+                return;
+            }
+
+            var exStyle = NativeMethods.GetWindowLong(hwnd, NativeMethods.GWL_EXSTYLE);
+            NativeMethods.SetWindowLong(hwnd, NativeMethods.GWL_EXSTYLE, exStyle | NativeMethods.WS_EX_NOACTIVATE);
+            NativeMethods.SetWindowPos(hwnd, NativeMethods.HWND_NOTOPMOST,
+                0, 0, 0, 0,
+                NativeMethods.SWP_FRAMECHANGED |
+                NativeMethods.SWP_NOMOVE |
+                NativeMethods.SWP_NOSIZE |
+                NativeMethods.SWP_NOZORDER |
+                NativeMethods.SWP_NOACTIVATE);
+
+            Log("ApplyNoActivate: 已设置 WS_EX_NOACTIVATE");
+        }
+        catch (Exception ex)
+        {
+            Log($"ApplyNoActivate 异常: {ex.Message}");
+        }
+    }
+
+    #endregion
 
     private class PlaylistItem
     {
