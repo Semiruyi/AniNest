@@ -19,6 +19,9 @@ public class MediaPlayerController : IDisposable
         catch { }
     }
 
+    private static LibVLC? _sharedLibVLC;
+    private static readonly object _sharedLibVLock = new();
+
     private LibVLC? libVLC;
     private MediaPlayer? mediaPlayer;
     private DispatcherTimer? updateTimer;
@@ -33,13 +36,46 @@ public class MediaPlayerController : IDisposable
     public event EventHandler? Stopped;
     public event EventHandler<ProgressUpdatedEventArgs>? ProgressUpdated;
 
+    /// <summary>
+    /// 全局预热 LibVLC，建议在应用启动时于后台线程调用，
+    /// 可显著缩短第一次进入播放页时的等待时间。
+    /// </summary>
+    public static void Preinitialize()
+    {
+        lock (_sharedLibVLock)
+        {
+            if (_sharedLibVLC == null)
+            {
+                try
+                {
+                    Log("[Preinitialize] 开始创建全局 LibVLC...");
+                    _sharedLibVLC = new LibVLC();
+                    Log("[Preinitialize] 全局 LibVLC 创建成功");
+                }
+                catch (Exception ex)
+                {
+                    Log($"[Preinitialize] 失败: {ex.Message}");
+                    throw;
+                }
+            }
+        }
+    }
+
     public void Initialize(VideoView videoView)
     {
         try
         {
             Log("开始初始化 LibVLC...");
-            libVLC = new LibVLC();
-            Log("LibVLC 创建成功");
+            lock (_sharedLibVLock)
+            {
+                if (_sharedLibVLC == null)
+                {
+                    _sharedLibVLC = new LibVLC();
+                    Log("LibVLC 创建成功(非预热)");
+                }
+                libVLC = _sharedLibVLC;
+            }
+
             mediaPlayer = new MediaPlayer(libVLC);
             Log("MediaPlayer 创建成功");
 
@@ -163,8 +199,9 @@ public class MediaPlayerController : IDisposable
         Log($"mediaPlayer.Dispose 耗时 {sw.ElapsedMilliseconds}ms");
         mediaPlayer = null;
 
-        libVLC?.Dispose();
-        Log($"libVLC.Dispose 耗时 {sw.ElapsedMilliseconds}ms");
+        // libVLC 改为全局单例，不在此处释放，避免下次进入播放页重复初始化
+        // libVLC?.Dispose();
+        // Log($"libVLC.Dispose 耗时 {sw.ElapsedMilliseconds}ms");
         libVLC = null;
     }
 }

@@ -1,7 +1,9 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using LocalPlayer.Services;
 
 namespace LocalPlayer;
 
@@ -22,6 +24,20 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
         Log("=== Application Startup ===");
+
+        // 后台预热 LibVLC，将耗时的 native 模块加载提前到应用启动阶段，
+        // 从而显著缩短第一次进入播放页时的等待时间。
+        Task.Run(() =>
+        {
+            try
+            {
+                MediaPlayerController.Preinitialize();
+            }
+            catch (Exception ex)
+            {
+                Log($"LibVLC 预热失败: {ex.Message}");
+            }
+        });
 
         AppDomain.CurrentDomain.UnhandledException += (s, args) =>
         {
