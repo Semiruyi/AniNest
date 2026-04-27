@@ -668,6 +668,9 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         HideFullscreenControlBar();
 
+        OverlayGrid.MouseMove -= OverlayGrid_MouseMove;
+        OverlayGrid.MouseMove += OverlayGrid_MouseMove;
+
         FullscreenIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
             new Uri("pack://application:,,,/Resources/Icons/exitFullScreen.png"));
 
