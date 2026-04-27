@@ -302,8 +302,17 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         // 点击轨道（非 Thumb）时，直接跳转到对应位置
         if (e.OriginalSource is not System.Windows.Controls.Primitives.Thumb && ProgressSlider.ActualWidth > 0)
         {
-            System.Windows.Point pos = e.GetPosition(ProgressSlider);
-            double ratio = pos.X / ProgressSlider.ActualWidth;
+            double ratio;
+            if (ProgressSlider.Template.FindName("PART_Track", ProgressSlider) is System.Windows.Controls.Primitives.Track track && track.ActualWidth > 0)
+            {
+                System.Windows.Point trackPos = e.GetPosition(track);
+                ratio = Math.Max(0, Math.Min(1, trackPos.X / track.ActualWidth));
+            }
+            else
+            {
+                System.Windows.Point pos = e.GetPosition(ProgressSlider);
+                ratio = pos.X / ProgressSlider.ActualWidth;
+            }
             double newValue = ProgressSlider.Minimum + ratio * (ProgressSlider.Maximum - ProgressSlider.Minimum);
             ProgressSlider.Value = Math.Max(ProgressSlider.Minimum, Math.Min(ProgressSlider.Maximum, newValue));
         }
