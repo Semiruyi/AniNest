@@ -648,6 +648,25 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         }
     }
 
+    private void ControlBar_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        Log($"ControlBar_PreviewKeyDown: Key={e.Key}, OriginalSource={e.OriginalSource?.GetType().Name}, Handled={e.Handled}");
+        if (inputHandler.HandleKeyDown(e, isFullscreen))
+        {
+            e.Handled = true;
+        }
+    }
+
+    private void ControlBar_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Handled) return;
+        Log($"ControlBar_KeyDown: Key={e.Key}, OriginalSource={e.OriginalSource?.GetType().Name}, Handled={e.Handled}");
+        if (inputHandler.HandleKeyDown(e, isFullscreen))
+        {
+            e.Handled = true;
+        }
+    }
+
     private void ToggleFullscreen()
     {
         Log($"ToggleFullscreen 被调用，当前状态 isFullscreen={isFullscreen}");
@@ -694,6 +713,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             new Uri("pack://application:,,,/Resources/Icons/exitFullScreen.png"));
 
         isFullscreen = true;
+
+        Keyboard.Focus(ControlBar);
         Log("✓ 已进入全屏");
     }
 
@@ -976,6 +997,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         ControlBar.Visibility = Visibility.Visible;
         ControlBar.Opacity = 1;
         ControlBar.IsHitTestVisible = true;
+        Keyboard.Focus(ControlBar);
     }
 
     private void HideFullscreenControlBar()
