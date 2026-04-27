@@ -113,7 +113,15 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         var duration = TimeSpan.FromMilliseconds(500);
 
         var maskAnim = new System.Windows.Media.Animation.DoubleAnimation(1, 0, duration) { EasingFunction = ease };
-        maskAnim.Completed += (_, _) => TransitionMask.Visibility = Visibility.Collapsed;
+        maskAnim.Completed += (_, _) =>
+        {
+            TransitionMask.Visibility = Visibility.Collapsed;
+            // 清除动画持有，否则全屏时 HideFullscreenControlBar 直接设 Opacity 无效
+            PlaylistBorder.BeginAnimation(OpacityProperty, null);
+            PlaylistBorder.Opacity = 1;
+            ControlBar.BeginAnimation(OpacityProperty, null);
+            ControlBar.Opacity = 1;
+        };
         TransitionMask.BeginAnimation(OpacityProperty, maskAnim);
 
         PlaylistBorder.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration) { EasingFunction = ease });
@@ -897,7 +905,12 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         var tcs = new System.Threading.Tasks.TaskCompletionSource<bool>();
         var maskAnim = new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration) { EasingFunction = ease };
-        maskAnim.Completed += (_, _) => tcs.TrySetResult(true);
+        maskAnim.Completed += (_, _) =>
+        {
+            PlaylistBorder.BeginAnimation(OpacityProperty, null);
+            ControlBar.BeginAnimation(OpacityProperty, null);
+            tcs.TrySetResult(true);
+        };
         TransitionMask.BeginAnimation(OpacityProperty, maskAnim);
 
         PlaylistBorder.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(1, 0, duration) { EasingFunction = ease });
