@@ -237,6 +237,18 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         }
     }
 
+    private void EpisodeButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.Button btn && btn.DataContext is PlaylistItem item)
+        {
+            int index = item.Number - 1;
+            if (index >= 0 && index < videoFiles.Length)
+            {
+                PlaylistBox.SelectedIndex = index;
+            }
+        }
+    }
+
     private void PlayVideo(string filePath)
     {
         Log($"PlayVideo 被调用: {filePath}");

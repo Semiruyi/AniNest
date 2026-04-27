@@ -68,52 +68,7 @@
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="ListBoxItem">
-                                        <Grid x:Name="RootGrid" RenderTransformOrigin="0.5,0.5">
-                                            <Grid.RenderTransform>
-                                                <ScaleTransform ScaleX="1" ScaleY="1"/>
-                                            </Grid.RenderTransform>
-                                            <Border x:Name="BgBorder"
-                                                    Background="#252525"
-                                                    BorderBrush="#333333"
-                                                    BorderThickness="1"
-                                                    CornerRadius="10">
-                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            </Border>
-                                        </Grid>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="BgBorder" Property="Background" Value="#333333"/>
-                                                <Setter TargetName="BgBorder" Property="BorderBrush" Value="#444444"/>
-                                                <Trigger.EnterActions>
-                                                    <BeginStoryboard>
-                                                        <Storyboard>
-                                                            <DoubleAnimation Storyboard.TargetName="RootGrid"
-                                                                Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                                To="1.08" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
-                                                            <DoubleAnimation Storyboard.TargetName="RootGrid"
-                                                                Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                                To="1.08" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </Trigger.EnterActions>
-                                                <Trigger.ExitActions>
-                                                    <BeginStoryboard>
-                                                        <Storyboard>
-                                                            <DoubleAnimation Storyboard.TargetName="RootGrid"
-                                                                Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                                To="1" Duration="0:0:0.18" EasingFunction="{StaticResource EaseOut}"/>
-                                                            <DoubleAnimation Storyboard.TargetName="RootGrid"
-                                                                Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                                To="1" Duration="0:0:0.18" EasingFunction="{StaticResource EaseOut}"/>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </Trigger.ExitActions>
-                                            </Trigger>
-                                            <Trigger Property="IsSelected" Value="True">
-                                                <Setter TargetName="BgBorder" Property="Background" Value="{StaticResource AccentBlue}"/>
-                                                <Setter TargetName="BgBorder" Property="BorderBrush" Value="{StaticResource AccentBlue}"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
+                                        <ContentPresenter/>
                                     </ControlTemplate>
                                 </Setter.Value>
                             </Setter>
@@ -121,18 +76,20 @@
                     </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Number, StringFormat={}{0:D2}}"
-                                       Foreground="White"
-                                       FontSize="14"
-                                       FontWeight="SemiBold"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center">
-                                <TextBlock.ToolTip>
-                                    <ToolTip Background="#1E1E1E" BorderBrush="#444444" Foreground="White" Padding="8,4" BorderThickness="1">
-                                        <TextBlock Text="{Binding Title}" FontSize="12" MaxWidth="220" TextTrimming="CharacterEllipsis"/>
-                                    </ToolTip>
-                                </TextBlock.ToolTip>
-                            </TextBlock>
+                            <Button Style="{StaticResource EpisodeButton}" Click="EpisodeButton_Click">
+                                <TextBlock Text="{Binding Number, StringFormat={}{0:D2}}"
+                                           Foreground="White"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center">
+                                    <TextBlock.ToolTip>
+                                        <ToolTip Background="#1E1E1E" BorderBrush="#444444" Foreground="White" Padding="8,4" BorderThickness="1">
+                                            <TextBlock Text="{Binding Title}" FontSize="12" MaxWidth="220" TextTrimming="CharacterEllipsis"/>
+                                        </ToolTip>
+                                    </TextBlock.ToolTip>
+                                </TextBlock>
+                            </Button>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
