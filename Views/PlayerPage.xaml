@@ -97,7 +97,8 @@
         </Border>
 
         <!-- 控制栏 -->
-        <Grid x:Name="ControlBar" Grid.Row="1" Grid.Column="0" Height="63">
+        <Grid x:Name="ControlBar" Grid.Row="1" Grid.Column="0" Height="63"
+              MouseEnter="ControlBar_MouseEnter" MouseLeave="ControlBar_MouseLeave">
             <Grid.Background>
                 <SolidColorBrush Color="#CC0F0F0F"/>
             </Grid.Background>

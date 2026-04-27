@@ -27,6 +27,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private readonly SettingsService settingsService = new();
     private readonly PlayerInputHandler inputHandler = new();
     private readonly DispatcherTimer saveProgressTimer;
+    private readonly DispatcherTimer controlBarHideTimer;
 
     private string currentFolderPath = "";
     private string currentFolderName = "";
@@ -70,6 +71,9 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         saveProgressTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         saveProgressTimer.Tick += SaveProgressTimer_Tick;
 
+        controlBarHideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        controlBarHideTimer.Tick += ControlBarHideTimer_Tick;
+
         // 配置输入处理器
         inputHandler.TogglePlayPause += (_, _) => mediaController.TogglePlayPause();
         inputHandler.SeekForward += (_, _) => mediaController.SeekForward(5000);
@@ -105,6 +109,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         Log($"Loaded 后尝试设置焦点到 PlayerPage");
 
         mediaController.Initialize(VideoView);
+
+        OverlayGrid.MouseMove += OverlayGrid_MouseMove;
 
         // 在 WPF 层面试试（大概率被 VideoView 的 Airspace 拦截，仅用于日志对比）
         VideoContainer.MouseLeftButtonDown += VideoContainer_MouseLeftButtonDown;
@@ -546,9 +552,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         ControlBar.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
         ControlBar.Height = 63;
 
-        ControlBar.Visibility = Visibility.Visible;
-        ControlBar.Opacity = 1;
-        ControlBar.IsHitTestVisible = true;
+        HideFullscreenControlBar();
 
         FullscreenIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
             new Uri("pack://application:,,,/Resources/Icons/exitFullScreen.png"));
@@ -591,6 +595,9 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         ControlBar.Visibility = Visibility.Visible;
         ControlBar.Opacity = 1;
         ControlBar.IsHitTestVisible = true;
+
+        controlBarHideTimer.Stop();
+        OverlayGrid.MouseMove -= OverlayGrid_MouseMove;
 
         FullscreenIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
             new Uri("pack://application:,,,/Resources/Icons/fullScreen.png"));
@@ -754,6 +761,53 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         saveProgressTimer.Stop();
         SaveCurrentProgress();
 
+        OverlayGrid.MouseMove -= OverlayGrid_MouseMove;
+
         mediaController.Dispose();
+    }
+
+    private void OverlayGrid_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (!isFullscreen) return;
+        var pos = e.GetPosition(OverlayGrid);
+        if (pos.Y > OverlayGrid.ActualHeight - 10)
+        {
+            ShowFullscreenControlBar();
+        }
+    }
+
+    private void ControlBar_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (!isFullscreen) return;
+        controlBarHideTimer.Stop();
+        ControlBar.Opacity = 1;
+    }
+
+    private void ControlBar_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (!isFullscreen) return;
+        controlBarHideTimer.Start();
+    }
+
+    private void ControlBarHideTimer_Tick(object? sender, EventArgs e)
+    {
+        if (!ControlBar.IsMouseOver)
+        {
+            HideFullscreenControlBar();
+        }
+    }
+
+    private void ShowFullscreenControlBar()
+    {
+        controlBarHideTimer.Stop();
+        ControlBar.Visibility = Visibility.Visible;
+        ControlBar.Opacity = 1;
+        ControlBar.IsHitTestVisible = true;
+    }
+
+    private void HideFullscreenControlBar()
+    {
+        ControlBar.Opacity = 0;
+        ControlBar.IsHitTestVisible = false;
     }
 }
