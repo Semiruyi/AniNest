@@ -25,7 +25,8 @@
                 <Grid x:Name="OverlayGrid"
                       Background="#01000000"
                       MouseLeftButtonDown="OverlayGrid_MouseLeftButtonDown"
-                      MouseRightButtonDown="OverlayGrid_MouseRightButtonDown"/>
+                      MouseRightButtonDown="OverlayGrid_MouseRightButtonDown"
+                      MouseDown="OverlayGrid_MouseDown"/>
             </vlc:VideoView>
         </Grid>
 
@@ -152,9 +153,7 @@
                     <Button x:Name="FullscreenBtn" Style="{StaticResource IconButton}" Click="FullscreenBtn_Click" Margin="2,0,0,0" ToolTip="全屏 (F)">
                         <Image x:Name="FullscreenIcon" Source="/Resources/Icons/fullScreen.png" Width="16" Height="16"/>
                     </Button>
-                    <Button x:Name="BackBtn" Style="{StaticResource IconButton}" Click="BackBtn_Click" Margin="2,0,0,0" ToolTip="返回 (Esc)">
-                        <Image Source="/Resources/Icons/back.png" Width="16" Height="16"/>
-                    </Button>
+
                 </StackPanel>
             </Grid>
         </Grid>

@@ -418,10 +418,21 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             : Visibility.Visible;
     }
 
-    private void BackBtn_Click(object sender, RoutedEventArgs e)
+    private void OverlayGrid_MouseDown(object sender, MouseButtonEventArgs e)
     {
-        SaveCurrentProgress();
-        BackRequested?.Invoke(this, EventArgs.Empty);
+        if (e.ChangedButton == MouseButton.XButton1)
+        {
+            if (isFullscreen)
+            {
+                ExitFullscreen();
+            }
+            else
+            {
+                SaveCurrentProgress();
+                BackRequested?.Invoke(this, EventArgs.Empty);
+            }
+            e.Handled = true;
+        }
     }
 
     private void ProgressSlider_PreviewMouseDown(object sender, MouseButtonEventArgs e)
