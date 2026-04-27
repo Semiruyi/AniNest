@@ -108,6 +108,17 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         FocusManager.SetFocusedElement(this, this);
         Log($"Loaded 后尝试设置焦点到 PlayerPage");
 
+        // 入场动画：遮罩从黑渐变到透明，其余元素同步淡入
+        var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut };
+        var duration = TimeSpan.FromMilliseconds(500);
+
+        var maskAnim = new System.Windows.Media.Animation.DoubleAnimation(1, 0, duration) { EasingFunction = ease };
+        maskAnim.Completed += (_, _) => TransitionMask.Visibility = Visibility.Collapsed;
+        TransitionMask.BeginAnimation(OpacityProperty, maskAnim);
+
+        PlaylistBorder.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+        ControlBar.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+
         mediaController.Initialize(VideoView);
 
         OverlayGrid.MouseMove += OverlayGrid_MouseMove;
@@ -871,6 +882,28 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         {
             settingsService.SetVideoProgress(filePath, time, length);
         }
+    }
+
+    /// <summary>
+    /// 退场动画：遮罩渐变到黑色 + 其余元素淡出，用于返回主页面时的过渡
+    /// </summary>
+    public async System.Threading.Tasks.Task FadeToBlackAsync(int durationMs = 500)
+    {
+        TransitionMask.Visibility = Visibility.Visible;
+        TransitionMask.Opacity = 0;
+
+        var duration = TimeSpan.FromMilliseconds(durationMs);
+        var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut };
+
+        var tcs = new System.Threading.Tasks.TaskCompletionSource<bool>();
+        var maskAnim = new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration) { EasingFunction = ease };
+        maskAnim.Completed += (_, _) => tcs.TrySetResult(true);
+        TransitionMask.BeginAnimation(OpacityProperty, maskAnim);
+
+        PlaylistBorder.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(1, 0, duration) { EasingFunction = ease });
+        ControlBar.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(1, 0, duration) { EasingFunction = ease });
+
+        await tcs.Task;
     }
 
     public void Dispose()

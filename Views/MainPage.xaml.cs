@@ -133,7 +133,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
         // 后备定时器：即使 Completed 因故未触发，300ms 后强制删除
         bool finished = false;
-        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         timer.Tick += (_, _) =>
         {
             timer.Stop();
@@ -208,11 +208,11 @@ public partial class MainPage : System.Windows.Controls.UserControl
                     border.RenderTransform = translate;
                     border.Opacity = 0;
 
-                    var animOpacity = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(300))
+                    var animOpacity = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(500))
                     {
                         EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
                     };
-                    var animY = new DoubleAnimation(20, 0, TimeSpan.FromMilliseconds(300))
+                    var animY = new DoubleAnimation(20, 0, TimeSpan.FromMilliseconds(500))
                     {
                         EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
                     };

@@ -26,13 +26,18 @@
                       Background="#01000000"
                       MouseLeftButtonDown="OverlayGrid_MouseLeftButtonDown"
                       MouseRightButtonDown="OverlayGrid_MouseRightButtonDown"
-                      MouseDown="OverlayGrid_MouseDown"/>
+                      MouseDown="OverlayGrid_MouseDown">
+                    <Border x:Name="TransitionMask"
+                            Background="Black"
+                            IsHitTestVisible="False"/>
+                </Grid>
             </vlc:VideoView>
         </Grid>
 
         <!-- 选集 -->
         <Border x:Name="PlaylistBorder" Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
                 Width="260" Background="{StaticResource SurfaceDark}"
+                Opacity="0"
                 BorderBrush="#333333" BorderThickness="1,0,0,0">
             <Grid>
                 <Grid.RowDefinitions>
@@ -99,6 +104,7 @@
 
         <!-- 控制栏 -->
         <Grid x:Name="ControlBar" Grid.Row="1" Grid.Column="0" Height="63"
+              Opacity="0"
               MouseEnter="ControlBar_MouseEnter" MouseLeave="ControlBar_MouseLeave">
             <Grid.Background>
                 <SolidColorBrush Color="#CC0F0F0F"/>
@@ -157,5 +163,6 @@
                 </StackPanel>
             </Grid>
         </Grid>
+
     </Grid>
 </UserControl>

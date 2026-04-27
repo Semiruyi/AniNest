@@ -69,10 +69,16 @@ public partial class MainWindow : Window
         PageHost.Content = playerPage;
     }
 
-    private void PlayerPage_BackRequested(object? sender, System.EventArgs e)
+    private async void PlayerPage_BackRequested(object? sender, System.EventArgs e)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         Log("BackRequested 开始");
+
+        if (playerPage != null)
+        {
+            await playerPage.FadeToBlackAsync();
+        }
+
         playerPage?.Dispose();
         Log($"playerPage.Dispose 完成，耗时 {sw.ElapsedMilliseconds}ms");
         ShowMainPage();
