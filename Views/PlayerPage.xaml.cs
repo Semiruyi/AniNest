@@ -216,22 +216,52 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         public const uint SWP_NOACTIVATE = 0x0010;
     }
 
+    private bool _videoHwndFixed = false;
+    private bool _foregroundWindowFixed = false;
+
     private void FixForegroundWindowNoActivate()
     {
         try
         {
-            var foregroundWindowField = typeof(LibVLCSharp.WPF.VideoView).GetField(
-                "ForegroundWindow", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (foregroundWindowField == null)
+            // 1. 修复 VideoHwndHost 的 Win32 背景（白色问题的真正来源：static 窗口默认背景为白色）
+            if (!_videoHwndFixed)
             {
-                Log("FixForegroundWindowNoActivate: 未找到 ForegroundWindow 字段");
+                var videoHwndHostField = typeof(LibVLCSharp.WPF.VideoView).GetField(
+                    "_videoHwndHost", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (videoHwndHostField != null)
+                {
+                    var videoHwndHost = videoHwndHostField.GetValue(VideoView);
+                    if (videoHwndHost != null)
+                    {
+                        var handleProp = typeof(System.Windows.Interop.HwndHost).GetProperty("Handle");
+                        if (handleProp != null)
+                        {
+                            var hwnd = (IntPtr)handleProp.GetValue(videoHwndHost)!;
+                            if (hwnd != IntPtr.Zero)
+                            {
+                                FixHwndBackground(hwnd);
+                                _videoHwndFixed = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. 设置 ForegroundWindow 无激活（不改背景，否则黑色背景会遮挡下方视频）
+            var foregroundWindowProp = typeof(LibVLCSharp.WPF.VideoView).GetProperty(
+                "ForegroundWindow", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (foregroundWindowProp == null)
+            {
+                Log("FixForegroundWindowNoActivate: 未找到 ForegroundWindow 属性");
+                ScheduleRetryFixForegroundWindow();
                 return;
             }
 
-            var foregroundWindow = foregroundWindowField.GetValue(VideoView) as Window;
+            var foregroundWindow = foregroundWindowProp.GetValue(VideoView) as Window;
             if (foregroundWindow == null)
             {
-                Log("FixForegroundWindowNoActivate: ForegroundWindow 为 null");
+                Log("FixForegroundWindowNoActivate: ForegroundWindow 为 null，将在 100ms 后重试");
+                ScheduleRetryFixForegroundWindow();
                 return;
             }
 
@@ -243,12 +273,85 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             {
                 foregroundWindow.Loaded += (s, e) => ApplyNoActivate(foregroundWindow);
             }
+
+            _foregroundWindowFixed = true;
         }
         catch (Exception ex)
         {
             Log($"FixForegroundWindowNoActivate 异常: {ex.Message}");
         }
     }
+
+    private DispatcherTimer? _retryTimer;
+
+    private void ScheduleRetryFixForegroundWindow()
+    {
+        if (_foregroundWindowFixed && _videoHwndFixed) return;
+        _retryTimer?.Stop();
+        _retryTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+        _retryTimer.Tick += (_, _) =>
+        {
+            _retryTimer.Stop();
+            if (!_foregroundWindowFixed || !_videoHwndFixed)
+            {
+                Log("重试 FixForegroundWindowNoActivate");
+                FixForegroundWindowNoActivate();
+            }
+        };
+        _retryTimer.Start();
+    }
+
+    #region VideoHwndHost 黑色背景修复
+
+    [DllImport("comctl32.dll", SetLastError = true)]
+    private static extern bool SetWindowSubclass(IntPtr hWnd, SubclassProc pfnSubclass, uint uIdSubclass, IntPtr dwRefData);
+
+    [DllImport("comctl32.dll", SetLastError = true)]
+    private static extern IntPtr DefSubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetClientRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("gdi32.dll")]
+    private static extern IntPtr GetStockObject(int fnObject);
+
+    [DllImport("user32.dll")]
+    private static extern int FillRect(IntPtr hDC, [In] ref RECT lprc, IntPtr hbr);
+
+    private delegate IntPtr SubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, IntPtr uIdSubclass, uint dwRefData);
+
+    private const uint WM_ERASEBKGND = 0x0014;
+    private const int BLACK_BRUSH = 4;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left, Top, Right, Bottom;
+    }
+
+    private static SubclassProc? _videoHwndSubclassProc;
+
+    private void FixHwndBackground(IntPtr hwnd)
+    {
+        _videoHwndSubclassProc = VideoHwndSubclassProc;
+        SetWindowSubclass(hwnd, _videoHwndSubclassProc, 1, IntPtr.Zero);
+        Log($"FixHwndBackground: 已设置 HWND {hwnd} 的背景子类化");
+    }
+
+    private static IntPtr VideoHwndSubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, IntPtr uIdSubclass, uint dwRefData)
+    {
+        if (uMsg == WM_ERASEBKGND)
+        {
+            if (GetClientRect(hWnd, out var rc))
+            {
+                FillRect(wParam, ref rc, GetStockObject(BLACK_BRUSH));
+            }
+            return new IntPtr(1);
+        }
+        return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+    }
+
+    #endregion
 
     private void ApplyNoActivate(Window foregroundWindow)
     {
@@ -778,6 +881,10 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         OverlayGrid.MouseMove -= OverlayGrid_MouseMove;
         Log($"MouseMove 取消订阅 耗时 {sw.ElapsedMilliseconds}ms");
+
+        _retryTimer?.Stop();
+        _retryTimer = null;
+        Log($"retryTimer 停止 耗时 {sw.ElapsedMilliseconds}ms");
 
         mediaController.Dispose();
         Log($"mediaController.Dispose 完成，总耗时 {sw.ElapsedMilliseconds}ms");
