@@ -77,11 +77,13 @@ public class SettingsService
         
         if (!settings.Folders.Exists(f => f.Path == path))
         {
+            int maxOrder = settings.Folders.Count > 0 ? settings.Folders.Max(f => f.OrderIndex) : -1;
             settings.Folders.Add(new FolderInfo
             {
                 Path = path,
                 Name = name,
-                AddedTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                AddedTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                OrderIndex = maxOrder + 1
             });
             Save();
         }
@@ -96,7 +98,26 @@ public class SettingsService
 
     public List<FolderInfo> GetFolders()
     {
-        return Load().Folders;
+        var folders = Load().Folders;
+        // 兼容旧数据：没有 OrderIndex 的按 AddedTime 排序
+        for (int i = 0; i < folders.Count; i++)
+        {
+            if (folders[i].OrderIndex == 0 && i > 0)
+                folders[i].OrderIndex = folders[i - 1].OrderIndex + 1;
+        }
+        return folders.OrderBy(f => f.OrderIndex).ThenBy(f => f.AddedTime).ToList();
+    }
+
+    public void ReorderFolders(List<string> orderedPaths)
+    {
+        var settings = Load();
+        for (int i = 0; i < orderedPaths.Count; i++)
+        {
+            var folder = settings.Folders.FirstOrDefault(f => f.Path == orderedPaths[i]);
+            if (folder != null)
+                folder.OrderIndex = i;
+        }
+        Save();
     }
 
     // ========== 播放进度相关 ==========

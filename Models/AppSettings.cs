@@ -14,6 +14,7 @@ public class FolderInfo
     public string Path { get; set; } = "";
     public string Name { get; set; } = "";
     public long AddedTime { get; set; }  // Unix 时间戳
+    public int OrderIndex { get; set; }
 }
 
 public class VideoProgress
