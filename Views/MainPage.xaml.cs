@@ -61,7 +61,15 @@ public partial class MainPage : System.Windows.Controls.UserControl
             System.Diagnostics.Debug.WriteLine($"[MainPage] 文件夹 {folder.Name} 处理耗时 {folderSw.ElapsedMilliseconds}ms");
         }
         FolderList.ItemsSource = folderItems;
+        UpdateToolbarState();
         System.Diagnostics.Debug.WriteLine($"[MainPage] LoadFolders 总耗时 {sw.ElapsedMilliseconds}ms");
+    }
+
+    private void UpdateToolbarState()
+    {
+        int count = folderItems.Count;
+        FolderCountText.Text = $"{count} 个文件夹";
+        EmptyHintText.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private static string? GetCoverPath(string folderPath)
@@ -91,12 +99,14 @@ public partial class MainPage : System.Windows.Controls.UserControl
                 {
                     folderItems.Remove(item);
                     settingsService.RemoveFolder(path);
+                    UpdateToolbarState();
                 });
             }
             else
             {
                 folderItems.Remove(item);
                 settingsService.RemoveFolder(path);
+                UpdateToolbarState();
             }
         }
         e.Handled = true;
@@ -148,6 +158,14 @@ public partial class MainPage : System.Windows.Controls.UserControl
         scale.BeginAnimation(ScaleTransform.ScaleYProperty, animScaleY);
     }
 
+    // ========== 设置（为默认扫描文件夹功能预留） ==========
+
+    private void SettingsBtn_Click(object sender, RoutedEventArgs e)
+    {
+        // TODO: 打开设置面板，包含默认扫描文件夹配置
+        System.Windows.MessageBox.Show("设置功能开发中...\n\n未来将支持：\n- 设置默认扫描文件夹", "提示");
+    }
+
     // ========== 添加 ==========
 
     private void AddFolderBtn_Click(object sender, RoutedEventArgs e)
@@ -178,6 +196,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
             settingsService.AddFolder(path, name);
             var newItem = new FolderListItem(name, path, count, GetCoverPath(path));
             folderItems.Add(newItem);
+            UpdateToolbarState();
 
             // 新卡片淡入动画
             Dispatcher.BeginInvoke(new Action(() =>
