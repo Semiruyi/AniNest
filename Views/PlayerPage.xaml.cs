@@ -1,10 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using LocalPlayer.Services;
 
@@ -436,7 +440,9 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         {
             PlaylistBox.Items.Add(new PlaylistItem { Number = i + 1, Title = Path.GetFileName(videoFiles[i]) });
         }
-        EpisodeCountText.Text = videoFiles.Length > 0 ? $"共 {videoFiles.Length} 集" : "";
+        EpisodeCountText.Text = videoFiles.Length > 0 ? $"{videoFiles.Length} 集" : "";
+
+        AnimateEpisodeButtonsEntrance();
 
         var folderProgress = settingsService.GetFolderProgress(folderPath);
         string? targetVideo = folderProgress?.LastVideoPath;
@@ -939,6 +945,64 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         await tcs.Task;
     }
+
+    #region 选集按钮入场动画
+
+    private static List<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject
+    {
+        var result = new List<T>();
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is T t)
+                result.Add(t);
+            result.AddRange(FindVisualChildren<T>(child));
+        }
+        return result;
+    }
+
+    private async void AnimateEpisodeButtonsEntrance()
+    {
+        await System.Threading.Tasks.Task.Delay(100);
+
+        if (!IsLoaded) return;
+
+        var buttons = FindVisualChildren<System.Windows.Controls.Button>(PlaylistBox);
+        for (int i = 0; i < buttons.Count; i++)
+        {
+            var btn = buttons[i];
+            var delay = TimeSpan.FromMilliseconds(i * 35);
+
+            btn.RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
+            var st = new ScaleTransform(0.88, 0.88);
+            btn.RenderTransform = st;
+            btn.Opacity = 0;
+
+            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+            var dur = TimeSpan.FromMilliseconds(420);
+
+            var scaleAnimX = new DoubleAnimation(0.88, 1.0, dur)
+            {
+                BeginTime = delay,
+                EasingFunction = ease
+            };
+            var scaleAnimY = new DoubleAnimation(0.88, 1.0, dur)
+            {
+                BeginTime = delay,
+                EasingFunction = ease
+            };
+            var opacityAnim = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(320))
+            {
+                BeginTime = delay
+            };
+
+            st.BeginAnimation(ScaleTransform.ScaleXProperty, scaleAnimX);
+            st.BeginAnimation(ScaleTransform.ScaleYProperty, scaleAnimY);
+            btn.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
+        }
+    }
+
+    #endregion
 
     public void Dispose()
     {

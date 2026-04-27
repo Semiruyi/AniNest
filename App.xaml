@@ -8,10 +8,10 @@
             <SolidColorBrush x:Key="BackgroundDark" Color="#FF0A0A0A"/>
             <SolidColorBrush x:Key="SurfaceDark" Color="#FF141414"/>
             <SolidColorBrush x:Key="SurfaceLight" Color="#FF1E1E1E"/>
-            <Color x:Key="AccentBlueColor">#FF3B82F6</Color>
+            <Color x:Key="AccentBlueColor">#FF007AFF</Color>
             <SolidColorBrush x:Key="AccentBlue" Color="{StaticResource AccentBlueColor}"/>
-            <SolidColorBrush x:Key="AccentBlueHover" Color="#FF60A5FA"/>
-            <SolidColorBrush x:Key="AccentBlueActive" Color="#FF93C5FD"/>
+            <SolidColorBrush x:Key="AccentBlueHover" Color="#FF3399FF"/>
+            <SolidColorBrush x:Key="AccentBlueActive" Color="#FF66B5FF"/>
             <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFFFF"/>
             <SolidColorBrush x:Key="TextSecondary" Color="#AAFFFFFF"/>
             <SolidColorBrush x:Key="HoverBackground" Color="#22FFFFFF"/>
@@ -205,97 +205,155 @@
                 </Setter>
             </Style>
 
-            <!-- 选集按钮：圆角正方形，带弹性回弹 -->
+            <!-- 选集按钮：iOS 扁平风格 + 平滑颜色过渡 -->
             <Style x:Key="EpisodeButton" TargetType="Button">
-                <Setter Property="Width" Value="48"/>
-                <Setter Property="Height" Value="48"/>
-                <Setter Property="Background" Value="#252525"/>
-                <Setter Property="BorderBrush" Value="#333333"/>
-                <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="Width" Value="54"/>
+                <Setter Property="Height" Value="54"/>
+                <Setter Property="Foreground" Value="#EBEBF5"/>
+                <Setter Property="BorderThickness" Value="0"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Focusable" Value="False"/>
+                <Setter Property="FontWeight" Value="Medium"/>
+                <Setter Property="FontSize" Value="15"/>
+                <Setter Property="FontFamily" Value="Segoe UI, Microsoft YaHei, sans-serif"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid x:Name="ButtonGrid" RenderTransformOrigin="0.5,0.5">
+                            <Grid x:Name="ButtonRoot" RenderTransformOrigin="0.5,0.5">
                                 <Grid.RenderTransform>
                                     <ScaleTransform ScaleX="1" ScaleY="1"/>
                                 </Grid.RenderTransform>
-                                <Border x:Name="BgBorder"
-                                        Background="{TemplateBinding Background}"
-                                        BorderBrush="{TemplateBinding BorderBrush}"
-                                        BorderThickness="{TemplateBinding BorderThickness}"
-                                        CornerRadius="10"/>
+                                <Border x:Name="BgBorder" CornerRadius="14">
+                                    <Border.Background>
+                                        <SolidColorBrush x:Name="BgBrush" Color="#2C2C2E"/>
+                                    </Border.Background>
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="#000000" BlurRadius="4"
+                                                          ShadowDepth="1" Direction="270" Opacity="0.12"/>
+                                    </Border.Effect>
+                                </Border>
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="BgBorder" Property="Background" Value="#333333"/>
-                                    <Setter TargetName="BgBorder" Property="BorderBrush" Value="#444444"/>
+                                    <Setter Property="Foreground" Value="White"/>
                                     <Trigger.EnterActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
                                                     Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                    To="1.08" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                    To="1.04" Duration="0:0:0.2">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <CubicEase EasingMode="EaseOut"/>
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
                                                     Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                    To="1.08" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
+                                                    To="1.04" Duration="0:0:0.2">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <CubicEase EasingMode="EaseOut"/>
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <ColorAnimation Storyboard.TargetName="BgBrush"
+                                                    Storyboard.TargetProperty="Color"
+                                                    To="#3A3A3C" Duration="0:0:0.2"/>
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </Trigger.EnterActions>
                                     <Trigger.ExitActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
                                                     Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                    To="1" Duration="0:0:0.18" EasingFunction="{StaticResource EaseOut}"/>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                    To="1" Duration="0:0:0.25">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <CubicEase EasingMode="EaseOut"/>
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
                                                     Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                    To="1" Duration="0:0:0.18" EasingFunction="{StaticResource EaseOut}"/>
+                                                    To="1" Duration="0:0:0.25">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <CubicEase EasingMode="EaseOut"/>
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <ColorAnimation Storyboard.TargetName="BgBrush"
+                                                    Storyboard.TargetProperty="Color"
+                                                    Duration="0:0:0.25" FillBehavior="Stop"/>
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </Trigger.ExitActions>
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="BgBorder" Property="Background" Value="#444444"/>
+                                    <Setter Property="Foreground" Value="#EBEBF5"/>
                                     <Trigger.EnterActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
                                                     Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                    To="0.92" Duration="0:0:0.05" EasingFunction="{StaticResource EaseOut}"/>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                    To="0.96" Duration="0:0:0.08">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <CubicEase EasingMode="EaseOut"/>
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
                                                     Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                    To="0.92" Duration="0:0:0.05" EasingFunction="{StaticResource EaseOut}"/>
+                                                    To="0.96" Duration="0:0:0.08">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <CubicEase EasingMode="EaseOut"/>
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <ColorAnimation Storyboard.TargetName="BgBrush"
+                                                    Storyboard.TargetProperty="Color"
+                                                    To="#1C1C1E" Duration="0:0:0.08"/>
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </Trigger.EnterActions>
                                     <Trigger.ExitActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
                                                     Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                    To="1" Duration="0:0:0.25">
+                                                    To="1" Duration="0:0:0.4">
                                                     <DoubleAnimation.EasingFunction>
-                                                        <ElasticEase Oscillations="1" Springiness="8" EasingMode="EaseOut"/>
+                                                        <CubicEase EasingMode="EaseOut"/>
                                                     </DoubleAnimation.EasingFunction>
                                                 </DoubleAnimation>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
+                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
                                                     Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                    To="1" Duration="0:0:0.25">
+                                                    To="1" Duration="0:0:0.4">
                                                     <DoubleAnimation.EasingFunction>
-                                                        <ElasticEase Oscillations="1" Springiness="8" EasingMode="EaseOut"/>
+                                                        <CubicEase EasingMode="EaseOut"/>
                                                     </DoubleAnimation.EasingFunction>
                                                 </DoubleAnimation>
+                                                <ColorAnimation Storyboard.TargetName="BgBrush"
+                                                    Storyboard.TargetProperty="Color"
+                                                    Duration="0:0:0.25" FillBehavior="Stop"/>
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </Trigger.ExitActions>
                                 </Trigger>
                                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
-                                    <Setter TargetName="BgBorder" Property="Background" Value="{StaticResource AccentBlue}"/>
-                                    <Setter TargetName="BgBorder" Property="BorderBrush" Value="{StaticResource AccentBlue}"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                    <DataTrigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetName="BgBrush"
+                                                    Storyboard.TargetProperty="Color"
+                                                    To="#007AFF" Duration="0:0:0.22"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.EnterActions>
+                                    <DataTrigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetName="BgBrush"
+                                                    Storyboard.TargetProperty="Color"
+                                                    To="#2C2C2E" Duration="0:0:0.22"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.ExitActions>
                                 </DataTrigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
