@@ -48,3 +48,7 @@ Desktop.ini
 *.dll
 *.pdb
 *.cachefile
+
+# 发布相关
+release.bat
+publish/
