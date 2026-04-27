@@ -172,6 +172,12 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         Dispose();
     }
 
+    private class PlaylistItem
+    {
+        public int Number { get; set; }
+        public string Title { get; set; } = "";
+    }
+
     public void LoadFolder(string folderPath, string folderName)
     {
         Log($"LoadFolder 被调用: {folderPath}, IsLoaded={IsLoaded}");
@@ -194,10 +200,11 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             Log($"  - {f}");
         }
         PlaylistBox.Items.Clear();
-        foreach (var file in videoFiles)
+        for (int i = 0; i < videoFiles.Length; i++)
         {
-            PlaylistBox.Items.Add(Path.GetFileName(file));
+            PlaylistBox.Items.Add(new PlaylistItem { Number = i + 1, Title = Path.GetFileName(videoFiles[i]) });
         }
+        EpisodeCountText.Text = videoFiles.Length > 0 ? $"共 {videoFiles.Length} 集" : "";
 
         var folderProgress = settingsService.GetFolderProgress(folderPath);
         string? targetVideo = folderProgress?.LastVideoPath;
