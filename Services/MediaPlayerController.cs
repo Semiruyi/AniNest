@@ -151,15 +151,20 @@ public class MediaPlayerController : IDisposable
 
     public void Dispose()
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        Log("Dispose 开始");
         updateTimer?.Stop();
         updateTimer = null;
-        updateTimer = null;
+        Log($"updateTimer.Stop 耗时 {sw.ElapsedMilliseconds}ms");
 
         mediaPlayer?.Stop();
+        Log($"mediaPlayer.Stop 耗时 {sw.ElapsedMilliseconds}ms");
         mediaPlayer?.Dispose();
+        Log($"mediaPlayer.Dispose 耗时 {sw.ElapsedMilliseconds}ms");
         mediaPlayer = null;
 
         libVLC?.Dispose();
+        Log($"libVLC.Dispose 耗时 {sw.ElapsedMilliseconds}ms");
         libVLC = null;
     }
 }

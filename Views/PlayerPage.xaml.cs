@@ -769,12 +769,18 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     public void Dispose()
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        Log("Dispose 开始");
         saveProgressTimer.Stop();
+        Log($"saveProgressTimer.Stop 耗时 {sw.ElapsedMilliseconds}ms");
         SaveCurrentProgress();
+        Log($"SaveCurrentProgress 完成，耗时 {sw.ElapsedMilliseconds}ms");
 
         OverlayGrid.MouseMove -= OverlayGrid_MouseMove;
+        Log($"MouseMove 取消订阅 耗时 {sw.ElapsedMilliseconds}ms");
 
         mediaController.Dispose();
+        Log($"mediaController.Dispose 完成，总耗时 {sw.ElapsedMilliseconds}ms");
     }
 
     private void OverlayGrid_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)

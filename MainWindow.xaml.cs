@@ -71,8 +71,12 @@ public partial class MainWindow : Window
 
     private void PlayerPage_BackRequested(object? sender, System.EventArgs e)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        Log("BackRequested 开始");
         playerPage?.Dispose();
+        Log($"playerPage.Dispose 完成，耗时 {sw.ElapsedMilliseconds}ms");
         ShowMainPage();
+        Log($"ShowMainPage 完成，总耗时 {sw.ElapsedMilliseconds}ms");
     }
 
     private void MainWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)

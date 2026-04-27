@@ -40,10 +40,14 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     private void LoadFolders()
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        System.Diagnostics.Debug.WriteLine($"[MainPage] LoadFolders 开始");
         var folders = settingsService.GetFolders();
+        System.Diagnostics.Debug.WriteLine($"[MainPage] GetFolders 耗时 {sw.ElapsedMilliseconds}ms，共 {folders.Count} 个文件夹");
         folderItems.Clear();
         foreach (var folder in folders)
         {
+            var folderSw = System.Diagnostics.Stopwatch.StartNew();
             if (Directory.Exists(folder.Path))
             {
                 int count = VideoScanner.CountVideosInFolder(folder.Path);
@@ -54,8 +58,10 @@ public partial class MainPage : System.Windows.Controls.UserControl
             {
                 settingsService.RemoveFolder(folder.Path);
             }
+            System.Diagnostics.Debug.WriteLine($"[MainPage] 文件夹 {folder.Name} 处理耗时 {folderSw.ElapsedMilliseconds}ms");
         }
         FolderList.ItemsSource = folderItems;
+        System.Diagnostics.Debug.WriteLine($"[MainPage] LoadFolders 总耗时 {sw.ElapsedMilliseconds}ms");
     }
 
     private static string? GetCoverPath(string folderPath)
