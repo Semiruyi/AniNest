@@ -43,6 +43,9 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private ResizeMode savedResizeMode;
     private bool isFullscreen = false;
 
+    private Grid? controlBarOriginalParent;
+    private int controlBarOriginalIndex = -1;
+
     public event EventHandler? BackRequested;
 
     public PlayerPage()
@@ -90,6 +93,10 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         parentWindow = Window.GetWindow(this);
         Log($"获取父窗口: {parentWindow?.GetType().Name}");
+
+        controlBarOriginalParent = ControlBar.Parent as Grid;
+        if (controlBarOriginalParent != null)
+            controlBarOriginalIndex = controlBarOriginalParent.Children.IndexOf(ControlBar);
 
         // 尝试夺取焦点，防止 VideoView (WindowsFormsHost) 吃掉键盘事件
         Log($"Loaded 前 FocusedElement={FocusManager.GetFocusedElement(this)}");
@@ -529,7 +536,20 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         parentWindow.WindowState = WindowState.Maximized;
 
         PlaylistBorder.Visibility = Visibility.Collapsed;
-        ControlBar.Visibility = Visibility.Collapsed;
+
+        // 将控制栏移到视频覆盖层内，才能在视频上方显示
+        if (controlBarOriginalParent != null)
+            controlBarOriginalParent.Children.Remove(ControlBar);
+        OverlayGrid.Children.Add(ControlBar);
+
+        ControlBar.VerticalAlignment = VerticalAlignment.Bottom;
+        ControlBar.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
+        ControlBar.Height = 63;
+
+        ControlBar.Visibility = Visibility.Visible;
+        ControlBar.Opacity = 1;
+        ControlBar.IsHitTestVisible = true;
+
         FullscreenIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
             new Uri("pack://application:,,,/Resources/Icons/exitFullScreen.png"));
 
@@ -551,7 +571,27 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         parentWindow.ResizeMode = savedResizeMode;
 
         PlaylistBorder.Visibility = Visibility.Visible;
+
+        // 从覆盖层移除并恢复到原来的父容器
+        OverlayGrid.Children.Remove(ControlBar);
+        if (controlBarOriginalParent != null)
+        {
+            if (controlBarOriginalIndex >= 0 && controlBarOriginalIndex <= controlBarOriginalParent.Children.Count)
+                controlBarOriginalParent.Children.Insert(controlBarOriginalIndex, ControlBar);
+            else
+                controlBarOriginalParent.Children.Add(ControlBar);
+        }
+
+        // 恢复布局属性
+        Grid.SetRow(ControlBar, 1);
+        Grid.SetRowSpan(ControlBar, 1);
+        ControlBar.VerticalAlignment = VerticalAlignment.Stretch;
+        System.Windows.Controls.Panel.SetZIndex(ControlBar, 0);
+
         ControlBar.Visibility = Visibility.Visible;
+        ControlBar.Opacity = 1;
+        ControlBar.IsHitTestVisible = true;
+
         FullscreenIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
             new Uri("pack://application:,,,/Resources/Icons/fullScreen.png"));
 
