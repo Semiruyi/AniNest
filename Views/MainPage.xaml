@@ -88,6 +88,12 @@
                                         <Style TargetType="Button">
                                             <Setter Property="Opacity" Value="0"/>
                                             <Setter Property="IsHitTestVisible" Value="False"/>
+                                            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+                                            <Setter Property="RenderTransform">
+                                                <Setter.Value>
+                                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                                </Setter.Value>
+                                            </Setter>
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate TargetType="Button">
@@ -99,7 +105,9 @@
                                                 </Setter.Value>
                                             </Setter>
                                             <Style.Triggers>
+                                                <!-- 卡片 Hover 时显示并激活点击 -->
                                                 <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Border}}" Value="True">
+                                                    <Setter Property="IsHitTestVisible" Value="True"/>
                                                     <DataTrigger.EnterActions>
                                                         <BeginStoryboard>
                                                             <Storyboard>
@@ -115,6 +123,49 @@
                                                         </BeginStoryboard>
                                                     </DataTrigger.ExitActions>
                                                 </DataTrigger>
+                                                <!-- iOS 风格 Hover 放大 -->
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Trigger.EnterActions>
+                                                        <BeginStoryboard>
+                                                            <Storyboard>
+                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1.25" Duration="0:0:0.12">
+                                                                    <DoubleAnimation.EasingFunction>
+                                                                        <CubicEase EasingMode="EaseOut"/>
+                                                                    </DoubleAnimation.EasingFunction>
+                                                                </DoubleAnimation>
+                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1.25" Duration="0:0:0.12">
+                                                                    <DoubleAnimation.EasingFunction>
+                                                                        <CubicEase EasingMode="EaseOut"/>
+                                                                    </DoubleAnimation.EasingFunction>
+                                                                </DoubleAnimation>
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </Trigger.EnterActions>
+                                                    <Trigger.ExitActions>
+                                                        <BeginStoryboard>
+                                                            <Storyboard>
+                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.18">
+                                                                    <DoubleAnimation.EasingFunction>
+                                                                        <CubicEase EasingMode="EaseOut"/>
+                                                                    </DoubleAnimation.EasingFunction>
+                                                                </DoubleAnimation>
+                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.18">
+                                                                    <DoubleAnimation.EasingFunction>
+                                                                        <CubicEase EasingMode="EaseOut"/>
+                                                                    </DoubleAnimation.EasingFunction>
+                                                                </DoubleAnimation>
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </Trigger.ExitActions>
+                                                </Trigger>
+                                                <!-- iOS 风格按下缩小 -->
+                                                <Trigger Property="IsPressed" Value="True">
+                                                    <Setter Property="RenderTransform">
+                                                        <Setter.Value>
+                                                            <ScaleTransform ScaleX="0.9" ScaleY="0.9"/>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Trigger>
                                             </Style.Triggers>
                                         </Style>
                                     </Button.Style>

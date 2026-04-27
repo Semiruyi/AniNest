@@ -8,6 +8,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using LocalPlayer.Models;
 using LocalPlayer.Services;
 
@@ -76,10 +77,11 @@ public partial class MainPage : System.Windows.Controls.UserControl
             var item = folderItems.FirstOrDefault(i => i.Path == path);
             if (item == null) return;
 
-            var border = FindTemplateRoot(item);
-            if (border != null)
+            // 直接在容器上播放动画，避免内部样式动画冲突
+            var container = FolderList.ItemContainerGenerator.ContainerFromItem(item) as FrameworkElement;
+            if (container != null)
             {
-                PlayDeleteAnimation(border, () =>
+                PlayDeleteAnimation(container, () =>
                 {
                     folderItems.Remove(item);
                     settingsService.RemoveFolder(path);
@@ -94,7 +96,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
         e.Handled = true;
     }
 
-    private void PlayDeleteAnimation(UIElement element, Action onComplete)
+    private void PlayDeleteAnimation(FrameworkElement element, Action onComplete)
     {
         var scale = new ScaleTransform(1, 1);
         element.RenderTransform = scale;
@@ -113,8 +115,24 @@ public partial class MainPage : System.Windows.Controls.UserControl
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
 
+        // 后备定时器：即使 Completed 因故未触发，300ms 后强制删除
+        bool finished = false;
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            if (finished) return;
+            finished = true;
+            element.RenderTransform = Transform.Identity;
+            onComplete();
+        };
+        timer.Start();
+
         animOpacity.Completed += (_, _) =>
         {
+            if (finished) return;
+            finished = true;
+            timer.Stop();
             element.RenderTransform = Transform.Identity;
             onComplete();
         };
@@ -189,10 +207,26 @@ public partial class MainPage : System.Windows.Controls.UserControl
         if (sender is not Border border) return;
         if (border.Tag is not string path) return;
 
+        // 如果点击的是删除按钮（或其模板子元素），不捕获鼠标，让按钮正常响应 Click
+        if (IsOriginalSourceInsideButton(e.OriginalSource, border))
+            return;
+
         _dragSourceItem = folderItems.FirstOrDefault(i => i.Path == path);
         _dragStartPoint = e.GetPosition(FolderList);
         _isDragging = false;
         border.CaptureMouse();
+    }
+
+    private static bool IsOriginalSourceInsideButton(object? originalSource, Border cardBorder)
+    {
+        if (originalSource is not DependencyObject dep) return false;
+        DependencyObject? current = dep;
+        while (current != null && current != cardBorder)
+        {
+            if (current is System.Windows.Controls.Button) return true;
+            current = VisualTreeHelper.GetParent(current);
+        }
+        return false;
     }
 
     private void Card_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
