@@ -70,7 +70,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border Width="190" Height="253" Margin="12" Style="{StaticResource PosterCardStyle}"
-                                MouseLeftButtonUp="FolderCard_Click" Tag="{Binding Path}"
+                                MouseLeftButtonDown="FolderCard_DoubleClick" Tag="{Binding Path}"
                                 PreviewMouseLeftButtonDown="Card_PreviewMouseLeftButtonDown"
                                 MouseMove="Card_MouseMove"
                                 PreviewMouseLeftButtonUp="Card_PreviewMouseLeftButtonUp">

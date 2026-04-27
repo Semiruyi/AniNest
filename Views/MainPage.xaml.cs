@@ -345,9 +345,9 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     // ========== 打开文件夹 ==========
 
-    private void FolderCard_Click(object sender, MouseButtonEventArgs e)
+    private void FolderCard_DoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if (_isDragging) return;
+        if (e.ClickCount < 2) return;
         if (sender is Border border && border.Tag is string path)
         {
             string name = Path.GetFileName(path);

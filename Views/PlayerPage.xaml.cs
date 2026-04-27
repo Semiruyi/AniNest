@@ -495,6 +495,10 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         if (e.Handled) return;
         Log($"OverlayGrid MouseLeftButtonDown: ClickCount={e.ClickCount}");
+
+        // 强制将焦点拉回 PlayerPage，防止 ForegroundWindow 吃掉后续键盘事件
+        Keyboard.Focus(this);
+
         if (e.ClickCount >= 2)
         {
             Log("OverlayGrid 左键双击 -> TogglePlayPause");
@@ -507,6 +511,10 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         if (e.Handled) return;
         Log($"OverlayGrid MouseRightButtonDown: ClickCount={e.ClickCount}");
+
+        // 强制将焦点拉回 PlayerPage，防止 ForegroundWindow 吃掉后续键盘事件
+        Keyboard.Focus(this);
+
         if (e.ClickCount >= 2)
         {
             Log("OverlayGrid 右键双击 -> ToggleFullscreen");
