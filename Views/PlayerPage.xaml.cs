@@ -39,8 +39,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private string? pendingLoadFolderPath;
     private string? pendingLoadFolderName;
     private bool isProgressDragging = false;
-    private bool pendingSeek = false;
-    private long pendingSeekTime = 0;
 
     private Window? parentWindow;
     private WindowState savedWindowState;
@@ -145,18 +143,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             {
                 PlayPauseIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
                     new Uri("pack://application:,,,/Resources/Icons/pause.png"));
-                if (pendingSeek && pendingSeekTime > 0)
-                {
-                    var seekTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-                    seekTimer.Tick += (_, _) =>
-                    {
-                        seekTimer.Stop();
-                        mediaController.SeekTo(pendingSeekTime);
-                        pendingSeek = false;
-                        pendingSeekTime = 0;
-                    };
-                    seekTimer.Start();
-                }
             });
         };
         mediaController.Paused += (s, ev) =>
@@ -534,10 +520,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             }
         }
 
-        pendingSeek = startTime > 0;
-        pendingSeekTime = startTime;
-
-        mediaController.Play(filePath);
+        mediaController.Play(filePath, startTime);
         settingsService.SetFolderProgress(currentFolderPath, filePath);
         settingsService.MarkVideoPlayed(filePath);
     }

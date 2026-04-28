@@ -120,9 +120,9 @@ public class MediaPlayerController : IDisposable
         }
     }
 
-    public void Play(string filePath)
+    public void Play(string filePath, long startTimeMs = 0)
     {
-        Log($"Play 被调用: {filePath}");
+        Log($"Play 被调用: {filePath}, startTimeMs={startTimeMs}");
         if (mediaPlayer == null || libVLC == null)
         {
             Log($"Play 提前返回，mediaPlayer={mediaPlayer}, libVLC={libVLC}");
@@ -133,6 +133,10 @@ public class MediaPlayerController : IDisposable
         CurrentFilePath = filePath;
 
         var media = new Media(libVLC, filePath);
+        if (startTimeMs > 0)
+        {
+            media.AddOption($":start-time={startTimeMs / 1000.0:F1}");
+        }
         bool result = mediaPlayer.Play(media);
         Log($"mediaPlayer.Play 返回: {result}");
     }
