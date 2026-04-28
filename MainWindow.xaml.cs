@@ -1,9 +1,11 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media.Animation;
 using LocalPlayer.Views;
 
 namespace LocalPlayer;
@@ -61,12 +63,54 @@ public partial class MainWindow : Window
         playerPage = null;
     }
 
-    private void MainPage_FolderSelected(object? sender, string folderPath, string folderName)
+    private Task FadeMaskToBlackAsync(int durationMs = 600)
     {
+        TransitionMask.Visibility = Visibility.Visible;
+        TransitionMask.BeginAnimation(OpacityProperty, null);
+        TransitionMask.Opacity = 0;
+
+        var tcs = new TaskCompletionSource<bool>();
+        var duration = TimeSpan.FromMilliseconds(durationMs);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
+        var anim = new DoubleAnimation(0, 1, duration) { EasingFunction = ease };
+        anim.Completed += (_, _) => tcs.TrySetResult(true);
+        TransitionMask.BeginAnimation(OpacityProperty, anim);
+        return tcs.Task;
+    }
+
+    private async Task FadeMaskFromBlackAsync(int durationMs = 800)
+    {
+        TransitionMask.Visibility = Visibility.Visible;
+        TransitionMask.BeginAnimation(OpacityProperty, null);
+        TransitionMask.Opacity = 1;
+
+        var tcs = new TaskCompletionSource<bool>();
+        var duration = TimeSpan.FromMilliseconds(durationMs);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
+        var anim = new DoubleAnimation(1, 0, duration) { EasingFunction = ease };
+        anim.Completed += (_, _) =>
+        {
+            TransitionMask.BeginAnimation(OpacityProperty, null);
+            TransitionMask.Visibility = Visibility.Collapsed;
+            tcs.TrySetResult(true);
+        };
+        TransitionMask.BeginAnimation(OpacityProperty, anim);
+        await tcs.Task;
+    }
+
+    private async void MainPage_FolderSelected(object? sender, string folderPath, string folderName)
+    {
+        await FadeMaskToBlackAsync(600);
+
         playerPage = new PlayerPage();
         playerPage.BackRequested += PlayerPage_BackRequested;
         playerPage.LoadFolder(folderPath, folderName);
         PageHost.Content = playerPage;
+
+        await Dispatcher.InvokeAsync(() =>
+        {
+            TransitionMask.Visibility = Visibility.Collapsed;
+        }, System.Windows.Threading.DispatcherPriority.Loaded).Task;
     }
 
     private async void PlayerPage_BackRequested(object? sender, System.EventArgs e)
@@ -79,10 +123,16 @@ public partial class MainWindow : Window
             await playerPage.FadeToBlackAsync();
         }
 
+        TransitionMask.Visibility = Visibility.Visible;
+        TransitionMask.BeginAnimation(OpacityProperty, null);
+        TransitionMask.Opacity = 1;
+
         playerPage?.Dispose();
         Log($"playerPage.Dispose 完成，耗时 {sw.ElapsedMilliseconds}ms");
         ShowMainPage();
         Log($"ShowMainPage 完成，总耗时 {sw.ElapsedMilliseconds}ms");
+
+        await FadeMaskFromBlackAsync(800);
     }
 
     private void MainWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)

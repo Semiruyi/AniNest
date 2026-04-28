@@ -6,5 +6,8 @@
         Background="{StaticResource BackgroundDark}"
         WindowStartupLocation="CenterScreen">
 
-    <ContentControl x:Name="PageHost"/>
+    <Grid>
+        <ContentControl x:Name="PageHost"/>
+        <Border x:Name="TransitionMask" Background="Black" IsHitTestVisible="False" Visibility="Collapsed"/>
+    </Grid>
 </Window>
