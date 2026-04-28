@@ -1,13 +1,12 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using LocalPlayer.Models;
 using LocalPlayer.Services;
 
 namespace LocalPlayer.Views;
@@ -74,7 +73,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         controlBarHideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
         controlBarHideTimer.Tick += ControlBarHideTimer_Tick;
 
-        // 配置输入处理器
         inputHandler.TogglePlayPause += (_, _) => mediaController.TogglePlayPause();
         inputHandler.SeekForward += (_, _) => mediaController.SeekForward(5000);
         inputHandler.SeekBackward += (_, _) => mediaController.SeekBackward(5000);
@@ -95,71 +93,68 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         {
             Log("Loaded 事件触发");
 
-        parentWindow = Window.GetWindow(this);
-        Log($"获取父窗口: {parentWindow?.GetType().Name}");
+            parentWindow = Window.GetWindow(this);
+            Log($"获取父窗口: {parentWindow?.GetType().Name}");
 
-        controlBarOriginalParent = ControlBar.Parent as Grid;
-        if (controlBarOriginalParent != null)
-            controlBarOriginalIndex = controlBarOriginalParent.Children.IndexOf(ControlBar);
+            controlBarOriginalParent = ControlBar.Parent as Grid;
+            if (controlBarOriginalParent != null)
+                controlBarOriginalIndex = controlBarOriginalParent.Children.IndexOf(ControlBar);
 
-        // 夺取焦点到 WPF 元素
-        Log($"Loaded 前 FocusedElement={FocusManager.GetFocusedElement(this)}");
-        Keyboard.Focus(this);
-        FocusManager.SetFocusedElement(this, this);
-        Log($"Loaded 后设置焦点到 PlayerPage");
+            Keyboard.Focus(this);
+            FocusManager.SetFocusedElement(this, this);
+            Log($"Loaded 后设置焦点到 PlayerPage");
 
-        // 入场动画
-        var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut };
-        var duration = TimeSpan.FromMilliseconds(300);
+            var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
+            var duration = TimeSpan.FromMilliseconds(300);
 
-        var anim = new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration) { EasingFunction = ease };
-        anim.Completed += (_, _) =>
-        {
-            PageRoot.BeginAnimation(OpacityProperty, null);
-            PageRoot.Opacity = 1;
-        };
-        PageRoot.BeginAnimation(OpacityProperty, anim);
-
-        mediaController.Initialize();
-        VideoImage.Source = mediaController.VideoBitmap;
-
-        VideoContainer.MouseMove += VideoContainer_MouseMove;
-
-        mediaController.Playing += (s, ev) =>
-        {
-            Dispatcher.Invoke(() =>
+            var anim = new DoubleAnimation(0, 1, duration) { EasingFunction = ease };
+            anim.Completed += (_, _) =>
             {
-                PlayPauseIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
-                    new Uri("pack://application:,,,/Resources/Icons/pause.png"));
-            });
-        };
-        mediaController.Paused += (s, ev) =>
-            Dispatcher.Invoke(() =>
-            {
-                PlayPauseIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
-                    new Uri("pack://application:,,,/Resources/Icons/play.png"));
-            });
-        mediaController.Stopped += (s, ev) =>
-            Dispatcher.Invoke(() =>
-            {
-                PlayPauseIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
-                    new Uri("pack://application:,,,/Resources/Icons/play.png"));
-            });
-        mediaController.ProgressUpdated += (s, ev) =>
-        {
-            if (!isProgressDragging)
+                PageRoot.BeginAnimation(OpacityProperty, null);
+                PageRoot.Opacity = 1;
+            };
+            PageRoot.BeginAnimation(OpacityProperty, anim);
+
+            mediaController.Initialize();
+            VideoImage.Source = mediaController.VideoBitmap;
+
+            VideoContainer.MouseMove += VideoContainer_MouseMove;
+
+            mediaController.Playing += (s, ev) =>
             {
                 Dispatcher.Invoke(() =>
                 {
-                    ProgressSlider.Maximum = ev.TotalTime;
-                    ProgressSlider.Value = ev.CurrentTime;
-                    CurrentTimeText.Text = MediaPlayerController.FormatTime(ev.CurrentTime);
-                    TotalTimeText.Text = MediaPlayerController.FormatTime(ev.TotalTime);
+                    PlayPauseIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
+                        new Uri("pack://application:,,,/Resources/Icons/pause.png"));
                 });
-            }
-        };
+            };
+            mediaController.Paused += (s, ev) =>
+                Dispatcher.Invoke(() =>
+                {
+                    PlayPauseIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
+                        new Uri("pack://application:,,,/Resources/Icons/play.png"));
+                });
+            mediaController.Stopped += (s, ev) =>
+                Dispatcher.Invoke(() =>
+                {
+                    PlayPauseIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
+                        new Uri("pack://application:,,,/Resources/Icons/play.png"));
+                });
+            mediaController.ProgressUpdated += (s, ev) =>
+            {
+                if (!isProgressDragging)
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        ProgressSlider.Maximum = ev.TotalTime;
+                        ProgressSlider.Value = ev.CurrentTime;
+                        CurrentTimeText.Text = MediaPlayerController.FormatTime(ev.CurrentTime);
+                        TotalTimeText.Text = MediaPlayerController.FormatTime(ev.TotalTime);
+                    });
+                }
+            };
 
-        saveProgressTimer.Start();
+            saveProgressTimer.Start();
 
             if (pendingLoadFolderPath != null)
             {
@@ -183,29 +178,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private void PlayerPage_Unloaded(object sender, RoutedEventArgs e)
     {
         Dispose();
-    }
-
-    private class PlaylistItem : System.ComponentModel.INotifyPropertyChanged
-    {
-        public int Number { get; set; }
-        public string Title { get; set; } = "";
-        public string FilePath { get; set; } = "";
-
-        private bool _isPlayed;
-        public bool IsPlayed
-        {
-            get => _isPlayed;
-            set
-            {
-                if (_isPlayed != value)
-                {
-                    _isPlayed = value;
-                    PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(IsPlayed)));
-                }
-            }
-        }
-
-        public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
     }
 
     public void LoadFolder(string folderPath, string folderName)
@@ -374,7 +346,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         if (e.ChangedButton != MouseButton.Left) return;
 
-        // 点击轨道（非 Thumb）时，直接跳转到对应位置
         if (e.OriginalSource is not System.Windows.Controls.Primitives.Thumb && ProgressSlider.ActualWidth > 0)
         {
             double ratio;
@@ -480,103 +451,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         }
     }
 
-    private void ToggleFullscreen()
-    {
-        Log($"ToggleFullscreen 被调用，当前状态 isFullscreen={isFullscreen}");
-        if (isFullscreen)
-            ExitFullscreen();
-        else
-            EnterFullscreen();
-    }
-
-    private void EnterFullscreen()
-    {
-        if (parentWindow == null)
-        {
-            Log("EnterFullscreen 失败: parentWindow 为 null");
-            return;
-        }
-
-        Log("进入全屏模式");
-        savedWindowState = parentWindow.WindowState;
-        savedWindowStyle = parentWindow.WindowStyle;
-        savedResizeMode = parentWindow.ResizeMode;
-
-        parentWindow.WindowStyle = WindowStyle.None;
-        parentWindow.ResizeMode = ResizeMode.NoResize;
-        parentWindow.WindowState = WindowState.Maximized;
-
-        PlaylistBorder.Visibility = Visibility.Collapsed;
-
-        // 将控制栏移到视频容器内，才能在视频上方显示
-        if (controlBarOriginalParent != null)
-            controlBarOriginalParent.Children.Remove(ControlBar);
-        VideoContainer.Children.Add(ControlBar);
-        System.Windows.Controls.Panel.SetZIndex(ControlBar, 1);
-
-        ControlBar.VerticalAlignment = VerticalAlignment.Bottom;
-        ControlBar.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
-        ControlBar.Height = 63;
-
-        HideFullscreenControlBar();
-
-        VideoContainer.MouseMove -= VideoContainer_MouseMove;
-        VideoContainer.MouseMove += VideoContainer_MouseMove;
-
-        FullscreenIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
-            new Uri("pack://application:,,,/Resources/Icons/exitFullScreen.png"));
-
-        isFullscreen = true;
-
-        Keyboard.Focus(ControlBar);
-        Log("✓ 已进入全屏");
-    }
-
-    private void ExitFullscreen()
-    {
-        if (!isFullscreen || parentWindow == null)
-        {
-            Log($"ExitFullscreen 提前返回: isFullscreen={isFullscreen}, parentWindow={parentWindow}");
-            return;
-        }
-
-        Log("退出全屏模式");
-        parentWindow.WindowState = savedWindowState;
-        parentWindow.WindowStyle = savedWindowStyle;
-        parentWindow.ResizeMode = savedResizeMode;
-
-        PlaylistBorder.Visibility = Visibility.Visible;
-
-        // 从覆盖层移除并恢复到原来的父容器
-        VideoContainer.Children.Remove(ControlBar);
-        if (controlBarOriginalParent != null)
-        {
-            if (controlBarOriginalIndex >= 0 && controlBarOriginalIndex <= controlBarOriginalParent.Children.Count)
-                controlBarOriginalParent.Children.Insert(controlBarOriginalIndex, ControlBar);
-            else
-                controlBarOriginalParent.Children.Add(ControlBar);
-        }
-
-        // 恢复布局属性
-        Grid.SetRow(ControlBar, 1);
-        Grid.SetRowSpan(ControlBar, 1);
-        ControlBar.VerticalAlignment = VerticalAlignment.Stretch;
-        System.Windows.Controls.Panel.SetZIndex(ControlBar, 0);
-
-        ControlBar.Visibility = Visibility.Visible;
-        ControlBar.Opacity = 1;
-        ControlBar.IsHitTestVisible = true;
-
-        controlBarHideTimer.Stop();
-        VideoContainer.MouseMove -= VideoContainer_MouseMove;
-
-        FullscreenIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
-            new Uri("pack://application:,,,/Resources/Icons/fullScreen.png"));
-
-        isFullscreen = false;
-        Log("✓ 已退出全屏");
-    }
-
     private void VideoContainer_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (e.Handled) return;
@@ -607,7 +481,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             return;
         }
 
-        // 备选：如果 ClickCount 不可靠，用时间差检测（要求间隔 >50ms 且 <500ms，避免同一毫秒的重复事件误判）
         var elapsed = now - lastRightClickTime;
         var dx = position.X - lastRightClickPosition.X;
         var dy = position.Y - lastRightClickPosition.Y;
@@ -681,78 +554,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         }
     }
 
-    public async System.Threading.Tasks.Task FadeOutUIAsync(int durationMs = 250)
-    {
-        var duration = TimeSpan.FromMilliseconds(durationMs);
-        var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut };
-
-        var tcs = new System.Threading.Tasks.TaskCompletionSource<bool>();
-        var anim = new System.Windows.Media.Animation.DoubleAnimation(1, 0, duration) { EasingFunction = ease };
-        anim.Completed += (_, _) => tcs.TrySetResult(true);
-
-        PageRoot.BeginAnimation(OpacityProperty, anim);
-
-        await tcs.Task;
-    }
-
-    #region 选集按钮入场动画
-
-    private static List<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject
-    {
-        var result = new List<T>();
-        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
-        {
-            var child = VisualTreeHelper.GetChild(parent, i);
-            if (child is T t)
-                result.Add(t);
-            result.AddRange(FindVisualChildren<T>(child));
-        }
-        return result;
-    }
-
-    private async void AnimateEpisodeButtonsEntrance()
-    {
-        await System.Threading.Tasks.Task.Delay(100);
-
-        if (!IsLoaded) return;
-
-        var buttons = FindVisualChildren<System.Windows.Controls.Button>(PlaylistBox);
-        for (int i = 0; i < buttons.Count; i++)
-        {
-            var btn = buttons[i];
-            var delay = TimeSpan.FromMilliseconds(i * 35);
-
-            btn.RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
-            var st = new ScaleTransform(0.88, 0.88);
-            btn.RenderTransform = st;
-            btn.Opacity = 0;
-
-            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-            var dur = TimeSpan.FromMilliseconds(420);
-
-            var scaleAnimX = new DoubleAnimation(0.88, 1.0, dur)
-            {
-                BeginTime = delay,
-                EasingFunction = ease
-            };
-            var scaleAnimY = new DoubleAnimation(0.88, 1.0, dur)
-            {
-                BeginTime = delay,
-                EasingFunction = ease
-            };
-            var opacityAnim = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(320))
-            {
-                BeginTime = delay
-            };
-
-            st.BeginAnimation(ScaleTransform.ScaleXProperty, scaleAnimX);
-            st.BeginAnimation(ScaleTransform.ScaleYProperty, scaleAnimY);
-            btn.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
-        }
-    }
-
-    #endregion
-
     public void Dispose()
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -767,51 +568,5 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         mediaController.Dispose();
         Log($"mediaController.Dispose 完成，总耗时 {sw.ElapsedMilliseconds}ms");
-    }
-
-    private void VideoContainer_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        if (!isFullscreen) return;
-        var pos = e.GetPosition(VideoContainer);
-        if (pos.Y > VideoContainer.ActualHeight - 10)
-        {
-            ShowFullscreenControlBar();
-        }
-    }
-
-    private void ControlBar_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        if (!isFullscreen) return;
-        controlBarHideTimer.Stop();
-        ControlBar.Opacity = 1;
-    }
-
-    private void ControlBar_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        if (!isFullscreen) return;
-        controlBarHideTimer.Start();
-    }
-
-    private void ControlBarHideTimer_Tick(object? sender, EventArgs e)
-    {
-        if (!ControlBar.IsMouseOver)
-        {
-            HideFullscreenControlBar();
-        }
-    }
-
-    private void ShowFullscreenControlBar()
-    {
-        controlBarHideTimer.Stop();
-        ControlBar.Visibility = Visibility.Visible;
-        ControlBar.Opacity = 1;
-        ControlBar.IsHitTestVisible = true;
-        Keyboard.Focus(ControlBar);
-    }
-
-    private void HideFullscreenControlBar()
-    {
-        ControlBar.Opacity = 0;
-        ControlBar.IsHitTestVisible = false;
     }
 }
