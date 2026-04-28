@@ -65,7 +65,7 @@
                           DragOver="FolderList_DragOver" Drop="FolderList_Drop" DragLeave="FolderList_DragLeave">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <local:AnimatedWrapPanel HorizontalAlignment="Center" AnimationDuration="0:0:0.25"/>
+                        <WrapPanel HorizontalAlignment="Center"/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>

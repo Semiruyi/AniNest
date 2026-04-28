@@ -205,47 +205,6 @@ public partial class MainPage : System.Windows.Controls.UserControl
             var newItem = new FolderListItem(name, path, count, coverPath);
             folderItems.Add(newItem);
             UpdateToolbarState();
-
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                var border = FindTemplateRoot(newItem);
-                if (border != null)
-                {
-                    var translate = new TranslateTransform(0, 20);
-                    border.RenderTransform = translate;
-                    border.Opacity = 0;
-
-                    var animOpacity = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(500))
-                    {
-                        EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-                    };
-                    var animY = new DoubleAnimation(20, 0, TimeSpan.FromMilliseconds(500))
-                    {
-                        EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-                    };
-                    animY.Completed += (_, _) => border.RenderTransform = Transform.Identity;
-
-                    border.BeginAnimation(OpacityProperty, animOpacity);
-                    translate.BeginAnimation(TranslateTransform.YProperty, animY);
-                }
-            }), System.Windows.Threading.DispatcherPriority.Render);
-        }
-    }
-
-    // ========== 打开文件夹 ==========
-
-    private void FolderCard_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
-    {
-        if (sender is Border border && border.Tag is string path)
-        {
-            string name = Path.GetFileName(path);
-            var videos = VideoScanner.GetVideoFiles(path);
-            if (videos.Length == 0)
-            {
-                System.Windows.MessageBox.Show("文件夹内没有视频文件", "提示");
-                return;
-            }
-            FolderSelected?.Invoke(this, path, name);
         }
     }
 
@@ -270,4 +229,22 @@ public partial class MainPage : System.Windows.Controls.UserControl
         }
         return null;
     }
+
+    // ========== 打开文件夹 ==========
+
+    private void FolderCard_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (sender is Border border && border.Tag is string path)
+        {
+            string name = Path.GetFileName(path);
+            var videos = VideoScanner.GetVideoFiles(path);
+            if (videos.Length == 0)
+            {
+                System.Windows.MessageBox.Show("文件夹内没有视频文件", "提示");
+                return;
+            }
+            FolderSelected?.Invoke(this, path, name);
+        }
+    }
+
 }
