@@ -408,10 +408,27 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     #endregion
 
-    private class PlaylistItem
+    private class PlaylistItem : System.ComponentModel.INotifyPropertyChanged
     {
         public int Number { get; set; }
         public string Title { get; set; } = "";
+        public string FilePath { get; set; } = "";
+
+        private bool _isPlayed;
+        public bool IsPlayed
+        {
+            get => _isPlayed;
+            set
+            {
+                if (_isPlayed != value)
+                {
+                    _isPlayed = value;
+                    PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(IsPlayed)));
+                }
+            }
+        }
+
+        public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
     }
 
     public void LoadFolder(string folderPath, string folderName)
@@ -438,7 +455,14 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         PlaylistBox.Items.Clear();
         for (int i = 0; i < videoFiles.Length; i++)
         {
-            PlaylistBox.Items.Add(new PlaylistItem { Number = i + 1, Title = Path.GetFileName(videoFiles[i]) });
+            var filePath = videoFiles[i];
+            PlaylistBox.Items.Add(new PlaylistItem
+            {
+                Number = i + 1,
+                Title = Path.GetFileName(filePath),
+                FilePath = filePath,
+                IsPlayed = settingsService.IsVideoPlayed(filePath)
+            });
         }
         EpisodeCountText.Text = videoFiles.Length > 0 ? $"{videoFiles.Length} 集" : "";
 
@@ -482,6 +506,14 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             int index = item.Number - 1;
             if (index >= 0 && index < videoFiles.Length)
             {
+                if (index == PlaylistBox.SelectedIndex) return;
+
+                var oldItem = PlaylistBox.SelectedItem as PlaylistItem;
+                if (oldItem != null)
+                {
+                    oldItem.IsPlayed = true;
+                }
+
                 PlaylistBox.SelectedIndex = index;
             }
         }
@@ -489,7 +521,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     private void PlayVideo(string filePath)
     {
-        Log($"PlayVideo 被调用: {filePath}");
+        Log($"[PlayVideo] 开始: {Path.GetFileName(filePath)}");
+        Log($"[PlayVideo] 当前SelectedIndex={PlaylistBox.SelectedIndex}");
         long startTime = 0;
         var progress = settingsService.GetVideoProgress(filePath);
         if (progress != null)
@@ -889,6 +922,11 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         if (PlaylistBox.SelectedIndex < PlaylistBox.Items.Count - 1)
         {
+            var oldItem = PlaylistBox.SelectedItem as PlaylistItem;
+            if (oldItem != null)
+            {
+                oldItem.IsPlayed = true;
+            }
             PlaylistBox.SelectedIndex++;
         }
     }
@@ -897,6 +935,11 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         if (PlaylistBox.SelectedIndex > 0)
         {
+            var oldItem = PlaylistBox.SelectedItem as PlaylistItem;
+            if (oldItem != null)
+            {
+                oldItem.IsPlayed = true;
+            }
             PlaylistBox.SelectedIndex--;
         }
     }

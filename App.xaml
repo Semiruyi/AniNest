@@ -333,6 +333,17 @@
                                         </BeginStoryboard>
                                     </Trigger.ExitActions>
                                 </Trigger>
+                                <DataTrigger Binding="{Binding IsPlayed}" Value="True">
+                                    <DataTrigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetName="BgBrush"
+                                                    Storyboard.TargetProperty="Color"
+                                                    To="#165396" Duration="0:0:0.22"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.EnterActions>
+                                </DataTrigger>
                                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
                                     <Setter Property="Foreground" Value="White"/>
                                     <Setter Property="FontWeight" Value="SemiBold"/>
@@ -350,7 +361,7 @@
                                             <Storyboard>
                                                 <ColorAnimation Storyboard.TargetName="BgBrush"
                                                     Storyboard.TargetProperty="Color"
-                                                    To="#2C2C2E" Duration="0:0:0.22"/>
+                                                    To="#165396" Duration="0:0:0.22"/>
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </DataTrigger.ExitActions>
