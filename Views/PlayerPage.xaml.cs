@@ -580,6 +580,37 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         }
     }
 
+    // ========== 通用按钮动画（press/release） ==========
+
+    private static readonly CubicEase _btnEase = new() { EasingMode = EasingMode.EaseOut };
+
+    private void CommonButton_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Button btn) return;
+        AnimateBtnScale(btn, 0.88, TimeSpan.FromMilliseconds(50), _btnEase);
+    }
+
+    private void CommonButton_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Button btn) return;
+        double target = btn.IsMouseOver ? 1.3 : 1.0;
+        AnimateBtnScale(btn, target, TimeSpan.FromMilliseconds(200), _btnEase);
+    }
+
+    private static void AnimateBtnScale(System.Windows.Controls.Button btn, double target,
+        TimeSpan duration, IEasingFunction ease)
+    {
+        if (btn.Template.FindName("PressScale", btn) is ScaleTransform st)
+        {
+            st.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            st.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            var ax = new DoubleAnimation(target, duration) { EasingFunction = ease };
+            var ay = new DoubleAnimation(target, duration) { EasingFunction = ease };
+            st.BeginAnimation(ScaleTransform.ScaleXProperty, ax);
+            st.BeginAnimation(ScaleTransform.ScaleYProperty, ay);
+        }
+    }
+
     // ========== 倍速 ==========
 
     private void SpeedPopupCloseTimer_Tick(object? sender, EventArgs e)

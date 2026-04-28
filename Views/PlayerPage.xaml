@@ -12,7 +12,6 @@
             <CircleEase x:Key="EaseInOut" EasingMode="EaseInOut"/>
 
             <Style x:Key="IconButton" TargetType="Button">
-                <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="0"/>
                 <Setter Property="Width" Value="36"/>
                 <Setter Property="Height" Value="36"/>
@@ -21,11 +20,16 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid x:Name="ButtonGrid" RenderTransformOrigin="0.5,0.5" Width="36" Height="36">
+                            <Grid x:Name="ButtonGrid" RenderTransformOrigin="0.5,0.5"
+                                  Width="{TemplateBinding Width}" Height="{TemplateBinding Height}">
                                 <Grid.RenderTransform>
-                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                    <TransformGroup>
+                                        <ScaleTransform x:Name="HoverScale" ScaleX="1" ScaleY="1"/>
+                                        <ScaleTransform x:Name="PressScale" ScaleX="1" ScaleY="1"/>
+                                    </TransformGroup>
                                 </Grid.RenderTransform>
-                                <Ellipse x:Name="HoverBg" Fill="{StaticResource HoverBackground}" Width="36" Height="36" Opacity="0"/>
+                                <Ellipse x:Name="HoverBg" Fill="{StaticResource HoverBackground}"
+                                         Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" Opacity="0"/>
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
                             <ControlTemplate.Triggers>
@@ -34,11 +38,11 @@
                                     <Trigger.EnterActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                <DoubleAnimation Storyboard.TargetName="HoverScale"
+                                                    Storyboard.TargetProperty="ScaleX"
                                                     To="1.3" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                <DoubleAnimation Storyboard.TargetName="HoverScale"
+                                                    Storyboard.TargetProperty="ScaleY"
                                                     To="1.3" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
                                                 <DoubleAnimation Storyboard.TargetName="HoverBg"
                                                     Storyboard.TargetProperty="Opacity"
@@ -49,11 +53,11 @@
                                     <Trigger.ExitActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                <DoubleAnimation Storyboard.TargetName="HoverScale"
+                                                    Storyboard.TargetProperty="ScaleX"
                                                     To="1" Duration="0:0:0.18" EasingFunction="{StaticResource EaseOut}"/>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                <DoubleAnimation Storyboard.TargetName="HoverScale"
+                                                    Storyboard.TargetProperty="ScaleY"
                                                     To="1" Duration="0:0:0.18" EasingFunction="{StaticResource EaseOut}"/>
                                                 <DoubleAnimation Storyboard.TargetName="HoverBg"
                                                     Storyboard.TargetProperty="Opacity"
@@ -62,48 +66,15 @@
                                         </BeginStoryboard>
                                     </Trigger.ExitActions>
                                 </Trigger>
-                                <Trigger Property="IsPressed" Value="True">
-                                    <Trigger.EnterActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                    To="0.88" Duration="0:0:0.05" EasingFunction="{StaticResource EaseOut}"/>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                    To="0.88" Duration="0:0:0.05" EasingFunction="{StaticResource EaseOut}"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.EnterActions>
-                                    <Trigger.ExitActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                    To="1" Duration="0:0:0.25">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <ElasticEase Oscillations="1" Springiness="8" EasingMode="EaseOut"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                    To="1" Duration="0:0:0.25">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <ElasticEase Oscillations="1" Springiness="8" EasingMode="EaseOut"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.ExitActions>
-                                </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+                <EventSetter Event="PreviewMouseLeftButtonDown" Handler="CommonButton_MouseDown"/>
+                <EventSetter Event="PreviewMouseLeftButtonUp" Handler="CommonButton_MouseUp"/>
             </Style>
 
             <Style x:Key="PlayButton" TargetType="Button">
-                <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="0"/>
                 <Setter Property="Width" Value="34"/>
                 <Setter Property="Height" Value="34"/>
@@ -112,11 +83,16 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid x:Name="ButtonGrid" RenderTransformOrigin="0.5,0.5" Width="34" Height="34">
+                            <Grid x:Name="ButtonGrid" RenderTransformOrigin="0.5,0.5"
+                                  Width="{TemplateBinding Width}" Height="{TemplateBinding Height}">
                                 <Grid.RenderTransform>
-                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                    <TransformGroup>
+                                        <ScaleTransform x:Name="HoverScale" ScaleX="1" ScaleY="1"/>
+                                        <ScaleTransform x:Name="PressScale" ScaleX="1" ScaleY="1"/>
+                                    </TransformGroup>
                                 </Grid.RenderTransform>
-                                <Ellipse x:Name="HoverBg" Fill="{StaticResource HoverBackground}" Width="34" Height="34" Opacity="0"/>
+                                <Ellipse x:Name="HoverBg" Fill="{StaticResource HoverBackground}"
+                                         Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" Opacity="0"/>
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
                             <ControlTemplate.Triggers>
@@ -125,11 +101,11 @@
                                     <Trigger.EnterActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                <DoubleAnimation Storyboard.TargetName="HoverScale"
+                                                    Storyboard.TargetProperty="ScaleX"
                                                     To="1.3" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                <DoubleAnimation Storyboard.TargetName="HoverScale"
+                                                    Storyboard.TargetProperty="ScaleY"
                                                     To="1.3" Duration="0:0:0.12" EasingFunction="{StaticResource EaseOut}"/>
                                                 <DoubleAnimation Storyboard.TargetName="HoverBg"
                                                     Storyboard.TargetProperty="Opacity"
@@ -140,11 +116,11 @@
                                     <Trigger.ExitActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                <DoubleAnimation Storyboard.TargetName="HoverScale"
+                                                    Storyboard.TargetProperty="ScaleX"
                                                     To="1" Duration="0:0:0.18" EasingFunction="{StaticResource EaseOut}"/>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                <DoubleAnimation Storyboard.TargetName="HoverScale"
+                                                    Storyboard.TargetProperty="ScaleY"
                                                     To="1" Duration="0:0:0.18" EasingFunction="{StaticResource EaseOut}"/>
                                                 <DoubleAnimation Storyboard.TargetName="HoverBg"
                                                     Storyboard.TargetProperty="Opacity"
@@ -153,44 +129,12 @@
                                         </BeginStoryboard>
                                     </Trigger.ExitActions>
                                 </Trigger>
-                                <Trigger Property="IsPressed" Value="True">
-                                    <Trigger.EnterActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                    To="0.88" Duration="0:0:0.05" EasingFunction="{StaticResource EaseOut}"/>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                    To="0.88" Duration="0:0:0.05" EasingFunction="{StaticResource EaseOut}"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.EnterActions>
-                                    <Trigger.ExitActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                    To="1" Duration="0:0:0.25">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <ElasticEase Oscillations="1" Springiness="8" EasingMode="EaseOut"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonGrid"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                    To="1" Duration="0:0:0.25">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <ElasticEase Oscillations="1" Springiness="8" EasingMode="EaseOut"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.ExitActions>
-                                </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+                <EventSetter Event="PreviewMouseLeftButtonDown" Handler="CommonButton_MouseDown"/>
+                <EventSetter Event="PreviewMouseLeftButtonUp" Handler="CommonButton_MouseUp"/>
             </Style>
 
             <Style x:Key="EpisodeButton" TargetType="Button">
@@ -715,63 +659,12 @@
                     <!-- 倍速按钮 + 弹出列表 -->
                     <Grid>
                         <Button x:Name="SpeedBtn" Content="1x"
-                                Width="36" Height="28" Margin="0,0,4,0"
-                                Background="#33FFFFFF" Foreground="White"
-                                BorderThickness="0" FontSize="11" FontWeight="SemiBold"
-                                Cursor="Hand" Focusable="False"
+                                Style="{StaticResource IconButton}"
+                                FontSize="11" FontWeight="SemiBold"
+                                Foreground="White" Focusable="False"
+                                Margin="0,0,2,0"
                                 MouseEnter="SpeedBtn_MouseEnter"
-                                MouseLeave="SpeedBtn_MouseLeave">
-                            <Button.Template>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="BgBorder" Background="{TemplateBinding Background}"
-                                            CornerRadius="6" RenderTransformOrigin="0.5,0.5">
-                                        <Border.RenderTransform>
-                                            <ScaleTransform ScaleX="1" ScaleY="1"/>
-                                        </Border.RenderTransform>
-                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="BgBorder" Property="Background" Value="#55FFFFFF"/>
-                                        </Trigger>
-                                        <Trigger Property="IsPressed" Value="True">
-                                            <Trigger.EnterActions>
-                                                <BeginStoryboard>
-                                                    <Storyboard>
-                                                        <DoubleAnimation Storyboard.TargetName="BgBorder"
-                                                            Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                            To="0.92" Duration="0:0:0.06"/>
-                                                        <DoubleAnimation Storyboard.TargetName="BgBorder"
-                                                            Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                            To="0.92" Duration="0:0:0.06"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </Trigger.EnterActions>
-                                            <Trigger.ExitActions>
-                                                <BeginStoryboard>
-                                                    <Storyboard>
-                                                        <DoubleAnimation Storyboard.TargetName="BgBorder"
-                                                            Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                            To="1" Duration="0:0:0.25">
-                                                            <DoubleAnimation.EasingFunction>
-                                                                <ElasticEase Oscillations="1" Springiness="8" EasingMode="EaseOut"/>
-                                                            </DoubleAnimation.EasingFunction>
-                                                        </DoubleAnimation>
-                                                        <DoubleAnimation Storyboard.TargetName="BgBorder"
-                                                            Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                            To="1" Duration="0:0:0.25">
-                                                            <DoubleAnimation.EasingFunction>
-                                                                <ElasticEase Oscillations="1" Springiness="8" EasingMode="EaseOut"/>
-                                                            </DoubleAnimation.EasingFunction>
-                                                        </DoubleAnimation>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </Trigger.ExitActions>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Button.Template>
-                        </Button>
+                                MouseLeave="SpeedBtn_MouseLeave"/>
                         <Popup x:Name="SpeedPopup" AllowsTransparency="True"
                                Placement="Top" PlacementTarget="{Binding ElementName=SpeedBtn}"
                                VerticalOffset="-4" StaysOpen="True"
