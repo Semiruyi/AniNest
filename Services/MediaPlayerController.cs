@@ -1,8 +1,8 @@
 using System;
 using System.IO;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LibVLCSharp.Shared;
-using LibVLCSharp.WPF;
 
 namespace LocalPlayer.Services;
 
@@ -24,12 +24,14 @@ public class MediaPlayerController : IDisposable
 
     private LibVLC? libVLC;
     private MediaPlayer? mediaPlayer;
+    private VideoFrameProvider? frameProvider;
     private DispatcherTimer? updateTimer;
 
     public bool IsPlaying => mediaPlayer?.IsPlaying ?? false;
     public long Time => mediaPlayer?.Time ?? 0;
     public long Length => mediaPlayer?.Length ?? 0;
     public string? CurrentFilePath { get; private set; }
+    public WriteableBitmap? VideoBitmap => frameProvider?.Bitmap;
 
     public event EventHandler? Playing;
     public event EventHandler? Paused;
@@ -61,7 +63,7 @@ public class MediaPlayerController : IDisposable
         }
     }
 
-    public void Initialize(VideoView videoView)
+    public void Initialize()
     {
         try
         {
@@ -79,13 +81,9 @@ public class MediaPlayerController : IDisposable
             mediaPlayer = new MediaPlayer(libVLC);
             Log("MediaPlayer 创建成功");
 
-            // 注意：部分版本的 LibVLCSharp 中 EnableMouseInput/EnableKeyInput 可能导致 native 崩溃
-            // 如需禁用 VLC 内置输入，请确保 LibVLC 版本兼容
-            // mediaPlayer.EnableMouseInput = false;
-            // mediaPlayer.EnableKeyInput = false;
-
-            videoView.MediaPlayer = mediaPlayer;
-            Log("VideoView 已关联 MediaPlayer");
+            frameProvider = new VideoFrameProvider();
+            frameProvider.AttachToPlayer(mediaPlayer);
+            Log("VideoFrameProvider 已关联 MediaPlayer");
         }
         catch (Exception ex)
         {
@@ -197,6 +195,8 @@ public class MediaPlayerController : IDisposable
         updateTimer = null;
         Log($"updateTimer.Stop 耗时 {sw.ElapsedMilliseconds}ms");
 
+        frameProvider?.Dispose();
+        Log($"frameProvider.Dispose 耗时 {sw.ElapsedMilliseconds}ms");
         mediaPlayer?.Stop();
         Log($"mediaPlayer.Stop 耗时 {sw.ElapsedMilliseconds}ms");
         mediaPlayer?.Dispose();

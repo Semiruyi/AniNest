@@ -2,11 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
@@ -104,11 +102,11 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         if (controlBarOriginalParent != null)
             controlBarOriginalIndex = controlBarOriginalParent.Children.IndexOf(ControlBar);
 
-        // 尝试夺取焦点，防止 VideoView (WindowsFormsHost) 吃掉键盘事件
+        // 夺取焦点到 WPF 元素
         Log($"Loaded 前 FocusedElement={FocusManager.GetFocusedElement(this)}");
         Keyboard.Focus(this);
         FocusManager.SetFocusedElement(this, this);
-        Log($"Loaded 后尝试设置焦点到 PlayerPage");
+        Log($"Loaded 后设置焦点到 PlayerPage");
 
         // 入场动画：遮罩从黑渐变到透明，其余元素同步淡入
         var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut };
@@ -129,11 +127,11 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         PlaylistBorder.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration) { EasingFunction = ease });
         ControlBar.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration) { EasingFunction = ease });
 
-        mediaController.Initialize(VideoView);
+        mediaController.Initialize();
+        VideoImage.Source = mediaController.VideoBitmap;
 
         OverlayGrid.MouseMove += OverlayGrid_MouseMove;
 
-        // 在 WPF 层面试试（大概率被 VideoView 的 Airspace 拦截，仅用于日志对比）
         VideoContainer.MouseLeftButtonDown += VideoContainer_MouseLeftButtonDown;
         VideoContainer.MouseRightButtonDown += VideoContainer_MouseRightButtonDown;
 
@@ -183,8 +181,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
                 LoadFolder(path, name);
             }
 
-            // 阻止 ForegroundWindow 被点击激活，防止它抢走键盘焦点
-            FixForegroundWindowNoActivate();
         }
         catch (Exception ex)
         {
@@ -198,201 +194,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         Dispose();
     }
-
-    #region ForegroundWindow 无激活修复
-
-    private static class NativeMethods
-    {
-        public const int GWL_EXSTYLE = -20;
-        public const uint WS_EX_NOACTIVATE = 0x08000000;
-
-        [DllImport("user32.dll", SetLastError = true)]
-        public static extern uint GetWindowLong(IntPtr hWnd, int nIndex);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        public static extern uint SetWindowLong(IntPtr hWnd, int nIndex, uint dwNewLong);
-
-        [DllImport("user32.dll")]
-        public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter,
-            int X, int Y, int cx, int cy, uint uFlags);
-
-        public static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
-
-        public const uint SWP_FRAMECHANGED = 0x0020;
-        public const uint SWP_NOMOVE = 0x0002;
-        public const uint SWP_NOSIZE = 0x0001;
-        public const uint SWP_NOZORDER = 0x0004;
-        public const uint SWP_NOACTIVATE = 0x0010;
-    }
-
-    private bool _videoHwndFixed = false;
-    private bool _foregroundWindowFixed = false;
-
-    private void FixForegroundWindowNoActivate()
-    {
-        try
-        {
-            // 1. 修复 VideoHwndHost 的 Win32 背景（白色问题的真正来源：static 窗口默认背景为白色）
-            if (!_videoHwndFixed)
-            {
-                var videoHwndHostField = typeof(LibVLCSharp.WPF.VideoView).GetField(
-                    "_videoHwndHost", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (videoHwndHostField != null)
-                {
-                    var videoHwndHost = videoHwndHostField.GetValue(VideoView);
-                    if (videoHwndHost != null)
-                    {
-                        var handleProp = typeof(System.Windows.Interop.HwndHost).GetProperty("Handle");
-                        if (handleProp != null)
-                        {
-                            var hwnd = (IntPtr)handleProp.GetValue(videoHwndHost)!;
-                            if (hwnd != IntPtr.Zero)
-                            {
-                                FixHwndBackground(hwnd);
-                                _videoHwndFixed = true;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 2. 设置 ForegroundWindow 无激活（不改背景，否则黑色背景会遮挡下方视频）
-            var foregroundWindowProp = typeof(LibVLCSharp.WPF.VideoView).GetProperty(
-                "ForegroundWindow", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (foregroundWindowProp == null)
-            {
-                Log("FixForegroundWindowNoActivate: 未找到 ForegroundWindow 属性");
-                ScheduleRetryFixForegroundWindow();
-                return;
-            }
-
-            var foregroundWindow = foregroundWindowProp.GetValue(VideoView) as Window;
-            if (foregroundWindow == null)
-            {
-                Log("FixForegroundWindowNoActivate: ForegroundWindow 为 null，将在 100ms 后重试");
-                ScheduleRetryFixForegroundWindow();
-                return;
-            }
-
-            if (foregroundWindow.IsLoaded)
-            {
-                ApplyNoActivate(foregroundWindow);
-            }
-            else
-            {
-                foregroundWindow.Loaded += (s, e) => ApplyNoActivate(foregroundWindow);
-            }
-
-            _foregroundWindowFixed = true;
-        }
-        catch (Exception ex)
-        {
-            Log($"FixForegroundWindowNoActivate 异常: {ex.Message}");
-        }
-    }
-
-    private DispatcherTimer? _retryTimer;
-
-    private void ScheduleRetryFixForegroundWindow()
-    {
-        if (_foregroundWindowFixed && _videoHwndFixed) return;
-        _retryTimer?.Stop();
-        _retryTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
-        _retryTimer.Tick += (_, _) =>
-        {
-            _retryTimer.Stop();
-            if (!_foregroundWindowFixed || !_videoHwndFixed)
-            {
-                Log("重试 FixForegroundWindowNoActivate");
-                FixForegroundWindowNoActivate();
-            }
-        };
-        _retryTimer.Start();
-    }
-
-    #region VideoHwndHost 黑色背景修复
-
-    [DllImport("comctl32.dll", SetLastError = true)]
-    private static extern bool SetWindowSubclass(IntPtr hWnd, SubclassProc pfnSubclass, uint uIdSubclass, IntPtr dwRefData);
-
-    [DllImport("comctl32.dll", SetLastError = true)]
-    private static extern IntPtr DefSubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam);
-
-    [DllImport("user32.dll")]
-    private static extern bool GetClientRect(IntPtr hWnd, out RECT lpRect);
-
-    [DllImport("gdi32.dll")]
-    private static extern IntPtr GetStockObject(int fnObject);
-
-    [DllImport("user32.dll")]
-    private static extern int FillRect(IntPtr hDC, [In] ref RECT lprc, IntPtr hbr);
-
-    private delegate IntPtr SubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, IntPtr uIdSubclass, uint dwRefData);
-
-    private const uint WM_ERASEBKGND = 0x0014;
-    private const int BLACK_BRUSH = 4;
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct RECT
-    {
-        public int Left, Top, Right, Bottom;
-    }
-
-    private static SubclassProc? _videoHwndSubclassProc;
-
-    private void FixHwndBackground(IntPtr hwnd)
-    {
-        _videoHwndSubclassProc = VideoHwndSubclassProc;
-        SetWindowSubclass(hwnd, _videoHwndSubclassProc, 1, IntPtr.Zero);
-        Log($"FixHwndBackground: 已设置 HWND {hwnd} 的背景子类化");
-    }
-
-    private static IntPtr VideoHwndSubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, IntPtr uIdSubclass, uint dwRefData)
-    {
-        if (uMsg == WM_ERASEBKGND)
-        {
-            if (GetClientRect(hWnd, out var rc))
-            {
-                FillRect(wParam, ref rc, GetStockObject(BLACK_BRUSH));
-            }
-            return new IntPtr(1);
-        }
-        return DefSubclassProc(hWnd, uMsg, wParam, lParam);
-    }
-
-    #endregion
-
-    private void ApplyNoActivate(Window foregroundWindow)
-    {
-        try
-        {
-            var helper = new WindowInteropHelper(foregroundWindow);
-            var hwnd = helper.Handle;
-            if (hwnd == IntPtr.Zero)
-            {
-                Log("ApplyNoActivate: HWND 为 0");
-                return;
-            }
-
-            var exStyle = NativeMethods.GetWindowLong(hwnd, NativeMethods.GWL_EXSTYLE);
-            NativeMethods.SetWindowLong(hwnd, NativeMethods.GWL_EXSTYLE, exStyle | NativeMethods.WS_EX_NOACTIVATE);
-            NativeMethods.SetWindowPos(hwnd, NativeMethods.HWND_NOTOPMOST,
-                0, 0, 0, 0,
-                NativeMethods.SWP_FRAMECHANGED |
-                NativeMethods.SWP_NOMOVE |
-                NativeMethods.SWP_NOSIZE |
-                NativeMethods.SWP_NOZORDER |
-                NativeMethods.SWP_NOACTIVATE);
-
-            Log("ApplyNoActivate: 已设置 WS_EX_NOACTIVATE");
-        }
-        catch (Exception ex)
-        {
-            Log($"ApplyNoActivate 异常: {ex.Message}");
-        }
-    }
-
-    #endregion
 
     private class PlaylistItem : System.ComponentModel.INotifyPropertyChanged
     {
@@ -875,32 +676,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         Log($"LostKeyboardFocus: NewFocus={e.NewFocus?.GetType().Name}, OldFocus={e.OldFocus?.GetType().Name}");
     }
 
-    private void VideoContainer_GotFocus(object sender, RoutedEventArgs e)
-    {
-        Log("VideoContainer GotFocus");
-    }
-
-    private void VideoContainer_LostFocus(object sender, RoutedEventArgs e)
-    {
-        Log("VideoContainer LostFocus");
-    }
-
-    private void VideoView_GotFocus(object sender, RoutedEventArgs e)
-    {
-        Log("VideoView GotFocus — 尝试将焦点移回 PlayerPage 以避免事件被吞");
-        // WindowsFormsHost 获得焦点后会吞掉键盘事件，尝试将焦点移回 WPF 元素
-        Dispatcher.BeginInvoke(new Action(() =>
-        {
-            Keyboard.Focus(this);
-            Log("VideoView GotFocus 后尝试设置焦点到 PlayerPage");
-        }), System.Windows.Threading.DispatcherPriority.Background);
-    }
-
-    private void VideoView_LostFocus(object sender, RoutedEventArgs e)
-    {
-        Log("VideoView LostFocus");
-    }
-
     private void PlayNext()
     {
         if (PlaylistBox.SelectedIndex < PlaylistBox.Items.Count - 1)
@@ -1041,10 +816,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         OverlayGrid.MouseMove -= OverlayGrid_MouseMove;
         Log($"MouseMove 取消订阅 耗时 {sw.ElapsedMilliseconds}ms");
-
-        _retryTimer?.Stop();
-        _retryTimer = null;
-        Log($"retryTimer 停止 耗时 {sw.ElapsedMilliseconds}ms");
 
         mediaController.Dispose();
         Log($"mediaController.Dispose 完成，总耗时 {sw.ElapsedMilliseconds}ms");

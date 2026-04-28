@@ -1,7 +1,6 @@
 <UserControl x:Class="LocalPlayer.Views.PlayerPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vlc="clr-namespace:LibVLCSharp.WPF;assembly=LibVLCSharp.WPF"
              xmlns:views="clr-namespace:LocalPlayer.Views"
              Background="{StaticResource BackgroundDark}"
              Focusable="True"
@@ -19,20 +18,18 @@
 
         <!-- 视频区 -->
         <Grid x:Name="VideoContainer" Grid.Row="0" Grid.Column="0" Background="Black"
-              GotFocus="VideoContainer_GotFocus" LostFocus="VideoContainer_LostFocus"
               MouseLeftButtonDown="VideoContainer_MouseLeftButtonDown"
               MouseRightButtonDown="VideoContainer_MouseRightButtonDown">
-            <vlc:VideoView x:Name="VideoView" GotFocus="VideoView_GotFocus" LostFocus="VideoView_LostFocus">
-                <Grid x:Name="OverlayGrid"
-                      Background="#01000000"
-                      MouseLeftButtonDown="OverlayGrid_MouseLeftButtonDown"
-                      MouseRightButtonDown="OverlayGrid_MouseRightButtonDown"
-                      MouseDown="OverlayGrid_MouseDown">
-                    <Border x:Name="TransitionMask"
-                            Background="Black"
-                            IsHitTestVisible="False"/>
-                </Grid>
-            </vlc:VideoView>
+            <Image x:Name="VideoImage" Stretch="Uniform"/>
+            <Grid x:Name="OverlayGrid"
+                  Background="#01000000"
+                  MouseLeftButtonDown="OverlayGrid_MouseLeftButtonDown"
+                  MouseRightButtonDown="OverlayGrid_MouseRightButtonDown"
+                  MouseDown="OverlayGrid_MouseDown">
+                <Border x:Name="TransitionMask"
+                        Background="Black"
+                        IsHitTestVisible="False"/>
+            </Grid>
         </Grid>
 
         <!-- 选集 -->
