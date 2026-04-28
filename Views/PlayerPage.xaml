@@ -518,7 +518,8 @@
             </Style>
         </ResourceDictionary>
     </UserControl.Resources>
-    <Grid x:Name="PageRoot" Opacity="0">
+    <Grid x:Name="PageRoot" Opacity="0"
+          PreviewMouseLeftButtonDown="PageRoot_PreviewMouseLeftButtonDown">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
@@ -750,7 +751,7 @@
                         </Button>
                         <Popup x:Name="SpeedPopup" AllowsTransparency="True"
                                Placement="Top" PlacementTarget="{Binding ElementName=SpeedBtn}"
-                               VerticalOffset="-4" StaysOpen="False">
+                               VerticalOffset="-4" StaysOpen="True">
                             <Border Background="#E6282828" CornerRadius="12" Padding="4"
                                     MouseEnter="SpeedPopup_MouseEnter"
                                     MouseLeave="SpeedPopup_MouseLeave">

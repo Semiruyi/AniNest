@@ -44,6 +44,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private readonly DispatcherTimer speedPopupCloseTimer;
     private readonly DispatcherTimer rightHoldTimer;
     private bool isRightHolding;
+    private bool ignoreNextSpeedBtnLeave;
 
     private Window? parentWindow;
     private bool isFullscreen = false;
@@ -589,14 +590,49 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         SpeedPopup.IsOpen = false;
     }
 
+    private void PageRoot_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (!SpeedPopup.IsOpen || SpeedPopup.Child == null) return;
+
+        // 检查点击是否来自弹窗内部，是则不关闭
+        if (e.OriginalSource is DependencyObject dep && IsDescendantOf(dep, SpeedPopup.Child))
+            return;
+
+        // 检查点击是否在倍速按钮上
+        var pos = e.GetPosition(this);
+        var btnBounds = SpeedBtn.TransformToAncestor(this).TransformBounds(
+            new Rect(0, 0, SpeedBtn.ActualWidth, SpeedBtn.ActualHeight));
+        if (!btnBounds.Contains(pos))
+        {
+            SpeedPopup.IsOpen = false;
+        }
+    }
+
+    private static bool IsDescendantOf(DependencyObject? dep, DependencyObject ancestor)
+    {
+        while (dep != null)
+        {
+            if (dep == ancestor)
+                return true;
+            dep = VisualTreeHelper.GetParent(dep);
+        }
+        return false;
+    }
+
     private void SpeedBtn_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
     {
         speedPopupCloseTimer.Stop();
+        ignoreNextSpeedBtnLeave = true;
         SpeedPopup.IsOpen = true;
     }
 
     private void SpeedBtn_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
     {
+        if (ignoreNextSpeedBtnLeave)
+        {
+            ignoreNextSpeedBtnLeave = false;
+            return;
+        }
         speedPopupCloseTimer.Stop();
         speedPopupCloseTimer.Start();
     }
