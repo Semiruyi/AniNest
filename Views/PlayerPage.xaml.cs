@@ -698,17 +698,29 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     private void HighlightSpeedOption(float speed)
     {
+        var selectedColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#007AFF");
+        var duration = TimeSpan.FromMilliseconds(200);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+
         foreach (var child in SpeedOptionsPanel.Children)
         {
-            if (child is System.Windows.Controls.Button btn)
+            if (child is not System.Windows.Controls.Button btn) continue;
+
+            bool isSelected = btn.Tag?.ToString() == speed.ToString("0.##");
+            var targetColor = isSelected ? selectedColor : Colors.Transparent;
+            var targetSize = isSelected ? 14.0 : 13.0;
+
+            // 找到模板内的命名画刷，动画其颜色
+            if (btn.Template.FindName("BgBrush", btn) is SolidColorBrush brush)
             {
-                bool isSelected = btn.Tag?.ToString() == speed.ToString("0.##");
-                btn.Background = isSelected
-                    ? new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#007AFF"))
-                    : new SolidColorBrush(Colors.Transparent);
-                btn.FontWeight = isSelected ? FontWeights.SemiBold : FontWeights.Normal;
-                btn.FontSize = isSelected ? 14 : 13;
+                var colorAnim = new ColorAnimation(targetColor, duration) { EasingFunction = ease };
+                brush.BeginAnimation(SolidColorBrush.ColorProperty, colorAnim);
             }
+
+            var sizeAnim = new DoubleAnimation(targetSize, duration) { EasingFunction = ease };
+            btn.BeginAnimation(System.Windows.Controls.Button.FontSizeProperty, sizeAnim);
+
+            btn.FontWeight = isSelected ? FontWeights.SemiBold : FontWeights.Normal;
         }
     }
 
