@@ -215,7 +215,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
                 LoadFolder(path, name);
             }
 
-            _ = Dispatcher.BeginInvoke(new Action(() => HighlightSpeedOption(1.0f)), DispatcherPriority.Loaded);
 
         }
         catch (Exception ex)
@@ -655,6 +654,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         speedPopupCloseTimer.Stop();
         SpeedPopup.IsOpen = true;
+        _ = Dispatcher.BeginInvoke(new Action(() => HighlightSpeedOption(currentSpeed)), DispatcherPriority.Loaded);
     }
 
     private void SpeedBtn_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
@@ -688,7 +688,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         currentSpeed = speed;
         mediaController.Rate = speed;
         SpeedBtn.Content = $"{speed:0.##}x";
-        HighlightSpeedOption(speed);
+        if (SpeedPopup.IsOpen)
+            HighlightSpeedOption(speed);
     }
 
     private void UpdateSpeedButtonText(float speed)
@@ -699,7 +700,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private void HighlightSpeedOption(float speed)
     {
         var selectedColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#007AFF");
-        var duration = TimeSpan.FromMilliseconds(200);
+        var duration = TimeSpan.FromMilliseconds(300);
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
 
         foreach (var child in SpeedOptionsPanel.Children)
@@ -713,10 +714,12 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             // 找到模板内的命名画刷，动画其颜色
             if (btn.Template.FindName("BgBrush", btn) is SolidColorBrush brush)
             {
+                brush.BeginAnimation(SolidColorBrush.ColorProperty, null);
                 var colorAnim = new ColorAnimation(targetColor, duration) { EasingFunction = ease };
                 brush.BeginAnimation(SolidColorBrush.ColorProperty, colorAnim);
             }
 
+            btn.BeginAnimation(System.Windows.Controls.Button.FontSizeProperty, null);
             var sizeAnim = new DoubleAnimation(targetSize, duration) { EasingFunction = ease };
             btn.BeginAnimation(System.Windows.Controls.Button.FontSizeProperty, sizeAnim);
 
