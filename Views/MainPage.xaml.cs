@@ -52,11 +52,13 @@ public partial class MainPage : System.Windows.Controls.UserControl
         var loadedItems = await Task.Run(() => LoadFoldersData());
         App.LogStartup($"MainPage 后台数据加载完成，耗时 {sw.ElapsedMilliseconds}ms");
 
-        // 切回 UI 线程刷新卡片
+        // 切回 UI 线程刷新卡片（先隐藏防止闪烁，动画开始后再显示）
+        FolderList.Opacity = 0;
         folderItems.Clear();
         foreach (var item in loadedItems)
             folderItems.Add(item);
         UpdateToolbarState();
+        _ = Dispatcher.BeginInvoke(new Action(AnimateCardsEntrance), DispatcherPriority.Loaded);
         App.LogStartup($"MainPage.Loaded 总耗时 {sw.ElapsedMilliseconds}ms (UI 阻塞仅初始化部分)");
     }
 
