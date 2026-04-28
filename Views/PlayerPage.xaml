@@ -6,7 +6,7 @@
              Focusable="True"
              PreviewKeyDown="PlayerPage_PreviewKeyDown"
              KeyDown="PlayerPage_KeyDown">
-    <Grid>
+    <Grid x:Name="PageRoot" Opacity="0">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
@@ -25,17 +25,12 @@
                   Background="#01000000"
                   MouseLeftButtonDown="OverlayGrid_MouseLeftButtonDown"
                   MouseRightButtonDown="OverlayGrid_MouseRightButtonDown"
-                  MouseDown="OverlayGrid_MouseDown">
-                <Border x:Name="TransitionMask"
-                        Background="Black"
-                        IsHitTestVisible="False"/>
-            </Grid>
+                  MouseDown="OverlayGrid_MouseDown"/>
         </Grid>
 
         <!-- 选集 -->
         <Border x:Name="PlaylistBorder" Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
                 Width="276" Background="#1A1A1C"
-                Opacity="0"
                 BorderBrush="#222224" BorderThickness="1,0,0,0">
             <Grid>
                 <Grid.RowDefinitions>
@@ -134,7 +129,6 @@
 
         <!-- 控制栏 -->
         <Grid x:Name="ControlBar" Grid.Row="1" Grid.Column="0" Height="63"
-              Opacity="0"
               Focusable="True"
               PreviewKeyDown="ControlBar_PreviewKeyDown"
               KeyDown="ControlBar_KeyDown"

@@ -107,10 +107,9 @@ public partial class MainWindow : Window
         playerPage.LoadFolder(folderPath, folderName);
         PageHost.Content = playerPage;
 
-        await Dispatcher.InvokeAsync(() =>
-        {
-            TransitionMask.Visibility = Visibility.Collapsed;
-        }, System.Windows.Threading.DispatcherPriority.Loaded).Task;
+        await Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.Loaded);
+
+        await FadeMaskFromBlackAsync(350);
     }
 
     private async void PlayerPage_BackRequested(object? sender, System.EventArgs e)
@@ -120,7 +119,7 @@ public partial class MainWindow : Window
 
         if (playerPage != null)
         {
-            await playerPage.FadeToBlackAsync();
+            await playerPage.FadeOutUIAsync();
         }
 
         TransitionMask.Visibility = Visibility.Visible;
@@ -131,6 +130,8 @@ public partial class MainWindow : Window
         Log($"playerPage.Dispose 完成，耗时 {sw.ElapsedMilliseconds}ms");
         ShowMainPage();
         Log($"ShowMainPage 完成，总耗时 {sw.ElapsedMilliseconds}ms");
+
+        await Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.Loaded);
 
         await FadeMaskFromBlackAsync(350);
     }

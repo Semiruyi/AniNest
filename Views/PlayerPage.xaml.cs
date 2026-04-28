@@ -108,24 +108,17 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         FocusManager.SetFocusedElement(this, this);
         Log($"Loaded 后设置焦点到 PlayerPage");
 
-        // 入场动画：遮罩从黑渐变到透明，其余元素同步淡入
+        // 入场动画
         var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut };
-        var duration = TimeSpan.FromMilliseconds(800);
+        var duration = TimeSpan.FromMilliseconds(300);
 
-        var maskAnim = new System.Windows.Media.Animation.DoubleAnimation(1, 0, duration) { EasingFunction = ease };
-        maskAnim.Completed += (_, _) =>
+        var anim = new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration) { EasingFunction = ease };
+        anim.Completed += (_, _) =>
         {
-            TransitionMask.Visibility = Visibility.Collapsed;
-            // 清除动画持有，否则全屏时 HideFullscreenControlBar 直接设 Opacity 无效
-            PlaylistBorder.BeginAnimation(OpacityProperty, null);
-            PlaylistBorder.Opacity = 1;
-            ControlBar.BeginAnimation(OpacityProperty, null);
-            ControlBar.Opacity = 1;
+            PageRoot.BeginAnimation(OpacityProperty, null);
+            PageRoot.Opacity = 1;
         };
-        TransitionMask.BeginAnimation(OpacityProperty, maskAnim);
-
-        PlaylistBorder.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration) { EasingFunction = ease });
-        ControlBar.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+        PageRoot.BeginAnimation(OpacityProperty, anim);
 
         mediaController.Initialize();
         VideoImage.Source = mediaController.VideoBitmap;
@@ -720,29 +713,16 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         }
     }
 
-    /// <summary>
-    /// 退场动画：遮罩渐变到黑色 + 其余元素淡出，用于返回主页面时的过渡
-    /// </summary>
-    public async System.Threading.Tasks.Task FadeToBlackAsync(int durationMs = 350)
+    public async System.Threading.Tasks.Task FadeOutUIAsync(int durationMs = 250)
     {
-        TransitionMask.Visibility = Visibility.Visible;
-        TransitionMask.Opacity = 0;
-
         var duration = TimeSpan.FromMilliseconds(durationMs);
         var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut };
 
         var tcs = new System.Threading.Tasks.TaskCompletionSource<bool>();
-        var maskAnim = new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration) { EasingFunction = ease };
-        maskAnim.Completed += (_, _) =>
-        {
-            PlaylistBorder.BeginAnimation(OpacityProperty, null);
-            ControlBar.BeginAnimation(OpacityProperty, null);
-            tcs.TrySetResult(true);
-        };
-        TransitionMask.BeginAnimation(OpacityProperty, maskAnim);
+        var anim = new System.Windows.Media.Animation.DoubleAnimation(1, 0, duration) { EasingFunction = ease };
+        anim.Completed += (_, _) => tcs.TrySetResult(true);
 
-        PlaylistBorder.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(1, 0, duration) { EasingFunction = ease });
-        ControlBar.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(1, 0, duration) { EasingFunction = ease });
+        PageRoot.BeginAnimation(OpacityProperty, anim);
 
         await tcs.Task;
     }
