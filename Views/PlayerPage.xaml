@@ -774,7 +774,8 @@
                         </Button>
                         <Popup x:Name="SpeedPopup" AllowsTransparency="True"
                                Placement="Top" PlacementTarget="{Binding ElementName=SpeedBtn}"
-                               VerticalOffset="-4" StaysOpen="True">
+                               VerticalOffset="-4" StaysOpen="True"
+                               PopupAnimation="Fade">
                             <Border Background="#E6282828" CornerRadius="12" Padding="4"
                                     MouseEnter="SpeedPopup_MouseEnter"
                                     MouseLeave="SpeedPopup_MouseLeave">
