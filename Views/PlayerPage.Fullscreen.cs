@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 
 namespace LocalPlayer.Views;
@@ -45,7 +46,7 @@ public partial class PlayerPage
         ControlBar.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
         ControlBar.Height = 63;
 
-        HideFullscreenControlBar();
+        HideFullscreenControlBar(immediate: true);
 
         VideoContainer.MouseMove -= VideoContainer_MouseMove;
         VideoContainer.MouseMove += VideoContainer_MouseMove;
@@ -116,7 +117,7 @@ public partial class PlayerPage
     {
         if (!isFullscreen) return;
         controlBarHideTimer.Stop();
-        ControlBar.Opacity = 1;
+        AnimateControlBarOpacity(1);
     }
 
     private void ControlBar_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
@@ -136,15 +137,41 @@ public partial class PlayerPage
     private void ShowFullscreenControlBar()
     {
         controlBarHideTimer.Stop();
+        if (ControlBar.IsHitTestVisible) return;
         ControlBar.Visibility = Visibility.Visible;
-        ControlBar.Opacity = 1;
         ControlBar.IsHitTestVisible = true;
+        AnimateControlBarOpacity(1);
         Keyboard.Focus(ControlBar);
     }
 
-    private void HideFullscreenControlBar()
+    private void HideFullscreenControlBar(bool immediate = false)
     {
-        ControlBar.Opacity = 0;
-        ControlBar.IsHitTestVisible = false;
+        if (immediate)
+        {
+            ControlBar.BeginAnimation(UIElement.OpacityProperty, null);
+            ControlBar.Opacity = 0;
+            ControlBar.IsHitTestVisible = false;
+            return;
+        }
+
+        var duration = TimeSpan.FromMilliseconds(200);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
+        var anim = new DoubleAnimation(ControlBar.Opacity, 0, duration) { EasingFunction = ease };
+        anim.Completed += (_, _) =>
+        {
+            ControlBar.IsHitTestVisible = false;
+        };
+        ControlBar.BeginAnimation(UIElement.OpacityProperty, anim);
+    }
+
+    private void AnimateControlBarOpacity(double target)
+    {
+        var currentOpacity = ControlBar.Opacity;
+        ControlBar.BeginAnimation(UIElement.OpacityProperty, null);
+        ControlBar.Opacity = currentOpacity;
+        var duration = TimeSpan.FromMilliseconds(200);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
+        var anim = new DoubleAnimation(currentOpacity, target, duration) { EasingFunction = ease };
+        ControlBar.BeginAnimation(UIElement.OpacityProperty, anim);
     }
 }
