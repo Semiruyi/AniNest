@@ -114,7 +114,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         // 入场动画：遮罩从黑渐变到透明，其余元素同步淡入
         var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut };
-        var duration = TimeSpan.FromMilliseconds(500);
+        var duration = TimeSpan.FromMilliseconds(800);
 
         var maskAnim = new System.Windows.Media.Animation.DoubleAnimation(1, 0, duration) { EasingFunction = ease };
         maskAnim.Completed += (_, _) =>
@@ -965,7 +965,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     /// <summary>
     /// 退场动画：遮罩渐变到黑色 + 其余元素淡出，用于返回主页面时的过渡
     /// </summary>
-    public async System.Threading.Tasks.Task FadeToBlackAsync(int durationMs = 500)
+    public async System.Threading.Tasks.Task FadeToBlackAsync(int durationMs = 800)
     {
         TransitionMask.Visibility = Visibility.Visible;
         TransitionMask.Opacity = 0;
