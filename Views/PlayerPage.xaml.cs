@@ -30,6 +30,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private readonly DispatcherTimer saveProgressTimer;
     private readonly DispatcherTimer controlBarHideTimer;
     private readonly DispatcherTimer singleClickTimer;
+    private readonly DispatcherTimer playlistHideTimer;
 
     private string currentFolderPath = "";
     private string currentFolderName = "";
@@ -46,6 +47,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     private Grid? controlBarOriginalParent;
     private int controlBarOriginalIndex = -1;
+    private Grid? playlistOriginalParent;
+    private int playlistOriginalIndex = -1;
 
     public event EventHandler? BackRequested;
 
@@ -77,6 +80,9 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         singleClickTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
         singleClickTimer.Tick += SingleClickTimer_Tick;
 
+        playlistHideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        playlistHideTimer.Tick += PlaylistHideTimer_Tick;
+
         inputHandler.TogglePlayPause += (_, _) => mediaController.TogglePlayPause();
         inputHandler.SeekForward += (_, _) => mediaController.SeekForward(5000);
         inputHandler.SeekBackward += (_, _) => mediaController.SeekBackward(5000);
@@ -103,6 +109,10 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             controlBarOriginalParent = ControlBar.Parent as Grid;
             if (controlBarOriginalParent != null)
                 controlBarOriginalIndex = controlBarOriginalParent.Children.IndexOf(ControlBar);
+
+            playlistOriginalParent = PlaylistBorder.Parent as Grid;
+            if (playlistOriginalParent != null)
+                playlistOriginalIndex = playlistOriginalParent.Children.IndexOf(PlaylistBorder);
 
             Keyboard.Focus(this);
             FocusManager.SetFocusedElement(this, this);
@@ -541,6 +551,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         saveProgressTimer.Stop();
         controlBarHideTimer.Stop();
         singleClickTimer.Stop();
+        playlistHideTimer.Stop();
         Log($"saveProgressTimer.Stop 耗时 {sw.ElapsedMilliseconds}ms");
         SaveCurrentProgress();
         Log($"SaveCurrentProgress 完成，耗时 {sw.ElapsedMilliseconds}ms");

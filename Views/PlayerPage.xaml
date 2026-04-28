@@ -26,7 +26,8 @@
         <!-- 选集 -->
         <Border x:Name="PlaylistBorder" Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
                 Width="276" Background="#1A1A1C"
-                BorderBrush="#222224" BorderThickness="1,0,0,0">
+                BorderBrush="#222224" BorderThickness="1,0,0,0"
+                MouseEnter="PlaylistBorder_MouseEnter" MouseLeave="PlaylistBorder_MouseLeave">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
