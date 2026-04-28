@@ -723,7 +723,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     /// <summary>
     /// 退场动画：遮罩渐变到黑色 + 其余元素淡出，用于返回主页面时的过渡
     /// </summary>
-    public async System.Threading.Tasks.Task FadeToBlackAsync(int durationMs = 800)
+    public async System.Threading.Tasks.Task FadeToBlackAsync(int durationMs = 350)
     {
         TransitionMask.Visibility = Visibility.Visible;
         TransitionMask.Opacity = 0;

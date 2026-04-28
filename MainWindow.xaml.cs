@@ -63,7 +63,7 @@ public partial class MainWindow : Window
         playerPage = null;
     }
 
-    private Task FadeMaskToBlackAsync(int durationMs = 600)
+    private Task FadeMaskToBlackAsync(int durationMs = 300)
     {
         TransitionMask.Visibility = Visibility.Visible;
         TransitionMask.BeginAnimation(OpacityProperty, null);
@@ -78,7 +78,7 @@ public partial class MainWindow : Window
         return tcs.Task;
     }
 
-    private async Task FadeMaskFromBlackAsync(int durationMs = 800)
+    private async Task FadeMaskFromBlackAsync(int durationMs = 350)
     {
         TransitionMask.Visibility = Visibility.Visible;
         TransitionMask.BeginAnimation(OpacityProperty, null);
@@ -100,7 +100,7 @@ public partial class MainWindow : Window
 
     private async void MainPage_FolderSelected(object? sender, string folderPath, string folderName)
     {
-        await FadeMaskToBlackAsync(600);
+        await FadeMaskToBlackAsync(300);
 
         playerPage = new PlayerPage();
         playerPage.BackRequested += PlayerPage_BackRequested;
@@ -132,7 +132,7 @@ public partial class MainWindow : Window
         ShowMainPage();
         Log($"ShowMainPage 完成，总耗时 {sw.ElapsedMilliseconds}ms");
 
-        await FadeMaskFromBlackAsync(800);
+        await FadeMaskFromBlackAsync(350);
     }
 
     private void MainWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
