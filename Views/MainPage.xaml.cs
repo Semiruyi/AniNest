@@ -1,13 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using LocalPlayer;
 using LocalPlayer.Models;
 using LocalPlayer.Services;
 
@@ -27,40 +30,60 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     public MainPage()
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        App.LogStartup("MainPage 构造函数开始");
         InitializeComponent();
+        App.LogStartup($"MainPage.InitializeComponent 完成，耗时 {sw.ElapsedMilliseconds}ms");
         Loaded += MainPage_Loaded;
+        App.LogStartup($"MainPage 构造函数完成，总耗时 {sw.ElapsedMilliseconds}ms");
     }
 
-    private void MainPage_Loaded(object sender, RoutedEventArgs e)
-    {
-        LoadFolders();
-    }
-
-    private void LoadFolders()
+    private async void MainPage_Loaded(object sender, RoutedEventArgs e)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        System.Diagnostics.Debug.WriteLine($"[MainPage] LoadFolders 开始");
-        var folders = settingsService.GetFolders();
-        System.Diagnostics.Debug.WriteLine($"[MainPage] GetFolders 耗时 {sw.ElapsedMilliseconds}ms，共 {folders.Count} 个文件夹");
+        App.LogStartup("MainPage.Loaded 事件触发");
+
+        // 立即显示空状态 UI，不等待数据
+        FolderList.ItemsSource = folderItems;
+        UpdateToolbarState();
+        App.LogStartup($"MainPage UI 初始显示完成，耗时 {sw.ElapsedMilliseconds}ms");
+
+        // 后台线程加载配置 + 扫描文件夹
+        var loadedItems = await Task.Run(() => LoadFoldersData());
+        App.LogStartup($"MainPage 后台数据加载完成，耗时 {sw.ElapsedMilliseconds}ms");
+
+        // 切回 UI 线程刷新卡片
         folderItems.Clear();
+        foreach (var item in loadedItems)
+            folderItems.Add(item);
+        UpdateToolbarState();
+        App.LogStartup($"MainPage.Loaded 总耗时 {sw.ElapsedMilliseconds}ms (UI 阻塞仅初始化部分)");
+    }
+
+    private List<FolderListItem> LoadFoldersData()
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var items = new List<FolderListItem>();
+        var folders = settingsService.GetFolders();
+        App.LogStartup($"  后台 GetFolders 完成，耗时 {sw.ElapsedMilliseconds}ms，共 {folders.Count} 个文件夹");
+
         foreach (var folder in folders)
         {
             var folderSw = System.Diagnostics.Stopwatch.StartNew();
             if (Directory.Exists(folder.Path))
             {
-                int count = VideoScanner.CountVideosInFolder(folder.Path);
-                string? coverPath = GetCoverPath(folder.Path);
-                folderItems.Add(new FolderListItem(folder.Name, folder.Path, count, coverPath));
+                var (count, coverPath) = VideoScanner.ScanFolder(folder.Path);
+                App.LogStartup($"  ScanFolder({folder.Name}) 完成，耗时 {folderSw.ElapsedMilliseconds}ms，视频 {count} 个");
+                items.Add(new FolderListItem(folder.Name, folder.Path, count, coverPath));
             }
             else
             {
                 settingsService.RemoveFolder(folder.Path);
+                App.LogStartup($"  文件夹 {folder.Name} 路径不存在，已移除");
             }
-            System.Diagnostics.Debug.WriteLine($"[MainPage] 文件夹 {folder.Name} 处理耗时 {folderSw.ElapsedMilliseconds}ms");
         }
-        FolderList.ItemsSource = folderItems;
-        UpdateToolbarState();
-        System.Diagnostics.Debug.WriteLine($"[MainPage] LoadFolders 总耗时 {sw.ElapsedMilliseconds}ms");
+        App.LogStartup($"  后台 LoadFoldersData 总耗时 {sw.ElapsedMilliseconds}ms");
+        return items;
     }
 
     private void UpdateToolbarState()
@@ -68,16 +91,6 @@ public partial class MainPage : System.Windows.Controls.UserControl
         int count = folderItems.Count;
         FolderCountText.Text = $"{count} 个文件夹";
         EmptyHintText.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
-    }
-
-    private static string? GetCoverPath(string folderPath)
-    {
-        string specificCover = Path.Combine(folderPath, "cover.jpg");
-        if (File.Exists(specificCover))
-        {
-            return specificCover;
-        }
-        return VideoScanner.FindCoverImage(folderPath);
     }
 
     // ========== 删除 ==========
@@ -181,7 +194,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
                 return;
             }
 
-            int count = VideoScanner.CountVideosInFolder(path);
+            var (count, coverPath) = VideoScanner.ScanFolder(path);
             if (count == 0)
             {
                 System.Windows.MessageBox.Show("该文件夹内没有视频文件", "提示");
@@ -189,7 +202,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
             }
 
             settingsService.AddFolder(path, name);
-            var newItem = new FolderListItem(name, path, count, GetCoverPath(path));
+            var newItem = new FolderListItem(name, path, count, coverPath);
             folderItems.Add(newItem);
             UpdateToolbarState();
 

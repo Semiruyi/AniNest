@@ -28,12 +28,16 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        App.LogStartup("MainWindow 构造函数开始");
         InitializeComponent();
+        App.LogStartup($"MainWindow.InitializeComponent 完成，耗时 {sw.ElapsedMilliseconds}ms");
         Loaded += MainWindow_Loaded;
         PreviewKeyDown += MainWindow_PreviewKeyDown;
         KeyDown += MainWindow_KeyDown;
         GotKeyboardFocus += MainWindow_GotKeyboardFocus;
         LostKeyboardFocus += MainWindow_LostKeyboardFocus;
+        App.LogStartup($"MainWindow 构造函数完成，总耗时 {sw.ElapsedMilliseconds}ms");
     }
 
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
@@ -44,6 +48,8 @@ public partial class MainWindow : Window
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        App.LogStartup("MainWindow.Loaded 事件触发");
         nint hwnd = new WindowInteropHelper(this).Handle;
 
         int darkMode = 1;
@@ -51,16 +57,22 @@ public partial class MainWindow : Window
 
         int captionColor = 0x00000000;
         DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, ref captionColor, sizeof(int));
+        App.LogStartup($"DWM 属性设置完成，耗时 {sw.ElapsedMilliseconds}ms");
 
         ShowMainPage();
+        App.LogStartup($"MainWindow.Loaded 总耗时 {sw.ElapsedMilliseconds}ms");
     }
 
     private void ShowMainPage()
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        App.LogStartup("ShowMainPage 开始");
         mainPage = new MainPage();
+        App.LogStartup($"MainPage 构造函数完成，耗时 {sw.ElapsedMilliseconds}ms");
         mainPage.FolderSelected += MainPage_FolderSelected;
         PageHost.Content = mainPage;
         playerPage = null;
+        App.LogStartup($"ShowMainPage 完成，总耗时 {sw.ElapsedMilliseconds}ms");
     }
 
     private Task FadeMaskToBlackAsync(int durationMs = 300)

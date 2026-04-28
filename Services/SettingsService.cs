@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using LocalPlayer;
 using LocalPlayer.Models;
 
 namespace LocalPlayer.Services;
@@ -36,21 +37,26 @@ public class SettingsService
         if (settings != null)
             return settings;
 
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             if (File.Exists(settingsPath))
             {
                 string json = File.ReadAllText(settingsPath);
+                App.LogStartup($"SettingsService.Load 读取文件耗时 {sw.ElapsedMilliseconds}ms，大小 {json.Length} 字节");
                 settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+                App.LogStartup($"SettingsService.Load JSON 反序列化完成，总耗时 {sw.ElapsedMilliseconds}ms");
             }
             else
             {
                 settings = new AppSettings();
+                App.LogStartup($"SettingsService.Load 文件不存在，创建空配置，耗时 {sw.ElapsedMilliseconds}ms");
             }
         }
         catch
         {
             settings = new AppSettings();
+            App.LogStartup($"SettingsService.Load 异常，使用空配置，耗时 {sw.ElapsedMilliseconds}ms");
         }
 
         return settings;
