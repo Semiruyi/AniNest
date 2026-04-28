@@ -39,6 +39,12 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private string? pendingLoadFolderName;
     private bool isProgressDragging = false;
 
+    private float currentSpeed = 1.0f;
+    private float speedBeforeHold = 1.0f;
+    private readonly DispatcherTimer speedPopupCloseTimer;
+    private readonly DispatcherTimer rightHoldTimer;
+    private bool isRightHolding;
+
     private Window? parentWindow;
     private bool isFullscreen = false;
     private FullscreenWindow? fullscreenWindow;
@@ -80,6 +86,12 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         playlistHideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
         playlistHideTimer.Tick += PlaylistHideTimer_Tick;
 
+        speedPopupCloseTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(180) };
+        speedPopupCloseTimer.Tick += SpeedPopupCloseTimer_Tick;
+
+        rightHoldTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
+        rightHoldTimer.Tick += RightHoldTimer_Tick;
+
         inputHandler.TogglePlayPause += (_, _) => mediaController.TogglePlayPause();
         inputHandler.SeekForward += (_, _) => mediaController.SeekForward(5000);
         inputHandler.SeekBackward += (_, _) => mediaController.SeekBackward(5000);
@@ -120,9 +132,24 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
                 fullscreenWindow.ExitRequested += (_, _) => ExitFullscreen();
                 fullscreenWindow.ControlBarShowRequested += (_, _) => ShowFullscreenControlBar();
                 fullscreenWindow.PlaylistShowRequested += (_, _) => ShowFullscreenPlaylist();
+                fullscreenWindow.RightHoldStarted += (_, _) =>
+                {
+                    speedBeforeHold = currentSpeed;
+                    isRightHolding = true;
+                    mediaController.Rate = 3.0f;
+                    UpdateSpeedButtonText(3.0f);
+                };
+                fullscreenWindow.RightHoldEnded += (_, _) =>
+                {
+                    isRightHolding = false;
+                    mediaController.Rate = speedBeforeHold;
+                    UpdateSpeedButtonText(speedBeforeHold);
+                };
             }
 
             VideoContainer.MouseMove += VideoContainer_MouseMove;
+            VideoContainer.MouseRightButtonDown += VideoContainer_MouseRightButtonDown;
+            VideoContainer.MouseRightButtonUp += VideoContainer_MouseRightButtonUp;
 
             Keyboard.Focus(this);
             FocusManager.SetFocusedElement(this, this);
@@ -187,6 +214,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
                 Log("Loaded 后执行暂存的 LoadFolder");
                 LoadFolder(path, name);
             }
+
+            _ = Dispatcher.BeginInvoke(new Action(() => HighlightSpeedOption(1.0f)), DispatcherPriority.Loaded);
 
         }
         catch (Exception ex)
@@ -552,6 +581,106 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         }
     }
 
+    // ========== 倍速 ==========
+
+    private void SpeedPopupCloseTimer_Tick(object? sender, EventArgs e)
+    {
+        speedPopupCloseTimer.Stop();
+        SpeedPopup.IsOpen = false;
+    }
+
+    private void SpeedBtn_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        speedPopupCloseTimer.Stop();
+        SpeedPopup.IsOpen = true;
+    }
+
+    private void SpeedBtn_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        speedPopupCloseTimer.Stop();
+        speedPopupCloseTimer.Start();
+    }
+
+    private void SpeedPopup_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        speedPopupCloseTimer.Stop();
+    }
+
+    private void SpeedPopup_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        speedPopupCloseTimer.Stop();
+        speedPopupCloseTimer.Start();
+    }
+
+    private void SpeedOption_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.Button btn && btn.Tag is string tagStr &&
+            float.TryParse(tagStr, out float speed))
+        {
+            SetSpeed(speed);
+            SpeedPopup.IsOpen = false;
+        }
+    }
+
+    private void SetSpeed(float speed)
+    {
+        currentSpeed = speed;
+        mediaController.Rate = speed;
+        SpeedBtn.Content = $"{speed:0.#}x";
+        HighlightSpeedOption(speed);
+    }
+
+    private void UpdateSpeedButtonText(float speed)
+    {
+        SpeedBtn.Content = $"{speed:0.#}x";
+    }
+
+    private void HighlightSpeedOption(float speed)
+    {
+        foreach (var child in SpeedOptionsPanel.Children)
+        {
+            if (child is System.Windows.Controls.Button btn)
+            {
+                bool isSelected = btn.Tag?.ToString() == speed.ToString("0.##");
+                btn.Background = isSelected
+                    ? new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#007AFF"))
+                    : new SolidColorBrush(Colors.Transparent);
+                btn.FontWeight = isSelected ? FontWeights.SemiBold : FontWeights.Normal;
+                btn.FontSize = isSelected ? 14 : 13;
+            }
+        }
+    }
+
+    // ========== 右键长按三倍速 ==========
+
+    private void RightHoldTimer_Tick(object? sender, EventArgs e)
+    {
+        rightHoldTimer.Stop();
+        speedBeforeHold = currentSpeed;
+        isRightHolding = true;
+        mediaController.Rate = 3.0f;
+        UpdateSpeedButtonText(3.0f);
+    }
+
+    private void VideoContainer_MouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        rightHoldTimer.Stop();
+        rightHoldTimer.Start();
+        e.Handled = true;
+    }
+
+    private void VideoContainer_MouseRightButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        rightHoldTimer.Stop();
+        if (isRightHolding)
+        {
+            isRightHolding = false;
+            mediaController.Rate = speedBeforeHold;
+            UpdateSpeedButtonText(speedBeforeHold);
+        }
+        e.Handled = true;
+    }
+
     public void Dispose()
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -560,6 +689,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         controlBarHideTimer.Stop();
         singleClickTimer.Stop();
         playlistHideTimer.Stop();
+        speedPopupCloseTimer.Stop();
+        rightHoldTimer.Stop();
         Log($"saveProgressTimer.Stop 耗时 {sw.ElapsedMilliseconds}ms");
         SaveCurrentProgress();
         Log($"SaveCurrentProgress 完成，耗时 {sw.ElapsedMilliseconds}ms");

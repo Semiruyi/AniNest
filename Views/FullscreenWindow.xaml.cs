@@ -31,11 +31,19 @@ public partial class FullscreenWindow : Window
     /// <summary>鼠标靠近右侧边缘 → PlayerPage 显示选集面板</summary>
     public event EventHandler? PlaylistShowRequested;
 
+    /// <summary>右键长按开始（三倍速）</summary>
+    public event EventHandler? RightHoldStarted;
+
+    /// <summary>右键长按结束（恢复原速）</summary>
+    public event EventHandler? RightHoldEnded;
+
     // ========== 状态 ==========
 
     private bool isAnimating;
     private bool isClosing;
     private Rect originalVideoRect;
+    private readonly DispatcherTimer rightHoldTimer = new() { Interval = TimeSpan.FromMilliseconds(350) };
+    private bool isRightHolding;
 
     // 单击/双击检测
     private readonly DispatcherTimer singleClickTimer = new() { Interval = TimeSpan.FromMilliseconds(400) };
@@ -48,9 +56,17 @@ public partial class FullscreenWindow : Window
             singleClickTimer.Stop();
             mediaController?.TogglePlayPause();
         };
+        rightHoldTimer.Tick += (_, _) =>
+        {
+            rightHoldTimer.Stop();
+            isRightHolding = true;
+            RightHoldStarted?.Invoke(this, EventArgs.Empty);
+        };
         Loaded += (_, _) =>
         {
             VideoImage.MouseLeftButtonDown += VideoImage_MouseLeftButtonDown;
+            VideoImage.MouseRightButtonDown += VideoImage_MouseRightButtonDown;
+            VideoImage.MouseRightButtonUp += VideoImage_MouseRightButtonUp;
             Keyboard.Focus(this);
         };
     }
@@ -66,6 +82,24 @@ public partial class FullscreenWindow : Window
         }
         singleClickTimer.Stop();
         singleClickTimer.Start();
+    }
+
+    private void VideoImage_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        rightHoldTimer.Stop();
+        rightHoldTimer.Start();
+        e.Handled = true;
+    }
+
+    private void VideoImage_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        rightHoldTimer.Stop();
+        if (isRightHolding)
+        {
+            isRightHolding = false;
+            RightHoldEnded?.Invoke(this, EventArgs.Empty);
+        }
+        e.Handled = true;
     }
 
     // ========== 初始化 ==========

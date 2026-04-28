@@ -33,6 +33,12 @@ public class MediaPlayerController : IDisposable
     public string? CurrentFilePath { get; private set; }
     public WriteableBitmap? VideoBitmap => frameProvider?.Bitmap;
 
+    public float Rate
+    {
+        get => mediaPlayer?.Rate ?? 1.0f;
+        set => mediaPlayer?.SetRate(value);
+    }
+
     public event EventHandler? Playing;
     public event EventHandler? Paused;
     public event EventHandler? Stopped;

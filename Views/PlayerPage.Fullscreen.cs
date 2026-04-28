@@ -34,6 +34,9 @@ public partial class PlayerPage
     {
         if (parentWindow == null || fullscreenWindow == null) return;
 
+        SpeedPopup.IsOpen = false;
+        speedPopupCloseTimer.Stop();
+
         // 1. 记录 VideoContainer 屏幕位置（DIP），用于退出回缩动画
         var source = PresentationSource.FromVisual(VideoContainer);
         var dpiX = source!.CompositionTarget!.TransformToDevice.M11;
