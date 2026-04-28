@@ -19,7 +19,6 @@
         <!-- 视频区 -->
         <Grid x:Name="VideoContainer" Grid.Row="0" Grid.Column="0" Background="Black"
               MouseLeftButtonDown="VideoContainer_MouseLeftButtonDown"
-              MouseRightButtonDown="VideoContainer_MouseRightButtonDown"
               MouseDown="VideoContainer_MouseDown">
             <Image x:Name="VideoImage" Stretch="Uniform"/>
         </Grid>

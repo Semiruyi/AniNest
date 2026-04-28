@@ -221,9 +221,8 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     // ========== 打开文件夹 ==========
 
-    private void FolderCard_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void FolderCard_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        if (e.ClickCount < 2) return;
         if (sender is Border border && border.Tag is string path)
         {
             string name = Path.GetFileName(path);

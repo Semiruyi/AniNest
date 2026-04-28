@@ -29,6 +29,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private readonly PlayerInputHandler inputHandler = new();
     private readonly DispatcherTimer saveProgressTimer;
     private readonly DispatcherTimer controlBarHideTimer;
+    private readonly DispatcherTimer singleClickTimer;
 
     private string currentFolderPath = "";
     private string currentFolderName = "";
@@ -72,6 +73,9 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         controlBarHideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
         controlBarHideTimer.Tick += ControlBarHideTimer_Tick;
+
+        singleClickTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+        singleClickTimer.Tick += SingleClickTimer_Tick;
 
         inputHandler.TogglePlayPause += (_, _) => mediaController.TogglePlayPause();
         inputHandler.SeekForward += (_, _) => mediaController.SeekForward(5000);
@@ -456,49 +460,25 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         if (e.Handled) return;
         Log($"VideoContainer MouseLeftButtonDown (WPF): ClickCount={e.ClickCount}");
         Keyboard.Focus(this);
+
         if (e.ClickCount >= 2)
         {
-            Log("VideoContainer 左键双击 -> TogglePlayPause");
-            mediaController.TogglePlayPause();
+            Log("VideoContainer 左键双击 -> ToggleFullscreen");
+            singleClickTimer.Stop();
+            ToggleFullscreen();
             e.Handled = true;
+            return;
         }
+
+        singleClickTimer.Stop();
+        singleClickTimer.Start();
     }
 
-    private void VideoContainer_MouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void SingleClickTimer_Tick(object? sender, EventArgs e)
     {
-        if (e.Handled) return;
-        Keyboard.Focus(this);
-
-        var now = DateTime.Now;
-        var position = e.GetPosition(this);
-        Log($"VideoContainer MouseRightButtonDown (WPF): ClickCount={e.ClickCount}, Time={now:HH:mm:ss.fff}");
-
-        if (e.ClickCount >= 2)
-        {
-            Log("VideoContainer 右键双击 -> ToggleFullscreen");
-            ToggleFullscreen();
-            e.Handled = true;
-            return;
-        }
-
-        var elapsed = now - lastRightClickTime;
-        var dx = position.X - lastRightClickPosition.X;
-        var dy = position.Y - lastRightClickPosition.Y;
-        var distance = Math.Sqrt(dx * dx + dy * dy);
-        if (elapsed.TotalMilliseconds > 50 && elapsed.TotalMilliseconds < 500 && distance < 10)
-        {
-            Log("VideoContainer 右键双击(备选检测) -> ToggleFullscreen");
-            ToggleFullscreen();
-            e.Handled = true;
-            return;
-        }
-
-        lastRightClickTime = now;
-        lastRightClickPosition = position;
+        singleClickTimer.Stop();
+        mediaController.TogglePlayPause();
     }
-
-    private DateTime lastRightClickTime = DateTime.MinValue;
-    private System.Windows.Point lastRightClickPosition;
 
     private void PlayerPage_GotKeyboardFocus(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e)
     {
@@ -559,6 +539,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         var sw = System.Diagnostics.Stopwatch.StartNew();
         Log("Dispose 开始");
         saveProgressTimer.Stop();
+        controlBarHideTimer.Stop();
+        singleClickTimer.Stop();
         Log($"saveProgressTimer.Stop 耗时 {sw.ElapsedMilliseconds}ms");
         SaveCurrentProgress();
         Log($"SaveCurrentProgress 完成，耗时 {sw.ElapsedMilliseconds}ms");
