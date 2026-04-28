@@ -40,11 +40,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private bool isProgressDragging = false;
 
     private Window? parentWindow;
-    private WindowState savedWindowState;
-    private WindowStyle savedWindowStyle;
-    private ResizeMode savedResizeMode;
     private bool isFullscreen = false;
-
+    private FullscreenWindow? fullscreenWindow;
     private Grid? controlBarOriginalParent;
     private int controlBarOriginalIndex = -1;
     private Grid? playlistOriginalParent;
@@ -106,6 +103,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             parentWindow = Window.GetWindow(this);
             Log($"获取父窗口: {parentWindow?.GetType().Name}");
 
+            // 保存原始父容器和位置，全屏 reparent 后恢复用
             controlBarOriginalParent = ControlBar.Parent as Grid;
             if (controlBarOriginalParent != null)
                 controlBarOriginalIndex = controlBarOriginalParent.Children.IndexOf(ControlBar);
@@ -113,6 +111,18 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             playlistOriginalParent = PlaylistBorder.Parent as Grid;
             if (playlistOriginalParent != null)
                 playlistOriginalIndex = playlistOriginalParent.Children.IndexOf(PlaylistBorder);
+
+            // 创建全屏窗口（只创建一次，复用）
+            if (fullscreenWindow == null)
+            {
+                fullscreenWindow = new FullscreenWindow();
+                fullscreenWindow.Setup(mediaController, inputHandler);
+                fullscreenWindow.ExitRequested += (_, _) => ExitFullscreen();
+                fullscreenWindow.ControlBarShowRequested += (_, _) => ShowFullscreenControlBar();
+                fullscreenWindow.PlaylistShowRequested += (_, _) => ShowFullscreenPlaylist();
+            }
+
+            VideoContainer.MouseMove += VideoContainer_MouseMove;
 
             Keyboard.Focus(this);
             FocusManager.SetFocusedElement(this, this);
@@ -131,8 +141,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
             mediaController.Initialize();
             VideoImage.Source = mediaController.VideoBitmap;
-
-            VideoContainer.MouseMove += VideoContainer_MouseMove;
 
             mediaController.Playing += (s, ev) =>
             {
@@ -556,8 +564,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         SaveCurrentProgress();
         Log($"SaveCurrentProgress 完成，耗时 {sw.ElapsedMilliseconds}ms");
 
-        VideoContainer.MouseMove -= VideoContainer_MouseMove;
-        Log($"MouseMove 取消订阅 耗时 {sw.ElapsedMilliseconds}ms");
+        fullscreenWindow?.Close();
+        fullscreenWindow = null;
 
         mediaController.Dispose();
         Log($"mediaController.Dispose 完成，总耗时 {sw.ElapsedMilliseconds}ms");
