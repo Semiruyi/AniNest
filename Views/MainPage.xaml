@@ -61,7 +61,8 @@
         </Grid.RowDefinitions>
 
         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
-            <ItemsControl x:Name="FolderList" Margin="24">
+            <ItemsControl x:Name="FolderList" Margin="24" AllowDrop="True"
+                          DragOver="FolderList_DragOver" Drop="FolderList_Drop" DragLeave="FolderList_DragLeave">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <local:AnimatedWrapPanel HorizontalAlignment="Center" AnimationDuration="0:0:0.25"/>
@@ -72,7 +73,7 @@
                         <Border Width="190" Height="253" Margin="12" Style="{StaticResource PosterCardStyle}"
                                 MouseLeftButtonDown="FolderCard_DoubleClick" Tag="{Binding Path}"
                                 PreviewMouseLeftButtonDown="Card_PreviewMouseLeftButtonDown"
-                                MouseMove="Card_MouseMove"
+                                PreviewMouseMove="Card_PreviewMouseMove"
                                 PreviewMouseLeftButtonUp="Card_PreviewMouseLeftButtonUp">
                             <Grid>
                                 <Grid.Clip>

@@ -22,10 +22,10 @@ public partial class MainPage : System.Windows.Controls.UserControl
     public event Action<object, string, string>? FolderSelected;
 
     // 拖拽状态
-    private FolderListItem? _dragSourceItem;
+    private FolderListItem? _dragItem;
     private System.Windows.Point _dragStartPoint;
-    private bool _isDragging;
-    private DragAdorner? _dragAdorner;
+    private bool _dragInitiated;
+    private InsertionAdorner? _insertionAdorner;
 
     public MainPage()
     {
@@ -227,19 +227,14 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     // ========== 拖拽排序 ==========
 
-    private void Card_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    private void Card_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        if (sender is not Border border) return;
-        if (border.Tag is not string path) return;
+        if (sender is not Border border || border.Tag is not string path) return;
+        if (IsOriginalSourceInsideButton(e.OriginalSource, border)) return;
 
-        // 如果点击的是删除按钮（或其模板子元素），不捕获鼠标，让按钮正常响应 Click
-        if (IsOriginalSourceInsideButton(e.OriginalSource, border))
-            return;
-
-        _dragSourceItem = folderItems.FirstOrDefault(i => i.Path == path);
-        _dragStartPoint = e.GetPosition(FolderList);
-        _isDragging = false;
-        border.CaptureMouse();
+        _dragItem = folderItems.FirstOrDefault(i => i.Path == path);
+        _dragStartPoint = e.GetPosition(null);
+        _dragInitiated = false;
     }
 
     private static bool IsOriginalSourceInsideButton(object? originalSource, Border cardBorder)
@@ -254,94 +249,91 @@ public partial class MainPage : System.Windows.Controls.UserControl
         return false;
     }
 
-    private void Card_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    private void Card_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
     {
-        if (_dragSourceItem == null) return;
+        if (_dragItem == null || _dragInitiated) return;
         if (e.LeftButton != MouseButtonState.Pressed)
         {
-            CancelDrag();
+            _dragItem = null;
             return;
         }
 
-        System.Windows.Point currentPos = e.GetPosition(FolderList);
-        Vector diff = _dragStartPoint - currentPos;
+        var currentPos = e.GetPosition(null);
+        var diff = _dragStartPoint - currentPos;
 
-        if (!_isDragging && (Math.Abs(diff.X) > 5 || Math.Abs(diff.Y) > 5))
+        if (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
+            Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance)
         {
-            _isDragging = true;
-            StartDrag(sender as Border);
-        }
+            _dragInitiated = true;
+            var sourceItem = _dragItem;
 
-        if (_isDragging && _dragAdorner != null && sender is Border border)
-        {
-            System.Windows.Point posInBorder = FolderList.TranslatePoint(currentPos, border);
-            _dragAdorner.UpdatePosition(posInBorder);
-        }
-    }
+            var sourceBorder = FindTemplateRoot(sourceItem);
+            if (sourceBorder != null) sourceBorder.Opacity = 0.4;
 
-    private void Card_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-    {
-        if (sender is Border border)
-        {
-            border.ReleaseMouseCapture();
-        }
+            var data = new System.Windows.DataObject("FolderListItem", sourceItem);
+            System.Windows.DragDrop.DoDragDrop(FolderList, data, System.Windows.DragDropEffects.Move);
 
-        if (_isDragging && _dragSourceItem != null)
-        {
-            System.Windows.Point dropPos = e.GetPosition(FolderList);
-            int targetIndex = CalculateTargetIndex(dropPos);
-            int sourceIndex = folderItems.IndexOf(_dragSourceItem);
-
-            if (targetIndex > sourceIndex) targetIndex--;
-
-            if (targetIndex >= 0 && targetIndex < folderItems.Count && targetIndex != sourceIndex)
+            if (sourceBorder != null)
             {
-                folderItems.Move(sourceIndex, targetIndex);
-                var paths = folderItems.Select(i => i.Path).ToList();
-                settingsService.ReorderFolders(paths);
+                sourceBorder.BeginAnimation(UIElement.OpacityProperty, null);
+                sourceBorder.Opacity = 1;
             }
-
-            e.Handled = true;
-        }
-
-        CancelDrag();
-    }
-
-    private void StartDrag(Border? border)
-    {
-        if (border == null || _dragSourceItem == null) return;
-
-        border.Opacity = 0.4;
-
-        var adornerLayer = AdornerLayer.GetAdornerLayer(FolderList);
-        if (adornerLayer != null)
-        {
-            _dragAdorner = new DragAdorner(border);
-            adornerLayer.Add(_dragAdorner);
+            _dragItem = null;
+            _dragInitiated = false;
+            HideInsertionIndicator();
         }
     }
 
-    private void CancelDrag()
+    private void Card_PreviewMouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        if (_dragAdorner != null)
+        _dragItem = null;
+        _dragInitiated = false;
+    }
+
+    private void FolderList_DragOver(object sender, System.Windows.DragEventArgs e)
+    {
+        if (!e.Data.GetDataPresent("FolderListItem"))
         {
-            var adornerLayer = AdornerLayer.GetAdornerLayer(FolderList);
-            adornerLayer?.Remove(_dragAdorner);
-            _dragAdorner = null;
+            e.Effects = System.Windows.DragDropEffects.None;
+            return;
         }
 
-        if (_dragSourceItem != null)
+        e.Effects = System.Windows.DragDropEffects.Move;
+        e.Handled = true;
+
+        var pos = e.GetPosition(FolderList);
+        int targetIndex = CalculateTargetIndex(pos);
+        UpdateInsertionIndicator(targetIndex);
+    }
+
+    private void FolderList_Drop(object sender, System.Windows.DragEventArgs e)
+    {
+        if (!e.Data.GetDataPresent("FolderListItem") ||
+            e.Data.GetData("FolderListItem") is not FolderListItem sourceItem)
+            return;
+
+        var pos = e.GetPosition(FolderList);
+        int targetIndex = CalculateTargetIndex(pos);
+        int sourceIndex = folderItems.IndexOf(sourceItem);
+
+        if (sourceIndex < 0) return;
+
+        if (targetIndex > sourceIndex) targetIndex--;
+
+        if (targetIndex >= 0 && targetIndex < folderItems.Count && targetIndex != sourceIndex)
         {
-            var border = FindTemplateRoot(_dragSourceItem);
-            if (border != null)
-            {
-                border.BeginAnimation(OpacityProperty, null);
-                border.Opacity = 1;
-            }
+            folderItems.Move(sourceIndex, targetIndex);
+            var paths = folderItems.Select(i => i.Path).ToList();
+            settingsService.ReorderFolders(paths);
         }
 
-        _dragSourceItem = null;
-        _isDragging = false;
+        HideInsertionIndicator();
+        e.Handled = true;
+    }
+
+    private void FolderList_DragLeave(object sender, System.Windows.DragEventArgs e)
+    {
+        HideInsertionIndicator();
     }
 
     private int CalculateTargetIndex(System.Windows.Point dropPos)
@@ -351,22 +343,54 @@ public partial class MainPage : System.Windows.Controls.UserControl
             var container = FolderList.ItemContainerGenerator.ContainerFromItem(folderItems[i]);
             if (container is not FrameworkElement fe) continue;
 
-            System.Windows.Point containerPos = fe.TranslatePoint(new System.Windows.Point(0, 0), FolderList);
-            System.Windows.Rect rect = MakeRect(containerPos, fe.ActualWidth, fe.ActualHeight);
+            var containerPos = fe.TranslatePoint(new System.Windows.Point(0, 0), FolderList);
+            var rect = new System.Windows.Rect(containerPos, new System.Windows.Size(fe.ActualWidth, fe.ActualHeight));
 
             if (rect.Contains(dropPos))
             {
-                if (dropPos.X < rect.X + rect.Width / 2)
-                    return i;
-                else
-                    return i + 1;
+                return dropPos.X < rect.X + rect.Width / 2 ? i : i + 1;
             }
         }
         return folderItems.Count;
     }
 
-    // 显式类型别名，避免 System.Drawing 冲突
-    private static System.Windows.Rect MakeRect(System.Windows.Point pos, double w, double h) => new(pos, new System.Windows.Size(w, h));
+    private void UpdateInsertionIndicator(int targetIndex)
+    {
+        if (_insertionAdorner == null)
+        {
+            var layer = AdornerLayer.GetAdornerLayer(FolderList);
+            if (layer == null) return;
+            _insertionAdorner = new InsertionAdorner(FolderList);
+            layer.Add(_insertionAdorner);
+        }
+
+        if (targetIndex < folderItems.Count)
+        {
+            var container = FolderList.ItemContainerGenerator.ContainerFromItem(folderItems[targetIndex]);
+            if (container is FrameworkElement fe)
+            {
+                var pos = fe.TranslatePoint(new System.Windows.Point(0, 0), FolderList);
+                _insertionAdorner.ShowAt(pos.X - 4, pos.Y, fe.ActualHeight);
+            }
+        }
+        else if (folderItems.Count > 0)
+        {
+            var container = FolderList.ItemContainerGenerator.ContainerFromItem(folderItems[^1]);
+            if (container is FrameworkElement fe)
+            {
+                var pos = fe.TranslatePoint(new System.Windows.Point(0, 0), FolderList);
+                _insertionAdorner.ShowAt(pos.X + fe.ActualWidth + 8, pos.Y, fe.ActualHeight);
+            }
+        }
+    }
+
+    private void HideInsertionIndicator()
+    {
+        if (_insertionAdorner == null) return;
+        var layer = AdornerLayer.GetAdornerLayer(FolderList);
+        layer?.Remove(_insertionAdorner);
+        _insertionAdorner = null;
+    }
 
     // ========== 打开文件夹 ==========
 
@@ -414,30 +438,28 @@ public partial class MainPage : System.Windows.Controls.UserControl
 /// </summary>
 public record FolderListItem(string Name, string Path, int VideoCount, string? CoverPath);
 
-public class DragAdorner : Adorner
+public class InsertionAdorner : Adorner
 {
-    private System.Windows.Point _offset;
-    private readonly VisualBrush _brush;
+    private bool _visible;
+    private System.Windows.Rect _rect;
 
-    public DragAdorner(UIElement adornedElement) : base(adornedElement)
+    private static readonly SolidColorBrush InsertionBrush = new(System.Windows.Media.Color.FromRgb(0x4A, 0x9E, 0xFF));
+
+    public InsertionAdorner(UIElement adornedElement) : base(adornedElement)
     {
         IsHitTestVisible = false;
-        _brush = new VisualBrush(adornedElement)
-        {
-            Opacity = 0.75,
-            Stretch = Stretch.None
-        };
     }
 
-    public void UpdatePosition(System.Windows.Point position)
+    public void ShowAt(double x, double y, double height)
     {
-        _offset = position;
+        _rect = new System.Windows.Rect(x, y, 4, height);
+        _visible = true;
         InvalidateVisual();
     }
 
     protected override void OnRender(DrawingContext drawingContext)
     {
-        var rect = new Rect(_offset, AdornedElement.RenderSize);
-        drawingContext.DrawRectangle(_brush, null, rect);
+        if (!_visible) return;
+        drawingContext.DrawRoundedRectangle(InsertionBrush, null, _rect, 2, 2);
     }
 }
