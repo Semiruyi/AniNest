@@ -55,6 +55,7 @@ public partial class MainPage
             var sourceBorder = FindTemplateRoot(sourceItem);
             if (sourceBorder != null) sourceBorder.Opacity = 0.4;
 
+            var oldPositions = CaptureCardPositions();
             var data = new System.Windows.DataObject("FolderListItem", sourceItem);
             System.Windows.DragDrop.DoDragDrop(FolderList, data, System.Windows.DragDropEffects.Move);
 
@@ -66,6 +67,7 @@ public partial class MainPage
             _dragItem = null;
             _dragInitiated = false;
             HideInsertionIndicator();
+            AnimateCardsReposition(oldPositions);
         }
     }
 

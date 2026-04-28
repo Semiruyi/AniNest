@@ -109,9 +109,11 @@ public partial class MainPage : System.Windows.Controls.UserControl
             {
                 PlayDeleteAnimation(container, () =>
                 {
+                    var oldPositions = CaptureCardPositions();
                     folderItems.Remove(item);
                     settingsService.RemoveFolder(path);
                     UpdateToolbarState();
+                    AnimateCardsReposition(oldPositions);
                 });
             }
             else
@@ -207,6 +209,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
             var newItem = new FolderListItem(name, path, count, coverPath);
             folderItems.Add(newItem);
             UpdateToolbarState();
+            AnimateCardAdded(newItem);
         }
     }
 
