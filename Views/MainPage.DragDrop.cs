@@ -1,10 +1,12 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using LocalPlayer.Models;
+using LocalPlayer.Services;
 
 namespace LocalPlayer.Views;
 
@@ -69,6 +71,22 @@ public partial class MainPage
 
     private void Card_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
+        if (_dragItem != null && !_dragInitiated)
+        {
+            if (sender is Border border && border.Tag is string path)
+            {
+                string name = Path.GetFileName(path);
+                var videos = VideoScanner.GetVideoFiles(path);
+                if (videos.Length == 0)
+                {
+                    System.Windows.MessageBox.Show("文件夹内没有视频文件", "提示");
+                }
+                else
+                {
+                    FolderSelected?.Invoke(this, path, name);
+                }
+            }
+        }
         _dragItem = null;
         _dragInitiated = false;
     }

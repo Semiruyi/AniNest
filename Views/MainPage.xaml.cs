@@ -232,21 +232,4 @@ public partial class MainPage : System.Windows.Controls.UserControl
         return null;
     }
 
-    // ========== 打开文件夹 ==========
-
-    private void FolderCard_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
-    {
-        if (sender is Border border && border.Tag is string path)
-        {
-            string name = Path.GetFileName(path);
-            var videos = VideoScanner.GetVideoFiles(path);
-            if (videos.Length == 0)
-            {
-                System.Windows.MessageBox.Show("文件夹内没有视频文件", "提示");
-                return;
-            }
-            FolderSelected?.Invoke(this, path, name);
-        }
-    }
-
 }
