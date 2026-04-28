@@ -44,7 +44,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private readonly DispatcherTimer speedPopupCloseTimer;
     private readonly DispatcherTimer rightHoldTimer;
     private bool isRightHolding;
-    private bool ignoreNextSpeedBtnLeave;
 
     private Window? parentWindow;
     private bool isFullscreen = false;
@@ -587,7 +586,40 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private void SpeedPopupCloseTimer_Tick(object? sender, EventArgs e)
     {
         speedPopupCloseTimer.Stop();
+
+        // 鼠标仍在按钮或弹窗上方，不关闭
+        if (IsMouseOverSafeZone())
+        {
+            speedPopupCloseTimer.Start();
+            return;
+        }
+
         SpeedPopup.IsOpen = false;
+    }
+
+    private bool IsMouseOverSafeZone()
+    {
+        // 检查是否在倍速按钮上
+        var btnPt = System.Windows.Input.Mouse.GetPosition(SpeedBtn);
+        if (btnPt.X >= -2 && btnPt.Y >= -2 &&
+            btnPt.X <= SpeedBtn.ActualWidth + 2 && btnPt.Y <= SpeedBtn.ActualHeight + 2)
+            return true;
+
+        // 检查是否在弹窗内容上
+        if (SpeedPopup.IsOpen && SpeedPopup.Child != null)
+        {
+            try
+            {
+                var popupPt = System.Windows.Input.Mouse.GetPosition(SpeedPopup.Child);
+                if (popupPt.X >= -2 && popupPt.Y >= -2 &&
+                    popupPt.X <= SpeedPopup.Child.RenderSize.Width + 2 &&
+                    popupPt.Y <= SpeedPopup.Child.RenderSize.Height + 2)
+                    return true;
+            }
+            catch { }
+        }
+
+        return false;
     }
 
     private void PageRoot_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -622,17 +654,11 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private void SpeedBtn_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
     {
         speedPopupCloseTimer.Stop();
-        ignoreNextSpeedBtnLeave = true;
         SpeedPopup.IsOpen = true;
     }
 
     private void SpeedBtn_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
     {
-        if (ignoreNextSpeedBtnLeave)
-        {
-            ignoreNextSpeedBtnLeave = false;
-            return;
-        }
         speedPopupCloseTimer.Stop();
         speedPopupCloseTimer.Start();
     }
@@ -654,7 +680,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             float.TryParse(tagStr, out float speed))
         {
             SetSpeed(speed);
-            SpeedPopup.IsOpen = false;
         }
     }
 
@@ -662,13 +687,13 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         currentSpeed = speed;
         mediaController.Rate = speed;
-        SpeedBtn.Content = $"{speed:0.#}x";
+        SpeedBtn.Content = $"{speed:0.##}x";
         HighlightSpeedOption(speed);
     }
 
     private void UpdateSpeedButtonText(float speed)
     {
-        SpeedBtn.Content = $"{speed:0.#}x";
+        SpeedBtn.Content = $"{speed:0.##}x";
     }
 
     private void HighlightSpeedOption(float speed)
