@@ -19,13 +19,9 @@
         <!-- 视频区 -->
         <Grid x:Name="VideoContainer" Grid.Row="0" Grid.Column="0" Background="Black"
               MouseLeftButtonDown="VideoContainer_MouseLeftButtonDown"
-              MouseRightButtonDown="VideoContainer_MouseRightButtonDown">
+              MouseRightButtonDown="VideoContainer_MouseRightButtonDown"
+              MouseDown="VideoContainer_MouseDown">
             <Image x:Name="VideoImage" Stretch="Uniform"/>
-            <Grid x:Name="OverlayGrid"
-                  Background="#01000000"
-                  MouseLeftButtonDown="OverlayGrid_MouseLeftButtonDown"
-                  MouseRightButtonDown="OverlayGrid_MouseRightButtonDown"
-                  MouseDown="OverlayGrid_MouseDown"/>
         </Grid>
 
         <!-- 选集 -->

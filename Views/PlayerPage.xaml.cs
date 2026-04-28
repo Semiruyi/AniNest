@@ -123,10 +123,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         mediaController.Initialize();
         VideoImage.Source = mediaController.VideoBitmap;
 
-        OverlayGrid.MouseMove += OverlayGrid_MouseMove;
-
-        VideoContainer.MouseLeftButtonDown += VideoContainer_MouseLeftButtonDown;
-        VideoContainer.MouseRightButtonDown += VideoContainer_MouseRightButtonDown;
+        VideoContainer.MouseMove += VideoContainer_MouseMove;
 
         mediaController.Playing += (s, ev) =>
         {
@@ -356,7 +353,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             : Visibility.Visible;
     }
 
-    private void OverlayGrid_MouseDown(object sender, MouseButtonEventArgs e)
+    private void VideoContainer_MouseDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ChangedButton == MouseButton.XButton1)
         {
@@ -511,10 +508,11 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         PlaylistBorder.Visibility = Visibility.Collapsed;
 
-        // 将控制栏移到视频覆盖层内，才能在视频上方显示
+        // 将控制栏移到视频容器内，才能在视频上方显示
         if (controlBarOriginalParent != null)
             controlBarOriginalParent.Children.Remove(ControlBar);
-        OverlayGrid.Children.Add(ControlBar);
+        VideoContainer.Children.Add(ControlBar);
+        System.Windows.Controls.Panel.SetZIndex(ControlBar, 1);
 
         ControlBar.VerticalAlignment = VerticalAlignment.Bottom;
         ControlBar.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
@@ -522,8 +520,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         HideFullscreenControlBar();
 
-        OverlayGrid.MouseMove -= OverlayGrid_MouseMove;
-        OverlayGrid.MouseMove += OverlayGrid_MouseMove;
+        VideoContainer.MouseMove -= VideoContainer_MouseMove;
+        VideoContainer.MouseMove += VideoContainer_MouseMove;
 
         FullscreenIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
             new Uri("pack://application:,,,/Resources/Icons/exitFullScreen.png"));
@@ -550,7 +548,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         PlaylistBorder.Visibility = Visibility.Visible;
 
         // 从覆盖层移除并恢复到原来的父容器
-        OverlayGrid.Children.Remove(ControlBar);
+        VideoContainer.Children.Remove(ControlBar);
         if (controlBarOriginalParent != null)
         {
             if (controlBarOriginalIndex >= 0 && controlBarOriginalIndex <= controlBarOriginalParent.Children.Count)
@@ -570,7 +568,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         ControlBar.IsHitTestVisible = true;
 
         controlBarHideTimer.Stop();
-        OverlayGrid.MouseMove -= OverlayGrid_MouseMove;
+        VideoContainer.MouseMove -= VideoContainer_MouseMove;
 
         FullscreenIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
             new Uri("pack://application:,,,/Resources/Icons/fullScreen.png"));
@@ -583,6 +581,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         if (e.Handled) return;
         Log($"VideoContainer MouseLeftButtonDown (WPF): ClickCount={e.ClickCount}");
+        Keyboard.Focus(this);
         if (e.ClickCount >= 2)
         {
             Log("VideoContainer 左键双击 -> TogglePlayPause");
@@ -594,6 +593,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private void VideoContainer_MouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (e.Handled) return;
+        Keyboard.Focus(this);
 
         var now = DateTime.Now;
         var position = e.GetPosition(this);
@@ -626,38 +626,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     private DateTime lastRightClickTime = DateTime.MinValue;
     private System.Windows.Point lastRightClickPosition;
-
-    private void OverlayGrid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-    {
-        if (e.Handled) return;
-        Log($"OverlayGrid MouseLeftButtonDown: ClickCount={e.ClickCount}");
-
-        // 强制将焦点拉回 PlayerPage，防止 ForegroundWindow 吃掉后续键盘事件
-        Keyboard.Focus(this);
-
-        if (e.ClickCount >= 2)
-        {
-            Log("OverlayGrid 左键双击 -> TogglePlayPause");
-            mediaController.TogglePlayPause();
-            e.Handled = true;
-        }
-    }
-
-    private void OverlayGrid_MouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-    {
-        if (e.Handled) return;
-        Log($"OverlayGrid MouseRightButtonDown: ClickCount={e.ClickCount}");
-
-        // 强制将焦点拉回 PlayerPage，防止 ForegroundWindow 吃掉后续键盘事件
-        Keyboard.Focus(this);
-
-        if (e.ClickCount >= 2)
-        {
-            Log("OverlayGrid 右键双击 -> ToggleFullscreen");
-            ToggleFullscreen();
-            e.Handled = true;
-        }
-    }
 
     private void PlayerPage_GotKeyboardFocus(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e)
     {
@@ -794,18 +762,18 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         SaveCurrentProgress();
         Log($"SaveCurrentProgress 完成，耗时 {sw.ElapsedMilliseconds}ms");
 
-        OverlayGrid.MouseMove -= OverlayGrid_MouseMove;
+        VideoContainer.MouseMove -= VideoContainer_MouseMove;
         Log($"MouseMove 取消订阅 耗时 {sw.ElapsedMilliseconds}ms");
 
         mediaController.Dispose();
         Log($"mediaController.Dispose 完成，总耗时 {sw.ElapsedMilliseconds}ms");
     }
 
-    private void OverlayGrid_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    private void VideoContainer_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
     {
         if (!isFullscreen) return;
-        var pos = e.GetPosition(OverlayGrid);
-        if (pos.Y > OverlayGrid.ActualHeight - 10)
+        var pos = e.GetPosition(VideoContainer);
+        if (pos.Y > VideoContainer.ActualHeight - 10)
         {
             ShowFullscreenControlBar();
         }
