@@ -130,6 +130,10 @@ public partial class FullscreenWindow : Window
     {
         mediaController = mediaCtrl;
         inputHandler = input;
+
+        mediaController.Playing += (_, _) => Dispatcher.Invoke(AnimatePauseBigOut);
+        mediaController.Paused += (_, _) => Dispatcher.Invoke(AnimatePauseBigIn);
+        mediaController.Stopped += (_, _) => Dispatcher.Invoke(AnimatePauseBigOut);
     }
 
     // ========== 进入全屏动画 ==========
@@ -178,6 +182,10 @@ public partial class FullscreenWindow : Window
 
         VideoImage.Source = mediaController!.VideoBitmap;
         Show();
+
+        if (mediaController?.IsPlaying == false)
+            AnimatePauseBigIn();
+
         Keyboard.Focus(this);
 
         var duration = TimeSpan.FromMilliseconds(380);
@@ -304,6 +312,52 @@ public partial class FullscreenWindow : Window
 
     /// <summary>由 PlayerPage 注入，全屏内按钮点击通过 inputHandler 事件链回到 PlayerPage</summary>
     public void TriggerExitFullscreen() => ExitRequested?.Invoke(this, EventArgs.Empty);
+
+    // ========== 暂停大图标动画 ==========
+
+    private void AnimatePauseBigIn()
+    {
+        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        PauseBigIcon.BeginAnimation(OpacityProperty, null);
+
+        PauseBigIconScale.ScaleX = 0;
+        PauseBigIconScale.ScaleY = 0;
+        PauseBigIcon.Opacity = 0;
+
+        var duration = TimeSpan.FromMilliseconds(250);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty,
+            new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty,
+            new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+        PauseBigIcon.BeginAnimation(OpacityProperty,
+            new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+    }
+
+    private void AnimatePauseBigOut()
+    {
+        double fromScaleX = PauseBigIconScale.ScaleX;
+        double fromScaleY = PauseBigIconScale.ScaleY;
+        double fromOpacity = PauseBigIcon.Opacity;
+
+        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        PauseBigIcon.BeginAnimation(OpacityProperty, null);
+
+        PauseBigIconScale.ScaleX = fromScaleX;
+        PauseBigIconScale.ScaleY = fromScaleY;
+        PauseBigIcon.Opacity = fromOpacity;
+
+        var duration = TimeSpan.FromMilliseconds(180);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseIn };
+        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty,
+            new DoubleAnimation(fromScaleX, 0, duration) { EasingFunction = ease });
+        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty,
+            new DoubleAnimation(fromScaleY, 0, duration) { EasingFunction = ease });
+        PauseBigIcon.BeginAnimation(OpacityProperty,
+            new DoubleAnimation(fromOpacity, 0, duration) { EasingFunction = ease });
+    }
 
     // ========== 清理 ==========
 

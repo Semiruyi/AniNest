@@ -193,6 +193,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
                 {
                     PlayPauseIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
                         new Uri("pack://application:,,,/Resources/Icons/pause.png"));
+                    AnimatePauseBigOut();
                 });
             };
             mediaController.Paused += (s, ev) =>
@@ -200,12 +201,14 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
                 {
                     PlayPauseIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
                         new Uri("pack://application:,,,/Resources/Icons/play.png"));
+                    AnimatePauseBigIn();
                 });
             mediaController.Stopped += (s, ev) =>
                 Dispatcher.Invoke(() =>
                 {
                     PlayPauseIcon.Source = new System.Windows.Media.Imaging.BitmapImage(
                         new Uri("pack://application:,,,/Resources/Icons/play.png"));
+                    AnimatePauseBigOut();
                 });
             mediaController.ProgressUpdated += (s, ev) =>
             {
@@ -650,6 +653,52 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             st.BeginAnimation(ScaleTransform.ScaleXProperty, ax);
             st.BeginAnimation(ScaleTransform.ScaleYProperty, ay);
         }
+    }
+
+    // ========== 暂停大图标动画 ==========
+
+    private void AnimatePauseBigIn()
+    {
+        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        PauseBigIcon.BeginAnimation(OpacityProperty, null);
+
+        PauseBigIconScale.ScaleX = 0;
+        PauseBigIconScale.ScaleY = 0;
+        PauseBigIcon.Opacity = 0;
+
+        var duration = TimeSpan.FromMilliseconds(250);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty,
+            new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty,
+            new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+        PauseBigIcon.BeginAnimation(OpacityProperty,
+            new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+    }
+
+    private void AnimatePauseBigOut()
+    {
+        double fromScaleX = PauseBigIconScale.ScaleX;
+        double fromScaleY = PauseBigIconScale.ScaleY;
+        double fromOpacity = PauseBigIcon.Opacity;
+
+        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        PauseBigIcon.BeginAnimation(OpacityProperty, null);
+
+        PauseBigIconScale.ScaleX = fromScaleX;
+        PauseBigIconScale.ScaleY = fromScaleY;
+        PauseBigIcon.Opacity = fromOpacity;
+
+        var duration = TimeSpan.FromMilliseconds(180);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseIn };
+        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty,
+            new DoubleAnimation(fromScaleX, 0, duration) { EasingFunction = ease });
+        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty,
+            new DoubleAnimation(fromScaleY, 0, duration) { EasingFunction = ease });
+        PauseBigIcon.BeginAnimation(OpacityProperty,
+            new DoubleAnimation(fromOpacity, 0, duration) { EasingFunction = ease });
     }
 
     // ========== 倍速 ==========

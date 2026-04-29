@@ -11,5 +11,18 @@
         KeyDown="Window_KeyDown">
     <Grid x:Name="RootGrid" Background="Black">
         <Image x:Name="VideoImage" Stretch="Uniform"/>
+        <!-- 暂停大图标（右下角） -->
+        <Image x:Name="PauseBigIcon"
+               Source="/Resources/Icons/pause-big.png"
+               Width="80" Height="80"
+               HorizontalAlignment="Right"
+               VerticalAlignment="Bottom"
+               Margin="0,0,32,24"
+               Opacity="0"
+               RenderTransformOrigin="0.5,0.5">
+            <Image.RenderTransform>
+                <ScaleTransform x:Name="PauseBigIconScale" ScaleX="0" ScaleY="0"/>
+            </Image.RenderTransform>
+        </Image>
     </Grid>
 </Window>
