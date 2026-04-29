@@ -160,6 +160,7 @@ public partial class PlayerPage
         ControlBar.Visibility = Visibility.Visible;
         ControlBar.IsHitTestVisible = true;
         AnimateOpacity(ControlBar, 1);
+        Log($"ShowFullscreenControlBar: 切换焦点到 ControlBar, 之前焦点={Keyboard.FocusedElement?.GetType().Name}");
         Keyboard.Focus(ControlBar);
     }
 

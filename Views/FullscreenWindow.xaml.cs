@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -15,6 +16,17 @@ namespace LocalPlayer.Views;
 
 public partial class FullscreenWindow : Window
 {
+    private static readonly string LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "player.log");
+
+    private static void Log(string message)
+    {
+        try
+        {
+            File.AppendAllText(LogFile, $"[{DateTime.Now:HH:mm:ss.fff}] [FullscreenWindow] {message}{Environment.NewLine}");
+        }
+        catch { }
+    }
+
     // ========== 外部依赖 ==========
 
     private MediaPlayerController? mediaController;
@@ -61,6 +73,16 @@ public partial class FullscreenWindow : Window
             rightHoldTimer.Stop();
             isRightHolding = true;
             RightHoldStarted?.Invoke(this, EventArgs.Empty);
+        };
+        PreviewMouseDown += (_, e) =>
+        {
+            if (isAnimating) return;
+            if (e.ChangedButton == MouseButton.XButton1)
+            {
+                Log($"鼠标后退键 XButton1 触发退出全屏");
+                ExitRequested?.Invoke(this, EventArgs.Empty);
+                e.Handled = true;
+            }
         };
         Loaded += (_, _) =>
         {
@@ -250,16 +272,32 @@ public partial class FullscreenWindow : Window
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (isAnimating) { e.Handled = true; return; }
+        Log($"PreviewKeyDown: Key={e.Key}, isAnimating={isAnimating}, FocusedElement={Keyboard.FocusedElement?.GetType().Name}");
+        if (isAnimating) { Log("  全屏动画中，按键被拦截"); e.Handled = true; return; }
         if (inputHandler?.HandleKeyDown(e, isFullscreen: true) == true)
+        {
+            Log($"  按键已处理: {e.Key}");
             e.Handled = true;
+        }
+        else
+        {
+            Log($"  按键未被处理: {e.Key}");
+        }
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
-        if (isAnimating) { e.Handled = true; return; }
+        Log($"KeyDown: Key={e.Key}, isAnimating={isAnimating}, FocusedElement={Keyboard.FocusedElement?.GetType().Name}");
+        if (isAnimating) { Log("  全屏动画中，按键被拦截"); e.Handled = true; return; }
         if (inputHandler?.HandleKeyDown(e, isFullscreen: true) == true)
+        {
+            Log($"  按键已处理: {e.Key}");
             e.Handled = true;
+        }
+        else
+        {
+            Log($"  按键未被处理: {e.Key}");
+        }
     }
 
     // ========== 控制栏/选集按钮回调 ==========
