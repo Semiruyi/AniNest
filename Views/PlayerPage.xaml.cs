@@ -469,19 +469,17 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         if (e.ChangedButton != MouseButton.Left) return;
         isProgressDragging = false;
+        mediaController.SeekTo((long)ProgressSlider.Value);
     }
 
     private void ProgressSlider_LostMouseCapture(object sender, System.Windows.Input.MouseEventArgs e)
     {
         isProgressDragging = false;
+        mediaController.SeekTo((long)ProgressSlider.Value);
     }
 
     private void ProgressSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (isProgressDragging)
-        {
-            mediaController.SeekTo((long)e.NewValue);
-        }
         CurrentTimeText.Text = MediaPlayerController.FormatTime((long)ProgressSlider.Value);
     }
 
