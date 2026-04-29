@@ -8,7 +8,8 @@ namespace LocalPlayer.Services;
 
 public class MediaPlayerController : IDisposable
 {
-    private static void Log(string message) => AppLog.Write("player.log", nameof(MediaPlayerController), message);
+    private static void Log(string message) => AppLog.Info(nameof(MediaPlayerController), message);
+    private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(MediaPlayerController), message, ex);
 
     private static LibVLC? _sharedLibVLC;
     private static readonly object _sharedLibVLock = new();
@@ -84,8 +85,7 @@ public class MediaPlayerController : IDisposable
         }
         catch (Exception ex)
         {
-            Log($"初始化失败: {ex.Message}");
-            Log($"异常堆栈: {ex.StackTrace}");
+            LogError("初始化失败", ex);
             throw;
         }
 

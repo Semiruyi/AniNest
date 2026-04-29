@@ -9,7 +9,8 @@ namespace LocalPlayer.Services;
 
 public class PlayerInputHandler
 {
-    private static void Log(string message) => AppLog.Write("player.log", nameof(PlayerInputHandler), message);
+    private static void Log(string message) => AppLog.Info(nameof(PlayerInputHandler), message);
+    private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(PlayerInputHandler), message, ex);
 
     private readonly SettingsService settingsService = SettingsService.Instance;
     private Dictionary<WinKey, string> keyToAction = new();

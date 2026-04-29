@@ -10,9 +10,10 @@ namespace LocalPlayer;
 
 public partial class App : System.Windows.Application
 {
-    private static void Log(string message) => AppLog.Write("crash.log", "App", message);
+    private static void Log(string message) => AppLog.Info("App", message);
+    private static void LogError(string message, Exception? ex = null) => AppLog.Error("App", message, ex);
 
-    internal static void LogStartup(string message) => AppLog.Write("startup.log", "App", message);
+    internal static void LogStartup(string message) => AppLog.Info("App", message);
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -34,8 +35,8 @@ public partial class App : System.Windows.Application
             }
             catch (Exception ex)
             {
-                Log($"LibVLC 预热失败: {ex.Message}");
-                LogStartup($"后台 LibVLC 预热失败: {ex.Message}");
+                LogError("LibVLC 预热失败", ex);
+                LogStartup($"[ERROR] 后台 LibVLC 预热失败: {ex.Message}");
             }
         });
 
@@ -50,8 +51,8 @@ public partial class App : System.Windows.Application
             }
             catch (Exception ex)
             {
-                Log($"ThumbnailGenerator 初始化失败: {ex.Message}");
-                LogStartup($"后台 ThumbnailGenerator 初始化失败: {ex.Message}");
+                LogError("ThumbnailGenerator 初始化失败", ex);
+                LogStartup($"[ERROR] 后台 ThumbnailGenerator 初始化失败: {ex.Message}");
             }
         });
 
@@ -66,20 +67,19 @@ public partial class App : System.Windows.Application
         AppDomain.CurrentDomain.UnhandledException += (s, args) =>
         {
             var ex = args.ExceptionObject as Exception;
-            Log($"[FATAL] UnhandledException: {ex?.GetType().Name}: {ex?.Message}");
-            Log($"[FATAL] StackTrace: {ex?.StackTrace}");
+            LogError("未处理异常", ex);
         };
 
         DispatcherUnhandledException += (s, args) =>
         {
-            Log($"[FATAL] DispatcherUnhandledException: {args.Exception.GetType().Name}: {args.Exception.Message}");
-            Log($"[FATAL] StackTrace: {args.Exception.StackTrace}");
+            LogError("Dispatcher未处理异常", args.Exception);
             args.Handled = true;
         };
 
         TaskScheduler.UnobservedTaskException += (s, args) =>
         {
-            Log($"[FATAL] UnobservedTaskException: {args.Exception?.Message}");
+            if (args.Exception != null)
+                LogError("未观察到的Task异常", args.Exception);
             args.SetObserved();
         };
     }

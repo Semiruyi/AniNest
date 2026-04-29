@@ -46,7 +46,8 @@ internal class ThumbnailEntryDto
 
 public class ThumbnailGenerator : IDisposable
 {
-    private static void Log(string message) => AppLog.Write("player.log", nameof(ThumbnailGenerator), message);
+    private static void Log(string message) => AppLog.Info(nameof(ThumbnailGenerator), message);
+    private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(ThumbnailGenerator), message, ex);
 
     // Singleton
     private static readonly Lazy<ThumbnailGenerator> _instance = new(() => new ThumbnailGenerator());

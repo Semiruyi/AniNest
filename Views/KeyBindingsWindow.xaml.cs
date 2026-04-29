@@ -14,7 +14,8 @@ namespace LocalPlayer.Views;
 
 public partial class KeyBindingsWindow : Window
 {
-    private static void Log(string msg) => AppLog.Write("settings.log", nameof(KeyBindingsWindow), msg);
+    private static void Log(string msg) => AppLog.Info(nameof(KeyBindingsWindow), msg);
+    private static void LogError(string msg, Exception? ex = null) => AppLog.Error(nameof(KeyBindingsWindow), msg, ex);
 
     private readonly PlayerInputHandler inputHandler;
     private readonly List<BindingItem> items = new();

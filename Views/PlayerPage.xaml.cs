@@ -17,7 +17,8 @@ namespace LocalPlayer.Views;
 
 public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposable
 {
-    private static void Log(string message) => AppLog.Write("player.log", nameof(PlayerPage), message);
+    private static void Log(string message) => AppLog.Info(nameof(PlayerPage), message);
+    private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(PlayerPage), message, ex);
 
     private readonly MediaPlayerController mediaController = new();
     private readonly SettingsService settingsService = SettingsService.Instance;
@@ -72,8 +73,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         }
         catch (Exception ex)
         {
-            Log($"PlayerPage 构造函数异常: {ex.GetType().Name}: {ex.Message}");
-            Log($"StackTrace: {ex.StackTrace}");
+            LogError("构造函数异常", ex);
             throw;
         }
         Loaded += PlayerPage_Loaded;
@@ -291,8 +291,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         }
         catch (Exception ex)
         {
-            Log($"PlayerPage_Loaded 异常: {ex.GetType().Name}: {ex.Message}");
-            Log($"StackTrace: {ex.StackTrace}");
+            LogError("Loaded 异常", ex);
             throw;
         }
     }
@@ -1220,7 +1219,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         }
         catch (Exception ex)
         {
-            Log($"[Thumbnail] 解码异常: second={second}, {ex.Message}");
+            LogError($"缩略图解码异常 second={second}", ex);
             return null;
         }
     }

@@ -13,7 +13,8 @@ namespace LocalPlayer;
 
 public partial class MainWindow : Window
 {
-    private static void Log(string message) => AppLog.Write("player.log", nameof(MainWindow), message);
+    private static void Log(string message) => AppLog.Info(nameof(MainWindow), message);
+    private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(MainWindow), message, ex);
 
     private MainPage? mainPage;
     private PlayerPage? playerPage;

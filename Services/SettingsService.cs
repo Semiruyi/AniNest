@@ -11,7 +11,8 @@ namespace LocalPlayer.Services;
 
 public class SettingsService
 {
-    private static void Log(string message) => AppLog.Write("settings.log", nameof(SettingsService), message);
+    private static void Log(string message) => AppLog.Info(nameof(SettingsService), message);
+    private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(SettingsService), message, ex);
 
     private static readonly Lazy<SettingsService> _instance = new(() => new SettingsService());
     public static SettingsService Instance => _instance.Value;
@@ -71,7 +72,7 @@ public class SettingsService
         catch (Exception ex)
         {
             settings = new AppSettings();
-            Log($"Load: 异常! {ex.GetType().Name}: {ex.Message}");
+            LogError("Load 异常", ex);
         }
 
         return settings;
@@ -100,7 +101,7 @@ public class SettingsService
         }
         catch (Exception ex)
         {
-            Log($"Save: 保存异常! {ex.GetType().Name}: {ex.Message}");
+            LogError("Save 异常", ex);
         }
     }
 

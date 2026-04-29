@@ -15,7 +15,8 @@ namespace LocalPlayer.Views;
 
 public partial class FullscreenWindow : Window
 {
-    private static void Log(string message) => AppLog.Write("player.log", nameof(FullscreenWindow), message);
+    private static void Log(string message) => AppLog.Info(nameof(FullscreenWindow), message);
+    private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(FullscreenWindow), message, ex);
 
     // ========== 外部依赖 ==========
 
