@@ -650,24 +650,30 @@
                        Placement="Relative" StaysOpen="True"
                        MouseEnter="ProgressPopup_MouseEnter"
                        MouseLeave="ProgressPopup_MouseLeave">
-                    <Border Background="#E6282828" CornerRadius="10" Padding="4"
+                    <Border CornerRadius="10" ClipToBounds="True"
+                            Width="160" Height="90" Background="#1A1A1C"
                             RenderTransformOrigin="0.5,1"
                             Opacity="0">
+                        <Border.Clip>
+                            <RectangleGeometry RadiusX="10" RadiusY="10" Rect="0,0,160,90"/>
+                        </Border.Clip>
                         <Border.RenderTransform>
                             <ScaleTransform x:Name="ProgressPopupScale" ScaleX="0.9" ScaleY="0.9"/>
                         </Border.RenderTransform>
-                        <StackPanel>
-                            <Border x:Name="ThumbnailBorder" CornerRadius="6" ClipToBounds="True"
-                                    Width="160" Height="90" Background="#1A1A1C"
-                                    Visibility="Collapsed">
-                                <Image x:Name="ThumbnailImage" Stretch="UniformToFill"
-                                       Width="160" Height="90"/>
+                        <Grid>
+                            <Image x:Name="ThumbnailImage" Stretch="UniformToFill"
+                                   Width="160" Height="90"
+                                   Visibility="Collapsed"/>
+                            <Border Background="#CC000000" CornerRadius="4"
+                                    Padding="6,3"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Bottom">
+                                <TextBlock x:Name="ThumbnailTimeText" Foreground="White"
+                                           FontSize="12"
+                                           FontFamily="Segoe UI, Microsoft YaHei, sans-serif"
+                                           Text=""/>
                             </Border>
-                            <TextBlock x:Name="ThumbnailTimeText" Foreground="White"
-                                       FontSize="12"
-                                       FontFamily="Segoe UI, Microsoft YaHei, sans-serif"
-                                       HorizontalAlignment="Center" Margin="0,6,0,2"/>
-                        </StackPanel>
+                        </Grid>
                     </Border>
                 </Popup>
 

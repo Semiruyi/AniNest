@@ -1017,10 +1017,10 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         // 定位 + 时间
         ThumbnailTimeText.Text = MediaPlayerController.FormatTime(hoverTimeMs);
-        double popupW = 168, popupH = 120;
+        double popupW = 160;
         double offsetX = Math.Max(0, Math.Min(pos.X - popupW / 2, ProgressSlider.ActualWidth - popupW));
         ProgressPopup.HorizontalOffset = offsetX;
-        ProgressPopup.VerticalOffset = pos.Y - popupH - 12;
+        ProgressPopup.VerticalOffset = -90 - 30; // 固定位于控制栏上方
         if (_isProgressPopupVisible && ProgressPopup.IsOpen)
         {
             ProgressPopup.HorizontalOffset = offsetX + 1; // 强制刷新
@@ -1030,7 +1030,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         // 缩略图可用性检测
         bool thumbReady = _currentThumbVideoPath != null &&
             _thumbnailGenerator.GetState(_currentThumbVideoPath) == ThumbnailState.Ready;
-        ThumbnailBorder.Visibility = thumbReady ? Visibility.Visible : Visibility.Collapsed;
+        ThumbnailImage.Visibility = thumbReady ? Visibility.Visible : Visibility.Collapsed;
 
         // 秒数未变则不重复加载
         if (hoverSecond == _lastRequestedSecond) return;
