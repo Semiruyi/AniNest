@@ -46,16 +46,7 @@ internal class ThumbnailEntryDto
 
 public class ThumbnailGenerator : IDisposable
 {
-    private static readonly string LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "player.log");
-
-    private static void Log(string message)
-    {
-        try
-        {
-            File.AppendAllText(LogFile, $"[{DateTime.Now:HH:mm:ss.fff}] [ThumbnailGenerator] {message}{Environment.NewLine}");
-        }
-        catch { }
-    }
+    private static void Log(string message) => AppLog.Write("player.log", nameof(ThumbnailGenerator), message);
 
     // Singleton
     private static readonly Lazy<ThumbnailGenerator> _instance = new(() => new ThumbnailGenerator());

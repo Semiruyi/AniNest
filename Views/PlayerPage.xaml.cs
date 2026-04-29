@@ -17,16 +17,7 @@ namespace LocalPlayer.Views;
 
 public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposable
 {
-    private static readonly string LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "player.log");
-
-    private static void Log(string message)
-    {
-        try
-        {
-            File.AppendAllText(LogFile, $"[{DateTime.Now:HH:mm:ss.fff}] [PlayerPage] {message}{Environment.NewLine}");
-        }
-        catch { }
-    }
+    private static void Log(string message) => AppLog.Write("player.log", nameof(PlayerPage), message);
 
     private readonly MediaPlayerController mediaController = new();
     private readonly SettingsService settingsService = SettingsService.Instance;

@@ -6,22 +6,14 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Animation;
+using LocalPlayer.Services;
 using LocalPlayer.Views;
 
 namespace LocalPlayer;
 
 public partial class MainWindow : Window
 {
-    private static readonly string LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "player.log");
-
-    private static void Log(string message)
-    {
-        try
-        {
-            File.AppendAllText(LogFile, $"[{DateTime.Now:HH:mm:ss.fff}] [MainWindow] {message}{Environment.NewLine}");
-        }
-        catch { }
-    }
+    private static void Log(string message) => AppLog.Write("player.log", nameof(MainWindow), message);
 
     private MainPage? mainPage;
     private PlayerPage? playerPage;

@@ -11,16 +11,7 @@ namespace LocalPlayer.Services;
 
 public class SettingsService
 {
-    private static readonly string LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.log");
-
-    private static void Log(string message)
-    {
-        try
-        {
-            File.AppendAllText(LogFile, $"[{DateTime.Now:HH:mm:ss.fff}] [SettingsService] {message}{Environment.NewLine}");
-        }
-        catch { }
-    }
+    private static void Log(string message) => AppLog.Write("settings.log", nameof(SettingsService), message);
 
     private static readonly Lazy<SettingsService> _instance = new(() => new SettingsService());
     public static SettingsService Instance => _instance.Value;

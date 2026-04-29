@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -15,11 +14,7 @@ namespace LocalPlayer.Views;
 
 public partial class KeyBindingsWindow : Window
 {
-    private static readonly string LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.log");
-    private static void Log(string msg)
-    {
-        try { File.AppendAllText(LogFile, $"[{DateTime.Now:HH:mm:ss.fff}] [KeyBindingsWindow] {msg}{Environment.NewLine}"); } catch { }
-    }
+    private static void Log(string msg) => AppLog.Write("settings.log", nameof(KeyBindingsWindow), msg);
 
     private readonly PlayerInputHandler inputHandler;
     private readonly List<BindingItem> items = new();

@@ -10,26 +10,9 @@ namespace LocalPlayer;
 
 public partial class App : System.Windows.Application
 {
-    private static readonly string LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "crash.log");
-    private static readonly string StartupLogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "startup.log");
+    private static void Log(string message) => AppLog.Write("crash.log", "App", message);
 
-    private static void Log(string message)
-    {
-        try
-        {
-            File.AppendAllText(LogFile, $"[{DateTime.Now:HH:mm:ss.fff}] [App] {message}{Environment.NewLine}");
-        }
-        catch { }
-    }
-
-    internal static void LogStartup(string message)
-    {
-        try
-        {
-            File.AppendAllText(StartupLogFile, $"[{DateTime.Now:HH:mm:ss.fff}] {message}{Environment.NewLine}");
-        }
-        catch { }
-    }
+    internal static void LogStartup(string message) => AppLog.Write("startup.log", "App", message);
 
     protected override void OnStartup(StartupEventArgs e)
     {

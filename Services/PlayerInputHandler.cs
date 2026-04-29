@@ -9,16 +9,7 @@ namespace LocalPlayer.Services;
 
 public class PlayerInputHandler
 {
-    private static readonly string LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "player.log");
-
-    private static void Log(string message)
-    {
-        try
-        {
-            File.AppendAllText(LogFile, $"[{DateTime.Now:HH:mm:ss.fff}] [PlayerInputHandler] {message}{Environment.NewLine}");
-        }
-        catch { }
-    }
+    private static void Log(string message) => AppLog.Write("player.log", nameof(PlayerInputHandler), message);
 
     private readonly SettingsService settingsService = SettingsService.Instance;
     private Dictionary<WinKey, string> keyToAction = new();

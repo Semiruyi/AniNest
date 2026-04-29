@@ -8,16 +8,7 @@ namespace LocalPlayer.Services;
 
 public class MediaPlayerController : IDisposable
 {
-    private static readonly string LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "player.log");
-
-    private static void Log(string message)
-    {
-        try
-        {
-            File.AppendAllText(LogFile, $"[{DateTime.Now:HH:mm:ss.fff}] [MediaPlayerController] {message}{Environment.NewLine}");
-        }
-        catch { }
-    }
+    private static void Log(string message) => AppLog.Write("player.log", nameof(MediaPlayerController), message);
 
     private static LibVLC? _sharedLibVLC;
     private static readonly object _sharedLibVLock = new();
