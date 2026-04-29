@@ -258,7 +258,18 @@ public class ThumbnailGenerator : IDisposable
 
         SaveIndex();
         sw.Stop();
-        Log($"[DeleteForFolder] {Path.GetFileName(folderPath)}: 标记待删除 {marked} 个, 总耗时 {sw.ElapsedMilliseconds}ms");
+        Log($"[DeleteForFolder] {folderPath}: 标记待删除 {marked} 个, 总耗时 {sw.ElapsedMilliseconds}ms");
+
+        // 列出所有被标记的视频路径
+        lock (_taskLock)
+        {
+            var markedPaths = _tasks.Where(t =>
+                t.MarkedForDeletionAt > 0 &&
+                t.VideoPath.StartsWith(folderPath, StringComparison.OrdinalIgnoreCase))
+                .Select(t => t.VideoPath);
+            foreach (var p in markedPaths)
+                Log($"[DeleteForFolder] 已标记: {p}");
+        }
     }
 
     private void MarkForDeletion(string videoPath)
@@ -269,7 +280,7 @@ public class ThumbnailGenerator : IDisposable
                 task.State == ThumbnailState.Ready && task.MarkedForDeletionAt == 0)
             {
                 task.MarkedForDeletionAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                Log($"[MarkForDeletion] {Path.GetFileName(videoPath)}");
+                Log($"[MarkForDeletion] {videoPath}");
             }
         }
     }
@@ -495,7 +506,8 @@ public class ThumbnailGenerator : IDisposable
 
                 lock (_taskLock) { _readyCount++; }
 
-                Log($"[Generate] 完成: {Path.GetFileName(task.VideoPath)}, {frameCount} 帧, 耗时 {sw.ElapsedMilliseconds / 1000.0:F1}s");
+                Log($"[Generate] 完成: {task.VideoPath}, {frameCount} 帧, 耗时 {sw.ElapsedMilliseconds / 1000.0:F1}s");
+                Log($"[Generate] 目录: {finalDir}");
 
                 // 100% 进度 + 就绪通知
                 VideoProgress?.Invoke(task.VideoPath, 100);
@@ -661,15 +673,17 @@ public class ThumbnailGenerator : IDisposable
 
         foreach (var t in expired)
         {
+            Log($"[ExpiryCleanup] 删除: 视频={t.VideoPath}, 目录={t.Md5Dir}");
             string dir = Path.Combine(_thumbBaseDir, t.Md5Dir);
             try
             {
                 if (Directory.Exists(dir))
                     Directory.Delete(dir, recursive: true);
+                Log($"[ExpiryCleanup] 已删除目录: {dir}");
             }
             catch (Exception ex)
             {
-                Log($"[ExpiryCleanup] 删除目录失败: {t.Md5Dir}, {ex.Message}");
+                Log($"[ExpiryCleanup] 删除目录失败: {dir}, {ex.Message}");
             }
 
             lock (_taskLock)
