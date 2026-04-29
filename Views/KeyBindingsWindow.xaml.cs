@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -13,10 +15,17 @@ namespace LocalPlayer.Views;
 
 public partial class KeyBindingsWindow : Window
 {
+    private static readonly string LogFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.log");
+    private static void Log(string msg)
+    {
+        try { File.AppendAllText(LogFile, $"[{DateTime.Now:HH:mm:ss.fff}] [KeyBindingsWindow] {msg}{Environment.NewLine}"); } catch { }
+    }
+
     private readonly PlayerInputHandler inputHandler;
     private readonly List<BindingItem> items = new();
     private BindingItem? waitingItem;
     private WinKeyEventHandler? waitingHandler;
+    private bool isProcessing;
 
     public KeyBindingsWindow(PlayerInputHandler handler)
     {
@@ -46,32 +55,68 @@ public partial class KeyBindingsWindow : Window
     private void KeyBindingBtn_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not System.Windows.Controls.Button btn || btn.Tag is not BindingItem item) return;
+        if (isProcessing) return;
 
+        Log($"KeyBindingBtn_Click: 开始等待按键, ActionName={item.ActionName}, 当前绑定={item.CurrentKey}");
         CancelWaiting();
 
         waitingItem = item;
         waitingHandler = (_, e2) =>
         {
-            var newKey = e2.Key == Key.System ? e2.SystemKey : e2.Key;
+            e2.Handled = true;
+            Log($"waitingHandler 触发: Key={e2.Key}");
+            CancelWaiting();
 
-            if (newKey == Key.Escape)
+            var newKey = e2.Key == Key.System ? e2.SystemKey : e2.Key;
+            Log($"waitingHandler: 解析后 newKey={newKey}");
+
+            if (newKey == Key.Escape || newKey == Key.None)
             {
-                CancelWaiting();
+                Log($"waitingHandler: 取消绑定 (Esc/None)");
                 return;
             }
 
-            var conflict = items.FirstOrDefault(i => i != item && i.CurrentKey == newKey);
-            if (conflict != null)
-                conflict.CurrentKey = Key.None;
+            // 延迟到事件处理完毕后再处理冲突和保存，避免嵌套消息循环
+            var capturedItem = item;
+            var capturedKey = newKey;
+            isProcessing = true;
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                Log($"BeginInvoke: 开始处理绑定 {capturedItem.ActionName} = {capturedKey}");
 
-            item.CurrentKey = newKey;
-            inputHandler.SetBinding(item.ActionName, newKey);
-            CancelWaiting();
+                var conflict = items.FirstOrDefault(i => i != capturedItem && i.CurrentKey == capturedKey);
+                if (conflict != null)
+                {
+                    Log($"BeginInvoke: 检测到冲突, conflict.ActionName={conflict.ActionName}");
+                    var result = System.Windows.MessageBox.Show(
+                        $"按键 \"{conflict.CurrentKeyDisplay}\" 已绑定到 \"{conflict.DisplayName}\"。\n\n是否替换为该操作？",
+                        "按键冲突",
+                        System.Windows.MessageBoxButton.OKCancel,
+                        System.Windows.MessageBoxImage.Warning);
+                    Log($"BeginInvoke: MessageBox 返回 {result}");
+                    if (result != System.Windows.MessageBoxResult.OK)
+                    {
+                        Log($"BeginInvoke: 用户取消替换");
+                        isProcessing = false;
+                        return;
+                    }
+                    Log($"BeginInvoke: 解除冲突绑定 {conflict.ActionName}");
+                    conflict.CurrentKey = Key.None;
+                    inputHandler.SetBinding(conflict.ActionName, Key.None);
+                }
+
+                Log($"BeginInvoke: 设置绑定 {capturedItem.ActionName} = {capturedKey}");
+                capturedItem.CurrentKey = capturedKey;
+                inputHandler.SetBinding(capturedItem.ActionName, capturedKey);
+                isProcessing = false;
+                Log($"BeginInvoke: 完成");
+            }));
         };
 
         PreviewKeyDown += waitingHandler;
 
         item.IsWaiting = true;
+        Log($"KeyBindingBtn_Click: 已注册 PreviewKeyDown");
     }
 
     private void CancelWaiting()
