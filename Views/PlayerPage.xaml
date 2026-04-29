@@ -24,10 +24,7 @@
                             <Grid x:Name="ButtonGrid" RenderTransformOrigin="0.5,0.5"
                                   Width="{TemplateBinding Width}" Height="{TemplateBinding Height}">
                                 <Grid.RenderTransform>
-                                    <TransformGroup>
-                                        <ScaleTransform x:Name="HoverScale" ScaleX="1" ScaleY="1"/>
-                                        <ScaleTransform x:Name="PressScale" ScaleX="1" ScaleY="1"/>
-                                    </TransformGroup>
+                                    <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
                                 </Grid.RenderTransform>
                                 <Ellipse x:Name="HoverBg" Fill="{StaticResource HoverBackground}"
                                          Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" Opacity="0"/>
@@ -39,12 +36,6 @@
                                     <Trigger.EnterActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="HoverScale"
-                                                    Storyboard.TargetProperty="ScaleX"
-                                                    To="1.2" Duration="0:0:0.15" EasingFunction="{StaticResource IOSEase}"/>
-                                                <DoubleAnimation Storyboard.TargetName="HoverScale"
-                                                    Storyboard.TargetProperty="ScaleY"
-                                                    To="1.2" Duration="0:0:0.15" EasingFunction="{StaticResource IOSEase}"/>
                                                 <DoubleAnimation Storyboard.TargetName="HoverBg"
                                                     Storyboard.TargetProperty="Opacity"
                                                     To="1" Duration="0:0:0.12"/>
@@ -54,12 +45,6 @@
                                     <Trigger.ExitActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="HoverScale"
-                                                    Storyboard.TargetProperty="ScaleX"
-                                                    To="1" Duration="0:0:0.25" EasingFunction="{StaticResource IOSEase}"/>
-                                                <DoubleAnimation Storyboard.TargetName="HoverScale"
-                                                    Storyboard.TargetProperty="ScaleY"
-                                                    To="1" Duration="0:0:0.25" EasingFunction="{StaticResource IOSEase}"/>
                                                 <DoubleAnimation Storyboard.TargetName="HoverBg"
                                                     Storyboard.TargetProperty="Opacity"
                                                     To="0" Duration="0:0:0.18"/>
@@ -73,6 +58,8 @@
                 </Setter>
                 <EventSetter Event="PreviewMouseLeftButtonDown" Handler="CommonButton_MouseDown"/>
                 <EventSetter Event="PreviewMouseLeftButtonUp" Handler="CommonButton_MouseUp"/>
+                <EventSetter Event="MouseEnter" Handler="CommonButton_MouseEnter"/>
+                <EventSetter Event="MouseLeave" Handler="CommonButton_MouseLeave"/>
             </Style>
 
             <Style x:Key="PlayButton" TargetType="Button">
@@ -87,10 +74,7 @@
                             <Grid x:Name="ButtonGrid" RenderTransformOrigin="0.5,0.5"
                                   Width="{TemplateBinding Width}" Height="{TemplateBinding Height}">
                                 <Grid.RenderTransform>
-                                    <TransformGroup>
-                                        <ScaleTransform x:Name="HoverScale" ScaleX="1" ScaleY="1"/>
-                                        <ScaleTransform x:Name="PressScale" ScaleX="1" ScaleY="1"/>
-                                    </TransformGroup>
+                                    <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
                                 </Grid.RenderTransform>
                                 <Ellipse x:Name="HoverBg" Fill="{StaticResource HoverBackground}"
                                          Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" Opacity="0"/>
@@ -102,12 +86,6 @@
                                     <Trigger.EnterActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="HoverScale"
-                                                    Storyboard.TargetProperty="ScaleX"
-                                                    To="1.2" Duration="0:0:0.15" EasingFunction="{StaticResource IOSEase}"/>
-                                                <DoubleAnimation Storyboard.TargetName="HoverScale"
-                                                    Storyboard.TargetProperty="ScaleY"
-                                                    To="1.2" Duration="0:0:0.15" EasingFunction="{StaticResource IOSEase}"/>
                                                 <DoubleAnimation Storyboard.TargetName="HoverBg"
                                                     Storyboard.TargetProperty="Opacity"
                                                     To="1" Duration="0:0:0.12"/>
@@ -117,12 +95,6 @@
                                     <Trigger.ExitActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="HoverScale"
-                                                    Storyboard.TargetProperty="ScaleX"
-                                                    To="1" Duration="0:0:0.25" EasingFunction="{StaticResource IOSEase}"/>
-                                                <DoubleAnimation Storyboard.TargetName="HoverScale"
-                                                    Storyboard.TargetProperty="ScaleY"
-                                                    To="1" Duration="0:0:0.25" EasingFunction="{StaticResource IOSEase}"/>
                                                 <DoubleAnimation Storyboard.TargetName="HoverBg"
                                                     Storyboard.TargetProperty="Opacity"
                                                     To="0" Duration="0:0:0.18"/>
@@ -136,6 +108,8 @@
                 </Setter>
                 <EventSetter Event="PreviewMouseLeftButtonDown" Handler="CommonButton_MouseDown"/>
                 <EventSetter Event="PreviewMouseLeftButtonUp" Handler="CommonButton_MouseUp"/>
+                <EventSetter Event="MouseEnter" Handler="CommonButton_MouseEnter"/>
+                <EventSetter Event="MouseLeave" Handler="CommonButton_MouseLeave"/>
             </Style>
 
             <Style x:Key="EpisodeButton" TargetType="Button">

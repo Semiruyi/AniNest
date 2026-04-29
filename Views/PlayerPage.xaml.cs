@@ -580,33 +580,50 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         }
     }
 
-    // ========== 通用按钮动画（press/release） ==========
+    // ========== 通用按钮动画（hover / press / release 统一由代码控制） ==========
 
-    private static readonly Helpers.CubicBezierEase _iosEase = new() { EasingMode = EasingMode.EaseIn };
-    private static readonly TimeSpan _pressDuration = TimeSpan.FromMilliseconds(80);
+    // iOS 默认曲线 (0.25, 0.1, 0.25, 1.0)
+    private static readonly Helpers.CubicBezierEase _btnEase = new()
+    {
+        X1 = 0.25, Y1 = 0.1, X2 = 0.25, Y2 = 1.0,
+        EasingMode = EasingMode.EaseIn
+    };
+    private static readonly TimeSpan _hoverEnterDuration = TimeSpan.FromMilliseconds(150);
+    private static readonly TimeSpan _hoverExitDuration = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan _pressDuration = TimeSpan.FromMilliseconds(130);
     private static readonly TimeSpan _releaseDuration = TimeSpan.FromMilliseconds(280);
+
+    private void CommonButton_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Button btn) return;
+        if (!btn.IsPressed)
+            AnimateScale(btn, 1.2, _hoverEnterDuration, _btnEase);
+    }
+
+    private void CommonButton_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Button btn) return;
+        if (!btn.IsPressed)
+            AnimateScale(btn, 1.0, _hoverExitDuration, _btnEase);
+    }
 
     private void CommonButton_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (sender is not System.Windows.Controls.Button btn) return;
-        // 读取当前 HoverScale 值，计算 PressScale 目标以补偿乘法叠加
-        double hoverScale = 1.0;
-        if (btn.Template.FindName("HoverScale", btn) is ScaleTransform hoverSt)
-            hoverScale = hoverSt.ScaleX;
-        double pressTarget = Math.Max(0.5, 0.85 / hoverScale);
-        AnimateTransform(btn, "PressScale", pressTarget, _pressDuration, _iosEase);
+        AnimateScale(btn, 0.85, _pressDuration, _btnEase);
     }
 
     private void CommonButton_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (sender is not System.Windows.Controls.Button btn) return;
-        AnimateTransform(btn, "PressScale", 1.0, _releaseDuration, _iosEase);
+        double target = btn.IsMouseOver ? 1.2 : 1.0;
+        AnimateScale(btn, target, _releaseDuration, _btnEase);
     }
 
-    private static void AnimateTransform(System.Windows.Controls.Button btn, string transformName,
-        double target, TimeSpan duration, IEasingFunction ease)
+    private static void AnimateScale(System.Windows.Controls.Button btn, double target,
+        TimeSpan duration, IEasingFunction ease)
     {
-        if (btn.Template.FindName(transformName, btn) is ScaleTransform st)
+        if (btn.Template.FindName("AnimScale", btn) is ScaleTransform st)
         {
             st.BeginAnimation(ScaleTransform.ScaleXProperty, null);
             st.BeginAnimation(ScaleTransform.ScaleYProperty, null);

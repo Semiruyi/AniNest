@@ -4,9 +4,6 @@ using System.Windows.Media.Animation;
 
 namespace LocalPlayer.Helpers;
 
-/// <summary>
-/// iOS-style cubic-bezier easing. Defaults to iOS default (0.25, 0.1, 0.25, 1.0).
-/// </summary>
 public class CubicBezierEase : EasingFunctionBase
 {
     public static readonly DependencyProperty X1Property =
