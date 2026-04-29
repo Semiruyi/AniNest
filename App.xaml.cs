@@ -55,6 +55,29 @@ public partial class App : System.Windows.Application
                 LogStartup($"后台 LibVLC 预热失败: {ex.Message}");
             }
         });
+
+        // 初始化缩略图生成器（加载索引、检测 ffmpeg、清理残留）
+        Task.Run(() =>
+        {
+            try
+            {
+                var thumbSw = Stopwatch.StartNew();
+                ThumbnailGenerator.Instance.Initialize();
+                LogStartup($"后台 ThumbnailGenerator 初始化完成，耗时 {thumbSw.ElapsedMilliseconds}ms");
+            }
+            catch (Exception ex)
+            {
+                Log($"ThumbnailGenerator 初始化失败: {ex.Message}");
+                LogStartup($"后台 ThumbnailGenerator 初始化失败: {ex.Message}");
+            }
+        });
+
+        Exit += (s, args) =>
+        {
+            Log("Exit 事件触发，正在关闭缩略图生成器...");
+            ThumbnailGenerator.Instance.Shutdown();
+        };
+
         LogStartup($"OnStartup 总耗时 {sw.ElapsedMilliseconds}ms");
 
         AppDomain.CurrentDomain.UnhandledException += (s, args) =>

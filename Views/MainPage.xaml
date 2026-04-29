@@ -280,9 +280,10 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- 左侧：文件夹统计信息 -->
+                <!-- 左侧：文件夹统计信息 + 缩略图生成进度 -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock x:Name="FolderCountText" Text="0 个文件夹" Foreground="{StaticResource TextSecondary}" FontSize="13" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="ThumbnailProgressText" Text="" Foreground="{StaticResource TextSecondary}" FontSize="12" VerticalAlignment="Center" Margin="16,0,0,0" Visibility="Collapsed"/>
                 </StackPanel>
 
                 <!-- 中间：快速操作提示（空状态时显示） -->

@@ -19,6 +19,7 @@ namespace LocalPlayer.Views;
 public partial class MainPage : System.Windows.Controls.UserControl
 {
     private readonly SettingsService settingsService = new();
+    private readonly ThumbnailGenerator thumbnailGenerator = ThumbnailGenerator.Instance;
     private readonly ObservableCollection<FolderListItem> folderItems = new();
 
     public event Action<object, string, string>? FolderSelected;
@@ -34,6 +35,10 @@ public partial class MainPage : System.Windows.Controls.UserControl
         App.LogStartup("MainPage 构造函数开始");
         InitializeComponent();
         App.LogStartup($"MainPage.InitializeComponent 完成，耗时 {sw.ElapsedMilliseconds}ms");
+
+        thumbnailGenerator.ProgressChanged += (_, args) =>
+            Dispatcher.Invoke(() => UpdateThumbnailProgress(args.Ready, args.Total));
+
         Loaded += MainPage_Loaded;
         App.LogStartup($"MainPage 构造函数完成，总耗时 {sw.ElapsedMilliseconds}ms");
     }
@@ -59,6 +64,10 @@ public partial class MainPage : System.Windows.Controls.UserControl
             folderItems.Add(item);
         UpdateToolbarState();
         _ = Dispatcher.BeginInvoke(new Action(AnimateCardsEntrance), DispatcherPriority.Loaded);
+
+        // 入队所有文件夹的缩略图生成
+        EnqueueAllFolders(loadedItems);
+
         App.LogStartup($"MainPage.Loaded 总耗时 {sw.ElapsedMilliseconds}ms (UI 阻塞仅初始化部分)");
     }
 
@@ -81,6 +90,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
             else
             {
                 settingsService.RemoveFolder(folder.Path);
+                thumbnailGenerator.DeleteForFolder(folder.Path);
                 App.LogStartup($"  文件夹 {folder.Name} 路径不存在，已移除");
             }
         }
@@ -112,6 +122,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
                     var oldPositions = CaptureCardPositions();
                     folderItems.Remove(item);
                     settingsService.RemoveFolder(path);
+                    thumbnailGenerator.DeleteForFolder(path);
                     UpdateToolbarState();
                     AnimateCardsReposition(oldPositions);
                 });
@@ -120,6 +131,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
             {
                 folderItems.Remove(item);
                 settingsService.RemoveFolder(path);
+                thumbnailGenerator.DeleteForFolder(path);
                 UpdateToolbarState();
             }
         }
@@ -210,6 +222,9 @@ public partial class MainPage : System.Windows.Controls.UserControl
             folderItems.Add(newItem);
             UpdateToolbarState();
             AnimateCardAdded(newItem);
+
+            // 入队新文件夹的缩略图生成
+            EnqueueFolderForThumbnails(newItem);
         }
     }
 
@@ -233,6 +248,49 @@ public partial class MainPage : System.Windows.Controls.UserControl
             if (result != null) return result;
         }
         return null;
+    }
+
+    // ========== 缩略图生成 ==========
+
+    private void EnqueueAllFolders(List<FolderListItem> items)
+    {
+        foreach (var item in items)
+            EnqueueFolderForThumbnails(item);
+    }
+
+    private void EnqueueFolderForThumbnails(FolderListItem item)
+    {
+        int cardOrder = 0;
+        var folders = settingsService.GetFolders();
+        var folderInfo = folders.FirstOrDefault(f => f.Path == item.Path);
+        if (folderInfo != null)
+            cardOrder = folderInfo.OrderIndex;
+
+        var folderProgress = settingsService.GetFolderProgress(item.Path);
+        string? lastPlayed = folderProgress?.LastVideoPath;
+
+        var playedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var videoFiles = VideoScanner.GetVideoFiles(item.Path);
+        foreach (var vf in videoFiles)
+        {
+            if (settingsService.IsVideoPlayed(vf))
+                playedPaths.Add(vf);
+        }
+
+        thumbnailGenerator.EnqueueFolder(item.Path, cardOrder, lastPlayed, playedPaths);
+    }
+
+    private void UpdateThumbnailProgress(int ready, int total)
+    {
+        if (total > 0 && ready < total)
+        {
+            ThumbnailProgressText.Text = $"缩略图 {ready}/{total}";
+            ThumbnailProgressText.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            ThumbnailProgressText.Visibility = Visibility.Collapsed;
+        }
     }
 
 }

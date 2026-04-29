@@ -639,8 +639,37 @@
                         PreviewMouseUp="ProgressSlider_PreviewMouseUp"
                         ValueChanged="ProgressSlider_ValueChanged"
                         LostMouseCapture="ProgressSlider_LostMouseCapture"
+                        MouseEnter="ProgressSlider_MouseEnter"
+                        MouseLeave="ProgressSlider_MouseLeave"
+                        MouseMove="ProgressSlider_MouseMove"
                         VerticalAlignment="Center"
                         Margin="10,0"/>
+
+                <!-- 进度条悬浮预览弹窗 -->
+                <Popup x:Name="ProgressPopup" AllowsTransparency="True"
+                       Placement="Relative" StaysOpen="True"
+                       MouseEnter="ProgressPopup_MouseEnter"
+                       MouseLeave="ProgressPopup_MouseLeave">
+                    <Border Background="#E6282828" CornerRadius="10" Padding="4"
+                            RenderTransformOrigin="0.5,1"
+                            Opacity="0">
+                        <Border.RenderTransform>
+                            <ScaleTransform x:Name="ProgressPopupScale" ScaleX="0.9" ScaleY="0.9"/>
+                        </Border.RenderTransform>
+                        <StackPanel>
+                            <Border x:Name="ThumbnailBorder" CornerRadius="6" ClipToBounds="True"
+                                    Width="160" Height="90" Background="#1A1A1C"
+                                    Visibility="Collapsed">
+                                <Image x:Name="ThumbnailImage" Stretch="UniformToFill"
+                                       Width="160" Height="90"/>
+                            </Border>
+                            <TextBlock x:Name="ThumbnailTimeText" Foreground="White"
+                                       FontSize="12"
+                                       FontFamily="Segoe UI, Microsoft YaHei, sans-serif"
+                                       HorizontalAlignment="Center" Margin="0,6,0,2"/>
+                        </StackPanel>
+                    </Border>
+                </Popup>
 
                 <!-- 右侧：倍速 + 菜单 + 全屏 -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">

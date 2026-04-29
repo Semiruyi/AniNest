@@ -1,10 +1,14 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LocalPlayer.Models;
 using LocalPlayer.Services;
@@ -45,6 +49,17 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private bool isSpeedPopupClosing;
     private readonly DispatcherTimer rightHoldTimer;
     private bool isRightHolding;
+
+    // 进度条悬浮缩略图预览
+    private readonly ThumbnailGenerator _thumbnailGenerator = ThumbnailGenerator.Instance;
+    private readonly Dictionary<int, BitmapSource> _thumbnailCache = new(); // second → image, 最多20张
+    private readonly DispatcherTimer progressPopupShowTimer = new();
+    private readonly DispatcherTimer progressPopupHideTimer = new();
+    private bool _isProgressHovering;
+    private bool _isProgressPopupVisible;
+    private bool _isProgressPopupClosing;
+    private int _lastRequestedSecond = -1;
+    private string? _currentThumbVideoPath; // 当前视频的缩略图目录就绪路径
 
     private Window? parentWindow;
     private bool isFullscreen = false;
@@ -93,6 +108,11 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         rightHoldTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
         rightHoldTimer.Tick += RightHoldTimer_Tick;
 
+        progressPopupShowTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        progressPopupShowTimer.Tick += ProgressPopupShowTimer_Tick;
+        progressPopupHideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
+        progressPopupHideTimer.Tick += ProgressPopupHideTimer_Tick;
+
         inputHandler.TogglePlayPause += (_, _) => mediaController.TogglePlayPause();
         inputHandler.SeekForward += (_, _) => mediaController.SeekForward(5000);
         inputHandler.SeekBackward += (_, _) => mediaController.SeekBackward(5000);
@@ -122,6 +142,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
                 System.Windows.Controls.Primitives.PopupPrimaryAxis.Vertical) };
         };
         SpeedPopup.PlacementTarget = SpeedBtn;
+        ProgressPopup.PlacementTarget = ProgressSlider;
     }
 
     private void PlayerPage_Loaded(object sender, RoutedEventArgs e)
@@ -343,6 +364,13 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         Log($"[PlayVideo] 开始: {Path.GetFileName(filePath)}");
         Log($"[PlayVideo] 当前SelectedIndex={PlaylistBox.SelectedIndex}");
+
+        _thumbnailCache.Clear();
+        _lastRequestedSecond = -1;
+        _currentThumbVideoPath = filePath;
+        var thumbState = _thumbnailGenerator.GetState(filePath);
+        Log($"[PlayVideo] 缩略图状态: {thumbState}, ffmpeg可用: {_thumbnailGenerator.IsFfmpegAvailable}");
+
         long startTime = 0;
         var progress = settingsService.GetVideoProgress(filePath);
         if (progress != null)
@@ -963,6 +991,183 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         e.Handled = true;
     }
 
+    // ========== 进度条悬浮预览 ==========
+
+    private void ProgressSlider_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        _isProgressHovering = true;
+        progressPopupHideTimer.Stop();
+        if (!_isProgressPopupVisible)
+            progressPopupShowTimer.Start();
+    }
+
+    private void ProgressSlider_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        _isProgressHovering = false;
+        progressPopupShowTimer.Stop();
+        progressPopupHideTimer.Start();
+    }
+
+    private void ProgressSlider_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (mediaController.Length <= 0) return;
+
+        var pos = e.GetPosition(ProgressSlider);
+        double ratio = Math.Max(0, Math.Min(1, pos.X / ProgressSlider.ActualWidth));
+        long hoverTimeMs = (long)(ratio * mediaController.Length);
+        int hoverSecond = (int)(hoverTimeMs / 1000);
+
+        // 定位 + 时间
+        ThumbnailTimeText.Text = MediaPlayerController.FormatTime(hoverTimeMs);
+        double popupW = 168, popupH = 120;
+        double offsetX = Math.Max(0, Math.Min(pos.X - popupW / 2, ProgressSlider.ActualWidth - popupW));
+        ProgressPopup.HorizontalOffset = offsetX;
+        ProgressPopup.VerticalOffset = pos.Y - popupH - 12;
+        if (_isProgressPopupVisible && ProgressPopup.IsOpen)
+        {
+            ProgressPopup.HorizontalOffset = offsetX + 1; // 强制刷新
+            ProgressPopup.HorizontalOffset = offsetX;
+        }
+
+        // 缩略图可用性检测
+        bool thumbReady = _currentThumbVideoPath != null &&
+            _thumbnailGenerator.GetState(_currentThumbVideoPath) == ThumbnailState.Ready;
+        ThumbnailBorder.Visibility = thumbReady ? Visibility.Visible : Visibility.Collapsed;
+
+        // 秒数未变则不重复加载
+        if (hoverSecond == _lastRequestedSecond) return;
+        _lastRequestedSecond = hoverSecond;
+
+        if (thumbReady && _currentThumbVideoPath != null)
+        {
+            if (_thumbnailCache.TryGetValue(hoverSecond, out var cached))
+            {
+                ThumbnailImage.Source = cached;
+            }
+            else
+            {
+                var bmp = LoadThumbnailJpeg(_currentThumbVideoPath, hoverSecond);
+                if (bmp != null)
+                {
+                    _thumbnailCache[hoverSecond] = bmp;
+                    ThumbnailImage.Source = bmp;
+
+                    if (_thumbnailCache.Count > 20)
+                    {
+                        var toRemove = _thumbnailCache.Keys.OrderBy(k => k).Take(_thumbnailCache.Count / 2).ToList();
+                        foreach (var k in toRemove) _thumbnailCache.Remove(k);
+                    }
+                }
+            }
+        }
+    }
+
+    private void ProgressPopup_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        progressPopupHideTimer.Stop();
+    }
+
+    private void ProgressPopup_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        progressPopupHideTimer.Stop();
+        progressPopupHideTimer.Start();
+    }
+
+    private void ProgressPopupShowTimer_Tick(object? sender, EventArgs e)
+    {
+        progressPopupShowTimer.Stop();
+        if (!_isProgressHovering) return;
+        ShowProgressPopup();
+    }
+
+    private void ProgressPopupHideTimer_Tick(object? sender, EventArgs e)
+    {
+        progressPopupHideTimer.Stop();
+        if (_isProgressHovering) return;
+        if (ProgressPopup.IsOpen && ProgressPopup.Child != null)
+        {
+            try
+            {
+                var pt = System.Windows.Input.Mouse.GetPosition(ProgressPopup.Child);
+                if (pt.X >= -2 && pt.Y >= -2 &&
+                    pt.X <= ProgressPopup.Child.RenderSize.Width + 2 &&
+                    pt.Y <= ProgressPopup.Child.RenderSize.Height + 2)
+                {
+                    progressPopupHideTimer.Start();
+                    return;
+                }
+            }
+            catch { }
+        }
+        HideProgressPopup();
+    }
+
+    private void ShowProgressPopup()
+    {
+        if (_isProgressPopupVisible || _isProgressPopupClosing) return;
+        _isProgressPopupVisible = true;
+        var border = ProgressPopup.Child as Border;
+        if (border == null) return;
+
+        ProgressPopupScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        ProgressPopupScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        border.BeginAnimation(UIElement.OpacityProperty, null);
+        ProgressPopupScale.ScaleX = 0.9;
+        ProgressPopupScale.ScaleY = 0.9;
+        border.Opacity = 0;
+        ProgressPopup.IsOpen = true;
+
+        var d = TimeSpan.FromMilliseconds(200);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        ProgressPopupScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0.9, 1, d) { EasingFunction = ease });
+        ProgressPopupScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(0.9, 1, d) { EasingFunction = ease });
+        border.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, d) { EasingFunction = ease });
+    }
+
+    private void HideProgressPopup()
+    {
+        if (!_isProgressPopupVisible || _isProgressPopupClosing) return;
+        _isProgressPopupClosing = true;
+        var border = ProgressPopup.Child as Border;
+        if (border == null) { ProgressPopup.IsOpen = false; _isProgressPopupVisible = false; _isProgressPopupClosing = false; return; }
+
+        double sx = ProgressPopupScale.ScaleX, sy = ProgressPopupScale.ScaleY, op = border.Opacity;
+        ProgressPopupScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        ProgressPopupScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        border.BeginAnimation(UIElement.OpacityProperty, null);
+        ProgressPopupScale.ScaleX = sx; ProgressPopupScale.ScaleY = sy; border.Opacity = op;
+
+        var d = TimeSpan.FromMilliseconds(150);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseIn };
+        var cx = new DoubleAnimation(sx, 0.9, d) { EasingFunction = ease };
+        var cy = new DoubleAnimation(sy, 0.9, d) { EasingFunction = ease };
+        var co = new DoubleAnimation(op, 0, d) { EasingFunction = ease };
+        co.Completed += (_, _) => { ProgressPopup.IsOpen = false; _isProgressPopupVisible = false; _isProgressPopupClosing = false; };
+        ProgressPopupScale.BeginAnimation(ScaleTransform.ScaleXProperty, cx);
+        ProgressPopupScale.BeginAnimation(ScaleTransform.ScaleYProperty, cy);
+        border.BeginAnimation(UIElement.OpacityProperty, co);
+    }
+
+    // ========== JPEG 加载 ==========
+
+    private BitmapSource? LoadThumbnailJpeg(string videoPath, int second)
+    {
+        var path = _thumbnailGenerator.GetThumbnailPath(videoPath, second);
+        if (path == null) return null;
+        try
+        {
+            var decoder = new JpegBitmapDecoder(new Uri(path), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+            var frame = decoder.Frames[0];
+            frame.Freeze();
+            return frame;
+        }
+        catch (Exception ex)
+        {
+            Log($"[Thumbnail] 解码异常: second={second}, {ex.Message}");
+            return null;
+        }
+    }
+
     public void Dispose()
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -973,6 +1178,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         playlistHideTimer.Stop();
         speedPopupCloseTimer.Stop();
         rightHoldTimer.Stop();
+        progressPopupShowTimer.Stop();
+        progressPopupHideTimer.Stop();
         Log($"saveProgressTimer.Stop 耗时 {sw.ElapsedMilliseconds}ms");
         SaveCurrentProgress();
         Log($"SaveCurrentProgress 完成，耗时 {sw.ElapsedMilliseconds}ms");
@@ -980,6 +1187,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         fullscreenWindow?.Close();
         fullscreenWindow = null;
 
+        _thumbnailCache.Clear();
         mediaController.Dispose();
         Log($"mediaController.Dispose 完成，总耗时 {sw.ElapsedMilliseconds}ms");
     }
