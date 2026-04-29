@@ -1,6 +1,7 @@
 <Window x:Class="LocalPlayer.Views.FullscreenWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:LocalPlayer.Views"
         WindowStyle="None"
         ResizeMode="NoResize"
         Topmost="True"
@@ -11,6 +12,21 @@
         KeyDown="Window_KeyDown">
     <Grid x:Name="RootGrid" Background="Black">
         <Image x:Name="VideoImage" Stretch="Uniform"/>
+
+        <!-- 全屏控制栏（底部覆盖） -->
+        <views:ControlBarView x:Name="ControlBar"
+                              VerticalAlignment="Bottom"
+                              HorizontalAlignment="Stretch"
+                              Height="63"
+                              Visibility="Visible"
+                              Panel.ZIndex="1"/>
+
+        <!-- 全屏选集面板（右侧覆盖） -->
+        <views:PlaylistPanelView x:Name="PlaylistPanel"
+                                 VerticalAlignment="Stretch"
+                                 HorizontalAlignment="Right"
+                                 Panel.ZIndex="2"/>
+
         <!-- 暂停大图标（右下角） -->
         <Image x:Name="PauseBigIcon"
                Source="/Resources/Icons/pause-big.png"
@@ -19,7 +35,8 @@
                VerticalAlignment="Bottom"
                Margin="0,0,32,80"
                Opacity="0"
-               RenderTransformOrigin="0.5,0.5">
+               RenderTransformOrigin="0.5,0.5"
+               Panel.ZIndex="3">
             <Image.RenderTransform>
                 <TransformGroup>
                     <ScaleTransform x:Name="PauseBigIconScale" ScaleX="0" ScaleY="0"/>

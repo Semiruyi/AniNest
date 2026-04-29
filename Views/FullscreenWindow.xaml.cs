@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using LocalPlayer.Helpers;
+using LocalPlayer.Models;
 using LocalPlayer.Services;
 
 // 消歧义：UseWindowsForms 隐式导入与 WPF 类型冲突
@@ -17,65 +19,70 @@ namespace LocalPlayer.Views;
 public partial class FullscreenWindow : Window
 {
     private static void Log(string message) => AppLog.Info(nameof(FullscreenWindow), message);
-    private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(FullscreenWindow), message, ex);
-
-    // ========== 外部依赖 ==========
 
     private MediaPlayerController? mediaController;
     private PlayerInputHandler? inputHandler;
 
-    // ========== 事件 ==========
-
-    /// <summary>退出全屏按钮点击 或 Escape 键触发</summary>
     public event EventHandler? ExitRequested;
-
-    /// <summary>鼠标靠近底部边缘 → PlayerPage 显示控制栏</summary>
-    public event EventHandler? ControlBarShowRequested;
-
-    /// <summary>鼠标靠近右侧边缘 → PlayerPage 显示选集面板</summary>
-    public event EventHandler? PlaylistShowRequested;
-
-    /// <summary>右键长按开始（三倍速）</summary>
-    public event EventHandler? RightHoldStarted;
-
-    /// <summary>右键长按结束（恢复原速）</summary>
-    public event EventHandler? RightHoldEnded;
-
-    // ========== 状态 ==========
+    public event EventHandler<PlaylistItem>? EpisodeSelected;
 
     private bool isAnimating;
     private bool isClosing;
     private Rect originalVideoRect;
+
+    // 右键长按三倍速
+    private float speedBeforeHold = 1.0f;
     private readonly DispatcherTimer rightHoldTimer = new() { Interval = TimeSpan.FromMilliseconds(350) };
     private bool isRightHolding;
 
     // 单击/双击检测
     private readonly DispatcherTimer singleClickTimer = new() { Interval = TimeSpan.FromMilliseconds(400) };
 
+    // 控制栏/选集自动隐藏
+    private readonly DispatcherTimer controlBarHideTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
+    private readonly DispatcherTimer playlistHideTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
+
     public FullscreenWindow()
     {
         InitializeComponent();
+
         singleClickTimer.Tick += (_, _) =>
         {
             singleClickTimer.Stop();
             mediaController?.TogglePlayPause();
         };
+
         rightHoldTimer.Tick += (_, _) =>
         {
             rightHoldTimer.Stop();
             isRightHolding = true;
-            RightHoldStarted?.Invoke(this, EventArgs.Empty);
+            speedBeforeHold = ControlBar.CurrentSpeed;
+            mediaController!.Rate = 3.0f;
+            ControlBar.UpdateSpeedButtonText(3.0f);
         };
+
+        controlBarHideTimer.Tick += (_, _) =>
+        {
+            if (!ControlBar.IsMouseOver)
+                HideControlBar();
+        };
+
+        playlistHideTimer.Tick += (_, _) =>
+        {
+            if (!PlaylistPanel.IsMouseOver)
+                HidePlaylist();
+        };
+
         PreviewMouseDown += (_, e) =>
         {
             if (isAnimating) return;
             if (e.ChangedButton == MouseButton.XButton1)
             {
-                Log($"鼠标后退键 XButton1 触发退出全屏");
                 ExitRequested?.Invoke(this, EventArgs.Empty);
                 e.Handled = true;
             }
         };
+
         Loaded += (_, _) =>
         {
             VideoImage.MouseLeftButtonDown += VideoImage_MouseLeftButtonDown;
@@ -111,14 +118,16 @@ public partial class FullscreenWindow : Window
         if (isRightHolding)
         {
             isRightHolding = false;
-            RightHoldEnded?.Invoke(this, EventArgs.Empty);
+            mediaController!.Rate = speedBeforeHold;
+            ControlBar.UpdateSpeedButtonText(speedBeforeHold);
         }
         e.Handled = true;
     }
 
     // ========== 初始化 ==========
 
-    public void Setup(MediaPlayerController mediaCtrl, PlayerInputHandler input)
+    public void Setup(MediaPlayerController mediaCtrl, PlayerInputHandler input,
+                      ThumbnailGenerator thumbnailGenerator)
     {
         mediaController = mediaCtrl;
         inputHandler = input;
@@ -126,6 +135,74 @@ public partial class FullscreenWindow : Window
         mediaController.Playing += (_, _) => Dispatcher.Invoke(AnimatePauseBigOut);
         mediaController.Paused += (_, _) => Dispatcher.Invoke(AnimatePauseBigIn);
         mediaController.Stopped += (_, _) => Dispatcher.Invoke(AnimatePauseBigOut);
+
+        ControlBar.Setup(mediaCtrl, input, thumbnailGenerator);
+        ControlBar.IsFullscreen = true;
+
+        // 控制栏按钮 → 本地处理
+        ControlBar.PlayPauseClicked += (_, _) => mediaController.TogglePlayPause();
+        ControlBar.PreviousClicked += (_, _) => { }; // PlayerPage handles via events
+        ControlBar.NextClicked += (_, _) => { };
+        ControlBar.StopClicked += (_, _) => mediaController.Stop();
+        ControlBar.FullscreenClicked += (_, _) => ExitRequested?.Invoke(this, EventArgs.Empty);
+        ControlBar.SettingsClicked += (_, _) =>
+        {
+            var window = new KeyBindingsWindow(input)
+            {
+                Owner = System.Windows.Application.Current.MainWindow
+            };
+            window.ShowDialog();
+            ControlBar.UpdateButtonTooltips();
+        };
+        ControlBar.SeekRequested += time => mediaController.SeekTo(time);
+
+        // 控制栏鼠标进入/离开 → 自动隐藏控制
+        ControlBar.ControlBarMouseEnter += (_, _) =>
+        {
+            controlBarHideTimer.Stop();
+            ShowControlBar();
+        };
+        ControlBar.ControlBarMouseLeave += (_, _) =>
+        {
+            if (!ControlBar.IsMouseOver)
+                controlBarHideTimer.Start();
+        };
+
+        // 选集面板事件
+        PlaylistPanel.EpisodeSelected += (_, item) => EpisodeSelected?.Invoke(this, item);
+        PlaylistPanel.MouseEnterBorder += (_, _) =>
+        {
+            playlistHideTimer.Stop();
+            ShowPlaylist();
+        };
+        PlaylistPanel.MouseLeaveBorder += (_, _) =>
+        {
+            if (!PlaylistPanel.IsMouseOver)
+                playlistHideTimer.Start();
+        };
+
+        // 初始隐藏控制栏和选集
+        HideControlBar(immediate: true);
+        HidePlaylist(immediate: true);
+    }
+
+    public void SetPlaylistItems(IEnumerable<PlaylistItem> items, int selectedIndex)
+    {
+        PlaylistPanel.SetItems(items);
+        PlaylistPanel.SelectedIndex = selectedIndex;
+    }
+
+    public void SetSpeed(float speed)
+    {
+        ControlBar.SetSpeed(speed);
+    }
+
+    public void StopAutoHideTimers()
+    {
+        controlBarHideTimer.Stop();
+        playlistHideTimer.Stop();
+        ShowControlBar();
+        ShowPlaylist();
     }
 
     // ========== 进入全屏动画 ==========
@@ -137,11 +214,9 @@ public partial class FullscreenWindow : Window
         originalVideoRect = fromRect;
         isAnimating = true;
 
-        // 绑定 Owner，确保同屏同 DPI
         var mainWindow = System.Windows.Application.Current.MainWindow;
         Owner = mainWindow;
 
-        // WinForms Graphics 获取目标屏幕真实 DPI，像素 → DIP
         var hwnd = new System.Windows.Interop.WindowInteropHelper(mainWindow).Handle;
         var screen = System.Windows.Forms.Screen.FromHandle(hwnd);
         using var g = System.Drawing.Graphics.FromHwnd(hwnd);
@@ -153,7 +228,6 @@ public partial class FullscreenWindow : Window
         Width  = screen.Bounds.Width  * 96.0 / targetDpiX;
         Height = screen.Bounds.Height * 96.0 / targetDpiY;
 
-        // 计算"退回到原始位置"的变换（视频居中缩放）
         double origCenterX = fromRect.Left + fromRect.Width / 2;
         double origCenterY = fromRect.Top + fromRect.Height / 2;
         double finalCenterX = Left + Width / 2;
@@ -172,14 +246,9 @@ public partial class FullscreenWindow : Window
         VideoImage.RenderTransformOrigin = new Point(0.5, 0.5);
         VideoImage.RenderTransform = group;
 
-        // 图标位移：基于右下角位置计算（图标 80x80, Margin="0,0,32,24"）
-        // 图标中心在 fromRect 中: (fromRect.Right - 72, fromRect.Bottom - 64)
-        // 图标中心在全屏中:   (Left + Width - 72, Top + Height - 64)
-        double iconTransX = fromRect.Right - Left - Width;
-        double iconTransY = fromRect.Bottom - Top - Height;
-
-        PauseBigIconFSTranslate.X = iconTransX;
-        PauseBigIconFSTranslate.Y = iconTransY;
+        // 暂停大图标位移
+        PauseBigIconFSTranslate.X = fromRect.Right - Left - Width;
+        PauseBigIconFSTranslate.Y = fromRect.Bottom - Top - Height;
 
         VideoImage.Source = mediaController!.VideoBitmap;
         Show();
@@ -187,7 +256,6 @@ public partial class FullscreenWindow : Window
         bool wasPaused = mediaController?.IsPlaying == false;
         if (wasPaused)
         {
-            // 直接显示，不走入场动画，由位置动画接管
             PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
             PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
             PauseBigIcon.BeginAnimation(OpacityProperty, null);
@@ -206,8 +274,8 @@ public partial class FullscreenWindow : Window
         var tx = new DoubleAnimation(transX, 0.0, duration) { EasingFunction = ease };
         var ty = new DoubleAnimation(transY, 0.0, duration) { EasingFunction = ease };
 
-        var iconTX = new DoubleAnimation(iconTransX, 0.0, duration) { EasingFunction = ease };
-        var iconTY = new DoubleAnimation(iconTransY, 0.0, duration) { EasingFunction = ease };
+        var iconTX = new DoubleAnimation(PauseBigIconFSTranslate.X, 0.0, duration) { EasingFunction = ease };
+        var iconTY = new DoubleAnimation(PauseBigIconFSTranslate.Y, 0.0, duration) { EasingFunction = ease };
 
         sx.Completed += (_, _) =>
         {
@@ -263,10 +331,6 @@ public partial class FullscreenWindow : Window
         VideoImage.RenderTransformOrigin = new Point(0.5, 0.5);
         VideoImage.RenderTransform = group;
 
-        // 图标位移：基于右下角位置计算（图标 80x80, Margin="0,0,32,24"）
-        double iconTransX = originalVideoRect.Right - Left - Width;
-        double iconTransY = originalVideoRect.Bottom - Top - Height;
-
         PauseBigIconFSTranslate.X = 0;
         PauseBigIconFSTranslate.Y = 0;
 
@@ -278,8 +342,8 @@ public partial class FullscreenWindow : Window
         var tx = new DoubleAnimation(0.0, transX, duration) { EasingFunction = ease };
         var ty = new DoubleAnimation(0.0, transY, duration) { EasingFunction = ease };
 
-        var iconTX = new DoubleAnimation(0.0, iconTransX, duration) { EasingFunction = ease };
-        var iconTY = new DoubleAnimation(0.0, iconTransY, duration) { EasingFunction = ease };
+        var iconTX = new DoubleAnimation(0.0, originalVideoRect.Right - Left - Width, duration) { EasingFunction = ease };
+        var iconTY = new DoubleAnimation(0.0, originalVideoRect.Bottom - Top - Height, duration) { EasingFunction = ease };
 
         sx.Completed += (_, _) =>
         {
@@ -313,46 +377,97 @@ public partial class FullscreenWindow : Window
         base.OnMouseMove(e);
         if (isAnimating || isClosing) return;
         var pos = e.GetPosition(this);
-        if (pos.Y > ActualHeight - 10) ControlBarShowRequested?.Invoke(this, EventArgs.Empty);
-        if (pos.X > ActualWidth - 10) PlaylistShowRequested?.Invoke(this, EventArgs.Empty);
+        if (pos.Y > ActualHeight - 10)
+        {
+            controlBarHideTimer.Stop();
+            ShowControlBar();
+        }
+        if (pos.X > ActualWidth - 10)
+        {
+            playlistHideTimer.Stop();
+            ShowPlaylist();
+        }
+    }
+
+    // ========== 控制栏显隐 ==========
+
+    private void ShowControlBar()
+    {
+        controlBarHideTimer.Stop();
+        if (ControlBar.IsHitTestVisible) return;
+        ControlBar.Visibility = Visibility.Visible;
+        ControlBar.IsHitTestVisible = true;
+        AnimateOpacity(ControlBar, 1);
+        Keyboard.Focus(ControlBar);
+    }
+
+    private void HideControlBar(bool immediate = false)
+    {
+        if (immediate)
+        {
+            ControlBar.BeginAnimation(UIElement.OpacityProperty, null);
+            ControlBar.Opacity = 0;
+            ControlBar.IsHitTestVisible = false;
+            return;
+        }
+
+        var duration = TimeSpan.FromMilliseconds(200);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
+        var anim = new DoubleAnimation(ControlBar.Opacity, 0, duration) { EasingFunction = ease };
+        anim.Completed += (_, _) =>
+        {
+            if (!isClosing)
+                ControlBar.IsHitTestVisible = false;
+        };
+        ControlBar.BeginAnimation(UIElement.OpacityProperty, anim);
+    }
+
+    // ========== 选集面板显隐 ==========
+
+    private void ShowPlaylist()
+    {
+        playlistHideTimer.Stop();
+        if (PlaylistPanel.IsHitTestVisible) return;
+        PlaylistPanel.IsHitTestVisible = true;
+        AnimateOpacity(PlaylistPanel, 1);
+    }
+
+    private void HidePlaylist(bool immediate = false)
+    {
+        if (immediate)
+        {
+            PlaylistPanel.BeginAnimation(UIElement.OpacityProperty, null);
+            PlaylistPanel.Opacity = 0;
+            PlaylistPanel.IsHitTestVisible = false;
+            return;
+        }
+
+        var duration = TimeSpan.FromMilliseconds(200);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
+        var anim = new DoubleAnimation(PlaylistPanel.Opacity, 0, duration) { EasingFunction = ease };
+        anim.Completed += (_, _) =>
+        {
+            if (!isClosing)
+                PlaylistPanel.IsHitTestVisible = false;
+        };
+        PlaylistPanel.BeginAnimation(UIElement.OpacityProperty, anim);
     }
 
     // ========== 键盘 ==========
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        Log($"PreviewKeyDown: Key={e.Key}, isAnimating={isAnimating}, FocusedElement={Keyboard.FocusedElement?.GetType().Name}");
-        if (isAnimating) { Log("  全屏动画中，按键被拦截"); e.Handled = true; return; }
+        if (isAnimating) { e.Handled = true; return; }
         if (inputHandler?.HandleKeyDown(e, isFullscreen: true) == true)
-        {
-            Log($"  按键已处理: {e.Key}");
             e.Handled = true;
-        }
-        else
-        {
-            Log($"  按键未被处理: {e.Key}");
-        }
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
-        Log($"KeyDown: Key={e.Key}, isAnimating={isAnimating}, FocusedElement={Keyboard.FocusedElement?.GetType().Name}");
-        if (isAnimating) { Log("  全屏动画中，按键被拦截"); e.Handled = true; return; }
+        if (isAnimating) { e.Handled = true; return; }
         if (inputHandler?.HandleKeyDown(e, isFullscreen: true) == true)
-        {
-            Log($"  按键已处理: {e.Key}");
             e.Handled = true;
-        }
-        else
-        {
-            Log($"  按键未被处理: {e.Key}");
-        }
     }
-
-    // ========== 控制栏/选集按钮回调 ==========
-
-    /// <summary>由 PlayerPage 注入，全屏内按钮点击通过 inputHandler 事件链回到 PlayerPage</summary>
-    public void TriggerExitFullscreen() => ExitRequested?.Invoke(this, EventArgs.Empty);
 
     // ========== 暂停大图标动画 ==========
 
@@ -370,6 +485,11 @@ public partial class FullscreenWindow : Window
         AnimationHelper.AnimateScaleTransform(PauseBigIconScale, 0, 180, AnimationHelper.EaseIn);
         AnimationHelper.AnimateFromCurrent(PauseBigIcon, UIElement.OpacityProperty, 0, 180, AnimationHelper.EaseIn);
     }
+
+    // ========== 工具 ==========
+
+    private static void AnimateOpacity(UIElement element, double target, int durationMs = 200)
+        => AnimationHelper.AnimateFromCurrent(element, UIElement.OpacityProperty, target, durationMs);
 
     // ========== 清理 ==========
 
