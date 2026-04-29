@@ -105,6 +105,23 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         inputHandler.PreviousEpisode += (_, _) => PlayPrevious();
         inputHandler.ToggleFullscreen += (_, _) => ToggleFullscreen();
         inputHandler.ExitFullscreen += (_, _) => ExitFullscreen();
+
+        SpeedPopup.CustomPopupPlacementCallback = (_, targetSize, _2) =>
+        {
+            // WPF passes targetSize in device pixels (not DIPs). Scale our DIP-based
+            // popup dimensions by the same factor so the math is consistent.
+            double scale = targetSize.Width / SpeedBtn.ActualWidth;
+            double pw = 90 * scale;
+            double ph = 274 * scale;
+            double x = (targetSize.Width - pw) / 2;
+            double y = -ph - 10 * scale;
+            Log(string.Format("[PlacementCallback] scale={0:F3}, targetSize={1:F1}x{2:F1}, pw={3:F1}, ph={4:F1}, x={5:F1}, y={6:F1}",
+                scale, targetSize.Width, targetSize.Height, pw, ph, x, y));
+            return new[] { new System.Windows.Controls.Primitives.CustomPopupPlacement(
+                new System.Windows.Point(x, y),
+                System.Windows.Controls.Primitives.PopupPrimaryAxis.Vertical) };
+        };
+        SpeedPopup.PlacementTarget = SpeedBtn;
     }
 
     private void PlayerPage_Loaded(object sender, RoutedEventArgs e)
@@ -784,13 +801,11 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         SpeedPopup.IsOpen = true;
         if (wasClosed)
         {
-            Dispatcher.BeginInvoke(new Action(() =>
+            Dispatcher.BeginInvoke(() =>
             {
-                if (SpeedPopup.Child != null)
-                    SpeedPopup.HorizontalOffset = (SpeedBtn.ActualWidth - SpeedPopup.Child.RenderSize.Width) / 2;
                 HighlightSpeedOption(currentSpeed);
                 AnimateSpeedPopupIn();
-            }), DispatcherPriority.Loaded);
+            }, DispatcherPriority.Loaded);
         }
     }
 
