@@ -42,6 +42,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private float currentSpeed = 1.0f;
     private float speedBeforeHold = 1.0f;
     private readonly DispatcherTimer speedPopupCloseTimer;
+    private bool isSpeedPopupClosing;
     private readonly DispatcherTimer rightHoldTimer;
     private bool isRightHolding;
 
@@ -636,6 +637,70 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     // ========== 倍速 ==========
 
+    private void AnimateSpeedPopupIn()
+    {
+        isSpeedPopupClosing = false;
+        var border = SpeedPopup.Child as Border;
+        if (border == null) return;
+
+        SpeedPopupScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        SpeedPopupScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        border.BeginAnimation(UIElement.OpacityProperty, null);
+
+        SpeedPopupScale.ScaleX = 0;
+        SpeedPopupScale.ScaleY = 0;
+        border.Opacity = 0;
+
+        var duration = TimeSpan.FromMilliseconds(250);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        SpeedPopupScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+        SpeedPopupScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+        border.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+    }
+
+    private void AnimateSpeedPopupOut()
+    {
+        if (isSpeedPopupClosing) return;
+        isSpeedPopupClosing = true;
+
+        var border = SpeedPopup.Child as Border;
+        if (border == null)
+        {
+            SpeedPopup.IsOpen = false;
+            isSpeedPopupClosing = false;
+            return;
+        }
+
+        // 先快照当前值，再清动画（清完动画值会回落，所以要先读）
+        double fromScaleX = SpeedPopupScale.ScaleX;
+        double fromScaleY = SpeedPopupScale.ScaleY;
+        double fromOpacity = border.Opacity;
+
+        SpeedPopupScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        SpeedPopupScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        border.BeginAnimation(UIElement.OpacityProperty, null);
+
+        SpeedPopupScale.ScaleX = fromScaleX;
+        SpeedPopupScale.ScaleY = fromScaleY;
+        border.Opacity = fromOpacity;
+
+        var duration = TimeSpan.FromMilliseconds(180);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseIn };
+        var closeX = new DoubleAnimation(fromScaleX, 0, duration) { EasingFunction = ease };
+        var closeY = new DoubleAnimation(fromScaleY, 0, duration) { EasingFunction = ease };
+        var closeOpacity = new DoubleAnimation(fromOpacity, 0, duration) { EasingFunction = ease };
+
+        closeX.Completed += (_, _) =>
+        {
+            SpeedPopup.IsOpen = false;
+            isSpeedPopupClosing = false;
+        };
+
+        SpeedPopupScale.BeginAnimation(ScaleTransform.ScaleXProperty, closeX);
+        SpeedPopupScale.BeginAnimation(ScaleTransform.ScaleYProperty, closeY);
+        border.BeginAnimation(UIElement.OpacityProperty, closeOpacity);
+    }
+
     private void SpeedPopupCloseTimer_Tick(object? sender, EventArgs e)
     {
         speedPopupCloseTimer.Stop();
@@ -647,7 +712,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             return;
         }
 
-        SpeedPopup.IsOpen = false;
+        AnimateSpeedPopupOut();
     }
 
     private bool IsMouseOverSafeZone()
@@ -689,7 +754,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             new Rect(0, 0, SpeedBtn.ActualWidth, SpeedBtn.ActualHeight));
         if (!btnBounds.Contains(pos))
         {
-            SpeedPopup.IsOpen = false;
+            AnimateSpeedPopupOut();
         }
     }
 
@@ -707,6 +772,14 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private void SpeedBtn_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
     {
         speedPopupCloseTimer.Stop();
+
+        if (isSpeedPopupClosing)
+        {
+            SpeedPopup.IsOpen = true;
+            AnimateSpeedPopupIn();
+            return;
+        }
+
         bool wasClosed = !SpeedPopup.IsOpen;
         SpeedPopup.IsOpen = true;
         if (wasClosed)
@@ -716,6 +789,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
                 if (SpeedPopup.Child != null)
                     SpeedPopup.HorizontalOffset = (SpeedBtn.ActualWidth - SpeedPopup.Child.RenderSize.Width) / 2;
                 HighlightSpeedOption(currentSpeed);
+                AnimateSpeedPopupIn();
             }), DispatcherPriority.Loaded);
         }
     }
@@ -729,6 +803,11 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private void SpeedPopup_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
     {
         speedPopupCloseTimer.Stop();
+        if (isSpeedPopupClosing)
+        {
+            SpeedPopup.IsOpen = true;
+            AnimateSpeedPopupIn();
+        }
     }
 
     private void SpeedPopup_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)

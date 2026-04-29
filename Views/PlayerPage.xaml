@@ -642,11 +642,15 @@
                                 MouseLeave="SpeedBtn_MouseLeave"/>
                         <Popup x:Name="SpeedPopup" AllowsTransparency="True"
                                Placement="Top" PlacementTarget="{Binding ElementName=SpeedBtn}"
-                               VerticalOffset="-10" StaysOpen="True"
-                               PopupAnimation="Fade">
+                               VerticalOffset="-10" StaysOpen="True">
                             <Border Background="#E6282828" CornerRadius="12" Padding="4"
+                                    RenderTransformOrigin="0.5,1"
+                                    Opacity="0"
                                     MouseEnter="SpeedPopup_MouseEnter"
                                     MouseLeave="SpeedPopup_MouseLeave">
+                                <Border.RenderTransform>
+                                    <ScaleTransform x:Name="SpeedPopupScale" ScaleX="0" ScaleY="0"/>
+                                </Border.RenderTransform>
                                 <StackPanel x:Name="SpeedOptionsPanel">
                                     <Button x:Name="SpeedOpt_0_5"  Content="0.5x"  Style="{StaticResource SpeedOptionButtonStyle}" Click="SpeedOption_Click" Tag="0.5"/>
                                     <Button x:Name="SpeedOpt_0_75" Content="0.75x" Style="{StaticResource SpeedOptionButtonStyle}" Click="SpeedOption_Click" Tag="0.75"/>
