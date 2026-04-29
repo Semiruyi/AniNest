@@ -161,7 +161,7 @@ public partial class FullscreenWindow : Window
         Width  = screen.Bounds.Width  * 96.0 / targetDpiX;
         Height = screen.Bounds.Height * 96.0 / targetDpiY;
 
-        // 计算"退回到原始位置"的变换
+        // 计算"退回到原始位置"的变换（视频居中缩放）
         double origCenterX = fromRect.Left + fromRect.Width / 2;
         double origCenterY = fromRect.Top + fromRect.Height / 2;
         double finalCenterX = Left + Width / 2;
@@ -180,11 +180,29 @@ public partial class FullscreenWindow : Window
         VideoImage.RenderTransformOrigin = new Point(0.5, 0.5);
         VideoImage.RenderTransform = group;
 
+        // 图标位移：基于右下角位置计算（图标 80x80, Margin="0,0,32,24"）
+        // 图标中心在 fromRect 中: (fromRect.Right - 72, fromRect.Bottom - 64)
+        // 图标中心在全屏中:   (Left + Width - 72, Top + Height - 64)
+        double iconTransX = fromRect.Right - Left - Width;
+        double iconTransY = fromRect.Bottom - Top - Height;
+
+        PauseBigIconFSTranslate.X = iconTransX;
+        PauseBigIconFSTranslate.Y = iconTransY;
+
         VideoImage.Source = mediaController!.VideoBitmap;
         Show();
 
-        if (mediaController?.IsPlaying == false)
-            AnimatePauseBigIn();
+        bool wasPaused = mediaController?.IsPlaying == false;
+        if (wasPaused)
+        {
+            // 直接显示，不走入场动画，由位置动画接管
+            PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            PauseBigIcon.BeginAnimation(OpacityProperty, null);
+            PauseBigIconScale.ScaleX = 1;
+            PauseBigIconScale.ScaleY = 1;
+            PauseBigIcon.Opacity = 1;
+        }
 
         Keyboard.Focus(this);
 
@@ -196,10 +214,19 @@ public partial class FullscreenWindow : Window
         var tx = new DoubleAnimation(transX, 0.0, duration) { EasingFunction = ease };
         var ty = new DoubleAnimation(transY, 0.0, duration) { EasingFunction = ease };
 
+        var iconTX = new DoubleAnimation(iconTransX, 0.0, duration) { EasingFunction = ease };
+        var iconTY = new DoubleAnimation(iconTransY, 0.0, duration) { EasingFunction = ease };
+
         sx.Completed += (_, _) =>
         {
             VideoImage.BeginAnimation(UIElement.RenderTransformProperty, null);
             VideoImage.RenderTransform = Transform.Identity;
+
+            PauseBigIconFSTranslate.BeginAnimation(TranslateTransform.XProperty, null);
+            PauseBigIconFSTranslate.BeginAnimation(TranslateTransform.YProperty, null);
+            PauseBigIconFSTranslate.X = 0;
+            PauseBigIconFSTranslate.Y = 0;
+
             isAnimating = false;
         };
 
@@ -207,6 +234,9 @@ public partial class FullscreenWindow : Window
         scale.BeginAnimation(ScaleTransform.ScaleYProperty, sy);
         translate.BeginAnimation(TranslateTransform.XProperty, tx);
         translate.BeginAnimation(TranslateTransform.YProperty, ty);
+
+        PauseBigIconFSTranslate.BeginAnimation(TranslateTransform.XProperty, iconTX);
+        PauseBigIconFSTranslate.BeginAnimation(TranslateTransform.YProperty, iconTY);
     }
 
     // ========== 退出全屏动画 ==========
@@ -241,6 +271,13 @@ public partial class FullscreenWindow : Window
         VideoImage.RenderTransformOrigin = new Point(0.5, 0.5);
         VideoImage.RenderTransform = group;
 
+        // 图标位移：基于右下角位置计算（图标 80x80, Margin="0,0,32,24"）
+        double iconTransX = originalVideoRect.Right - Left - Width;
+        double iconTransY = originalVideoRect.Bottom - Top - Height;
+
+        PauseBigIconFSTranslate.X = 0;
+        PauseBigIconFSTranslate.Y = 0;
+
         var duration = TimeSpan.FromMilliseconds(350);
         var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
 
@@ -249,10 +286,19 @@ public partial class FullscreenWindow : Window
         var tx = new DoubleAnimation(0.0, transX, duration) { EasingFunction = ease };
         var ty = new DoubleAnimation(0.0, transY, duration) { EasingFunction = ease };
 
+        var iconTX = new DoubleAnimation(0.0, iconTransX, duration) { EasingFunction = ease };
+        var iconTY = new DoubleAnimation(0.0, iconTransY, duration) { EasingFunction = ease };
+
         sx.Completed += (_, _) =>
         {
             VideoImage.BeginAnimation(UIElement.RenderTransformProperty, null);
             VideoImage.RenderTransform = Transform.Identity;
+
+            PauseBigIconFSTranslate.BeginAnimation(TranslateTransform.XProperty, null);
+            PauseBigIconFSTranslate.BeginAnimation(TranslateTransform.YProperty, null);
+            PauseBigIconFSTranslate.X = 0;
+            PauseBigIconFSTranslate.Y = 0;
+
             Hide();
             VideoImage.Source = null;
             isAnimating = false;
@@ -263,6 +309,9 @@ public partial class FullscreenWindow : Window
         scale.BeginAnimation(ScaleTransform.ScaleYProperty, sy);
         translate.BeginAnimation(TranslateTransform.XProperty, tx);
         translate.BeginAnimation(TranslateTransform.YProperty, ty);
+
+        PauseBigIconFSTranslate.BeginAnimation(TranslateTransform.XProperty, iconTX);
+        PauseBigIconFSTranslate.BeginAnimation(TranslateTransform.YProperty, iconTY);
     }
 
     // ========== 鼠标边缘检测 ==========

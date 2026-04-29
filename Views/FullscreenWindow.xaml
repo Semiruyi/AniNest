@@ -21,7 +21,10 @@
                Opacity="0"
                RenderTransformOrigin="0.5,0.5">
             <Image.RenderTransform>
-                <ScaleTransform x:Name="PauseBigIconScale" ScaleX="0" ScaleY="0"/>
+                <TransformGroup>
+                    <ScaleTransform x:Name="PauseBigIconScale" ScaleX="0" ScaleY="0"/>
+                    <TranslateTransform x:Name="PauseBigIconFSTranslate" X="0" Y="0"/>
+                </TransformGroup>
             </Image.RenderTransform>
         </Image>
     </Grid>
