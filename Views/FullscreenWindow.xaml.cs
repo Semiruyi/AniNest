@@ -8,6 +8,7 @@ using System.Windows.Threading;
 using LocalPlayer.Helpers;
 using LocalPlayer.Models;
 using LocalPlayer.Services;
+using LocalPlayer.Views.Controllers;
 
 // 消歧义：UseWindowsForms 隐式导入与 WPF 类型冲突
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
@@ -30,13 +31,10 @@ public partial class FullscreenWindow : Window
     private bool isClosing;
     private Rect originalVideoRect;
 
-    // 右键长按三倍速
-    private float speedBeforeHold = 1.0f;
-    private readonly DispatcherTimer rightHoldTimer = new() { Interval = TimeSpan.FromMilliseconds(350) };
-    private bool isRightHolding;
-
-    // 单击/双击检测
-    private readonly DispatcherTimer singleClickTimer = new() { Interval = TimeSpan.FromMilliseconds(400) };
+    // 共享控制器
+    private PauseOverlayController _pauseOverlay = null!;
+    private RightHoldSpeedController _rightHold = null!;
+    private ClickRouter _clickRouter = null!;
 
     // 控制栏/选集自动隐藏
     private readonly DispatcherTimer controlBarHideTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
@@ -46,20 +44,10 @@ public partial class FullscreenWindow : Window
     {
         InitializeComponent();
 
-        singleClickTimer.Tick += (_, _) =>
-        {
-            singleClickTimer.Stop();
-            mediaController?.TogglePlayPause();
-        };
-
-        rightHoldTimer.Tick += (_, _) =>
-        {
-            rightHoldTimer.Stop();
-            isRightHolding = true;
-            speedBeforeHold = ControlBar.CurrentSpeed;
-            mediaController!.Rate = 3.0f;
-            ControlBar.UpdateSpeedButtonText(3.0f);
-        };
+        _pauseOverlay = new PauseOverlayController(PauseBigIconScale, PauseBigIcon);
+        _clickRouter = new ClickRouter(
+            () => mediaController?.TogglePlayPause(),
+            () => ExitRequested?.Invoke(this, EventArgs.Empty));
 
         controlBarHideTimer.Tick += (_, _) =>
         {
@@ -93,36 +81,13 @@ public partial class FullscreenWindow : Window
     }
 
     private void VideoImage_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        if (e.ClickCount >= 2)
-        {
-            singleClickTimer.Stop();
-            ExitRequested?.Invoke(this, EventArgs.Empty);
-            e.Handled = true;
-            return;
-        }
-        singleClickTimer.Stop();
-        singleClickTimer.Start();
-    }
+        => _clickRouter.OnMouseDown(e);
 
     private void VideoImage_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        rightHoldTimer.Stop();
-        rightHoldTimer.Start();
-        e.Handled = true;
-    }
+        => _rightHold.OnMouseDown(e);
 
     private void VideoImage_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
-    {
-        rightHoldTimer.Stop();
-        if (isRightHolding)
-        {
-            isRightHolding = false;
-            mediaController!.Rate = speedBeforeHold;
-            ControlBar.UpdateSpeedButtonText(speedBeforeHold);
-        }
-        e.Handled = true;
-    }
+        => _rightHold.OnMouseUp(e);
 
     // ========== 初始化 ==========
 
@@ -132,11 +97,16 @@ public partial class FullscreenWindow : Window
         mediaController = mediaCtrl;
         inputHandler = input;
 
-        mediaController.Playing += (_, _) => Dispatcher.Invoke(AnimatePauseBigOut);
-        mediaController.Paused += (_, _) => Dispatcher.Invoke(AnimatePauseBigIn);
-        mediaController.Stopped += (_, _) => Dispatcher.Invoke(AnimatePauseBigOut);
+        mediaController.Playing += (_, _) => Dispatcher.Invoke(_pauseOverlay.AnimateOut);
+        mediaController.Paused += (_, _) => Dispatcher.Invoke(_pauseOverlay.AnimateIn);
+        mediaController.Stopped += (_, _) => Dispatcher.Invoke(_pauseOverlay.AnimateOut);
 
         ControlBar.Setup(mediaCtrl, input, thumbnailGenerator);
+
+        _rightHold = new RightHoldSpeedController(
+            mediaCtrl,
+            () => ControlBar.CurrentSpeed,
+            speed => ControlBar.UpdateSpeedButtonText(speed));
         ControlBar.IsFullscreen = true;
 
         // 控制栏按钮 → 本地处理
@@ -259,14 +229,7 @@ public partial class FullscreenWindow : Window
 
         bool wasPaused = mediaController?.IsPlaying == false;
         if (wasPaused)
-        {
-            PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-            PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-            PauseBigIcon.BeginAnimation(OpacityProperty, null);
-            PauseBigIconScale.ScaleX = 1;
-            PauseBigIconScale.ScaleY = 1;
-            PauseBigIcon.Opacity = 1;
-        }
+            _pauseOverlay.ShowImmediate();
 
         Keyboard.Focus(this);
 
@@ -471,23 +434,6 @@ public partial class FullscreenWindow : Window
         if (isAnimating) { e.Handled = true; return; }
         if (inputHandler?.HandleKeyDown(e, isFullscreen: true) == true)
             e.Handled = true;
-    }
-
-    // ========== 暂停大图标动画 ==========
-
-    private void AnimatePauseBigIn()
-    {
-        PauseBigIconScale.ScaleX = 0;
-        PauseBigIconScale.ScaleY = 0;
-        PauseBigIcon.Opacity = 0;
-        AnimationHelper.AnimateScaleTransform(PauseBigIconScale, 1, 250, AnimationHelper.EaseOut);
-        AnimationHelper.Animate(PauseBigIcon, UIElement.OpacityProperty, 0, 1, 250, AnimationHelper.EaseOut);
-    }
-
-    private void AnimatePauseBigOut()
-    {
-        AnimationHelper.AnimateScaleTransform(PauseBigIconScale, 0, 180, AnimationHelper.EaseIn);
-        AnimationHelper.AnimateFromCurrent(PauseBigIcon, UIElement.OpacityProperty, 0, 180, AnimationHelper.EaseIn);
     }
 
     // ========== 工具 ==========

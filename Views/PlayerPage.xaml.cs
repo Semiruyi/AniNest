@@ -12,6 +12,7 @@ using System.Windows.Threading;
 using LocalPlayer.Helpers;
 using LocalPlayer.Models;
 using LocalPlayer.Services;
+using LocalPlayer.Views.Controllers;
 
 // 消歧义：UseWindowsForms 隐式导入与 WPF 类型冲突
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
@@ -31,8 +32,10 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private readonly PlayerInputHandler inputHandler = new();
     private readonly ThumbnailGenerator _thumbnailGenerator = ThumbnailGenerator.Instance;
     private readonly DispatcherTimer saveProgressTimer;
-    private readonly DispatcherTimer singleClickTimer;
-    private readonly DispatcherTimer rightHoldTimer;
+
+    private PauseOverlayController _pauseOverlay = null!;
+    private RightHoldSpeedController _rightHold = null!;
+    private ClickRouter _clickRouter = null!;
 
     private string currentFolderPath = "";
     private string currentFolderName = "";
@@ -42,8 +45,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private string? pendingLoadFolderName;
 
     private float currentSpeed = 1.0f;
-    private float speedBeforeHold = 1.0f;
-    private bool isRightHolding;
 
     private Window? parentWindow;
     private bool isFullscreen = false;
@@ -72,11 +73,15 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         saveProgressTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         saveProgressTimer.Tick += SaveProgressTimer_Tick;
 
-        singleClickTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
-        singleClickTimer.Tick += SingleClickTimer_Tick;
-
-        rightHoldTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
-        rightHoldTimer.Tick += RightHoldTimer_Tick;
+        // 三个共享控制器
+        _pauseOverlay = new PauseOverlayController(PauseBigIconScale, PauseBigIcon);
+        _rightHold = new RightHoldSpeedController(
+            mediaController,
+            () => currentSpeed,
+            speed => ControlBar.UpdateSpeedButtonText(speed));
+        _clickRouter = new ClickRouter(
+            () => mediaController.TogglePlayPause(),
+            () => ToggleFullscreen());
 
         inputHandler.TogglePlayPause += (_, _) => mediaController.TogglePlayPause();
         inputHandler.SeekForward += (_, _) => mediaController.SeekForward(5000);
@@ -212,12 +217,9 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             mediaController.Initialize();
             VideoImage.Source = mediaController.VideoBitmap;
 
-            mediaController.Playing += (s, ev) =>
-                Dispatcher.Invoke(AnimatePauseBigOut);
-            mediaController.Paused += (s, ev) =>
-                Dispatcher.Invoke(AnimatePauseBigIn);
-            mediaController.Stopped += (s, ev) =>
-                Dispatcher.Invoke(AnimatePauseBigOut);
+            mediaController.Playing += (_, _) => Dispatcher.Invoke(_pauseOverlay.AnimateOut);
+            mediaController.Paused += (_, _) => Dispatcher.Invoke(_pauseOverlay.AnimateIn);
+            mediaController.Stopped += (_, _) => Dispatcher.Invoke(_pauseOverlay.AnimateOut);
 
             saveProgressTimer.Start();
 
@@ -406,23 +408,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         if (e.Handled) return;
         Keyboard.Focus(this);
-
-        if (e.ClickCount >= 2)
-        {
-            singleClickTimer.Stop();
-            ToggleFullscreen();
-            e.Handled = true;
-            return;
-        }
-
-        singleClickTimer.Stop();
-        singleClickTimer.Start();
-    }
-
-    private void SingleClickTimer_Tick(object? sender, EventArgs e)
-    {
-        singleClickTimer.Stop();
-        mediaController.TogglePlayPause();
+        _clickRouter.OnMouseDown(e);
     }
 
     private void PlayerPage_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
@@ -433,23 +419,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private void PlayerPage_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
     {
         Log($"LostKeyboardFocus: NewFocus={e.NewFocus?.GetType().Name}");
-    }
-
-    // ========== 暂停大图标动画 ==========
-
-    private void AnimatePauseBigIn()
-    {
-        PauseBigIconScale.ScaleX = 0;
-        PauseBigIconScale.ScaleY = 0;
-        PauseBigIcon.Opacity = 0;
-        AnimationHelper.AnimateScaleTransform(PauseBigIconScale, 1, 250, AnimationHelper.EaseOut);
-        AnimationHelper.Animate(PauseBigIcon, UIElement.OpacityProperty, 0, 1, 250, AnimationHelper.EaseOut);
-    }
-
-    private void AnimatePauseBigOut()
-    {
-        AnimationHelper.AnimateScaleTransform(PauseBigIconScale, 0, 180, AnimationHelper.EaseIn);
-        AnimationHelper.AnimateFromCurrent(PauseBigIcon, UIElement.OpacityProperty, 0, 180, AnimationHelper.EaseIn);
     }
 
     // ========== 全屏切换 ==========
@@ -521,40 +490,16 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     // ========== 右键长按三倍速 ==========
 
-    private void RightHoldTimer_Tick(object? sender, EventArgs e)
-    {
-        rightHoldTimer.Stop();
-        speedBeforeHold = currentSpeed;
-        isRightHolding = true;
-        mediaController.Rate = 3.0f;
-        ControlBar.UpdateSpeedButtonText(3.0f);
-    }
-
     private void VideoContainer_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        rightHoldTimer.Stop();
-        rightHoldTimer.Start();
-        e.Handled = true;
-    }
+        => _rightHold.OnMouseDown(e);
 
     private void VideoContainer_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
-    {
-        rightHoldTimer.Stop();
-        if (isRightHolding)
-        {
-            isRightHolding = false;
-            mediaController.Rate = speedBeforeHold;
-            ControlBar.UpdateSpeedButtonText(speedBeforeHold);
-        }
-        e.Handled = true;
-    }
+        => _rightHold.OnMouseUp(e);
 
     public void Dispose()
     {
         Log("Dispose 开始");
         saveProgressTimer.Stop();
-        singleClickTimer.Stop();
-        rightHoldTimer.Stop();
         SaveCurrentProgress();
 
         ControlBar.Dispose();
