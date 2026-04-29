@@ -708,7 +708,12 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         speedPopupCloseTimer.Stop();
         SpeedPopup.IsOpen = true;
-        _ = Dispatcher.BeginInvoke(new Action(() => HighlightSpeedOption(currentSpeed)), DispatcherPriority.Loaded);
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (SpeedPopup.Child != null)
+                SpeedPopup.HorizontalOffset = (SpeedBtn.ActualWidth - SpeedPopup.Child.RenderSize.Width) / 2;
+            HighlightSpeedOption(currentSpeed);
+        }), DispatcherPriority.Loaded);
     }
 
     private void SpeedBtn_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
