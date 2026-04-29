@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Windows.Input;
 
 namespace LocalPlayer.Models;
 
@@ -8,6 +9,14 @@ public class AppSettings
     public Dictionary<string, VideoProgress> VideoProgress { get; set; } = new();
     public Dictionary<string, FolderProgress> FolderProgress { get; set; } = new();
     public int ThumbnailExpiryDays { get; set; } = 30; // 0 = 永不过期
+    public Dictionary<string, Key> KeyBindings { get; set; } = new();
+}
+
+public class KeyBindingInfo
+{
+    public string ActionName { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public Key DefaultKey { get; set; }
 }
 
 public class FolderInfo

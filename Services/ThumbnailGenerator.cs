@@ -649,7 +649,7 @@ public class ThumbnailGenerator : IDisposable
         int expiryDays = 30;
         try
         {
-            var settings = new SettingsService();
+            var settings = SettingsService.Instance;
             expiryDays = settings.GetThumbnailExpiryDays();
         }
         catch { }

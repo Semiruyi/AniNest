@@ -18,7 +18,7 @@ namespace LocalPlayer.Views;
 
 public partial class MainPage : System.Windows.Controls.UserControl
 {
-    private readonly SettingsService settingsService = new();
+    private readonly SettingsService settingsService = SettingsService.Instance;
     private readonly ThumbnailGenerator thumbnailGenerator = ThumbnailGenerator.Instance;
     private readonly ObservableCollection<FolderListItem> folderItems = new();
 

@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Windows.Input;
+using LocalPlayer.Models;
+using WinKey = System.Windows.Input.Key;
+using WinKeyEventArgs = System.Windows.Input.KeyEventArgs;
 
 namespace LocalPlayer.Services;
 
@@ -17,6 +20,9 @@ public class PlayerInputHandler
         catch { }
     }
 
+    private readonly SettingsService settingsService = SettingsService.Instance;
+    private Dictionary<WinKey, string> keyToAction = new();
+
     public event EventHandler? TogglePlayPause;
     public event EventHandler? SeekForward;
     public event EventHandler? SeekBackward;
@@ -26,80 +32,83 @@ public class PlayerInputHandler
     public event EventHandler? NextEpisode;
     public event EventHandler? PreviousEpisode;
 
-    public bool HandleKeyDown(System.Windows.Input.KeyEventArgs e, bool isFullscreen)
+    public void ReloadBindings()
     {
-        Log($"HandleKeyDown 被调用: Key={e.Key}, IsFullscreen={isFullscreen}, Handled={e.Handled}");
-
-        if (IsFunctionKey(e.Key))
+        Log("ReloadBindings: 开始重新加载快捷键...");
+        settingsService.Reload();
+        var bindings = settingsService.GetAllKeyBindings();
+        Log($"ReloadBindings: GetAllKeyBindings 返回 {bindings.Count} 个绑定");
+        keyToAction = new Dictionary<WinKey, string>();
+        foreach (var kv in bindings)
         {
-            Log($"识别到功能键: {e.Key}");
+            Log($"ReloadBindings:   {kv.Key} = {kv.Value} ({(int)kv.Value})");
+            if (kv.Value != WinKey.None)
+                keyToAction[kv.Value] = kv.Key;
         }
-        else
+        Log($"ReloadBindings: 最终加载了 {keyToAction.Count} 个快捷键到映射表");
+    }
+
+    public Dictionary<string, WinKey> GetCurrentBindings()
+    {
+        return settingsService.GetAllKeyBindings();
+    }
+
+    public void SetBinding(string actionName, WinKey key)
+    {
+        settingsService.SetKeyBinding(actionName, key);
+        ReloadBindings();
+    }
+
+    public static List<KeyBindingInfo> GetDefaultBindings()
+    {
+        return SettingsService.GetDefaultKeyBindings();
+    }
+
+    public bool HandleKeyDown(WinKeyEventArgs e, bool isFullscreen)
+    {
+        Log($"HandleKeyDown: Key={e.Key}, IsFullscreen={isFullscreen}");
+
+        if (keyToAction.Count == 0)
+            ReloadBindings();
+
+        if (!keyToAction.TryGetValue(e.Key, out var actionName))
         {
-            Log($"非功能键，忽略: {e.Key}");
+            Log($"未绑定的按键: {e.Key}");
             return false;
         }
 
-        switch (e.Key)
+        Log($"匹配到动作: {actionName}");
+
+        switch (actionName)
         {
-            case Key.Space:
-                Log("触发 TogglePlayPause");
+            case "TogglePlayPause":
                 TogglePlayPause?.Invoke(this, EventArgs.Empty);
                 return true;
-            case Key.Left:
-                Log("触发 SeekBackward");
+            case "SeekBackward":
+            case "SeekBackwardAlt":
                 SeekBackward?.Invoke(this, EventArgs.Empty);
                 return true;
-            case Key.Right:
-                Log("触发 SeekForward");
+            case "SeekForward":
+            case "SeekForwardAlt":
                 SeekForward?.Invoke(this, EventArgs.Empty);
                 return true;
-            case Key.F:
-                Log("触发 ToggleFullscreen");
+            case "ToggleFullscreen":
                 ToggleFullscreen?.Invoke(this, EventArgs.Empty);
                 return true;
-            case Key.Escape:
+            case "BackOrExitFullscreen":
                 if (isFullscreen)
-                {
-                    Log("触发 ExitFullscreen");
                     ExitFullscreen?.Invoke(this, EventArgs.Empty);
-                }
                 else
-                {
-                    Log("触发 Back");
                     Back?.Invoke(this, EventArgs.Empty);
-                }
                 return true;
-            case Key.J:
-                Log("触发 SeekBackward (J)");
-                SeekBackward?.Invoke(this, EventArgs.Empty);
-                return true;
-            case Key.L:
-                Log("触发 SeekForward (L)");
-                SeekForward?.Invoke(this, EventArgs.Empty);
-                return true;
-            case Key.N:
-            case Key.PageDown:
-                Log($"触发 NextEpisode (Key={e.Key})");
+            case "NextEpisode":
                 NextEpisode?.Invoke(this, EventArgs.Empty);
                 return true;
-            case Key.P:
-            case Key.PageUp:
-                Log($"触发 PreviousEpisode (Key={e.Key})");
+            case "PreviousEpisode":
                 PreviousEpisode?.Invoke(this, EventArgs.Empty);
                 return true;
             default:
                 return false;
         }
-    }
-
-    private static bool IsFunctionKey(Key key)
-    {
-        return key == Key.Left || key == Key.Right ||
-               key == Key.Space || key == Key.F ||
-               key == Key.Escape ||
-               key == Key.J || key == Key.L ||
-               key == Key.N || key == Key.P ||
-               key == Key.PageUp || key == Key.PageDown;
     }
 }

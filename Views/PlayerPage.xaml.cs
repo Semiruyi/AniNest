@@ -29,7 +29,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     }
 
     private readonly MediaPlayerController mediaController = new();
-    private readonly SettingsService settingsService = new();
+    private readonly SettingsService settingsService = SettingsService.Instance;
     private readonly PlayerInputHandler inputHandler = new();
     private readonly DispatcherTimer saveProgressTimer;
     private readonly DispatcherTimer controlBarHideTimer;
@@ -125,6 +125,9 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         inputHandler.PreviousEpisode += (_, _) => PlayPrevious();
         inputHandler.ToggleFullscreen += (_, _) => ToggleFullscreen();
         inputHandler.ExitFullscreen += (_, _) => ExitFullscreen();
+
+        inputHandler.ReloadBindings();
+        UpdateButtonTooltips();
 
         SpeedPopup.CustomPopupPlacementCallback = (_, targetSize, _2) =>
         {
@@ -459,6 +462,34 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         PlaylistBorder.Visibility = PlaylistBorder.Visibility == Visibility.Visible
             ? Visibility.Collapsed
             : Visibility.Visible;
+    }
+
+    private void SettingsBtn_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new KeyBindingsWindow(inputHandler)
+        {
+            Owner = Window.GetWindow(this)
+        };
+        window.ShowDialog();
+        UpdateButtonTooltips();
+    }
+
+    private string KeyToDisplayString(System.Windows.Input.Key key)
+    {
+        return key.ToString()
+            .Replace("Left", "←").Replace("Right", "→")
+            .Replace("Space", "空格").Replace("Escape", "Esc")
+            .Replace("PageUp", "PgUp").Replace("PageDown", "PgDn")
+            .Replace("Return", "Enter");
+    }
+
+    private void UpdateButtonTooltips()
+    {
+        var bindings = inputHandler.GetCurrentBindings();
+        PlayPauseBtn.ToolTip = $"播放/暂停 ({KeyToDisplayString(bindings["TogglePlayPause"])})";
+        PreviousBtn.ToolTip = $"上一集 ({KeyToDisplayString(bindings["PreviousEpisode"])})";
+        NextBtn.ToolTip = $"下一集 ({KeyToDisplayString(bindings["NextEpisode"])})";
+        FullscreenBtn.ToolTip = $"全屏 ({KeyToDisplayString(bindings["ToggleFullscreen"])})";
     }
 
     private void VideoContainer_MouseDown(object sender, MouseButtonEventArgs e)
