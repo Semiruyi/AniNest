@@ -36,5 +36,19 @@ public class PlaylistItem : INotifyPropertyChanged
         }
     }
 
+    private int _thumbnailProgress;
+    public int ThumbnailProgress
+    {
+        get => _thumbnailProgress;
+        set
+        {
+            if (_thumbnailProgress != value)
+            {
+                _thumbnailProgress = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ThumbnailProgress)));
+            }
+        }
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 }

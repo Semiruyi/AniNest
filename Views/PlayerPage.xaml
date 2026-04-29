@@ -11,6 +11,8 @@
         <ResourceDictionary>
             <helpers:CubicBezierEase x:Key="IOSEase" EasingMode="EaseIn"/>
             <helpers:CubicBezierEase x:Key="IOSEaseIn" EasingMode="EaseIn"/>
+            <helpers:ProgressToPieConverter x:Key="ProgressToPieConverter"/>
+            <helpers:ProgressToVisibilityConverter x:Key="ProgressToVisibilityConverter"/>
 
             <Style x:Key="IconButton" TargetType="Button">
                 <Setter Property="BorderThickness" Value="0"/>
@@ -152,6 +154,15 @@
                                             <EllipseGeometry RadiusX="10" RadiusY="10" Center="10,10"/>
                                         </Image.Clip>
                                     </Image>
+                                </Grid>
+                                <!-- 生成进度饼图 -->
+                                <Grid HorizontalAlignment="Right" VerticalAlignment="Top"
+                                      Width="20" Height="20" Margin="0,-3,-3,0"
+                                      Visibility="{Binding ThumbnailProgress, Converter={StaticResource ProgressToVisibilityConverter}}">
+                                    <Ellipse Fill="#48484A" Width="20" Height="20"/>
+                                    <Path Fill="{StaticResource AccentBlue}" Opacity="0.85"
+                                          Width="20" Height="20"
+                                          Data="{Binding ThumbnailProgress, Converter={StaticResource ProgressToPieConverter}}"/>
                                 </Grid>
                             </Grid>
                             <ControlTemplate.Triggers>
@@ -699,20 +710,20 @@
                         <Border.RenderTransform>
                             <ScaleTransform x:Name="ProgressPopupScale" ScaleX="0.9" ScaleY="0.9"/>
                         </Border.RenderTransform>
-                        <Grid>
-                            <Image x:Name="ThumbnailImage" Stretch="UniformToFill"
-                                   Width="160" Height="90"
-                                   Visibility="Collapsed"/>
-                            <Border Background="#CC000000" CornerRadius="4"
-                                    Padding="6,3"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Bottom">
-                                <TextBlock x:Name="ThumbnailTimeText" Foreground="White"
-                                           FontSize="12"
-                                           FontFamily="Segoe UI, Microsoft YaHei, sans-serif"
-                                           Text=""/>
-                            </Border>
-                        </Grid>
+                            <Grid>
+                                <Image x:Name="ThumbnailImage" Stretch="UniformToFill"
+                                       Width="160" Height="90"
+                                       Visibility="Collapsed"/>
+                                <Border Background="#CC000000" CornerRadius="4"
+                                        Padding="6,3"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Bottom">
+                                    <TextBlock x:Name="ThumbnailTimeText" Foreground="White"
+                                               FontSize="12"
+                                               FontFamily="Segoe UI, Microsoft YaHei, sans-serif"
+                                               Text=""/>
+                                </Border>
+                            </Grid>
                     </Border>
                 </Popup>
 

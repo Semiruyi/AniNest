@@ -79,6 +79,7 @@ public class ThumbnailGenerator : IDisposable
 
     // Events
     public event EventHandler<ThumbnailProgressEventArgs>? ProgressChanged;
+    public event Action<string, int>? VideoProgress; // videoPath, percent 0-100
     public event Action<string>? VideoReady; // videoPath
 
     // Detection
@@ -419,6 +420,10 @@ public class ThumbnailGenerator : IDisposable
         Directory.CreateDirectory(tmpDir);
         Log($"[Generate] 开始: {Path.GetFileName(task.VideoPath)}, tmpDir={tmpDir}");
 
+        // 获取视频总时长用于计算百分比
+        double totalSec = GetVideoDuration(task.VideoPath);
+        Log($"[Generate] 视频时长: {totalSec:F1}s");
+
         // ffmpeg 命令
         string args = $"-y -i \"{task.VideoPath}\" " +
             "-vf \"fps=1,scale='min(300,iw)':'min(300,ih)':force_original_aspect_ratio=decrease\" " +
@@ -438,6 +443,7 @@ public class ThumbnailGenerator : IDisposable
 
         _currentProcess = new Process { StartInfo = psi };
         _currentTask = task;
+        int lastPercent = -1;
 
         try
         {
@@ -446,7 +452,7 @@ public class ThumbnailGenerator : IDisposable
             _currentProcess.Start();
             Log($"[Generate] ffmpeg 进程已启动, PID={_currentProcess.Id}");
 
-            // 读取 stderr（ffmpeg 将进度写入 stderr）
+            // 读取 stderr，解析 time= 计算百分比，每 1% 变化触发 VideoProgress
             var stderrTask = Task.Run(() =>
             {
                 try
@@ -454,10 +460,23 @@ public class ThumbnailGenerator : IDisposable
                     string? line;
                     while ((line = _currentProcess.StandardError.ReadLine()) != null)
                     {
-                        // 每 10 秒打一次进度
-                        if (line.Contains("time=") && sw.ElapsedMilliseconds % 10000 < 50)
+                        if (totalSec > 0)
                         {
-                            Log($"[Generate] ffmpeg 进度: {line.Trim()}");
+                            int ti = line.IndexOf("time=", StringComparison.Ordinal);
+                            if (ti >= 0)
+                            {
+                                int end = line.IndexOf(' ', ti + 5);
+                                string timeStr = end > ti ? line.Substring(ti + 5, end - ti - 5).Trim() : line.Substring(ti + 5).Trim();
+                                if (TimeSpan.TryParse(timeStr, out var ts))
+                                {
+                                    int percent = (int)(ts.TotalSeconds / totalSec * 100);
+                                    if (percent > lastPercent && percent <= 100)
+                                    {
+                                        lastPercent = percent;
+                                        VideoProgress?.Invoke(task.VideoPath, percent);
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -494,7 +513,8 @@ public class ThumbnailGenerator : IDisposable
 
                 Log($"[Generate] 完成: {Path.GetFileName(task.VideoPath)}, {frameCount} 帧, 耗时 {sw.ElapsedMilliseconds / 1000.0:F1}s");
 
-                // 通知前端该视频缩略图已就绪
+                // 100% 进度 + 就绪通知
+                VideoProgress?.Invoke(task.VideoPath, 100);
                 VideoReady?.Invoke(task.VideoPath);
             }
             else
@@ -739,6 +759,32 @@ public class ThumbnailGenerator : IDisposable
     }
 
     // ========== 工具 ==========
+
+    private double GetVideoDuration(string videoPath)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = _ffmpegPath.Replace("ffmpeg.exe", "ffprobe.exe"),
+                Arguments = $"-v quiet -show_entries format=duration -of csv=p=0 \"{videoPath}\"",
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            };
+            using var proc = Process.Start(psi);
+            if (proc == null) return 0;
+            var output = proc.StandardOutput.ReadToEnd();
+            proc.WaitForExit(5000);
+            if (double.TryParse(output.Trim(), out var sec))
+                return sec;
+        }
+        catch (Exception ex)
+        {
+            Log($"[GetDuration] ffprobe 失败: {ex.Message}");
+        }
+        return 0;
+    }
 
     private static string ComputeMd5(string input)
     {

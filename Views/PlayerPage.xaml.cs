@@ -145,6 +145,23 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         ProgressPopup.PlacementTarget = ProgressSlider;
 
         _thumbnailGenerator.VideoReady += OnVideoThumbnailReady;
+        _thumbnailGenerator.VideoProgress += OnVideoThumbnailProgress;
+    }
+
+    private void OnVideoThumbnailProgress(string videoPath, int percent)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            foreach (var item in PlaylistBox.Items)
+            {
+                if (item is PlaylistItem pi &&
+                    string.Equals(pi.FilePath, videoPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    pi.ThumbnailProgress = percent;
+                    break;
+                }
+            }
+        });
     }
 
     private void OnVideoThumbnailReady(string videoPath)
