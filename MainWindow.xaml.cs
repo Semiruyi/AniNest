@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Animation;
+using LocalPlayer.Helpers;
 using LocalPlayer.Services;
 using LocalPlayer.Views;
 
@@ -69,38 +70,14 @@ public partial class MainWindow : Window
     }
 
     private Task FadeMaskToBlackAsync(int durationMs = 300)
-    {
-        TransitionMask.Visibility = Visibility.Visible;
-        TransitionMask.BeginAnimation(OpacityProperty, null);
-        TransitionMask.Opacity = 0;
-
-        var tcs = new TaskCompletionSource<bool>();
-        var duration = TimeSpan.FromMilliseconds(durationMs);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
-        var anim = new DoubleAnimation(0, 1, duration) { EasingFunction = ease };
-        anim.Completed += (_, _) => tcs.TrySetResult(true);
-        TransitionMask.BeginAnimation(OpacityProperty, anim);
-        return tcs.Task;
-    }
+        => AnimationHelper.FadeInAsync(TransitionMask, durationMs);
 
     private async Task FadeMaskFromBlackAsync(int durationMs = 350)
     {
         TransitionMask.Visibility = Visibility.Visible;
-        TransitionMask.BeginAnimation(OpacityProperty, null);
         TransitionMask.Opacity = 1;
-
-        var tcs = new TaskCompletionSource<bool>();
-        var duration = TimeSpan.FromMilliseconds(durationMs);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
-        var anim = new DoubleAnimation(1, 0, duration) { EasingFunction = ease };
-        anim.Completed += (_, _) =>
-        {
-            TransitionMask.BeginAnimation(OpacityProperty, null);
-            TransitionMask.Visibility = Visibility.Collapsed;
-            tcs.TrySetResult(true);
-        };
-        TransitionMask.BeginAnimation(OpacityProperty, anim);
-        await tcs.Task;
+        await AnimationHelper.FadeOutAsync(TransitionMask, durationMs,
+            onCompleted: () => TransitionMask.Visibility = Visibility.Collapsed);
     }
 
     private async void MainPage_FolderSelected(object? sender, string folderPath, string folderName)

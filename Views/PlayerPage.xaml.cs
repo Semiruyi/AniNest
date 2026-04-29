@@ -10,6 +10,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using LocalPlayer.Helpers;
 using LocalPlayer.Models;
 using LocalPlayer.Services;
 
@@ -730,12 +731,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         if (btn.Template.FindName("AnimScale", btn) is ScaleTransform st)
         {
-            st.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-            st.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-            var ax = new DoubleAnimation(target, duration) { EasingFunction = ease };
-            var ay = new DoubleAnimation(target, duration) { EasingFunction = ease };
-            st.BeginAnimation(ScaleTransform.ScaleXProperty, ax);
-            st.BeginAnimation(ScaleTransform.ScaleYProperty, ay);
+            AnimationHelper.AnimateScaleTransform(st, target, (int)duration.TotalMilliseconds, ease);
         }
     }
 
@@ -743,46 +739,17 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     private void AnimatePauseBigIn()
     {
-        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-        PauseBigIcon.BeginAnimation(OpacityProperty, null);
-
         PauseBigIconScale.ScaleX = 0;
         PauseBigIconScale.ScaleY = 0;
         PauseBigIcon.Opacity = 0;
-
-        var duration = TimeSpan.FromMilliseconds(250);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty,
-            new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
-        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty,
-            new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
-        PauseBigIcon.BeginAnimation(OpacityProperty,
-            new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+        AnimationHelper.AnimateScaleTransform(PauseBigIconScale, 1, 250, AnimationHelper.EaseOut);
+        AnimationHelper.Animate(PauseBigIcon, UIElement.OpacityProperty, 0, 1, 250, AnimationHelper.EaseOut);
     }
 
     private void AnimatePauseBigOut()
     {
-        double fromScaleX = PauseBigIconScale.ScaleX;
-        double fromScaleY = PauseBigIconScale.ScaleY;
-        double fromOpacity = PauseBigIcon.Opacity;
-
-        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-        PauseBigIcon.BeginAnimation(OpacityProperty, null);
-
-        PauseBigIconScale.ScaleX = fromScaleX;
-        PauseBigIconScale.ScaleY = fromScaleY;
-        PauseBigIcon.Opacity = fromOpacity;
-
-        var duration = TimeSpan.FromMilliseconds(180);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseIn };
-        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty,
-            new DoubleAnimation(fromScaleX, 0, duration) { EasingFunction = ease });
-        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty,
-            new DoubleAnimation(fromScaleY, 0, duration) { EasingFunction = ease });
-        PauseBigIcon.BeginAnimation(OpacityProperty,
-            new DoubleAnimation(fromOpacity, 0, duration) { EasingFunction = ease });
+        AnimationHelper.AnimateScaleTransform(PauseBigIconScale, 0, 180, AnimationHelper.EaseIn);
+        AnimationHelper.AnimateFromCurrent(PauseBigIcon, UIElement.OpacityProperty, 0, 180, AnimationHelper.EaseIn);
     }
 
     // ========== 倍速 ==========
@@ -793,19 +760,12 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         var border = SpeedPopup.Child as Border;
         if (border == null) return;
 
-        SpeedPopupScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-        SpeedPopupScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-        border.BeginAnimation(UIElement.OpacityProperty, null);
-
         SpeedPopupScale.ScaleX = 0;
         SpeedPopupScale.ScaleY = 0;
         border.Opacity = 0;
 
-        var duration = TimeSpan.FromMilliseconds(250);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-        SpeedPopupScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
-        SpeedPopupScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
-        border.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+        AnimationHelper.AnimateScaleTransform(SpeedPopupScale, 1, 250, AnimationHelper.EaseOut);
+        AnimationHelper.Animate(border, UIElement.OpacityProperty, 0, 1, 250, AnimationHelper.EaseOut);
     }
 
     private void AnimateSpeedPopupOut()
@@ -821,34 +781,12 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             return;
         }
 
-        // 先快照当前值，再清动画（清完动画值会回落，所以要先读）
-        double fromScaleX = SpeedPopupScale.ScaleX;
-        double fromScaleY = SpeedPopupScale.ScaleY;
-        double fromOpacity = border.Opacity;
-
-        SpeedPopupScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-        SpeedPopupScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-        border.BeginAnimation(UIElement.OpacityProperty, null);
-
-        SpeedPopupScale.ScaleX = fromScaleX;
-        SpeedPopupScale.ScaleY = fromScaleY;
-        border.Opacity = fromOpacity;
-
-        var duration = TimeSpan.FromMilliseconds(180);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseIn };
-        var closeX = new DoubleAnimation(fromScaleX, 0, duration) { EasingFunction = ease };
-        var closeY = new DoubleAnimation(fromScaleY, 0, duration) { EasingFunction = ease };
-        var closeOpacity = new DoubleAnimation(fromOpacity, 0, duration) { EasingFunction = ease };
-
-        closeX.Completed += (_, _) =>
+        AnimationHelper.AnimateScaleTransform(SpeedPopupScale, 0, 180, AnimationHelper.EaseIn);
+        AnimationHelper.AnimateFromCurrent(border, UIElement.OpacityProperty, 0, 180, AnimationHelper.EaseIn, () =>
         {
             SpeedPopup.IsOpen = false;
             isSpeedPopupClosing = false;
-        };
-
-        SpeedPopupScale.BeginAnimation(ScaleTransform.ScaleXProperty, closeX);
-        SpeedPopupScale.BeginAnimation(ScaleTransform.ScaleYProperty, closeY);
-        border.BeginAnimation(UIElement.OpacityProperty, closeOpacity);
+        });
     }
 
     private void SpeedPopupCloseTimer_Tick(object? sender, EventArgs e)
@@ -1165,19 +1103,13 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         var border = ProgressPopup.Child as Border;
         if (border == null) return;
 
-        ProgressPopupScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-        ProgressPopupScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-        border.BeginAnimation(UIElement.OpacityProperty, null);
         ProgressPopupScale.ScaleX = 0.9;
         ProgressPopupScale.ScaleY = 0.9;
         border.Opacity = 0;
         ProgressPopup.IsOpen = true;
 
-        var d = TimeSpan.FromMilliseconds(200);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-        ProgressPopupScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0.9, 1, d) { EasingFunction = ease });
-        ProgressPopupScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(0.9, 1, d) { EasingFunction = ease });
-        border.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, d) { EasingFunction = ease });
+        AnimationHelper.AnimateScaleTransform(ProgressPopupScale, 1, 200, AnimationHelper.EaseOut);
+        AnimationHelper.Animate(border, UIElement.OpacityProperty, 0, 1, 200, AnimationHelper.EaseOut);
     }
 
     private void HideProgressPopup()
@@ -1187,21 +1119,13 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         var border = ProgressPopup.Child as Border;
         if (border == null) { ProgressPopup.IsOpen = false; _isProgressPopupVisible = false; _isProgressPopupClosing = false; return; }
 
-        double sx = ProgressPopupScale.ScaleX, sy = ProgressPopupScale.ScaleY, op = border.Opacity;
-        ProgressPopupScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-        ProgressPopupScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-        border.BeginAnimation(UIElement.OpacityProperty, null);
-        ProgressPopupScale.ScaleX = sx; ProgressPopupScale.ScaleY = sy; border.Opacity = op;
-
-        var d = TimeSpan.FromMilliseconds(150);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseIn };
-        var cx = new DoubleAnimation(sx, 0.9, d) { EasingFunction = ease };
-        var cy = new DoubleAnimation(sy, 0.9, d) { EasingFunction = ease };
-        var co = new DoubleAnimation(op, 0, d) { EasingFunction = ease };
-        co.Completed += (_, _) => { ProgressPopup.IsOpen = false; _isProgressPopupVisible = false; _isProgressPopupClosing = false; };
-        ProgressPopupScale.BeginAnimation(ScaleTransform.ScaleXProperty, cx);
-        ProgressPopupScale.BeginAnimation(ScaleTransform.ScaleYProperty, cy);
-        border.BeginAnimation(UIElement.OpacityProperty, co);
+        AnimationHelper.AnimateScaleTransform(ProgressPopupScale, 0.9, 150, AnimationHelper.EaseIn);
+        AnimationHelper.AnimateFromCurrent(border, UIElement.OpacityProperty, 0, 150, AnimationHelper.EaseIn, () =>
+        {
+            ProgressPopup.IsOpen = false;
+            _isProgressPopupVisible = false;
+            _isProgressPopupClosing = false;
+        });
     }
 
     // ========== JPEG 加载 ==========

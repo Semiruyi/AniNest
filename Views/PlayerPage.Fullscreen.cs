@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using LocalPlayer.Helpers;
 
 // 消歧义：UseWindowsForms 隐式导入与 WPF 类型冲突
 using Point = System.Windows.Point;
@@ -230,13 +231,5 @@ public partial class PlayerPage
     // ========== 透明度动画 ==========
 
     private static void AnimateOpacity(UIElement element, double target, int durationMs = 200)
-    {
-        var current = element.Opacity;
-        element.BeginAnimation(UIElement.OpacityProperty, null);
-        element.Opacity = current;
-        var duration = TimeSpan.FromMilliseconds(durationMs);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
-        var anim = new DoubleAnimation(current, target, duration) { EasingFunction = ease };
-        element.BeginAnimation(UIElement.OpacityProperty, anim);
-    }
+        => AnimationHelper.AnimateFromCurrent(element, UIElement.OpacityProperty, target, durationMs);
 }

@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using LocalPlayer.Helpers;
 
 namespace LocalPlayer.Views;
 
@@ -46,34 +47,19 @@ public partial class PlayerPage
         for (int i = 0; i < buttons.Count; i++)
         {
             var btn = buttons[i];
-            var delay = TimeSpan.FromMilliseconds(i * 35);
+            var delayMs = i * 35;
 
             btn.RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
             var st = new ScaleTransform(0.88, 0.88);
             btn.RenderTransform = st;
             btn.Opacity = 0;
 
-            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-            var dur = TimeSpan.FromMilliseconds(420);
-
-            var scaleAnimX = new DoubleAnimation(0.88, 1.0, dur)
-            {
-                BeginTime = delay,
-                EasingFunction = ease
-            };
-            var scaleAnimY = new DoubleAnimation(0.88, 1.0, dur)
-            {
-                BeginTime = delay,
-                EasingFunction = ease
-            };
-            var opacityAnim = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(320))
-            {
-                BeginTime = delay
-            };
-
-            st.BeginAnimation(ScaleTransform.ScaleXProperty, scaleAnimX);
-            st.BeginAnimation(ScaleTransform.ScaleYProperty, scaleAnimY);
-            btn.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
+            st.BeginAnimation(ScaleTransform.ScaleXProperty,
+                AnimationHelper.CreateAnim(0.88, 1.0, 420, AnimationHelper.EaseOut, delayMs));
+            st.BeginAnimation(ScaleTransform.ScaleYProperty,
+                AnimationHelper.CreateAnim(0.88, 1.0, 420, AnimationHelper.EaseOut, delayMs));
+            btn.BeginAnimation(UIElement.OpacityProperty,
+                AnimationHelper.CreateAnim(0, 1, 320, beginTimeMs: delayMs));
         }
     }
 }

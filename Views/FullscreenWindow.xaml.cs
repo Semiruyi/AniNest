@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using LocalPlayer.Helpers;
 using LocalPlayer.Services;
 
 // 消歧义：UseWindowsForms 隐式导入与 WPF 类型冲突
@@ -357,46 +358,17 @@ public partial class FullscreenWindow : Window
 
     private void AnimatePauseBigIn()
     {
-        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-        PauseBigIcon.BeginAnimation(OpacityProperty, null);
-
         PauseBigIconScale.ScaleX = 0;
         PauseBigIconScale.ScaleY = 0;
         PauseBigIcon.Opacity = 0;
-
-        var duration = TimeSpan.FromMilliseconds(250);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty,
-            new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
-        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty,
-            new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
-        PauseBigIcon.BeginAnimation(OpacityProperty,
-            new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+        AnimationHelper.AnimateScaleTransform(PauseBigIconScale, 1, 250, AnimationHelper.EaseOut);
+        AnimationHelper.Animate(PauseBigIcon, UIElement.OpacityProperty, 0, 1, 250, AnimationHelper.EaseOut);
     }
 
     private void AnimatePauseBigOut()
     {
-        double fromScaleX = PauseBigIconScale.ScaleX;
-        double fromScaleY = PauseBigIconScale.ScaleY;
-        double fromOpacity = PauseBigIcon.Opacity;
-
-        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-        PauseBigIcon.BeginAnimation(OpacityProperty, null);
-
-        PauseBigIconScale.ScaleX = fromScaleX;
-        PauseBigIconScale.ScaleY = fromScaleY;
-        PauseBigIcon.Opacity = fromOpacity;
-
-        var duration = TimeSpan.FromMilliseconds(180);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseIn };
-        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleXProperty,
-            new DoubleAnimation(fromScaleX, 0, duration) { EasingFunction = ease });
-        PauseBigIconScale.BeginAnimation(ScaleTransform.ScaleYProperty,
-            new DoubleAnimation(fromScaleY, 0, duration) { EasingFunction = ease });
-        PauseBigIcon.BeginAnimation(OpacityProperty,
-            new DoubleAnimation(fromOpacity, 0, duration) { EasingFunction = ease });
+        AnimationHelper.AnimateScaleTransform(PauseBigIconScale, 0, 180, AnimationHelper.EaseIn);
+        AnimationHelper.AnimateFromCurrent(PauseBigIcon, UIElement.OpacityProperty, 0, 180, AnimationHelper.EaseIn);
     }
 
     // ========== 清理 ==========

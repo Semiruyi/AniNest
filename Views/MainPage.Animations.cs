@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using LocalPlayer.Helpers;
 using LocalPlayer.Models;
 
 namespace LocalPlayer.Views;
@@ -27,34 +28,19 @@ public partial class MainPage
         for (int i = 0; i < borders.Count; i++)
         {
             var border = borders[i];
-            var delay = TimeSpan.FromMilliseconds(i * 35);
+            var delayMs = i * 35;
 
             border.RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
             var st = new ScaleTransform(0, 0);
             border.RenderTransform = st;
             border.Opacity = 0;
 
-            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-            var dur = TimeSpan.FromMilliseconds(420);
-
-            var scaleAnimX = new DoubleAnimation(0, 1.0, dur)
-            {
-                BeginTime = delay,
-                EasingFunction = ease
-            };
-            var scaleAnimY = new DoubleAnimation(0, 1.0, dur)
-            {
-                BeginTime = delay,
-                EasingFunction = ease
-            };
-            var opacityAnim = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(320))
-            {
-                BeginTime = delay
-            };
-
-            st.BeginAnimation(ScaleTransform.ScaleXProperty, scaleAnimX);
-            st.BeginAnimation(ScaleTransform.ScaleYProperty, scaleAnimY);
-            border.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
+            st.BeginAnimation(ScaleTransform.ScaleXProperty,
+                AnimationHelper.CreateAnim(0, 1.0, 420, AnimationHelper.EaseOut, delayMs));
+            st.BeginAnimation(ScaleTransform.ScaleYProperty,
+                AnimationHelper.CreateAnim(0, 1.0, 420, AnimationHelper.EaseOut, delayMs));
+            border.BeginAnimation(UIElement.OpacityProperty,
+                AnimationHelper.CreateAnim(0, 1, 320, beginTimeMs: delayMs));
         }
 
         FolderList.Opacity = 1;
@@ -142,20 +128,16 @@ public partial class MainPage
             if (border == null) return;
 
             border.RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
-            border.RenderTransform = new ScaleTransform(0, 0);
+            var st = new ScaleTransform(0, 0);
+            border.RenderTransform = st;
             border.Opacity = 0;
 
-            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-            var dur = TimeSpan.FromMilliseconds(380);
-
-            var st = (ScaleTransform)border.RenderTransform;
-            var scaleAnimX = new DoubleAnimation(0, 1.0, dur) { EasingFunction = ease };
-            var scaleAnimY = new DoubleAnimation(0, 1.0, dur) { EasingFunction = ease };
-            var opacityAnim = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(300));
-
-            st.BeginAnimation(ScaleTransform.ScaleXProperty, scaleAnimX);
-            st.BeginAnimation(ScaleTransform.ScaleYProperty, scaleAnimY);
-            border.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
+            st.BeginAnimation(ScaleTransform.ScaleXProperty,
+                AnimationHelper.CreateAnim(0, 1.0, 380, AnimationHelper.EaseOut));
+            st.BeginAnimation(ScaleTransform.ScaleYProperty,
+                AnimationHelper.CreateAnim(0, 1.0, 380, AnimationHelper.EaseOut));
+            border.BeginAnimation(UIElement.OpacityProperty,
+                AnimationHelper.CreateAnim(0, 1, 300));
         }), DispatcherPriority.Loaded);
     }
 }

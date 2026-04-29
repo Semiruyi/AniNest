@@ -11,6 +11,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using LocalPlayer;
+using LocalPlayer.Helpers;
 using LocalPlayer.Models;
 using LocalPlayer.Services;
 
@@ -144,19 +145,6 @@ public partial class MainPage : System.Windows.Controls.UserControl
         element.RenderTransform = scale;
         element.RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
 
-        var animOpacity = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(250))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        var animScaleX = new DoubleAnimation(1, 0.85, TimeSpan.FromMilliseconds(250))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        var animScaleY = new DoubleAnimation(1, 0.85, TimeSpan.FromMilliseconds(250))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-
         bool finished = false;
         var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         timer.Tick += (_, _) =>
@@ -169,18 +157,15 @@ public partial class MainPage : System.Windows.Controls.UserControl
         };
         timer.Start();
 
-        animOpacity.Completed += (_, _) =>
+        AnimationHelper.AnimateFromCurrent(element, UIElement.OpacityProperty, 0, 250, AnimationHelper.EaseOut, () =>
         {
             if (finished) return;
             finished = true;
             timer.Stop();
             element.RenderTransform = Transform.Identity;
             onComplete();
-        };
-
-        element.BeginAnimation(OpacityProperty, animOpacity);
-        scale.BeginAnimation(ScaleTransform.ScaleXProperty, animScaleX);
-        scale.BeginAnimation(ScaleTransform.ScaleYProperty, animScaleY);
+        });
+        AnimationHelper.AnimateScaleTransform(scale, 0.85, 250, AnimationHelper.EaseOut);
     }
 
     // ========== 设置 ==========
