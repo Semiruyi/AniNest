@@ -253,6 +253,10 @@ public partial class FullscreenWindow : Window
         VideoImage.Source = mediaController!.VideoBitmap;
         Show();
 
+        // 确保每次进入全屏时控制栏和选集默认隐藏
+        HideControlBar(immediate: true);
+        HidePlaylist(immediate: true);
+
         bool wasPaused = mediaController?.IsPlaying == false;
         if (wasPaused)
         {

@@ -69,34 +69,19 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
                       PlayerInputHandler inputHandler,
                       ThumbnailGenerator thumbnailGenerator)
     {
-        Log($"[DEBUG] Setup 开始");
         _mediaController = mediaController;
         _inputHandler = inputHandler;
-
-        Log($"[DEBUG] XAML元素检查: SpeedPopup={(SpeedPopup!=null?"OK":"NULL")}, " +
-            $"SpeedBtn={(SpeedBtn!=null?"OK":"NULL")}, " +
-            $"SpeedPopupScale={(SpeedPopupScale!=null?"OK":"NULL")}, " +
-            $"SpeedOptionsPanel={(SpeedOptionsPanel!=null?"OK":"NULL")}, " +
-            $"RootGrid={(RootGrid!=null?"OK":"NULL")}");
 
         _speedPopupController = new SpeedPopupController(
             SpeedPopup, SpeedBtn, SpeedPopupScale, SpeedOptionsPanel, RootGrid,
             rate => _mediaController.Rate = rate);
-        Log($"[DEBUG] SpeedPopupController 创建完成");
         _speedPopupController.SpeedChanged += speed => SpeedChanged?.Invoke(speed);
-
-        Log($"[DEBUG] XAML元素检查2: ProgressSlider={(ProgressSlider!=null?"OK":"NULL")}, " +
-            $"ProgressPopup={(ProgressPopup!=null?"OK":"NULL")}, " +
-            $"ProgressPopupScale={(ProgressPopupScale!=null?"OK":"NULL")}, " +
-            $"ThumbnailImage={(ThumbnailImage!=null?"OK":"NULL")}, " +
-            $"ThumbnailTimeText={(ThumbnailTimeText!=null?"OK":"NULL")}");
 
         _thumbnailPreviewController = new ThumbnailPreviewController(
             ProgressSlider, ProgressPopup, ProgressPopupScale,
             ThumbnailImage, ThumbnailTimeText,
             thumbnailGenerator,
             () => _mediaController.Length);
-        Log($"[DEBUG] ThumbnailPreviewController 创建完成");
 
         _mediaController.Playing += OnPlaying;
         _mediaController.Paused += OnPaused;

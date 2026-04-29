@@ -135,10 +135,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
             parentWindow = Window.GetWindow(this);
 
-            Log($"[DEBUG] ControlBar={(ControlBar != null ? "存在" : "NULL")}, PlaylistPanel={(PlaylistPanel != null ? "存在" : "NULL")}");
-            Log($"[DEBUG] mediaController={(mediaController != null ? "存在" : "NULL")}, inputHandler={(inputHandler != null ? "存在" : "NULL")}, thumbnailGenerator={(_thumbnailGenerator != null ? "存在" : "NULL")}");
             ControlBar.Setup(mediaController, inputHandler, _thumbnailGenerator);
-            Log($"[DEBUG] ControlBar.Setup 完成");
             ControlBar.IsFullscreen = false;
             ControlBar.UpdateButtonTooltips();
 
@@ -213,35 +210,14 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             PageRoot.BeginAnimation(OpacityProperty, anim);
 
             mediaController.Initialize();
-            Log($"[DEBUG] Initialize 完成, VideoBitmap={(mediaController.VideoBitmap != null ? "存在" : "NULL")}, " +
-                $"VideoBitmap.IsFrozen={mediaController.VideoBitmap?.IsFrozen}, " +
-                $"VideoImage.Source={(VideoImage.Source != null ? "已设置" : "NULL")}");
             VideoImage.Source = mediaController.VideoBitmap;
-            Log($"[DEBUG] VideoImage.Source 赋值后, Source={(VideoImage.Source != null ? "已设置" : "NULL")}");
 
             mediaController.Playing += (s, ev) =>
-                Dispatcher.Invoke(() =>
-                {
-                    Log($"[DEBUG] Playing 事件触发, IsPlaying={mediaController.IsPlaying}");
-                    AnimatePauseBigOut();
-                });
+                Dispatcher.Invoke(AnimatePauseBigOut);
             mediaController.Paused += (s, ev) =>
-                Dispatcher.Invoke(() =>
-                {
-                    Log($"[DEBUG] Paused 事件触发");
-                    AnimatePauseBigIn();
-                });
+                Dispatcher.Invoke(AnimatePauseBigIn);
             mediaController.Stopped += (s, ev) =>
-                Dispatcher.Invoke(() =>
-                {
-                    Log($"[DEBUG] Stopped 事件触发");
-                    AnimatePauseBigOut();
-                });
-
-            mediaController.ProgressUpdated += (s, ev) =>
-            {
-                Log($"[DEBUG] ProgressUpdated: {ev.CurrentTime}/{ev.TotalTime}");
-            };
+                Dispatcher.Invoke(AnimatePauseBigOut);
 
             saveProgressTimer.Start();
 
@@ -300,18 +276,15 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         var folderProgress = settingsService.GetFolderProgress(folderPath);
         string? targetVideo = folderProgress?.LastVideoPath;
-        Log($"[DEBUG] LoadFolder: targetVideo={targetVideo ?? "null"}, folderProgress存在={folderProgress != null}");
 
         if (string.IsNullOrEmpty(targetVideo) || !File.Exists(targetVideo))
         {
             targetVideo = videoFiles.Length > 0 ? videoFiles[0] : null;
-            Log($"[DEBUG] LoadFolder: fallback to first video={targetVideo ?? "null"}");
         }
 
         if (!string.IsNullOrEmpty(targetVideo))
         {
             int index = Array.IndexOf(videoFiles, targetVideo);
-            Log($"[DEBUG] LoadFolder: targetVideo索引={index}, 即将PlayVideo或设SelectedIndex");
             if (index >= 0)
             {
                 PlaylistPanel.SelectedIndex = index;
@@ -320,10 +293,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             {
                 PlayVideo(targetVideo);
             }
-        }
-        else
-        {
-            Log($"[DEBUG] LoadFolder: targetVideo为空，不播放任何视频! videoFiles.Length={videoFiles.Length}");
         }
     }
 
@@ -345,9 +314,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             }
         }
 
-        Log($"[DEBUG] PlayVideo: 调用Play前, IsPlaying={mediaController.IsPlaying}, Time={mediaController.Time}");
         mediaController.Play(filePath, startTime);
-        Log($"[DEBUG] PlayVideo: Play调用后, IsPlaying={mediaController.IsPlaying}, Time={mediaController.Time}, Length={mediaController.Length}");
         settingsService.SetFolderProgress(currentFolderPath, filePath);
         settingsService.MarkVideoPlayed(filePath);
     }
