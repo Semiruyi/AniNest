@@ -82,6 +82,8 @@ public partial class PlayerPage
     {
         if (!isFullscreen || fullscreenWindow == null) return;
 
+        isFullscreen = false;
+
         // 停止自动隐藏
         controlBarHideTimer.Stop();
         playlistHideTimer.Stop();
@@ -128,7 +130,6 @@ public partial class PlayerPage
         // 4. WriteableBitmap 切回主窗口
         VideoImage.Source = mediaController.VideoBitmap;
 
-        isFullscreen = false;
         FullscreenIcon.Source = new BitmapImage(
             new Uri("pack://application:,,,/Resources/Icons/fullScreen.png"));
     }
@@ -178,7 +179,11 @@ public partial class PlayerPage
         var duration = TimeSpan.FromMilliseconds(200);
         var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
         var anim = new DoubleAnimation(ControlBar.Opacity, 0, duration) { EasingFunction = ease };
-        anim.Completed += (_, _) => ControlBar.IsHitTestVisible = false;
+        anim.Completed += (_, _) =>
+        {
+            if (isFullscreen)
+                ControlBar.IsHitTestVisible = false;
+        };
         ControlBar.BeginAnimation(UIElement.OpacityProperty, anim);
     }
 
@@ -224,7 +229,11 @@ public partial class PlayerPage
         var duration = TimeSpan.FromMilliseconds(200);
         var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
         var anim = new DoubleAnimation(PlaylistBorder.Opacity, 0, duration) { EasingFunction = ease };
-        anim.Completed += (_, _) => PlaylistBorder.IsHitTestVisible = false;
+        anim.Completed += (_, _) =>
+        {
+            if (isFullscreen)
+                PlaylistBorder.IsHitTestVisible = false;
+        };
         PlaylistBorder.BeginAnimation(UIElement.OpacityProperty, anim);
     }
 
