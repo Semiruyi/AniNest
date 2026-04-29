@@ -197,4 +197,16 @@ public class SettingsService
         int playedCount = videoFiles.Count(f => settings.VideoProgress.TryGetValue(f, out var p) && p.IsPlayed);
         return (double)playedCount / videoFiles.Length * 100;
     }
+
+    public int GetThumbnailExpiryDays()
+    {
+        return Load().ThumbnailExpiryDays;
+    }
+
+    public void SetThumbnailExpiryDays(int days)
+    {
+        var s = Load();
+        s.ThumbnailExpiryDays = days;
+        Save();
+    }
 }

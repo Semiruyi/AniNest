@@ -27,6 +27,7 @@ public class ThumbnailTask
     public int Priority { get; set; }
     public ThumbnailState State { get; set; } = ThumbnailState.Pending;
     public int TotalFrames { get; set; }
+    public long MarkedForDeletionAt { get; set; } // Unix 时间戳，0 = 未标记
 }
 
 public class ThumbnailProgressEventArgs : EventArgs
@@ -40,6 +41,7 @@ internal class ThumbnailEntryDto
     public string Md5 { get; set; } = "";
     public string State { get; set; } = "Pending";
     public int TotalFrames { get; set; }
+    public long MarkedForDeletionAt { get; set; } // 0 = 未标记
 }
 
 public class ThumbnailGenerator : IDisposable
@@ -150,7 +152,8 @@ public class ThumbnailGenerator : IDisposable
         // 信号：初始化完成，允许队列开始处理
         _initTcs.TrySetResult();
         EnsureLoopRunning();
-        Log("[Initialize] 已触发队列处理");
+        StartExpiryCleanup();
+        Log("[Initialize] 已触发队列处理 + 过期清理");
     }
 
     // ========== 入队 ==========
@@ -175,10 +178,19 @@ public class ThumbnailGenerator : IDisposable
         int added = 0;
         foreach (var videoPath in videoFiles)
         {
-            // 去重
+            // 去重 + 清除待删除标记（重新添加的卡片）
             lock (_taskLock)
             {
-                if (_videoToTask.ContainsKey(videoPath)) continue;
+                if (_videoToTask.TryGetValue(videoPath, out var existing))
+                {
+                    if (existing.MarkedForDeletionAt != 0)
+                    {
+                        existing.MarkedForDeletionAt = 0;
+                        SaveIndex();
+                        Log($"[EnqueueFolder] 清除待删除标记: {Path.GetFileName(videoPath)}");
+                    }
+                    continue;
+                }
             }
 
             // 计算优先级
@@ -215,78 +227,50 @@ public class ThumbnailGenerator : IDisposable
     }
 
     /// <summary>
-    /// 删除文件夹时清理对应缩略图。
+    /// 删除文件夹时标记缩略图为待删除，而非立即删除。
     /// </summary>
     public void DeleteForFolder(string folderPath)
     {
         var sw = Stopwatch.StartNew();
         var videoFiles = VideoScanner.GetVideoFiles(folderPath);
-        int deleted = 0;
+        int marked = 0;
 
         foreach (var videoPath in videoFiles)
         {
-            DeleteForVideo(videoPath);
-            deleted++;
+            MarkForDeletion(videoPath);
+            marked++;
         }
 
-        // 即使文件夹已不存在，也尝试通过映射反查
-        List<ThumbnailTask>? toDelete = null;
+        // 文件夹已不存在时通过映射反查
         lock (_taskLock)
         {
             var matching = _tasks.Where(t =>
                 t.VideoPath.StartsWith(folderPath, StringComparison.OrdinalIgnoreCase)).ToList();
-            if (matching.Count > 0)
-            {
-                toDelete = matching;
-            }
-        }
-
-        if (toDelete != null)
-        {
-            foreach (var t in toDelete)
+            foreach (var t in matching)
             {
                 if (!videoFiles.Contains(t.VideoPath, StringComparer.OrdinalIgnoreCase))
-                    DeleteForVideo(t.VideoPath);
-                deleted++;
+                {
+                    t.MarkedForDeletionAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                    marked++;
+                }
             }
         }
 
-        sw.Stop();
         SaveIndex();
-        Log($"[DeleteForFolder] {Path.GetFileName(folderPath)}: 删除 {deleted} 个, 总耗时 {sw.ElapsedMilliseconds}ms");
-        UpdateProgress();
+        sw.Stop();
+        Log($"[DeleteForFolder] {Path.GetFileName(folderPath)}: 标记待删除 {marked} 个, 总耗时 {sw.ElapsedMilliseconds}ms");
     }
 
-    private void DeleteForVideo(string videoPath)
+    private void MarkForDeletion(string videoPath)
     {
-        ThumbnailTask? task;
         lock (_taskLock)
         {
-            _videoToTask.TryGetValue(videoPath, out task);
-        }
-
-        if (task == null) return;
-
-        string dir = Path.Combine(_thumbBaseDir, task.Md5Dir);
-        if (Directory.Exists(dir))
-        {
-            try
+            if (_videoToTask.TryGetValue(videoPath, out var task) &&
+                task.State == ThumbnailState.Ready && task.MarkedForDeletionAt == 0)
             {
-                Directory.Delete(dir, recursive: true);
-                Log($"[DeleteForVideo] 删除目录: {task.Md5Dir}");
+                task.MarkedForDeletionAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                Log($"[MarkForDeletion] {Path.GetFileName(videoPath)}");
             }
-            catch (Exception ex)
-            {
-                Log($"[DeleteForVideo] 删除目录失败: {task.Md5Dir}, {ex.Message}");
-            }
-        }
-
-        lock (_taskLock)
-        {
-            _tasks.Remove(task);
-            _videoToTask.Remove(videoPath);
-            if (task.State == ThumbnailState.Ready) _readyCount--;
-            _totalCount--;
         }
     }
 
@@ -572,8 +556,9 @@ public class ThumbnailGenerator : IDisposable
 
         _isShuttingDown = true;
 
-        // 取消循环（会让 GenerateForTask 的 async 操作抛出 OperationCanceledException）
+        // 取消循环 + 过期清理
         _loopCts?.Cancel();
+        _expiryCts?.Cancel();
 
         // 等待循环任务完整退出（GenerateForTask 的 finally 会清理 _currentProcess）
         if (_loopTask != null)
@@ -624,6 +609,82 @@ public class ThumbnailGenerator : IDisposable
         {
             Log($"[CleanupTemp] 清理异常: {ex.Message}");
         }
+    }
+
+    // ========== 过期清理 ==========
+
+    private CancellationTokenSource? _expiryCts;
+
+    private void StartExpiryCleanup()
+    {
+        _expiryCts = new CancellationTokenSource();
+        _ = ExpiryCleanupLoop(_expiryCts.Token);
+    }
+
+    private async Task ExpiryCleanupLoop(CancellationToken ct)
+    {
+        Log("[ExpiryCleanup] 启动过期清理循环");
+        while (!ct.IsCancellationRequested)
+        {
+            try { await Task.Delay(TimeSpan.FromHours(1), ct); } catch { break; }
+            CleanupExpired();
+        }
+        Log("[ExpiryCleanup] 过期清理循环结束");
+    }
+
+    private void CleanupExpired()
+    {
+        int expiryDays = 30;
+        try
+        {
+            var settings = new SettingsService();
+            expiryDays = settings.GetThumbnailExpiryDays();
+        }
+        catch { }
+
+        if (expiryDays <= 0) return; // 永不过期
+
+        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        long threshold = now - (long)expiryDays * 86400;
+        List<ThumbnailTask> expired;
+
+        lock (_taskLock)
+        {
+            expired = _tasks.Where(t =>
+                t.MarkedForDeletionAt > 0 && t.MarkedForDeletionAt < threshold).ToList();
+        }
+
+        if (expired.Count == 0) return;
+
+        var sw = Stopwatch.StartNew();
+        Log($"[ExpiryCleanup] 发现 {expired.Count} 个过期缩略图 (过期天数={expiryDays})");
+
+        foreach (var t in expired)
+        {
+            string dir = Path.Combine(_thumbBaseDir, t.Md5Dir);
+            try
+            {
+                if (Directory.Exists(dir))
+                    Directory.Delete(dir, recursive: true);
+            }
+            catch (Exception ex)
+            {
+                Log($"[ExpiryCleanup] 删除目录失败: {t.Md5Dir}, {ex.Message}");
+            }
+
+            lock (_taskLock)
+            {
+                _tasks.Remove(t);
+                _videoToTask.Remove(t.VideoPath);
+                if (t.State == ThumbnailState.Ready) _readyCount--;
+                _totalCount--;
+            }
+        }
+
+        SaveIndex();
+        UpdateProgress();
+        sw.Stop();
+        Log($"[ExpiryCleanup] 清理完成, 删除 {expired.Count} 个, 耗时 {sw.ElapsedMilliseconds}ms");
     }
 
     // ========== 索引持久化 ==========
@@ -684,7 +745,8 @@ public class ThumbnailGenerator : IDisposable
                             Md5Dir = md5Dir,
                             State = state,
                             TotalFrames = totalFrames,
-                            Priority = int.MaxValue
+                            Priority = int.MaxValue,
+                            MarkedForDeletionAt = kv.Value.MarkedForDeletionAt
                         };
 
                         lock (_taskLock)
@@ -724,7 +786,8 @@ public class ThumbnailGenerator : IDisposable
                     {
                         Md5 = t.Md5Dir,
                         State = t.State.ToString(),
-                        TotalFrames = t.TotalFrames
+                        TotalFrames = t.TotalFrames,
+                        MarkedForDeletionAt = t.MarkedForDeletionAt
                     };
                 }
             }

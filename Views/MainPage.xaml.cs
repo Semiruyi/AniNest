@@ -187,7 +187,20 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     private void SettingsBtn_Click(object sender, RoutedEventArgs e)
     {
-        System.Windows.MessageBox.Show("设置功能开发中...\n\n未来将支持：\n- 设置默认扫描文件夹", "提示");
+        int currentDays = settingsService.GetThumbnailExpiryDays();
+        string input = Microsoft.VisualBasic.Interaction.InputBox(
+            $"缩略图过期天数（0=永不过期）：",
+            "缩略图设置",
+            currentDays.ToString());
+
+        if (int.TryParse(input, out int days) && days >= 0 && days <= 365)
+        {
+            settingsService.SetThumbnailExpiryDays(days);
+            if (days == 0)
+                System.Windows.MessageBox.Show("已设置：缩略图永不过期", "提示");
+            else
+                System.Windows.MessageBox.Show($"已设置：缩略图 {days} 天后过期", "提示");
+        }
     }
 
     // ========== 添加 ==========

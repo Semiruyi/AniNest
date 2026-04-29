@@ -7,6 +7,7 @@ public class AppSettings
     public List<FolderInfo> Folders { get; set; } = new();
     public Dictionary<string, VideoProgress> VideoProgress { get; set; } = new();
     public Dictionary<string, FolderProgress> FolderProgress { get; set; } = new();
+    public int ThumbnailExpiryDays { get; set; } = 30; // 0 = 永不过期
 }
 
 public class FolderInfo
