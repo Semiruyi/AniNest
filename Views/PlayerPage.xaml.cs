@@ -582,25 +582,31 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     // ========== 通用按钮动画（press/release） ==========
 
-    private static readonly CubicEase _btnEase = new() { EasingMode = EasingMode.EaseOut };
+    private static readonly Helpers.CubicBezierEase _iosEase = new() { EasingMode = EasingMode.EaseIn };
+    private static readonly TimeSpan _pressDuration = TimeSpan.FromMilliseconds(80);
+    private static readonly TimeSpan _releaseDuration = TimeSpan.FromMilliseconds(280);
 
     private void CommonButton_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (sender is not System.Windows.Controls.Button btn) return;
-        AnimateBtnScale(btn, 0.88, TimeSpan.FromMilliseconds(50), _btnEase);
+        // 读取当前 HoverScale 值，计算 PressScale 目标以补偿乘法叠加
+        double hoverScale = 1.0;
+        if (btn.Template.FindName("HoverScale", btn) is ScaleTransform hoverSt)
+            hoverScale = hoverSt.ScaleX;
+        double pressTarget = Math.Max(0.5, 0.85 / hoverScale);
+        AnimateTransform(btn, "PressScale", pressTarget, _pressDuration, _iosEase);
     }
 
     private void CommonButton_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (sender is not System.Windows.Controls.Button btn) return;
-        double target = btn.IsMouseOver ? 1.3 : 1.0;
-        AnimateBtnScale(btn, target, TimeSpan.FromMilliseconds(200), _btnEase);
+        AnimateTransform(btn, "PressScale", 1.0, _releaseDuration, _iosEase);
     }
 
-    private static void AnimateBtnScale(System.Windows.Controls.Button btn, double target,
-        TimeSpan duration, IEasingFunction ease)
+    private static void AnimateTransform(System.Windows.Controls.Button btn, string transformName,
+        double target, TimeSpan duration, IEasingFunction ease)
     {
-        if (btn.Template.FindName("PressScale", btn) is ScaleTransform st)
+        if (btn.Template.FindName(transformName, btn) is ScaleTransform st)
         {
             st.BeginAnimation(ScaleTransform.ScaleXProperty, null);
             st.BeginAnimation(ScaleTransform.ScaleYProperty, null);
