@@ -22,5 +22,19 @@ public class PlaylistItem : INotifyPropertyChanged
         }
     }
 
+    private bool _isThumbnailReady;
+    public bool IsThumbnailReady
+    {
+        get => _isThumbnailReady;
+        set
+        {
+            if (_isThumbnailReady != value)
+            {
+                _isThumbnailReady = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsThumbnailReady)));
+            }
+        }
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 }

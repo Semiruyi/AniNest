@@ -79,6 +79,7 @@ public class ThumbnailGenerator : IDisposable
 
     // Events
     public event EventHandler<ThumbnailProgressEventArgs>? ProgressChanged;
+    public event Action<string>? VideoReady; // videoPath
 
     // Detection
     private bool _ffmpegAvailable;
@@ -492,6 +493,9 @@ public class ThumbnailGenerator : IDisposable
                 lock (_taskLock) { _readyCount++; }
 
                 Log($"[Generate] 完成: {Path.GetFileName(task.VideoPath)}, {frameCount} 帧, 耗时 {sw.ElapsedMilliseconds / 1000.0:F1}s");
+
+                // 通知前端该视频缩略图已就绪
+                VideoReady?.Invoke(task.VideoPath);
             }
             else
             {

@@ -139,6 +139,20 @@
                                     </Border.Effect>
                                 </Border>
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <!-- 已看对勾 -->
+                                <Grid x:Name="CheckIcon" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                      Width="20" Height="20" Margin="0,-3,-3,0"
+                                      Opacity="0" RenderTransformOrigin="0.5,0.5">
+                                    <Grid.RenderTransform>
+                                        <ScaleTransform ScaleX="0" ScaleY="0"/>
+                                    </Grid.RenderTransform>
+                                    <Ellipse Fill="White" Width="20" Height="20"/>
+                                    <Image Source="/Resources/Icons/check.png" Width="20" Height="20">
+                                        <Image.Clip>
+                                            <EllipseGeometry RadiusX="10" RadiusY="10" Center="10,10"/>
+                                        </Image.Clip>
+                                    </Image>
+                                </Grid>
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
@@ -246,6 +260,31 @@
                                                 <ColorAnimation Storyboard.TargetName="BgBrush"
                                                     Storyboard.TargetProperty="Color"
                                                     To="#165396" Duration="0:0:0.22"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.EnterActions>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsThumbnailReady}" Value="True">
+                                    <DataTrigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="CheckIcon"
+                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                    From="0" To="1" Duration="0:0:0.25">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <CubicEase EasingMode="EaseOut"/>
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <DoubleAnimation Storyboard.TargetName="CheckIcon"
+                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                    From="0" To="1" Duration="0:0:0.25">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <CubicEase EasingMode="EaseOut"/>
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <DoubleAnimation Storyboard.TargetName="CheckIcon"
+                                                    Storyboard.TargetProperty="Opacity"
+                                                    From="0" To="1" Duration="0:0:0.25"/>
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </DataTrigger.EnterActions>

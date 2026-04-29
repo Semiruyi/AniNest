@@ -143,6 +143,25 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         };
         SpeedPopup.PlacementTarget = SpeedBtn;
         ProgressPopup.PlacementTarget = ProgressSlider;
+
+        _thumbnailGenerator.VideoReady += OnVideoThumbnailReady;
+    }
+
+    private void OnVideoThumbnailReady(string videoPath)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            foreach (var item in PlaylistBox.Items)
+            {
+                if (item is PlaylistItem pi &&
+                    string.Equals(pi.FilePath, videoPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    pi.IsThumbnailReady = true;
+                    Log($"[Thumbnail] 选集按钮显示对勾: {pi.Title}");
+                    break;
+                }
+            }
+        });
     }
 
     private void PlayerPage_Loaded(object sender, RoutedEventArgs e)
@@ -302,7 +321,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
                 Number = i + 1,
                 Title = Path.GetFileName(filePath),
                 FilePath = filePath,
-                IsPlayed = settingsService.IsVideoPlayed(filePath)
+                IsPlayed = settingsService.IsVideoPlayed(filePath),
+                IsThumbnailReady = _thumbnailGenerator.GetState(filePath) == ThumbnailState.Ready
             });
         }
         EpisodeCountText.Text = videoFiles.Length > 0 ? $"{videoFiles.Length} 集" : "";
