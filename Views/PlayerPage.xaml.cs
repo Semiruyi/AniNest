@@ -38,21 +38,13 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     private float currentSpeed = 1.0f;
     private float speedBeforeHold = 1.0f;
-    private readonly DispatcherTimer speedPopupCloseTimer;
-    private bool isSpeedPopupClosing;
     private readonly DispatcherTimer rightHoldTimer;
     private bool isRightHolding;
 
-    // 进度条悬浮缩略图预览
+    // 提取的控制器
     private readonly ThumbnailGenerator _thumbnailGenerator = ThumbnailGenerator.Instance;
-    private readonly Dictionary<int, BitmapSource> _thumbnailCache = new(); // second → image, 最多20张
-    private readonly DispatcherTimer progressPopupShowTimer = new();
-    private readonly DispatcherTimer progressPopupHideTimer = new();
-    private bool _isProgressHovering;
-    private bool _isProgressPopupVisible;
-    private bool _isProgressPopupClosing;
-    private int _lastRequestedSecond = -1;
-    private string? _currentThumbVideoPath; // 当前视频的缩略图目录就绪路径
+    private SpeedPopupController? _speedPopupController;
+    private ThumbnailPreviewController? _thumbnailPreviewController;
 
     private Window? parentWindow;
     private bool isFullscreen = false;
@@ -94,16 +86,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         playlistHideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
         playlistHideTimer.Tick += PlaylistHideTimer_Tick;
 
-        speedPopupCloseTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(180) };
-        speedPopupCloseTimer.Tick += SpeedPopupCloseTimer_Tick;
-
         rightHoldTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
         rightHoldTimer.Tick += RightHoldTimer_Tick;
-
-        progressPopupShowTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
-        progressPopupShowTimer.Tick += ProgressPopupShowTimer_Tick;
-        progressPopupHideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
-        progressPopupHideTimer.Tick += ProgressPopupHideTimer_Tick;
 
         inputHandler.TogglePlayPause += (_, _) => mediaController.TogglePlayPause();
         inputHandler.SeekForward += (_, _) => mediaController.SeekForward(5000);
@@ -121,23 +105,18 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         inputHandler.ReloadBindings();
         UpdateButtonTooltips();
 
-        SpeedPopup.CustomPopupPlacementCallback = (_, targetSize, _2) =>
-        {
-            // WPF passes targetSize in device pixels (not DIPs). Scale our DIP-based
-            // popup dimensions by the same factor so the math is consistent.
-            double scale = targetSize.Width / SpeedBtn.ActualWidth;
-            double pw = 90 * scale;
-            double ph = 274 * scale;
-            double x = (targetSize.Width - pw) / 2;
-            double y = -ph - 10 * scale;
-            Log(string.Format("[PlacementCallback] scale={0:F3}, targetSize={1:F1}x{2:F1}, pw={3:F1}, ph={4:F1}, x={5:F1}, y={6:F1}",
-                scale, targetSize.Width, targetSize.Height, pw, ph, x, y));
-            return new[] { new System.Windows.Controls.Primitives.CustomPopupPlacement(
-                new System.Windows.Point(x, y),
-                System.Windows.Controls.Primitives.PopupPrimaryAxis.Vertical) };
-        };
-        SpeedPopup.PlacementTarget = SpeedBtn;
-        ProgressPopup.PlacementTarget = ProgressSlider;
+        // 倍速弹窗控制器
+        _speedPopupController = new SpeedPopupController(
+            SpeedPopup, SpeedBtn, SpeedPopupScale, SpeedOptionsPanel, PageRoot,
+            rate => mediaController.Rate = rate);
+        _speedPopupController.SpeedChanged += speed => currentSpeed = speed;
+
+        // 进度条悬浮缩略图控制器
+        _thumbnailPreviewController = new ThumbnailPreviewController(
+            ProgressSlider, ProgressPopup, ProgressPopupScale,
+            ThumbnailImage, ThumbnailTimeText,
+            _thumbnailGenerator,
+            () => mediaController.Length);
 
         _thumbnailGenerator.VideoReady += OnVideoThumbnailReady;
         _thumbnailGenerator.VideoProgress += OnVideoThumbnailProgress;
@@ -396,9 +375,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         Log($"[PlayVideo] 开始: {Path.GetFileName(filePath)}");
         Log($"[PlayVideo] 当前SelectedIndex={PlaylistBox.SelectedIndex}");
 
-        _thumbnailCache.Clear();
-        _lastRequestedSecond = -1;
-        _currentThumbVideoPath = filePath;
+        _thumbnailPreviewController?.SetCurrentVideo(filePath);
         var thumbState = _thumbnailGenerator.GetState(filePath);
         Log($"[PlayVideo] 缩略图状态: {thumbState}, ffmpeg可用: {_thumbnailGenerator.IsFfmpegAvailable}");
 
@@ -542,69 +519,39 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         CurrentTimeText.Text = MediaPlayerController.FormatTime((long)ProgressSlider.Value);
     }
 
-    public void HandlePreviewKeyDown(System.Windows.Input.KeyEventArgs e)
-    {
-        Log($"HandlePreviewKeyDown 被调用: Key={e.Key}, Source={e.Source?.GetType().Name}, OriginalSource={e.OriginalSource?.GetType().Name}");
+    // ========== 键盘事件处理 (统一入口) ==========
 
+    private void ProcessKeyboardEvent(System.Windows.Input.KeyEventArgs e, string source)
+    {
+        Log($"KeyDown({source}): Key={e.Key}, OriginalSource={e.OriginalSource?.GetType().Name}, Handled={e.Handled}");
         if (inputHandler.HandleKeyDown(e, isFullscreen))
         {
             e.Handled = true;
-            Log($"按键已处理并标记 Handled: {e.Key}");
-        }
-        else
-        {
-            Log($"按键未被处理: {e.Key}");
         }
     }
 
-    public void HandleKeyDown(System.Windows.Input.KeyEventArgs e)
-    {
-        Log($"HandleKeyDown (冒泡) 被调用: Key={e.Key}, Source={e.Source?.GetType().Name}, OriginalSource={e.OriginalSource?.GetType().Name}");
-
-        if (inputHandler.HandleKeyDown(e, isFullscreen))
-        {
-            e.Handled = true;
-            Log($"冒泡按键已处理并标记 Handled: {e.Key}");
-        }
-    }
+    public void HandlePreviewKeyDown(System.Windows.Input.KeyEventArgs e) => ProcessKeyboardEvent(e, "PreviewKeyDown (MainWindow)");
+    public void HandleKeyDown(System.Windows.Input.KeyEventArgs e) => ProcessKeyboardEvent(e, "KeyDown (MainWindow)");
 
     private void PlayerPage_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
         if (e.Handled) return;
-        Log($"PlayerPage_PreviewKeyDown: Key={e.Key}, OriginalSource={e.OriginalSource?.GetType().Name}, Handled={e.Handled}");
-        if (inputHandler.HandleKeyDown(e, isFullscreen))
-        {
-            e.Handled = true;
-        }
+        ProcessKeyboardEvent(e, "PP_PreviewKeyDown");
     }
 
     private void PlayerPage_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
         if (e.Handled) return;
-        Log($"PlayerPage_KeyDown: Key={e.Key}, OriginalSource={e.OriginalSource?.GetType().Name}, Handled={e.Handled}");
-        if (inputHandler.HandleKeyDown(e, isFullscreen))
-        {
-            e.Handled = true;
-        }
+        ProcessKeyboardEvent(e, "PP_KeyDown");
     }
 
     private void ControlBar_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-    {
-        Log($"ControlBar_PreviewKeyDown: Key={e.Key}, OriginalSource={e.OriginalSource?.GetType().Name}, Handled={e.Handled}");
-        if (inputHandler.HandleKeyDown(e, isFullscreen))
-        {
-            e.Handled = true;
-        }
-    }
+        => ProcessKeyboardEvent(e, "CB_PreviewKeyDown");
 
     private void ControlBar_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
         if (e.Handled) return;
-        Log($"ControlBar_KeyDown: Key={e.Key}, OriginalSource={e.OriginalSource?.GetType().Name}, Handled={e.Handled}");
-        if (inputHandler.HandleKeyDown(e, isFullscreen))
-        {
-            e.Handled = true;
-        }
+        ProcessKeyboardEvent(e, "CB_KeyDown");
     }
 
     private void VideoContainer_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -754,206 +701,31 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     // ========== 倍速 ==========
 
-    private void AnimateSpeedPopupIn()
-    {
-        isSpeedPopupClosing = false;
-        var border = SpeedPopup.Child as Border;
-        if (border == null) return;
-
-        SpeedPopupScale.ScaleX = 0;
-        SpeedPopupScale.ScaleY = 0;
-        border.Opacity = 0;
-
-        AnimationHelper.AnimateScaleTransform(SpeedPopupScale, 1, 250, AnimationHelper.EaseOut);
-        AnimationHelper.Animate(border, UIElement.OpacityProperty, 0, 1, 250, AnimationHelper.EaseOut);
-    }
-
-    private void AnimateSpeedPopupOut()
-    {
-        if (isSpeedPopupClosing) return;
-        isSpeedPopupClosing = true;
-
-        var border = SpeedPopup.Child as Border;
-        if (border == null)
-        {
-            SpeedPopup.IsOpen = false;
-            isSpeedPopupClosing = false;
-            return;
-        }
-
-        AnimationHelper.AnimateScaleTransform(SpeedPopupScale, 0, 180, AnimationHelper.EaseIn);
-        AnimationHelper.AnimateFromCurrent(border, UIElement.OpacityProperty, 0, 180, AnimationHelper.EaseIn, () =>
-        {
-            SpeedPopup.IsOpen = false;
-            isSpeedPopupClosing = false;
-        });
-    }
-
-    private void SpeedPopupCloseTimer_Tick(object? sender, EventArgs e)
-    {
-        speedPopupCloseTimer.Stop();
-
-        // 鼠标仍在按钮或弹窗上方，不关闭
-        if (IsMouseOverSafeZone())
-        {
-            speedPopupCloseTimer.Start();
-            return;
-        }
-
-        AnimateSpeedPopupOut();
-    }
-
-    private bool IsMouseOverSafeZone()
-    {
-        // 检查是否在倍速按钮上
-        var btnPt = System.Windows.Input.Mouse.GetPosition(SpeedBtn);
-        if (btnPt.X >= -2 && btnPt.Y >= -2 &&
-            btnPt.X <= SpeedBtn.ActualWidth + 2 && btnPt.Y <= SpeedBtn.ActualHeight + 2)
-            return true;
-
-        // 检查是否在弹窗内容上
-        if (SpeedPopup.IsOpen && SpeedPopup.Child != null)
-        {
-            try
-            {
-                var popupPt = System.Windows.Input.Mouse.GetPosition(SpeedPopup.Child);
-                if (popupPt.X >= -2 && popupPt.Y >= -2 &&
-                    popupPt.X <= SpeedPopup.Child.RenderSize.Width + 2 &&
-                    popupPt.Y <= SpeedPopup.Child.RenderSize.Height + 2)
-                    return true;
-            }
-            catch { }
-        }
-
-        return false;
-    }
-
-    private void PageRoot_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-    {
-        if (!SpeedPopup.IsOpen || SpeedPopup.Child == null) return;
-
-        // 检查点击是否来自弹窗内部，是则不关闭
-        if (e.OriginalSource is DependencyObject dep && IsDescendantOf(dep, SpeedPopup.Child))
-            return;
-
-        // 检查点击是否在倍速按钮上
-        var pos = e.GetPosition(this);
-        var btnBounds = SpeedBtn.TransformToAncestor(this).TransformBounds(
-            new Rect(0, 0, SpeedBtn.ActualWidth, SpeedBtn.ActualHeight));
-        if (!btnBounds.Contains(pos))
-        {
-            AnimateSpeedPopupOut();
-        }
-    }
-
-    private static bool IsDescendantOf(DependencyObject? dep, DependencyObject ancestor)
-    {
-        while (dep != null)
-        {
-            if (dep == ancestor)
-                return true;
-            dep = VisualTreeHelper.GetParent(dep);
-        }
-        return false;
-    }
+    // ========== 倍速弹窗 (转发到 SpeedPopupController) ==========
 
     private void SpeedBtn_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        speedPopupCloseTimer.Stop();
-
-        if (isSpeedPopupClosing)
-        {
-            SpeedPopup.IsOpen = true;
-            AnimateSpeedPopupIn();
-            return;
-        }
-
-        bool wasClosed = !SpeedPopup.IsOpen;
-        SpeedPopup.IsOpen = true;
-        if (wasClosed)
-        {
-            Dispatcher.BeginInvoke(() =>
-            {
-                HighlightSpeedOption(currentSpeed);
-                AnimateSpeedPopupIn();
-            }, DispatcherPriority.Loaded);
-        }
-    }
+        => _speedPopupController?.OnSpeedBtnMouseEnter();
 
     private void SpeedBtn_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        speedPopupCloseTimer.Stop();
-        speedPopupCloseTimer.Start();
-    }
+        => _speedPopupController?.OnSpeedBtnMouseLeave();
 
     private void SpeedPopup_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        speedPopupCloseTimer.Stop();
-        if (isSpeedPopupClosing)
-        {
-            SpeedPopup.IsOpen = true;
-            AnimateSpeedPopupIn();
-        }
-    }
+        => _speedPopupController?.OnSpeedPopupMouseEnter();
 
     private void SpeedPopup_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        speedPopupCloseTimer.Stop();
-        speedPopupCloseTimer.Start();
-    }
+        => _speedPopupController?.OnSpeedPopupMouseLeave();
 
     private void SpeedOption_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is System.Windows.Controls.Button btn && btn.Tag is string tagStr &&
-            float.TryParse(tagStr, out float speed))
-        {
-            SetSpeed(speed);
-        }
-    }
+        => _speedPopupController?.OnSpeedOptionClick(sender);
+
+    private void PageRoot_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        => _speedPopupController?.OnPageRootPreviewMouseLeftButtonDown(e);
 
     private void SetSpeed(float speed)
-    {
-        currentSpeed = speed;
-        mediaController.Rate = speed;
-        SpeedBtn.Content = $"{speed:0.##}x";
-        if (SpeedPopup.IsOpen)
-            HighlightSpeedOption(speed);
-    }
+        => _speedPopupController?.SetSpeed(speed);
 
     private void UpdateSpeedButtonText(float speed)
-    {
-        SpeedBtn.Content = $"{speed:0.##}x";
-    }
-
-    private void HighlightSpeedOption(float speed)
-    {
-        var selectedColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#007AFF");
-        var duration = TimeSpan.FromMilliseconds(300);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-
-        foreach (var child in SpeedOptionsPanel.Children)
-        {
-            if (child is not System.Windows.Controls.Button btn) continue;
-
-            bool isSelected = btn.Tag?.ToString() == speed.ToString("0.##");
-            var targetColor = isSelected ? selectedColor : Colors.Transparent;
-            var targetSize = isSelected ? 14.0 : 13.0;
-
-            // 找到模板内的命名画刷，动画其颜色
-            if (btn.Template.FindName("BgBrush", btn) is SolidColorBrush brush)
-            {
-                brush.BeginAnimation(SolidColorBrush.ColorProperty, null);
-                var colorAnim = new ColorAnimation(targetColor, duration) { EasingFunction = ease };
-                brush.BeginAnimation(SolidColorBrush.ColorProperty, colorAnim);
-            }
-
-            btn.BeginAnimation(System.Windows.Controls.Button.FontSizeProperty, null);
-            var sizeAnim = new DoubleAnimation(targetSize, duration) { EasingFunction = ease };
-            btn.BeginAnimation(System.Windows.Controls.Button.FontSizeProperty, sizeAnim);
-
-            btn.FontWeight = isSelected ? FontWeights.SemiBold : FontWeights.Normal;
-        }
-    }
+        => _speedPopupController?.UpdateButtonText(speed);
 
     // ========== 右键长按三倍速 ==========
 
@@ -985,168 +757,22 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         e.Handled = true;
     }
 
-    // ========== 进度条悬浮预览 ==========
+    // ========== 进度条悬浮预览 (转发到 ThumbnailPreviewController) ==========
 
     private void ProgressSlider_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        _isProgressHovering = true;
-        progressPopupHideTimer.Stop();
-        if (!_isProgressPopupVisible)
-            progressPopupShowTimer.Start();
-    }
+        => _thumbnailPreviewController?.OnSliderMouseEnter();
 
     private void ProgressSlider_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        _isProgressHovering = false;
-        progressPopupShowTimer.Stop();
-        progressPopupHideTimer.Start();
-    }
+        => _thumbnailPreviewController?.OnSliderMouseLeave();
 
     private void ProgressSlider_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        if (mediaController.Length <= 0) return;
-
-        var pos = e.GetPosition(ProgressSlider);
-        double ratio = Math.Max(0, Math.Min(1, pos.X / ProgressSlider.ActualWidth));
-        long hoverTimeMs = (long)(ratio * mediaController.Length);
-        int hoverSecond = (int)(hoverTimeMs / 1000);
-
-        // 定位 + 时间
-        ThumbnailTimeText.Text = MediaPlayerController.FormatTime(hoverTimeMs);
-        double popupW = 160;
-        double offsetX = Math.Max(0, Math.Min(pos.X - popupW / 2, ProgressSlider.ActualWidth - popupW));
-        ProgressPopup.HorizontalOffset = offsetX;
-        ProgressPopup.VerticalOffset = -90 - 30; // 固定位于控制栏上方
-        if (_isProgressPopupVisible && ProgressPopup.IsOpen)
-        {
-            ProgressPopup.HorizontalOffset = offsetX + 1; // 强制刷新
-            ProgressPopup.HorizontalOffset = offsetX;
-        }
-
-        // 缩略图可用性检测
-        bool thumbReady = _currentThumbVideoPath != null &&
-            _thumbnailGenerator.GetState(_currentThumbVideoPath) == ThumbnailState.Ready;
-        ThumbnailImage.Visibility = thumbReady ? Visibility.Visible : Visibility.Collapsed;
-
-        // 秒数未变则不重复加载
-        if (hoverSecond == _lastRequestedSecond) return;
-        _lastRequestedSecond = hoverSecond;
-
-        if (thumbReady && _currentThumbVideoPath != null)
-        {
-            if (_thumbnailCache.TryGetValue(hoverSecond, out var cached))
-            {
-                ThumbnailImage.Source = cached;
-            }
-            else
-            {
-                var bmp = LoadThumbnailJpeg(_currentThumbVideoPath, hoverSecond);
-                if (bmp != null)
-                {
-                    _thumbnailCache[hoverSecond] = bmp;
-                    ThumbnailImage.Source = bmp;
-
-                    if (_thumbnailCache.Count > 20)
-                    {
-                        var toRemove = _thumbnailCache.Keys.OrderBy(k => k).Take(_thumbnailCache.Count / 2).ToList();
-                        foreach (var k in toRemove) _thumbnailCache.Remove(k);
-                    }
-                }
-            }
-        }
-    }
+        => _thumbnailPreviewController?.OnSliderMouseMove(e);
 
     private void ProgressPopup_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        progressPopupHideTimer.Stop();
-    }
+        => _thumbnailPreviewController?.OnPopupMouseEnter();
 
     private void ProgressPopup_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        progressPopupHideTimer.Stop();
-        progressPopupHideTimer.Start();
-    }
-
-    private void ProgressPopupShowTimer_Tick(object? sender, EventArgs e)
-    {
-        progressPopupShowTimer.Stop();
-        if (!_isProgressHovering) return;
-        ShowProgressPopup();
-    }
-
-    private void ProgressPopupHideTimer_Tick(object? sender, EventArgs e)
-    {
-        progressPopupHideTimer.Stop();
-        if (_isProgressHovering) return;
-        if (ProgressPopup.IsOpen && ProgressPopup.Child != null)
-        {
-            try
-            {
-                var pt = System.Windows.Input.Mouse.GetPosition(ProgressPopup.Child);
-                if (pt.X >= -2 && pt.Y >= -2 &&
-                    pt.X <= ProgressPopup.Child.RenderSize.Width + 2 &&
-                    pt.Y <= ProgressPopup.Child.RenderSize.Height + 2)
-                {
-                    progressPopupHideTimer.Start();
-                    return;
-                }
-            }
-            catch { }
-        }
-        HideProgressPopup();
-    }
-
-    private void ShowProgressPopup()
-    {
-        if (_isProgressPopupVisible || _isProgressPopupClosing) return;
-        _isProgressPopupVisible = true;
-        var border = ProgressPopup.Child as Border;
-        if (border == null) return;
-
-        ProgressPopupScale.ScaleX = 0.9;
-        ProgressPopupScale.ScaleY = 0.9;
-        border.Opacity = 0;
-        ProgressPopup.IsOpen = true;
-
-        AnimationHelper.AnimateScaleTransform(ProgressPopupScale, 1, 200, AnimationHelper.EaseOut);
-        AnimationHelper.Animate(border, UIElement.OpacityProperty, 0, 1, 200, AnimationHelper.EaseOut);
-    }
-
-    private void HideProgressPopup()
-    {
-        if (!_isProgressPopupVisible || _isProgressPopupClosing) return;
-        _isProgressPopupClosing = true;
-        var border = ProgressPopup.Child as Border;
-        if (border == null) { ProgressPopup.IsOpen = false; _isProgressPopupVisible = false; _isProgressPopupClosing = false; return; }
-
-        AnimationHelper.AnimateScaleTransform(ProgressPopupScale, 0.9, 150, AnimationHelper.EaseIn);
-        AnimationHelper.AnimateFromCurrent(border, UIElement.OpacityProperty, 0, 150, AnimationHelper.EaseIn, () =>
-        {
-            ProgressPopup.IsOpen = false;
-            _isProgressPopupVisible = false;
-            _isProgressPopupClosing = false;
-        });
-    }
-
-    // ========== JPEG 加载 ==========
-
-    private BitmapSource? LoadThumbnailJpeg(string videoPath, int second)
-    {
-        var path = _thumbnailGenerator.GetThumbnailPath(videoPath, second);
-        if (path == null) return null;
-        try
-        {
-            var decoder = new JpegBitmapDecoder(new Uri(path), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
-            var frame = decoder.Frames[0];
-            frame.Freeze();
-            return frame;
-        }
-        catch (Exception ex)
-        {
-            LogError($"缩略图解码异常 second={second}", ex);
-            return null;
-        }
-    }
+        => _thumbnailPreviewController?.OnPopupMouseLeave();
 
     public void Dispose()
     {
@@ -1156,18 +782,17 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         controlBarHideTimer.Stop();
         singleClickTimer.Stop();
         playlistHideTimer.Stop();
-        speedPopupCloseTimer.Stop();
         rightHoldTimer.Stop();
-        progressPopupShowTimer.Stop();
-        progressPopupHideTimer.Stop();
         Log($"saveProgressTimer.Stop 耗时 {sw.ElapsedMilliseconds}ms");
         SaveCurrentProgress();
         Log($"SaveCurrentProgress 完成，耗时 {sw.ElapsedMilliseconds}ms");
 
+        _speedPopupController?.Dispose();
+        _thumbnailPreviewController?.Dispose();
+
         fullscreenWindow?.Close();
         fullscreenWindow = null;
 
-        _thumbnailCache.Clear();
         mediaController.Dispose();
         Log($"mediaController.Dispose 完成，总耗时 {sw.ElapsedMilliseconds}ms");
     }
