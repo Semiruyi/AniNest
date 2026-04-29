@@ -119,6 +119,7 @@ public partial class PlayerPage
         Grid.SetRowSpan(ControlBar, 1);
         Panel.SetZIndex(ControlBar, 0);
         ControlBar.VerticalAlignment = VerticalAlignment.Stretch;
+        ControlBar.BeginAnimation(UIElement.OpacityProperty, null);
         ControlBar.Visibility = Visibility.Visible;
         ControlBar.Opacity = 1;
         ControlBar.IsHitTestVisible = true;
