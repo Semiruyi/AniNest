@@ -40,4 +40,9 @@ public class ClickRouter
         _timer.Stop();
         _timer.Start();
     }
+
+    public void Dispose()
+    {
+        _timer.Stop();
+    }
 }

@@ -12,6 +12,7 @@ using LocalPlayer.Controls;
 using LocalPlayer.Interaction;
 using LocalPlayer.View.Player;
 using LocalPlayer.View.Settings;
+using LocalPlayer.ViewModel;
 
 using System.Windows.Interop;
 using System.Runtime.InteropServices;
@@ -22,8 +23,8 @@ public partial class FullscreenWindow : Window
 {
     private static void Log(string message) => AppLog.Info(nameof(FullscreenWindow), message);
 
-    private IMediaPlayerController? mediaController;
-    private PlayerInputHandler? inputHandler;
+    private readonly PlayerViewModel _vm;
+    private readonly IMediaPlayerController _media;
 
     public event EventHandler? ExitRequested;
     public event EventHandler<PlaylistItem>? EpisodeSelected;
@@ -32,22 +33,25 @@ public partial class FullscreenWindow : Window
     private bool isClosing;
     private Rect originalVideoRect;
 
-    // 共享控制器
     private PauseOverlayController _pauseOverlay = null!;
     private RightHoldSpeedController _rightHold = null!;
     private ClickRouter _clickRouter = null!;
 
-    // 控制栏/选集自动隐藏
     private readonly DispatcherTimer controlBarHideTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
     private readonly DispatcherTimer playlistHideTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
 
-    public FullscreenWindow()
+    public FullscreenWindow(PlayerViewModel vm, IMediaPlayerController media,
+                             IThumbnailGenerator thumbnailGenerator)
     {
+        _vm = vm;
+        _media = media;
+        DataContext = _vm;
+
         InitializeComponent();
 
         _pauseOverlay = new PauseOverlayController(PauseBigIconScale, PauseBigIcon);
         _clickRouter = new ClickRouter(
-            () => mediaController?.TogglePlayPause(),
+            () => _media.TogglePlayPause(),
             () => ExitRequested?.Invoke(this, EventArgs.Empty));
 
         controlBarHideTimer.Tick += (_, _) =>
@@ -79,28 +83,15 @@ public partial class FullscreenWindow : Window
             VideoImage.MouseRightButtonUp += VideoImage_MouseRightButtonUp;
             Keyboard.Focus(this);
         };
+
+        SetupInternal(media, thumbnailGenerator);
     }
 
-    private void VideoImage_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        => _clickRouter.OnMouseDown(e);
-
-    private void VideoImage_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
-        => _rightHold.OnMouseDown(e);
-
-    private void VideoImage_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
-        => _rightHold.OnMouseUp(e);
-
-    // ========== 初始化 ==========
-
-    public void Setup(IMediaPlayerController mediaCtrl, PlayerInputHandler input,
-                      IThumbnailGenerator thumbnailGenerator)
+    private void SetupInternal(IMediaPlayerController mediaCtrl, IThumbnailGenerator thumbnailGenerator)
     {
-        mediaController = mediaCtrl;
-        inputHandler = input;
+        _pauseOverlay.WireMediaEvents(mediaCtrl, Dispatcher);
 
-        _pauseOverlay.WireMediaEvents(mediaController, Dispatcher);
-
-        ControlBar.Setup(mediaCtrl, input, thumbnailGenerator);
+        ControlBar.Setup(mediaCtrl, _vm.InputHandler, thumbnailGenerator);
 
         _rightHold = new RightHoldSpeedController(
             mediaCtrl,
@@ -108,24 +99,18 @@ public partial class FullscreenWindow : Window
             speed => ControlBar.UpdateSpeedButtonText(speed));
         ControlBar.IsFullscreen = true;
 
-        // 控制栏按钮 → 本地处理
-        ControlBar.PlayPauseClicked += (_, _) => mediaController.TogglePlayPause();
-        ControlBar.PreviousClicked += (_, _) => { }; // PlayerPage handles via events
+        ControlBar.PlayPauseClicked += (_, _) => mediaCtrl.TogglePlayPause();
+        ControlBar.PreviousClicked += (_, _) => { };
         ControlBar.NextClicked += (_, _) => { };
-        ControlBar.StopClicked += (_, _) => mediaController.Stop();
+        ControlBar.StopClicked += (_, _) => mediaCtrl.Stop();
         ControlBar.FullscreenClicked += (_, _) => ExitRequested?.Invoke(this, EventArgs.Empty);
         ControlBar.SettingsClicked += (_, _) =>
         {
-            var window = new KeyBindingsWindow(input)
-            {
-                Owner = System.Windows.Application.Current.MainWindow
-            };
-            window.ShowDialog();
+            _vm.OpenKeyBindingsSettings();
             ControlBar.UpdateButtonTooltips();
         };
-        ControlBar.SeekRequested += time => mediaController.SeekTo(time);
+        ControlBar.SeekRequested += time => mediaCtrl.SeekTo(time);
 
-        // 控制栏鼠标进入/离开 → 自动隐藏控制
         ControlBar.ControlBarMouseEnter += (_, _) =>
         {
             controlBarHideTimer.Stop();
@@ -137,7 +122,6 @@ public partial class FullscreenWindow : Window
                 controlBarHideTimer.Start();
         };
 
-        // 选集面板事件
         PlaylistPanel.EpisodeSelected += (_, item) => EpisodeSelected?.Invoke(this, item);
         PlaylistPanel.MouseEnterBorder += (_, _) =>
         {
@@ -150,14 +134,21 @@ public partial class FullscreenWindow : Window
                 playlistHideTimer.Start();
         };
 
-        // 初始隐藏控制栏和选集
         HideControlBar(immediate: true);
         HidePlaylist(immediate: true);
     }
 
-    public void SetPlaylistItems(IEnumerable<PlaylistItem> items, int selectedIndex)
+    private void VideoImage_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        => _clickRouter.OnMouseDown(e);
+
+    private void VideoImage_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        => _rightHold.OnMouseDown(e);
+
+    private void VideoImage_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        => _rightHold.OnMouseUp(e);
+
+    public void SetPlaylistItems(int selectedIndex)
     {
-        PlaylistPanel.SetItems(items);
         PlaylistPanel.SelectedIndex = selectedIndex;
     }
 
@@ -174,7 +165,7 @@ public partial class FullscreenWindow : Window
         ShowPlaylist();
     }
 
-    // ========== 进入全屏动画 ==========
+    // ========== 全屏动画 ==========
 
     public void ShowWithAnimation(Rect fromRect)
     {
@@ -183,7 +174,7 @@ public partial class FullscreenWindow : Window
         originalVideoRect = fromRect;
         isAnimating = true;
 
-        var mainWindow = System.Windows.Application.Current.MainWindow;
+        var mainWindow = Application.Current.MainWindow;
         Owner = mainWindow;
 
         var hwnd = new WindowInteropHelper(mainWindow).Handle;
@@ -219,18 +210,16 @@ public partial class FullscreenWindow : Window
         VideoImage.RenderTransformOrigin = new Point(0.5, 0.5);
         VideoImage.RenderTransform = group;
 
-        // 暂停大图标位移
         PauseBigIconFSTranslate.X = fromRect.Right - Left - Width;
         PauseBigIconFSTranslate.Y = fromRect.Bottom - Top - Height;
 
-        VideoImage.Source = mediaController!.VideoBitmap;
+        VideoImage.Source = _media.VideoBitmap;
         Show();
 
-        // 确保每次进入全屏时控制栏和选集默认隐藏
         HideControlBar(immediate: true);
         HidePlaylist(immediate: true);
 
-        bool wasPaused = mediaController?.IsPlaying == false;
+        bool wasPaused = _media.IsPlaying == false;
         if (wasPaused)
             _pauseOverlay.ShowImmediate();
 
@@ -428,14 +417,14 @@ public partial class FullscreenWindow : Window
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (isAnimating) { e.Handled = true; return; }
-        if (inputHandler?.HandleKeyDown(e, isFullscreen: true) == true)
+        if (_vm.HandleKeyDown(e, isFullscreen: true))
             e.Handled = true;
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
         if (isAnimating) { e.Handled = true; return; }
-        if (inputHandler?.HandleKeyDown(e, isFullscreen: true) == true)
+        if (_vm.HandleKeyDown(e, isFullscreen: true))
             e.Handled = true;
     }
 
@@ -452,7 +441,7 @@ public partial class FullscreenWindow : Window
         VideoImage.Source = null;
     }
 
-    // ========== P/Invoke: 屏幕信息（替代 WinForms Screen / System.Drawing） ==========
+    // ========== P/Invoke ==========
 
     private const uint MONITOR_DEFAULTTONEAREST = 2;
 

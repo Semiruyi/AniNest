@@ -9,6 +9,7 @@ using LocalPlayer.Model;
 using LocalPlayer.View;
 using LocalPlayer.View.Library;
 using LocalPlayer.View.Player;
+using LocalPlayer.ViewModel;
 
 namespace LocalPlayer;
 
@@ -35,6 +36,10 @@ public partial class App : System.Windows.Application
 
         // 每个播放页需要独立的 MediaPlayerController
         services.AddTransient<IMediaPlayerController, MediaPlayerController>();
+
+        // ViewModels
+        services.AddTransient<MainPageViewModel>();
+        services.AddTransient<PlayerViewModel>();
 
         // 页面
         services.AddTransient<MainPage>();

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using LocalPlayer.Media;
 
@@ -16,7 +17,7 @@ public class PlaylistManager
     public string CurrentFolderPath { get; private set; } = "";
     public string CurrentFolderName { get; private set; } = "";
     public string[] VideoFiles { get; private set; } = Array.Empty<string>();
-    public List<PlaylistItem> Items { get; private set; } = new();
+    public ObservableCollection<PlaylistItem> Items { get; private set; } = new();
     public int CurrentIndex { get; set; } = -1;
 
     public PlaylistItem? CurrentItem =>
@@ -42,7 +43,7 @@ public class PlaylistManager
         VideoFiles = VideoScanner.GetVideoFiles(folderPath);
         Log($"扫描到 {VideoFiles.Length} 个视频文件");
 
-        Items = new List<PlaylistItem>();
+        Items.Clear();
         for (int i = 0; i < VideoFiles.Length; i++)
         {
             var filePath = VideoFiles[i];

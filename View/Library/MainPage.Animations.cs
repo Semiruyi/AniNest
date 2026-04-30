@@ -17,7 +17,7 @@ public partial class MainPage
         if (!IsLoaded) return;
 
         var borders = new List<Border>();
-        foreach (var item in folderItems)
+        foreach (var item in _vm.FolderItems)
         {
             var container = FolderList.ItemContainerGenerator.ContainerFromItem(item);
             var border = FindChildBorder(container);
@@ -49,7 +49,7 @@ public partial class MainPage
     internal Dictionary<FolderListItem, System.Windows.Point> CaptureCardPositions()
     {
         var positions = new Dictionary<FolderListItem, System.Windows.Point>();
-        foreach (var item in folderItems)
+        foreach (var item in _vm.FolderItems)
         {
             var container = FolderList.ItemContainerGenerator.ContainerFromItem(item);
             var border = FindChildBorder(container);
@@ -66,9 +66,9 @@ public partial class MainPage
     {
         _ = Dispatcher.BeginInvoke(new Action(() =>
         {
-            for (int i = 0; i < folderItems.Count; i++)
+            for (int i = 0; i < _vm.FolderItems.Count; i++)
             {
-                var item = folderItems[i];
+                var item = _vm.FolderItems[i];
                 if (!oldPositions.TryGetValue(item, out var oldPos))
                     continue;
 

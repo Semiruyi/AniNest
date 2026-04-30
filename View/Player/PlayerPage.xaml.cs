@@ -16,7 +16,7 @@ using LocalPlayer.Controls;
 using LocalPlayer.Interaction;
 using LocalPlayer.View.Player;
 using LocalPlayer.View.Settings;
-
+using LocalPlayer.ViewModel;
 
 namespace LocalPlayer.View.Player;
 
@@ -25,36 +25,30 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private static void Log(string message) => AppLog.Info(nameof(PlayerPage), message);
     private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(PlayerPage), message, ex);
 
-    private readonly IMediaPlayerController mediaController;
-    private readonly ISettingsService settingsService;
-    private readonly PlayerInputHandler inputHandler;
+    private readonly PlayerViewModel _vm;
+    private readonly IMediaPlayerController _media;
     private readonly IThumbnailGenerator _thumbnailGenerator;
-    private readonly PlaylistManager playlistManager;
-    private readonly DispatcherTimer saveProgressTimer;
 
     private PauseOverlayController _pauseOverlay = null!;
     private RightHoldSpeedController _rightHold = null!;
     private ClickRouter _clickRouter = null!;
 
-    private string? pendingLoadFolderPath;
-    private string? pendingLoadFolderName;
-    private bool _updatingSelection;
-
-    private float currentSpeed = 1.0f;
-
     private Window? parentWindow;
-    private bool isFullscreen = false;
     private FullscreenWindow? fullscreenWindow;
 
     public event EventHandler? BackRequested;
 
-    public PlayerPage(ISettingsService settings, IMediaPlayerController media,
+    public PlayerPage(PlayerViewModel vm, IMediaPlayerController media,
                       IThumbnailGenerator thumbnailGenerator)
     {
-        settingsService = settings;
-        mediaController = media;
+        _vm = vm;
+        _media = media;
         _thumbnailGenerator = thumbnailGenerator;
-        inputHandler = new PlayerInputHandler(settings);
+
+        // 将 PlayerPage 的 IMediaPlayerController 实例注入 ViewModel，确保共享同一实例
+        _vm.Initialize(_media);
+
+        DataContext = _vm;
 
         try
         {
@@ -72,46 +66,34 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         GotKeyboardFocus += PlayerPage_GotKeyboardFocus;
         LostKeyboardFocus += PlayerPage_LostKeyboardFocus;
 
-        playlistManager = new PlaylistManager(
-            settingsService, mediaController,
-            path => _thumbnailGenerator.GetState(path));
-
-        saveProgressTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
-        saveProgressTimer.Tick += (_, _) => playlistManager.SaveProgress();
-
         _pauseOverlay = new PauseOverlayController(PauseBigIconScale, PauseBigIcon);
         _rightHold = new RightHoldSpeedController(
-            mediaController,
-            () => currentSpeed,
+            _media,
+            () => _vm.Rate,
             speed => ControlBar.UpdateSpeedButtonText(speed));
         _clickRouter = new ClickRouter(
-            () => mediaController.TogglePlayPause(),
-            () => ToggleFullscreen());
+            () => _media.TogglePlayPause(),
+            () => _vm.ToggleFullscreenCommand.Execute(null));
 
-        inputHandler.TogglePlayPause += (_, _) => mediaController.TogglePlayPause();
-        inputHandler.SeekForward += (_, _) => mediaController.SeekForward(5000);
-        inputHandler.SeekBackward += (_, _) => mediaController.SeekBackward(5000);
-        inputHandler.Back += (_, _) =>
+        _vm.BackRequested += () =>
         {
-            playlistManager.SaveProgress();
+            _vm.SaveProgress();
             BackRequested?.Invoke(this, EventArgs.Empty);
         };
-        inputHandler.NextEpisode += (_, _) => PlayNext();
-        inputHandler.PreviousEpisode += (_, _) => PlayPrevious();
-        inputHandler.ToggleFullscreen += (_, _) => ToggleFullscreen();
-        inputHandler.ExitFullscreen += (_, _) => ExitFullscreen();
-
-        inputHandler.ReloadBindings();
-
-        _thumbnailGenerator.VideoReady += path =>
-            Dispatcher.Invoke(() => playlistManager.UpdateThumbnailReady(path));
-        _thumbnailGenerator.VideoProgress += (path, percent) =>
-            Dispatcher.Invoke(() => playlistManager.UpdateThumbnailProgress(path, percent));
-
-        playlistManager.VideoPlayed += filePath =>
+        _vm.FullscreenToggled += () =>
         {
-            ControlBar.SetCurrentVideo(filePath);
-            fullscreenWindow?.ControlBar?.SetCurrentVideo(filePath);
+            if (_vm.IsFullscreen)
+                ExitFullscreen();
+            else
+                EnterFullscreen();
+        };
+        _vm.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(PlayerViewModel.CurrentVideoPath) && _vm.CurrentVideoPath != null)
+            {
+                ControlBar.SetCurrentVideo(_vm.CurrentVideoPath);
+                fullscreenWindow?.ControlBar?.SetCurrentVideo(_vm.CurrentVideoPath);
+            }
         };
     }
 
@@ -123,15 +105,15 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
             parentWindow = Window.GetWindow(this);
 
-            ControlBar.Setup(mediaController, inputHandler, _thumbnailGenerator);
+            ControlBar.Setup(_media, _vm.InputHandler, _thumbnailGenerator);
             ControlBar.IsFullscreen = false;
             ControlBar.UpdateButtonTooltips();
 
-            ControlBar.PlayPauseClicked += (_, _) => mediaController.TogglePlayPause();
-            ControlBar.PreviousClicked += (_, _) => PlayPrevious();
-            ControlBar.NextClicked += (_, _) => PlayNext();
-            ControlBar.StopClicked += (_, _) => mediaController.Stop();
-            ControlBar.FullscreenClicked += (_, _) => ToggleFullscreen();
+            ControlBar.PlayPauseClicked += (_, _) => _media.TogglePlayPause();
+            ControlBar.PreviousClicked += (_, _) => _vm.PreviousCommand.Execute(null);
+            ControlBar.NextClicked += (_, _) => _vm.NextCommand.Execute(null);
+            ControlBar.StopClicked += (_, _) => _media.Stop();
+            ControlBar.FullscreenClicked += (_, _) => EnterFullscreen();
             ControlBar.PlaylistToggleClicked += (_, _) =>
             {
                 PlaylistPanel.Visibility = PlaylistPanel.Visibility == Visibility.Visible
@@ -140,39 +122,24 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             };
             ControlBar.SettingsClicked += (_, _) =>
             {
-                var window = new KeyBindingsWindow(inputHandler)
-                {
-                    Owner = Window.GetWindow(this)
-                };
-                window.ShowDialog();
+                _vm.OpenKeyBindingsSettings();
                 ControlBar.UpdateButtonTooltips();
             };
-            ControlBar.SpeedChanged += speed => currentSpeed = speed;
-            ControlBar.SeekRequested += time => mediaController.SeekTo(time);
+            ControlBar.SpeedChanged += speed => _vm.ChangeSpeedCommand.Execute(speed);
+            ControlBar.SeekRequested += time => _media.SeekTo(time);
 
             PlaylistPanel.EpisodeSelected += (_, item) =>
             {
-                if (_updatingSelection)
-                {
-                    _updatingSelection = false;
-                    return;
-                }
-                playlistManager.PlayEpisode(item.Number - 1);
+                _vm.SelectEpisode(item.Number - 1);
             };
 
             if (fullscreenWindow == null)
             {
-                fullscreenWindow = new FullscreenWindow();
-                fullscreenWindow.Setup(mediaController, inputHandler, _thumbnailGenerator);
+                fullscreenWindow = new FullscreenWindow(_vm, _media, _thumbnailGenerator);
                 fullscreenWindow.ExitRequested += (_, _) => ExitFullscreen();
                 fullscreenWindow.EpisodeSelected += (_, item) =>
                 {
-                    if (_updatingSelection)
-                    {
-                        _updatingSelection = false;
-                        return;
-                    }
-                    playlistManager.PlayEpisode(item.Number - 1);
+                    _vm.SelectEpisode(item.Number - 1);
                 };
             }
 
@@ -194,19 +161,18 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             };
             PageRoot.BeginAnimation(OpacityProperty, anim);
 
-            mediaController.Initialize();
-            VideoImage.Source = mediaController.VideoBitmap;
+            _media.Initialize();
+            VideoImage.Source = _media.VideoBitmap;
 
-            _pauseOverlay.WireMediaEvents(mediaController, Dispatcher);
+            _pauseOverlay.WireMediaEvents(_media, Dispatcher);
 
-            saveProgressTimer.Start();
-
-            if (pendingLoadFolderPath != null)
+            // 延迟 LoadFolder 在此执行
+            if (_pendingFolderPath != null)
             {
-                var path = pendingLoadFolderPath;
-                var name = pendingLoadFolderName ?? "";
-                pendingLoadFolderPath = null;
-                pendingLoadFolderName = null;
+                var path = _pendingFolderPath;
+                var name = _pendingFolderName ?? "";
+                _pendingFolderPath = null;
+                _pendingFolderName = null;
                 LoadFolder(path, name);
             }
         }
@@ -217,6 +183,9 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         }
     }
 
+    private string? _pendingFolderPath;
+    private string? _pendingFolderName;
+
     private void PlayerPage_Unloaded(object sender, RoutedEventArgs e)
     {
         Dispose();
@@ -226,34 +195,15 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         if (!IsLoaded)
         {
-            pendingLoadFolderPath = folderPath;
-            pendingLoadFolderName = folderName;
+            _pendingFolderPath = folderPath;
+            _pendingFolderName = folderName;
             return;
         }
 
-        playlistManager.LoadFolder(folderPath, folderName);
+        _vm.LoadFolder(folderPath, folderName);
 
-        PlaylistPanel.SetItems(playlistManager.Items);
         _ = PlaylistPanel.AnimateEpisodeButtonsEntrance();
-        PlaylistPanel.SelectedIndex = playlistManager.CurrentIndex;
-    }
-
-    private void PlayNext()
-    {
-        if (playlistManager.PlayNext())
-        {
-            _updatingSelection = true;
-            PlaylistPanel.SelectedIndex = playlistManager.CurrentIndex;
-        }
-    }
-
-    private void PlayPrevious()
-    {
-        if (playlistManager.PlayPrevious())
-        {
-            _updatingSelection = true;
-            PlaylistPanel.SelectedIndex = playlistManager.CurrentIndex;
-        }
+        PlaylistPanel.SelectedIndex = _vm.CurrentIndex;
     }
 
     // ========== 键盘事件 ==========
@@ -261,7 +211,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private void ProcessKeyboardEvent(KeyEventArgs e, string source)
     {
         Log($"KeyDown({source}): Key={e.Key}");
-        if (inputHandler.HandleKeyDown(e, isFullscreen))
+        if (_vm.HandleKeyDown(e, _vm.IsFullscreen))
             e.Handled = true;
     }
 
@@ -286,11 +236,11 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         if (e.ChangedButton == MouseButton.XButton1)
         {
-            if (isFullscreen)
+            if (_vm.IsFullscreen)
                 ExitFullscreen();
             else
             {
-                playlistManager.SaveProgress();
+                _vm.SaveProgress();
                 BackRequested?.Invoke(this, EventArgs.Empty);
             }
             e.Handled = true;
@@ -316,23 +266,15 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     // ========== 全屏切换 ==========
 
-    private void ToggleFullscreen()
-    {
-        if (isFullscreen)
-            ExitFullscreen();
-        else
-            EnterFullscreen();
-    }
-
     private void EnterFullscreen()
     {
         if (parentWindow == null || fullscreenWindow == null) return;
-        if (isFullscreen) return;
+        if (_vm.IsFullscreen) return;
 
         ControlBar.CloseSpeedPopup();
 
-        fullscreenWindow.SetPlaylistItems(playlistManager.Items, PlaylistPanel.SelectedIndex);
-        fullscreenWindow.SetSpeed(ControlBar.CurrentSpeed);
+        fullscreenWindow.SetPlaylistItems(_vm.CurrentIndex);
+        fullscreenWindow.SetSpeed(_vm.Rate);
 
         var source = PresentationSource.FromVisual(VideoContainer);
         var dpiX = source!.CompositionTarget!.TransformToDevice.M11;
@@ -346,7 +288,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         VideoImage.Source = null;
         fullscreenWindow.ShowWithAnimation(fromRect);
 
-        isFullscreen = true;
+        _vm.IsFullscreen = true;
         ControlBar.IsFullscreen = true;
 
         ControlBar.Visibility = Visibility.Collapsed;
@@ -355,16 +297,16 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     private void ExitFullscreen()
     {
-        if (!isFullscreen || fullscreenWindow == null) return;
+        if (!_vm.IsFullscreen || fullscreenWindow == null) return;
 
-        isFullscreen = false;
+        _vm.IsFullscreen = false;
         ControlBar.IsFullscreen = false;
 
         fullscreenWindow.StopAutoHideTimers();
 
         fullscreenWindow.HideWithAnimation();
 
-        VideoImage.Source = mediaController.VideoBitmap;
+        VideoImage.Source = _media.VideoBitmap;
 
         ControlBar.Visibility = Visibility.Visible;
         PlaylistPanel.Visibility = Visibility.Visible;
@@ -384,15 +326,14 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     public void Dispose()
     {
         Log("Dispose 开始");
-        saveProgressTimer.Stop();
-        playlistManager.SaveProgress();
+        _vm.SaveProgress();
 
         ControlBar.Dispose();
 
         fullscreenWindow?.Close();
         fullscreenWindow = null;
 
-        mediaController.Dispose();
+        _media.Dispose();
         Log("Dispose 完成");
     }
 }

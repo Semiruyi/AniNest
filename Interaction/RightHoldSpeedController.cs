@@ -63,4 +63,14 @@ public class RightHoldSpeedController
         _mediaCtrl.Rate = _holdSpeed;
         _onSpeedChanged(_holdSpeed);
     }
+
+    public void Dispose()
+    {
+        _timer.Stop();
+        if (_isHolding)
+        {
+            _isHolding = false;
+            _mediaCtrl.Rate = _savedSpeed;
+        }
+    }
 }

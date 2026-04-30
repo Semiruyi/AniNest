@@ -17,7 +17,7 @@ public partial class MainPage
         if (sender is not Border border || border.Tag is not string path) return;
         if (IsOriginalSourceInsideButton(e.OriginalSource, border)) return;
 
-        _dragItem = folderItems.FirstOrDefault(i => i.Path == path);
+        _dragItem = _vm.FolderItems.FirstOrDefault(i => i.Path == path);
         _dragStartPoint = e.GetPosition(null);
         _dragInitiated = false;
     }
@@ -77,16 +77,7 @@ public partial class MainPage
         {
             if (sender is Border border && border.Tag is string path)
             {
-                string name = Path.GetFileName(path);
-                var videos = VideoScanner.GetVideoFiles(path);
-                if (videos.Length == 0)
-                {
-                    System.Windows.MessageBox.Show("文件夹内没有视频文件", "提示");
-                }
-                else
-                {
-                    FolderSelected?.Invoke(this, path, name);
-                }
+                _vm.TrySelectFolder(path, out _);
             }
         }
         _dragItem = null;
@@ -117,17 +108,17 @@ public partial class MainPage
 
         var pos = e.GetPosition(FolderList);
         int targetIndex = CalculateTargetIndex(pos);
-        int sourceIndex = folderItems.IndexOf(sourceItem);
+        int sourceIndex = _vm.FolderItems.IndexOf(sourceItem);
 
         if (sourceIndex < 0) return;
 
         if (targetIndex > sourceIndex) targetIndex--;
 
-        if (targetIndex >= 0 && targetIndex < folderItems.Count && targetIndex != sourceIndex)
+        if (targetIndex >= 0 && targetIndex < _vm.FolderItems.Count && targetIndex != sourceIndex)
         {
-            folderItems.Move(sourceIndex, targetIndex);
-            var paths = folderItems.Select(i => i.Path).ToList();
-            settingsService.ReorderFolders(paths);
+            _vm.FolderItems.Move(sourceIndex, targetIndex);
+            var paths = _vm.FolderItems.Select(i => i.Path).ToList();
+            _vm.ReorderFolders(paths);
         }
 
         HideInsertionIndicator();
@@ -141,9 +132,9 @@ public partial class MainPage
 
     private int CalculateTargetIndex(System.Windows.Point dropPos)
     {
-        for (int i = 0; i < folderItems.Count; i++)
+        for (int i = 0; i < _vm.FolderItems.Count; i++)
         {
-            var container = FolderList.ItemContainerGenerator.ContainerFromItem(folderItems[i]);
+            var container = FolderList.ItemContainerGenerator.ContainerFromItem(_vm.FolderItems[i]);
             if (container is not FrameworkElement fe) continue;
 
             var containerPos = fe.TranslatePoint(new System.Windows.Point(0, 0), FolderList);
@@ -154,7 +145,7 @@ public partial class MainPage
                 return dropPos.X < rect.X + rect.Width / 2 ? i : i + 1;
             }
         }
-        return folderItems.Count;
+        return _vm.FolderItems.Count;
     }
 
     private void UpdateInsertionIndicator(int targetIndex)
@@ -167,18 +158,18 @@ public partial class MainPage
             layer.Add(_insertionAdorner);
         }
 
-        if (targetIndex < folderItems.Count)
+        if (targetIndex < _vm.FolderItems.Count)
         {
-            var container = FolderList.ItemContainerGenerator.ContainerFromItem(folderItems[targetIndex]);
+            var container = FolderList.ItemContainerGenerator.ContainerFromItem(_vm.FolderItems[targetIndex]);
             if (container is FrameworkElement fe)
             {
                 var pos = fe.TranslatePoint(new System.Windows.Point(0, 0), FolderList);
                 _insertionAdorner.ShowAt(pos.X - 4, pos.Y, fe.ActualHeight);
             }
         }
-        else if (folderItems.Count > 0)
+        else if (_vm.FolderItems.Count > 0)
         {
-            var container = FolderList.ItemContainerGenerator.ContainerFromItem(folderItems[^1]);
+            var container = FolderList.ItemContainerGenerator.ContainerFromItem(_vm.FolderItems[^1]);
             if (container is FrameworkElement fe)
             {
                 var pos = fe.TranslatePoint(new System.Windows.Point(0, 0), FolderList);

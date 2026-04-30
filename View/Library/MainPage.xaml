@@ -4,6 +4,7 @@
              
              Background="{StaticResource BackgroundDark}">
     <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <Style x:Key="PosterCardStyle" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource SurfaceDark}"/>
             <Setter Property="CornerRadius" Value="10"/>
@@ -282,19 +283,21 @@
 
                 <!-- 左侧：文件夹统计信息 + 缩略图生成进度 -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock x:Name="FolderCountText" Text="0 个文件夹" Foreground="{StaticResource TextSecondary}" FontSize="13" VerticalAlignment="Center"/>
-                    <TextBlock x:Name="ThumbnailProgressText" Text="" Foreground="{StaticResource TextSecondary}" FontSize="12" VerticalAlignment="Center" Margin="16,0,0,0" Visibility="Collapsed"/>
+                    <TextBlock Text="{Binding FolderCountText}" Foreground="{StaticResource TextSecondary}" FontSize="13" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding ThumbnailProgressText}" Foreground="{StaticResource TextSecondary}" FontSize="12" VerticalAlignment="Center" Margin="16,0,0,0"
+                               Visibility="{Binding IsThumbnailProgressVisible, Converter={StaticResource BoolToVis}}"/>
                 </StackPanel>
 
                 <!-- 中间：快速操作提示（空状态时显示） -->
-                <TextBlock x:Name="EmptyHintText" Grid.Column="1" Text="添加文件夹开始浏览视频" Foreground="{StaticResource TextSecondary}" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.5"/>
+                <TextBlock x:Name="EmptyHintText" Grid.Column="1" Text="添加文件夹开始浏览视频" Foreground="{StaticResource TextSecondary}" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.5"
+                           Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}"/>
 
                 <!-- 右侧：操作按钮组 -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
                     <!-- 设置按钮（为"默认扫描文件夹"功能预留扩展） -->
                     <Button x:Name="SettingsBtn" Width="36" Height="36" Margin="0,0,12,0"
                             Background="Transparent" BorderThickness="0" Cursor="Hand"
-                            Click="SettingsBtn_Click" Opacity="0.7"
+                            Command="{Binding SettingsCommand}" Opacity="0.7"
                             ToolTip="设置">
                         <Button.Style>
                             <Style TargetType="Button">
@@ -346,7 +349,7 @@
                     </Button>
 
                     <!-- 添加文件夹主按钮 -->
-                    <Button x:Name="AddFolderBtn" Click="AddFolderBtn_Click" Cursor="Hand">
+                    <Button x:Name="AddFolderBtn" Command="{Binding AddFolderCommand}" Cursor="Hand">
                         <Button.Style>
                             <Style TargetType="Button">
                                 <Setter Property="Height" Value="38"/>

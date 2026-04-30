@@ -10,7 +10,7 @@ using LocalPlayer.Primitives;
 using LocalPlayer.Model;
 using LocalPlayer.Media;
 using LocalPlayer.Interaction;
-
+using LocalPlayer.ViewModel;
 
 namespace LocalPlayer.Controls;
 
@@ -27,7 +27,6 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
     private PlayerInputHandler? _inputHandler;
     private SpeedPopupController? _speedPopupView;
     private ThumbnailPreviewController? _thumbnailPreviewView;
-    private bool _isProgressDragging;
 
     public float CurrentSpeed => _speedPopupView?.CurrentSpeed ?? 1.0f;
 
@@ -35,17 +34,7 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
     public bool IsFullscreen
     {
         get => _isFullscreen;
-        set
-        {
-            _isFullscreen = value;
-            Dispatcher.Invoke(() =>
-            {
-                FullscreenIcon.Source = new BitmapImage(
-                    new Uri(value
-                        ? "pack://application:,,,/Resources/Icons/exitFullScreen.png"
-                        : "pack://application:,,,/Resources/Icons/fullScreen.png"));
-            });
-        }
+        set => _isFullscreen = value;
     }
 
     // --- Events ---
@@ -80,11 +69,6 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
             thumbnailGenerator,
             () => _mediaController.Length);
 
-        _mediaController.Playing += OnPlaying;
-        _mediaController.Paused += OnPaused;
-        _mediaController.Stopped += OnStopped;
-        _mediaController.ProgressUpdated += OnProgressUpdated;
-
         UpdateButtonTooltips();
     }
 
@@ -109,30 +93,6 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
         PreviousBtn.ToolTip = $"上一集 ({KeyDisplayString(bindings["PreviousEpisode"])})";
         NextBtn.ToolTip = $"下一集 ({KeyDisplayString(bindings["NextEpisode"])})";
         FullscreenBtn.ToolTip = $"全屏 ({KeyDisplayString(bindings["ToggleFullscreen"])})";
-    }
-
-    // --- MediaController event handlers ---
-    private void OnPlaying(object? s, EventArgs e) => Dispatcher.Invoke(() =>
-        PlayPauseIcon.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/Icons/pause.png")));
-
-    private void OnPaused(object? s, EventArgs e) => Dispatcher.Invoke(() =>
-        PlayPauseIcon.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/Icons/play.png")));
-
-    private void OnStopped(object? s, EventArgs e) => Dispatcher.Invoke(() =>
-        PlayPauseIcon.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/Icons/play.png")));
-
-    private void OnProgressUpdated(object? s, ProgressUpdatedEventArgs e)
-    {
-        if (!_isProgressDragging)
-        {
-            Dispatcher.Invoke(() =>
-            {
-                ProgressSlider.Maximum = e.TotalTime;
-                ProgressSlider.Value = e.CurrentTime;
-                CurrentTimeText.Text = MediaPlayerController.FormatTime(e.CurrentTime);
-                TotalTimeText.Text = MediaPlayerController.FormatTime(e.TotalTime);
-            });
-        }
     }
 
     // --- Button click handlers ---
@@ -208,6 +168,8 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
     private void ProgressSlider_PreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ChangedButton != MouseButton.Left) return;
+        if (DataContext is PlayerViewModel vm)
+            vm.IsSeeking = true;
 
         if (e.OriginalSource is not Thumb && ProgressSlider.ActualWidth > 0)
         {
@@ -225,26 +187,21 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
             double newValue = ProgressSlider.Minimum + ratio * (ProgressSlider.Maximum - ProgressSlider.Minimum);
             ProgressSlider.Value = Math.Max(ProgressSlider.Minimum, Math.Min(ProgressSlider.Maximum, newValue));
         }
-
-        _isProgressDragging = true;
     }
 
     private void ProgressSlider_PreviewMouseUp(object sender, MouseButtonEventArgs e)
     {
         if (e.ChangedButton != MouseButton.Left) return;
-        _isProgressDragging = false;
+        if (DataContext is PlayerViewModel vm)
+            vm.IsSeeking = false;
         SeekRequested?.Invoke((long)ProgressSlider.Value);
     }
 
     private void ProgressSlider_LostMouseCapture(object sender, MouseEventArgs e)
     {
-        _isProgressDragging = false;
+        if (DataContext is PlayerViewModel vm)
+            vm.IsSeeking = false;
         SeekRequested?.Invoke((long)ProgressSlider.Value);
-    }
-
-    private void ProgressSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        CurrentTimeText.Text = MediaPlayerController.FormatTime((long)ProgressSlider.Value);
     }
 
     // --- Speed popup forwarding ---
@@ -314,13 +271,6 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
 
     public void Dispose()
     {
-        if (_mediaController != null)
-        {
-            _mediaController.Playing -= OnPlaying;
-            _mediaController.Paused -= OnPaused;
-            _mediaController.Stopped -= OnStopped;
-            _mediaController.ProgressUpdated -= OnProgressUpdated;
-        }
         _speedPopupView?.Dispose();
         _thumbnailPreviewView?.Dispose();
     }

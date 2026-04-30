@@ -8,7 +8,6 @@ using System.Windows.Media.Animation;
 using LocalPlayer.Primitives;
 using LocalPlayer.Model;
 
-
 namespace LocalPlayer.Controls;
 
 public partial class PlaylistPanelView : System.Windows.Controls.UserControl
@@ -31,19 +30,6 @@ public partial class PlaylistPanelView : System.Windows.Controls.UserControl
     public PlaylistItem? SelectedItem => PlaylistBox.SelectedItem as PlaylistItem;
 
     public int ItemCount => PlaylistBox.Items.Count;
-
-    public void SetItems(IEnumerable<PlaylistItem> items)
-    {
-        PlaylistBox.Items.Clear();
-        foreach (var item in items)
-            PlaylistBox.Items.Add(item);
-        EpisodeCountText.Text = PlaylistBox.Items.Count > 0 ? $"{PlaylistBox.Items.Count} 集" : "";
-    }
-
-    public void SetCountText(string text)
-    {
-        EpisodeCountText.Text = text;
-    }
 
     private void EpisodeButton_Click(object sender, RoutedEventArgs e)
     {

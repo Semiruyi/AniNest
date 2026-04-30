@@ -308,7 +308,18 @@
                     <Image Source="/Resources/Icons/previous.png" Width="14" Height="14"/>
                 </Button>
                 <Button x:Name="PlayPauseBtn" Style="{StaticResource PlayButton}" Click="PlayPauseBtn_Click" Margin="2,0" ToolTip="播放/暂停 (Space)" Focusable="False">
-                    <Image x:Name="PlayPauseIcon" Source="/Resources/Icons/play.png" Width="20" Height="20"/>
+                    <Image x:Name="PlayPauseIcon" Width="20" Height="20">
+                        <Image.Style>
+                            <Style TargetType="Image">
+                                <Setter Property="Source" Value="/Resources/Icons/play.png"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                        <Setter Property="Source" Value="/Resources/Icons/pause.png"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Image.Style>
+                    </Image>
                 </Button>
                 <Button x:Name="NextBtn" Style="{StaticResource IconButton}" Click="NextBtn_Click" ToolTip="下一集 (N)" Focusable="False">
                     <Image Source="/Resources/Icons/next.png" Width="14" Height="14"/>
@@ -316,12 +327,12 @@
                 <Button x:Name="StopBtn" Style="{StaticResource IconButton}" Click="StopBtn_Click" Margin="2,0,0,0" ToolTip="停止" Focusable="False">
                     <Image Source="/Resources/Icons/stop.png" Width="14" Height="14"/>
                 </Button>
-                <TextBlock x:Name="CurrentTimeText" Text="00:00"
+                <TextBlock Text="{Binding CurrentTimeText, FallbackValue='00:00'}"
                            Foreground="{StaticResource TextSecondary}" FontSize="11"
                            VerticalAlignment="Center" Margin="10,0,0,0" FontFamily="Segoe UI, Microsoft YaHei, sans-serif"/>
                 <TextBlock Text=" / " Foreground="#66FFFFFF" FontSize="11"
                            VerticalAlignment="Center" Margin="2,0"/>
-                <TextBlock x:Name="TotalTimeText" Text="00:00"
+                <TextBlock Text="{Binding TotalTimeText, FallbackValue='00:00'}"
                            Foreground="{StaticResource TextSecondary}" FontSize="11"
                            VerticalAlignment="Center" FontFamily="Segoe UI, Microsoft YaHei, sans-serif"/>
             </StackPanel>
@@ -329,9 +340,10 @@
             <!-- 中间：进度条 -->
             <Slider x:Name="ProgressSlider" Grid.Column="1"
                     Style="{StaticResource ModernSlider}"
+                    Value="{Binding CurrentTime}"
+                    Maximum="{Binding TotalTime}"
                     PreviewMouseDown="ProgressSlider_PreviewMouseDown"
                     PreviewMouseUp="ProgressSlider_PreviewMouseUp"
-                    ValueChanged="ProgressSlider_ValueChanged"
                     LostMouseCapture="ProgressSlider_LostMouseCapture"
                     MouseEnter="ProgressSlider_MouseEnter"
                     MouseLeave="ProgressSlider_MouseLeave"
@@ -412,7 +424,18 @@
                     <Image Source="/Resources/Icons/settings.png" Width="16" Height="16"/>
                 </Button>
                 <Button x:Name="FullscreenBtn" Style="{StaticResource IconButton}" Click="FullscreenBtn_Click" Margin="2,0,0,0" ToolTip="全屏 (F)" Focusable="False">
-                    <Image x:Name="FullscreenIcon" Source="/Resources/Icons/fullScreen.png" Width="16" Height="16"/>
+                    <Image x:Name="FullscreenIcon" Width="16" Height="16">
+                        <Image.Style>
+                            <Style TargetType="Image">
+                                <Setter Property="Source" Value="/Resources/Icons/fullScreen.png"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
+                                        <Setter Property="Source" Value="/Resources/Icons/exitFullScreen.png"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Image.Style>
+                    </Image>
                 </Button>
             </StackPanel>
         </Grid>
