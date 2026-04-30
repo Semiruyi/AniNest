@@ -6,8 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
-using LocalPlayer.View.Primitives;
-using LocalPlayer.Model;
+using LocalPlayer.View.Animations;
 using Button = System.Windows.Controls.Button;
 using Panel = System.Windows.Controls.Panel;
 using Mouse = System.Windows.Input.Mouse;
@@ -20,14 +19,13 @@ namespace LocalPlayer.View.Player.Interaction;
 /// </summary>
 public class SpeedPopupController : IDisposable
 {
-    private static void Log(string message) => AppLog.Info(nameof(SpeedPopupController), message);
-
+    private readonly Action<string> _log;
     private readonly Popup _speedPopup;
     private readonly Button _speedBtn;
-    private readonly ScaleTransform _speedPopupScale;
     private readonly Panel _speedOptionsPanel;
     private readonly UIElement _pageRoot;
     private readonly Action<float> _setRate;
+    private readonly PopupAnimator _animator;
 
     private readonly DispatcherTimer _closeTimer;
 
@@ -44,14 +42,18 @@ public class SpeedPopupController : IDisposable
         ScaleTransform speedPopupScale,
         Panel speedOptionsPanel,
         UIElement pageRoot,
-        Action<float> setRate)
+        Action<float> setRate,
+        Action<string>? log = null)
     {
+        _log = log ?? (_ => { });
         _speedPopup = speedPopup;
         _speedBtn = speedBtn;
-        _speedPopupScale = speedPopupScale;
         _speedOptionsPanel = speedOptionsPanel;
         _pageRoot = pageRoot;
         _setRate = setRate;
+
+        _animator = new PopupAnimator(speedPopupScale, (UIElement)speedPopup.Child!,
+            showDurationMs: 250, hideDurationMs: 180);
 
         _speedPopup.CustomPopupPlacementCallback = (_, targetSize, _) =>
         {
@@ -79,7 +81,7 @@ public class SpeedPopupController : IDisposable
         if (_isClosing)
         {
             _speedPopup.IsOpen = true;
-            AnimateIn();
+            _animator.Show();
             return;
         }
 
@@ -91,7 +93,7 @@ public class SpeedPopupController : IDisposable
             dispatcher.BeginInvoke(() =>
             {
                 HighlightSpeedOption(_currentSpeed);
-                AnimateIn();
+                _animator.Show();
             }, DispatcherPriority.Loaded);
         }
     }
@@ -108,7 +110,7 @@ public class SpeedPopupController : IDisposable
         if (_isClosing)
         {
             _speedPopup.IsOpen = true;
-            AnimateIn();
+            _animator.Show();
         }
     }
 
@@ -170,35 +172,11 @@ public class SpeedPopupController : IDisposable
 
     // ========== 动画 ==========
 
-    private void AnimateIn()
-    {
-        _isClosing = false;
-        var border = _speedPopup.Child as Border;
-        if (border == null) return;
-
-        _speedPopupScale.ScaleX = 0;
-        _speedPopupScale.ScaleY = 0;
-        border.Opacity = 0;
-
-        AnimationHelper.AnimateScaleTransform(_speedPopupScale, 1, 250, AnimationHelper.EaseOut);
-        AnimationHelper.Animate(border, UIElement.OpacityProperty, 0, 1, 250, AnimationHelper.EaseOut);
-    }
-
     private void AnimateOut()
     {
         if (_isClosing) return;
         _isClosing = true;
-
-        var border = _speedPopup.Child as Border;
-        if (border == null)
-        {
-            _speedPopup.IsOpen = false;
-            _isClosing = false;
-            return;
-        }
-
-        AnimationHelper.AnimateScaleTransform(_speedPopupScale, 0, 180, AnimationHelper.EaseIn);
-        AnimationHelper.AnimateFromCurrent(border, UIElement.OpacityProperty, 0, 180, AnimationHelper.EaseIn, () =>
+        _animator.Hide(() =>
         {
             _speedPopup.IsOpen = false;
             _isClosing = false;

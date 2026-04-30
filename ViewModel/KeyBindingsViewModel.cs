@@ -15,7 +15,7 @@ namespace LocalPlayer.ViewModel;
 
 public partial class KeyBindingsViewModel : ObservableObject
 {
-    private static void Log(string message) => AppLog.Info(nameof(KeyBindingsViewModel), message);
+    public static void Log(string message) => AppLog.Info(nameof(KeyBindingsViewModel), message);
 
     private readonly PlayerInputHandler _inputHandler;
 

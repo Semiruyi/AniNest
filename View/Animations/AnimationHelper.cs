@@ -5,7 +5,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using Point = System.Windows.Point;
 
-namespace LocalPlayer.View.Primitives;
+namespace LocalPlayer.View.Animations;
 
 public static class AnimationHelper
 {
@@ -35,8 +35,6 @@ public static class AnimationHelper
             EasingFunction = ease ?? EaseInOut
         };
     }
-
-    // ========== 通用依赖属性动画 ==========
 
     public static void Animate(IAnimatable target, DependencyProperty property,
         double from, double to, int durationMs, IEasingFunction? ease = null, Action? onCompleted = null)
@@ -74,8 +72,6 @@ public static class AnimationHelper
         return tcs.Task;
     }
 
-    // ========== 透明度 ==========
-
     public static Task FadeInAsync(UIElement element, int durationMs = 300, IEasingFunction? ease = null)
     {
         element.Visibility = Visibility.Visible;
@@ -93,8 +89,6 @@ public static class AnimationHelper
         });
         return tcs.Task;
     }
-
-    // ========== ScaleTransform ==========
 
     public static void EnsureScaleTransform(FrameworkElement element)
     {
@@ -126,8 +120,6 @@ public static class AnimationHelper
         transform.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(toX, d) { EasingFunction = e });
         transform.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(toY, d) { EasingFunction = e });
     }
-
-    // ========== TranslateTransform ==========
 
     public static void AnimateTranslate(TranslateTransform transform, double toX, double toY,
         int durationMs, IEasingFunction? ease = null, Action? onCompleted = null)

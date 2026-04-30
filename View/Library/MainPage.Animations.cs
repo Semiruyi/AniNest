@@ -5,7 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
-using LocalPlayer.View.Primitives;
+using LocalPlayer.View.Animations;
 using LocalPlayer.Model;
 
 namespace LocalPlayer.View.Library;
@@ -16,7 +16,7 @@ public partial class MainPage
     {
         if (!IsLoaded) return;
 
-        var borders = new List<Border>();
+        var borders = new List<FrameworkElement>();
         foreach (var item in _vm.FolderItems)
         {
             var container = FolderList.ItemContainerGenerator.ContainerFromItem(item);
@@ -25,24 +25,7 @@ public partial class MainPage
                 borders.Add(border);
         }
 
-        for (int i = 0; i < borders.Count; i++)
-        {
-            var border = borders[i];
-            var delayMs = i * 35;
-
-            border.RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
-            var st = new ScaleTransform(0, 0);
-            border.RenderTransform = st;
-            border.Opacity = 0;
-
-            st.BeginAnimation(ScaleTransform.ScaleXProperty,
-                AnimationHelper.CreateAnim(0, 1.0, 420, AnimationHelper.EaseOut, delayMs));
-            st.BeginAnimation(ScaleTransform.ScaleYProperty,
-                AnimationHelper.CreateAnim(0, 1.0, 420, AnimationHelper.EaseOut, delayMs));
-            border.BeginAnimation(UIElement.OpacityProperty,
-                AnimationHelper.CreateAnim(0, 1, 320, beginTimeMs: delayMs));
-        }
-
+        _ = StaggeredEntranceAnimator.AnimateAsync(borders);
         FolderList.Opacity = 1;
     }
 
@@ -127,17 +110,7 @@ public partial class MainPage
             var border = FindChildBorder(container);
             if (border == null) return;
 
-            border.RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
-            var st = new ScaleTransform(0, 0);
-            border.RenderTransform = st;
-            border.Opacity = 0;
-
-            st.BeginAnimation(ScaleTransform.ScaleXProperty,
-                AnimationHelper.CreateAnim(0, 1.0, 380, AnimationHelper.EaseOut));
-            st.BeginAnimation(ScaleTransform.ScaleYProperty,
-                AnimationHelper.CreateAnim(0, 1.0, 380, AnimationHelper.EaseOut));
-            border.BeginAnimation(UIElement.OpacityProperty,
-                AnimationHelper.CreateAnim(0, 1, 300));
+            _ = StaggeredEntranceAnimator.AnimateSingleAsync(border);
         }), DispatcherPriority.Loaded);
     }
 }

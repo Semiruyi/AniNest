@@ -7,8 +7,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using LocalPlayer.View.Primitives;
-using LocalPlayer.Model;
+using LocalPlayer.View.Animations;
 using Image = System.Windows.Controls.Image;
 using Mouse = System.Windows.Input.Mouse;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
@@ -20,16 +19,16 @@ namespace LocalPlayer.View.Player.Interaction;
 /// </summary>
 public class ThumbnailPreviewController : IDisposable
 {
-    private static void LogError(string message, Exception? ex = null)
-        => AppLog.Error(nameof(ThumbnailPreviewController), message, ex);
-
+    private readonly Action<string, Exception?> _logError;
+    private readonly Func<string, int, string?> _getThumbnailPath;
+    private readonly Func<string, int> _getThumbnailState;
+    private readonly Func<long, string> _formatTime;
     private readonly Slider _progressSlider;
     private readonly Popup _progressPopup;
-    private readonly ScaleTransform _progressPopupScale;
     private readonly Image _thumbnailImage;
     private readonly TextBlock _thumbnailTimeText;
-    private readonly IThumbnailGenerator _thumbnailGenerator;
     private readonly Func<long> _getVideoLength;
+    private readonly PopupAnimator _animator;
 
     private readonly DispatcherTimer _showTimer;
     private readonly DispatcherTimer _hideTimer;
@@ -47,16 +46,25 @@ public class ThumbnailPreviewController : IDisposable
         ScaleTransform progressPopupScale,
         Image thumbnailImage,
         TextBlock thumbnailTimeText,
-        IThumbnailGenerator thumbnailGenerator,
-        Func<long> getVideoLength)
+        Func<long> getVideoLength,
+        Func<string, int, string?> getThumbnailPath,
+        Func<string, int> getThumbnailState,
+        Func<long, string> formatTime,
+        Action<string, Exception?>? logError = null)
     {
         _progressSlider = progressSlider;
         _progressPopup = progressPopup;
-        _progressPopupScale = progressPopupScale;
         _thumbnailImage = thumbnailImage;
         _thumbnailTimeText = thumbnailTimeText;
-        _thumbnailGenerator = thumbnailGenerator;
         _getVideoLength = getVideoLength;
+        _getThumbnailPath = getThumbnailPath;
+        _getThumbnailState = getThumbnailState;
+        _formatTime = formatTime;
+        _logError = logError ?? ((_, _) => { });
+
+        _animator = new PopupAnimator(progressPopupScale, (UIElement)progressPopup.Child!,
+            showFromScale: 0.9, showDurationMs: 200,
+            hideToScale: 0.9, hideDurationMs: 150);
 
         _showTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
         _showTimer.Tick += OnShowTimerTick;
@@ -103,7 +111,7 @@ public class ThumbnailPreviewController : IDisposable
         long hoverTimeMs = (long)(ratio * length);
         int hoverSecond = (int)(hoverTimeMs / 1000);
 
-        _thumbnailTimeText.Text = MediaPlayerController.FormatTime(hoverTimeMs);
+        _thumbnailTimeText.Text = _formatTime(hoverTimeMs);
         double popupW = 160;
         double offsetX = Math.Max(0, Math.Min(pos.X - popupW / 2, _progressSlider.ActualWidth - popupW));
         _progressPopup.HorizontalOffset = offsetX;
@@ -116,7 +124,7 @@ public class ThumbnailPreviewController : IDisposable
         }
 
         bool thumbReady = _currentThumbVideoPath != null &&
-            _thumbnailGenerator.GetState(_currentThumbVideoPath) == ThumbnailState.Ready;
+            _getThumbnailState(_currentThumbVideoPath) == 2; // ThumbnailState.Ready = 2
         _thumbnailImage.Visibility = thumbReady ? Visibility.Visible : Visibility.Collapsed;
 
         if (hoverSecond == _lastRequestedSecond) return;
@@ -196,33 +204,15 @@ public class ThumbnailPreviewController : IDisposable
     {
         if (_isVisible || _isClosing) return;
         _isVisible = true;
-        var border = _progressPopup.Child as Border;
-        if (border == null) return;
-
-        _progressPopupScale.ScaleX = 0.9;
-        _progressPopupScale.ScaleY = 0.9;
-        border.Opacity = 0;
         _progressPopup.IsOpen = true;
-
-        AnimationHelper.AnimateScaleTransform(_progressPopupScale, 1, 200, AnimationHelper.EaseOut);
-        AnimationHelper.Animate(border, UIElement.OpacityProperty, 0, 1, 200, AnimationHelper.EaseOut);
+        _animator.Show();
     }
 
     private void Hide()
     {
         if (!_isVisible || _isClosing) return;
         _isClosing = true;
-        var border = _progressPopup.Child as Border;
-        if (border == null)
-        {
-            _progressPopup.IsOpen = false;
-            _isVisible = false;
-            _isClosing = false;
-            return;
-        }
-
-        AnimationHelper.AnimateScaleTransform(_progressPopupScale, 0.9, 150, AnimationHelper.EaseIn);
-        AnimationHelper.AnimateFromCurrent(border, UIElement.OpacityProperty, 0, 150, AnimationHelper.EaseIn, () =>
+        _animator.Hide(() =>
         {
             _progressPopup.IsOpen = false;
             _isVisible = false;
@@ -234,7 +224,7 @@ public class ThumbnailPreviewController : IDisposable
 
     private BitmapSource? LoadThumbnailJpeg(string videoPath, int second)
     {
-        var path = _thumbnailGenerator.GetThumbnailPath(videoPath, second);
+        var path = _getThumbnailPath(videoPath, second);
         if (path == null) return null;
         try
         {
@@ -245,7 +235,7 @@ public class ThumbnailPreviewController : IDisposable
         }
         catch (Exception ex)
         {
-            LogError($"缩略图解码异常 second={second}", ex);
+            _logError($"缩略图解码异常 second={second}", ex);
             return null;
         }
     }

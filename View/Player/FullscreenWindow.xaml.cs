@@ -5,11 +5,9 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
-using LocalPlayer.View.Primitives;
-using LocalPlayer.Model;
+using LocalPlayer.View.Animations;
 using LocalPlayer.View.Player.Interaction;
-using LocalPlayer.View.Player;
-using LocalPlayer.View.Settings;
+using LocalPlayer.Model;
 using LocalPlayer.ViewModel;
 
 using System.Windows.Interop;
@@ -19,10 +17,7 @@ namespace LocalPlayer.View.Player;
 
 public partial class FullscreenWindow : Window
 {
-    private static void Log(string message) => AppLog.Info(nameof(FullscreenWindow), message);
-
     private readonly PlayerViewModel _vm;
-    private readonly IMediaPlayerController _media;
 
     public event EventHandler? ExitRequested;
     public event EventHandler<PlaylistItem>? EpisodeSelected;
@@ -38,18 +33,16 @@ public partial class FullscreenWindow : Window
     private readonly DispatcherTimer controlBarHideTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
     private readonly DispatcherTimer playlistHideTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
 
-    public FullscreenWindow(PlayerViewModel vm, IMediaPlayerController media,
-                             IThumbnailGenerator thumbnailGenerator)
+    public FullscreenWindow(PlayerViewModel vm)
     {
         _vm = vm;
-        _media = media;
         DataContext = _vm;
 
         InitializeComponent();
 
         _pauseOverlay = new PauseOverlayController(PauseBigIconScale, PauseBigIcon);
         _clickRouter = new ClickRouter(
-            () => _media.TogglePlayPause(),
+            () => _vm.PlayPauseCommand.Execute(null),
             () => ExitRequested?.Invoke(this, EventArgs.Empty));
 
         controlBarHideTimer.Tick += (_, _) =>
@@ -82,19 +75,29 @@ public partial class FullscreenWindow : Window
             Keyboard.Focus(this);
         };
 
-        SetupInternal(media, thumbnailGenerator);
+        SetupInternal();
 
-        _vm.BindingsChanged += () => ControlBar.UpdateButtonTooltips();
+        _vm.OpenKeyBindingsRequested += () =>
+        {
+            var window = new View.Settings.KeyBindingsWindow(new ViewModel.KeyBindingsViewModel(_vm.InputHandler))
+            {
+                Owner = this
+            };
+            window.ShowDialog();
+            ControlBar.UpdateButtonTooltips();
+        };
     }
 
-    private void SetupInternal(IMediaPlayerController mediaCtrl, IThumbnailGenerator thumbnailGenerator)
+    private void SetupInternal()
     {
-        _pauseOverlay.WireMediaEvents(mediaCtrl, Dispatcher);
+        _vm.MediaPlaying += () => Dispatcher.Invoke(_pauseOverlay.OnPlaying);
+        _vm.MediaPaused += () => Dispatcher.Invoke(_pauseOverlay.OnPaused);
+        _vm.MediaStopped += () => Dispatcher.Invoke(_pauseOverlay.OnStopped);
 
-        ControlBar.Setup(mediaCtrl, _vm.InputHandler, thumbnailGenerator);
+        ControlBar.Setup(_vm);
 
         _rightHold = new RightHoldSpeedController(
-            mediaCtrl,
+            rate => _vm.SetRate(rate),
             () => ControlBar.CurrentSpeed,
             speed => ControlBar.UpdateSpeedButtonText(speed));
         ControlBar.IsFullscreen = true;
@@ -201,14 +204,13 @@ public partial class FullscreenWindow : Window
         PauseBigIconFSTranslate.X = fromRect.Right - Left - Width;
         PauseBigIconFSTranslate.Y = fromRect.Bottom - Top - Height;
 
-        VideoImage.Source = _media.VideoBitmap;
+        VideoImage.Source = _vm.VideoSource;
         Show();
 
         HideControlBar(immediate: true);
         HidePlaylist(immediate: true);
 
-        bool wasPaused = _media.IsPlaying == false;
-        if (wasPaused)
+        if (!_vm.IsPlaying)
             _pauseOverlay.ShowImmediate();
 
         Keyboard.Focus(this);

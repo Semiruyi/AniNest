@@ -1,31 +1,19 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using LocalPlayer.View.Primitives;
-using LocalPlayer.Model;
+using LocalPlayer.View.Animations;
 using LocalPlayer.View.Player.Interaction;
-using LocalPlayer.View.Player;
-using LocalPlayer.View.Settings;
 using LocalPlayer.ViewModel;
 
 namespace LocalPlayer.View.Player;
 
 public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposable
 {
-    private static void Log(string message) => AppLog.Info(nameof(PlayerPage), message);
-    private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(PlayerPage), message, ex);
-
     private readonly PlayerViewModel _vm;
-    private readonly IMediaPlayerController _media;
-    private readonly IThumbnailGenerator _thumbnailGenerator;
 
     private PauseOverlayController _pauseOverlay = null!;
     private RightHoldSpeedController _rightHold = null!;
@@ -36,27 +24,18 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     public event EventHandler? BackRequested;
 
-    public PlayerPage(PlayerViewModel vm, IMediaPlayerController media,
-                      IThumbnailGenerator thumbnailGenerator)
+    public PlayerPage(PlayerViewModel vm)
     {
         _vm = vm;
-        _media = media;
-        _thumbnailGenerator = thumbnailGenerator;
-
-        // 将 PlayerPage 的 IMediaPlayerController 实例注入 ViewModel，确保共享同一实例
-        _vm.Initialize(_media);
-
         DataContext = _vm;
 
         try
         {
-            Log("PlayerPage 构造函数开始");
             InitializeComponent();
-            Log("InitializeComponent 完成");
         }
         catch (Exception ex)
         {
-            LogError("构造函数异常", ex);
+            PlayerViewModel.LogError("构造函数异常", ex);
             throw;
         }
         Loaded += PlayerPage_Loaded;
@@ -66,11 +45,11 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         _pauseOverlay = new PauseOverlayController(PauseBigIconScale, PauseBigIcon);
         _rightHold = new RightHoldSpeedController(
-            _media,
+            rate => _vm.SetRate(rate),
             () => _vm.Rate,
             speed => ControlBar.UpdateSpeedButtonText(speed));
         _clickRouter = new ClickRouter(
-            () => _media.TogglePlayPause(),
+            () => _vm.PlayPauseCommand.Execute(null),
             () => _vm.ToggleFullscreenCommand.Execute(null));
 
         _vm.BackRequested += () =>
@@ -78,7 +57,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             _vm.SaveProgress();
             BackRequested?.Invoke(this, EventArgs.Empty);
         };
-        _vm.BindingsChanged += () => ControlBar.UpdateButtonTooltips();
         _vm.FullscreenToggled += () =>
         {
             if (_vm.IsFullscreen)
@@ -94,17 +72,24 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
                 fullscreenWindow?.ControlBar?.SetCurrentVideo(_vm.CurrentVideoPath);
             }
         };
+        _vm.OpenKeyBindingsRequested += () =>
+        {
+            var window = new View.Settings.KeyBindingsWindow(new KeyBindingsViewModel(_vm.InputHandler))
+            {
+                Owner = Window.GetWindow(this)
+            };
+            window.ShowDialog();
+            ControlBar.UpdateButtonTooltips();
+        };
     }
 
     private void PlayerPage_Loaded(object sender, RoutedEventArgs e)
     {
         try
         {
-            Log("Loaded 事件触发");
-
             parentWindow = Window.GetWindow(this);
 
-            ControlBar.Setup(_media, _vm.InputHandler, _thumbnailGenerator);
+            ControlBar.Setup(_vm);
             ControlBar.IsFullscreen = false;
             ControlBar.UpdateButtonTooltips();
 
@@ -117,7 +102,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
             if (fullscreenWindow == null)
             {
-                fullscreenWindow = new FullscreenWindow(_vm, _media, _thumbnailGenerator);
+                fullscreenWindow = new FullscreenWindow(_vm);
                 fullscreenWindow.ExitRequested += (_, _) => ExitFullscreen();
                 fullscreenWindow.EpisodeSelected += (_, item) =>
                 {
@@ -143,10 +128,12 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             };
             PageRoot.BeginAnimation(OpacityProperty, anim);
 
-            _media.Initialize();
-            VideoImage.Source = _media.VideoBitmap;
+            _vm.InitializeMedia();
+            VideoImage.Source = _vm.VideoSource;
 
-            _pauseOverlay.WireMediaEvents(_media, Dispatcher);
+            _vm.MediaPlaying += () => Dispatcher.Invoke(_pauseOverlay.OnPlaying);
+            _vm.MediaPaused += () => Dispatcher.Invoke(_pauseOverlay.OnPaused);
+            _vm.MediaStopped += () => Dispatcher.Invoke(_pauseOverlay.OnStopped);
 
             // 延迟 LoadFolder 在此执行
             if (_pendingFolderPath != null)
@@ -160,7 +147,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         }
         catch (Exception ex)
         {
-            LogError("Loaded 异常", ex);
+            PlayerViewModel.LogError("Loaded 异常", ex);
             throw;
         }
     }
@@ -192,7 +179,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     private void ProcessKeyboardEvent(KeyEventArgs e, string source)
     {
-        Log($"KeyDown({source}): Key={e.Key}");
         if (_vm.HandleKeyDown(e, _vm.IsFullscreen))
             e.Handled = true;
     }
@@ -237,14 +223,10 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     }
 
     private void PlayerPage_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
-    {
-        Log($"GotKeyboardFocus: NewFocus={e.NewFocus?.GetType().Name}");
-    }
+        => PlayerViewModel.Log($"GotKeyboardFocus: NewFocus={e.NewFocus?.GetType().Name}");
 
     private void PlayerPage_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
-    {
-        Log($"LostKeyboardFocus: NewFocus={e.NewFocus?.GetType().Name}");
-    }
+        => PlayerViewModel.Log($"LostKeyboardFocus: NewFocus={e.NewFocus?.GetType().Name}");
 
     // ========== 全屏切换 ==========
 
@@ -288,7 +270,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         fullscreenWindow.HideWithAnimation();
 
-        VideoImage.Source = _media.VideoBitmap;
+        VideoImage.Source = _vm.VideoSource;
 
         ControlBar.Visibility = Visibility.Visible;
         PlaylistPanel.Visibility = Visibility.Visible;
@@ -307,7 +289,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     public void Dispose()
     {
-        Log("Dispose 开始");
         _vm.SaveProgress();
 
         ControlBar.Dispose();
@@ -315,7 +296,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         fullscreenWindow?.Close();
         fullscreenWindow = null;
 
-        _media.Dispose();
-        Log("Dispose 完成");
+        _vm.DisposeMedia();
     }
 }

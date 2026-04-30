@@ -48,10 +48,6 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
-                <EventSetter Event="PreviewMouseLeftButtonDown" Handler="CommonButton_MouseDown"/>
-                <EventSetter Event="PreviewMouseLeftButtonUp" Handler="CommonButton_MouseUp"/>
-                <EventSetter Event="MouseEnter" Handler="CommonButton_MouseEnter"/>
-                <EventSetter Event="MouseLeave" Handler="CommonButton_MouseLeave"/>
             </Style>
 
             <Style x:Key="PlayButton" TargetType="Button">
@@ -98,10 +94,6 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
-                <EventSetter Event="PreviewMouseLeftButtonDown" Handler="CommonButton_MouseDown"/>
-                <EventSetter Event="PreviewMouseLeftButtonUp" Handler="CommonButton_MouseUp"/>
-                <EventSetter Event="MouseEnter" Handler="CommonButton_MouseEnter"/>
-                <EventSetter Event="MouseLeave" Handler="CommonButton_MouseLeave"/>
             </Style>
 
             <Style x:Key="SpeedOptionButtonStyle" TargetType="Button">

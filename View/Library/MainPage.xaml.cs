@@ -10,8 +10,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
-using LocalPlayer;
 using LocalPlayer.View.Primitives;
+using LocalPlayer.View.Animations;
 using LocalPlayer.Model;
 using LocalPlayer.ViewModel;
 
@@ -34,7 +34,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
         DataContext = _vm;
 
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        App.LogStartup("MainPage 构造函数开始");
+        MainPageViewModel.Log("MainPage 构造函数开始");
         InitializeComponent();
         App.LogStartup($"MainPage.InitializeComponent 完成，耗时 {sw.ElapsedMilliseconds}ms");
 
@@ -47,7 +47,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
     private async void MainPage_Loaded(object sender, RoutedEventArgs e)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        App.LogStartup("MainPage.Loaded 事件触发");
+        MainPageViewModel.Log("MainPage.Loaded 事件触发");
 
         FolderList.ItemsSource = _vm.FolderItems;
         App.LogStartup($"MainPage UI 初始显示完成，耗时 {sw.ElapsedMilliseconds}ms");

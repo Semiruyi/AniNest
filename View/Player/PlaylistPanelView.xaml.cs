@@ -4,8 +4,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
-using LocalPlayer.View.Primitives;
+using LocalPlayer.View.Animations;
 using LocalPlayer.Model;
 
 namespace LocalPlayer.View.Player;
@@ -69,21 +68,7 @@ public partial class PlaylistPanelView : System.Windows.Controls.UserControl
         if (!IsLoaded) return;
 
         var buttons = FindVisualChildren<Button>(PlaylistBox);
-        for (int i = 0; i < buttons.Count; i++)
-        {
-            var btn = buttons[i];
-            var delayMs = i * 35;
-            btn.RenderTransformOrigin = new Point(0.5, 0.5);
-            var st = new ScaleTransform(0.88, 0.88);
-            btn.RenderTransform = st;
-            btn.Opacity = 0;
-            st.BeginAnimation(ScaleTransform.ScaleXProperty,
-                AnimationHelper.CreateAnim(0.88, 1.0, 420, AnimationHelper.EaseOut, delayMs));
-            st.BeginAnimation(ScaleTransform.ScaleYProperty,
-                AnimationHelper.CreateAnim(0.88, 1.0, 420, AnimationHelper.EaseOut, delayMs));
-            btn.BeginAnimation(UIElement.OpacityProperty,
-                AnimationHelper.CreateAnim(0, 1, 320, beginTimeMs: delayMs));
-        }
+        await StaggeredEntranceAnimator.AnimateAsync(buttons, fromScale: 0.88);
     }
 
     private static List<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject

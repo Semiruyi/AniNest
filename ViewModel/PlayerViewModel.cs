@@ -11,7 +11,8 @@ namespace LocalPlayer.ViewModel;
 
 public partial class PlayerViewModel : ObservableObject
 {
-    private static void Log(string message) => AppLog.Info(nameof(PlayerViewModel), message);
+    public static void Log(string message) => AppLog.Info(nameof(PlayerViewModel), message);
+    public static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(PlayerViewModel), message, ex);
 
     private readonly ISettingsService _settings;
     private readonly IThumbnailGenerator _thumbnailGenerator;
@@ -24,6 +25,20 @@ public partial class PlayerViewModel : ObservableObject
 
     private bool _updatingSelection;
     private float _savedRate = 1.0f;
+
+    // — 供 View 层订阅的媒体事件 —
+    public event Action? MediaPlaying;
+    public event Action? MediaPaused;
+    public event Action? MediaStopped;
+
+    // — 供 View 层处理快捷键窗口 —
+    public event Action? OpenKeyBindingsRequested;
+
+    // — 媒体源（替代 View 直接访问 _media.VideoBitmap）—
+    public System.Windows.Media.ImageSource? VideoSource => _media.VideoBitmap;
+
+    // — 格式化时间（替代 MediaPlayerController.FormatTime 静态调用）—
+    public static string FormatTime(long ms) => MediaPlayerController.FormatTime(ms);
 
     // ========== Playlist ==========
 
@@ -89,10 +104,21 @@ public partial class PlayerViewModel : ObservableObject
 
     // ========== Constructor ==========
 
-    public PlayerViewModel(ISettingsService settings, IThumbnailGenerator thumbnailGenerator)
+    public PlayerViewModel(ISettingsService settings, IThumbnailGenerator thumbnailGenerator,
+                           IMediaPlayerController media)
     {
         _settings = settings;
         _thumbnailGenerator = thumbnailGenerator;
+        _media = media;
+        _initialized = true;
+
+        _playlistManager = new PlaylistManager(_settings, media,
+            path => _thumbnailGenerator.GetState(path));
+
+        _playlistManager.VideoPlayed += filePath =>
+        {
+            CurrentVideoPath = filePath;
+        };
 
         _thumbnailGenerator.VideoReady += path =>
             Application.Current.Dispatcher.Invoke(() =>
@@ -106,24 +132,6 @@ public partial class PlayerViewModel : ObservableObject
                 if (_initialized)
                     _playlistManager.UpdateThumbnailProgress(path, percent);
             });
-    }
-
-    /// <summary>
-    /// 必须在构造函数之后、使用之前调用，传入与 PlayerPage 共享的 IMediaPlayerController 实例。
-    /// </summary>
-    public void Initialize(IMediaPlayerController media)
-    {
-        if (_initialized) return;
-        _initialized = true;
-        _media = media;
-
-        _playlistManager = new PlaylistManager(_settings, media,
-            path => _thumbnailGenerator.GetState(path));
-
-        _playlistManager.VideoPlayed += filePath =>
-        {
-            CurrentVideoPath = filePath;
-        };
 
         _inputHandler = new PlayerInputHandler(_settings);
 
@@ -143,6 +151,7 @@ public partial class PlayerViewModel : ObservableObject
             {
                 IsPlaying = true;
                 _saveTimer.Start();
+                MediaPlaying?.Invoke();
             });
 
         _media.Paused += (_, _) =>
@@ -151,6 +160,7 @@ public partial class PlayerViewModel : ObservableObject
                 IsPlaying = false;
                 _saveTimer.Stop();
                 SaveProgress();
+                MediaPaused?.Invoke();
             });
 
         _media.Stopped += (_, _) =>
@@ -158,6 +168,7 @@ public partial class PlayerViewModel : ObservableObject
             {
                 IsPlaying = false;
                 _saveTimer.Stop();
+                MediaStopped?.Invoke();
             });
 
         _media.ProgressUpdated += (_, args) =>
@@ -305,29 +316,26 @@ public partial class PlayerViewModel : ObservableObject
         BackRequested?.Invoke();
     }
 
-    public event Action? BindingsChanged;
-
     [RelayCommand]
-    private void Settings()
-    {
-        OpenKeyBindingsSettings();
-        BindingsChanged?.Invoke();
-    }
+    private void Settings() => OpenKeyBindingsSettings();
 
     // ========== Input handler exposed for ControlBar ==========
 
     public PlayerInputHandler InputHandler => _inputHandler;
 
+    // ========== Media lifecycle (供 View 调用，替代 _media 直接访问) ==========
+
+    public void InitializeMedia() => _media.Initialize();
+    public void DisposeMedia() => _media.Dispose();
+    public void SetRate(float rate) { _media.Rate = rate; Rate = rate; }
+
+    // ========== Thumbnail (供 View 调用) ==========
+
+    public ThumbnailState GetThumbnailState(string path) => _thumbnailGenerator.GetState(path);
+
     // ========== Settings ==========
 
-    public void OpenKeyBindingsSettings()
-    {
-        var window = new View.Settings.KeyBindingsWindow(_inputHandler)
-        {
-            Owner = Application.Current.MainWindow
-        };
-        window.ShowDialog();
-    }
+    public void OpenKeyBindingsSettings() => OpenKeyBindingsRequested?.Invoke();
 
     // ========== Right-hold speed ==========
 

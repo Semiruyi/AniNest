@@ -5,9 +5,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Imaging;
-using LocalPlayer.View.Primitives;
-using LocalPlayer.Model;
+using LocalPlayer.View.Animations;
 using LocalPlayer.View.Player.Interaction;
 using LocalPlayer.ViewModel;
 
@@ -15,15 +13,12 @@ namespace LocalPlayer.View.Player;
 
 public partial class ControlBarView : System.Windows.Controls.UserControl, IDisposable
 {
-    private static void Log(string message) => AppLog.Info(nameof(ControlBarView), message);
-
     public ControlBarView()
     {
         InitializeComponent();
     }
 
-    private IMediaPlayerController? _mediaController;
-    private PlayerInputHandler? _inputHandler;
+    private PlayerViewModel? _vm;
     private SpeedPopupController? _speedPopupView;
     private ThumbnailPreviewController? _thumbnailPreviewView;
 
@@ -42,25 +37,36 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
     public event EventHandler? ControlBarMouseLeave;
 
     // --- Setup ---
-    public void Setup(IMediaPlayerController mediaController,
-                      PlayerInputHandler inputHandler,
-                      IThumbnailGenerator thumbnailGenerator)
+    public void Setup(PlayerViewModel vm)
     {
-        _mediaController = mediaController;
-        _inputHandler = inputHandler;
+        _vm = vm;
 
+        var border = SpeedPopup.Child as Border;
         _speedPopupView = new SpeedPopupController(
             SpeedPopup, SpeedBtn, SpeedPopupScale, SpeedOptionsPanel, RootGrid,
-            rate => _mediaController.Rate = rate);
+            rate => _vm.SetRate(rate));
+
         _speedPopupView.SpeedChanged += speed => SpeedChanged?.Invoke(speed);
 
         _thumbnailPreviewView = new ThumbnailPreviewController(
             ProgressSlider, ProgressPopup, ProgressPopupScale,
             ThumbnailImage, ThumbnailTimeText,
-            thumbnailGenerator,
-            () => _mediaController.Length);
+            () => _vm.MediaLength,
+            (path, second) => _vm.GetThumbnailPath(path, second),
+            path => (int)_vm.GetThumbnailState(path),
+            ms => PlayerViewModel.FormatTime(ms));
 
+        WireButtonAnimations();
         UpdateButtonTooltips();
+    }
+
+    private void WireButtonAnimations()
+    {
+        foreach (var btn in new[] { PlayPauseBtn, PreviousBtn, NextBtn, FullscreenBtn })
+        {
+            if (btn.Template.FindName("AnimScale", btn) is ScaleTransform st)
+                ButtonScaleHover.Attach(btn, st);
+        }
     }
 
     public void SetCurrentVideo(string? videoPath)
@@ -77,60 +83,14 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
 
     public void UpdateButtonTooltips()
     {
-        var bindings = _inputHandler?.GetCurrentBindings();
+        if (_vm == null) return;
+        var bindings = _vm.GetCurrentBindings();
         if (bindings == null) return;
 
         PlayPauseBtn.ToolTip = $"播放/暂停 ({KeyDisplayString(bindings["TogglePlayPause"])})";
         PreviousBtn.ToolTip = $"上一集 ({KeyDisplayString(bindings["PreviousEpisode"])})";
         NextBtn.ToolTip = $"下一集 ({KeyDisplayString(bindings["NextEpisode"])})";
         FullscreenBtn.ToolTip = $"全屏 ({KeyDisplayString(bindings["ToggleFullscreen"])})";
-    }
-
-    // --- Progress slider ---
-    private static readonly CubicBezierEase _btnEase = new()
-    {
-        X1 = 0.25, Y1 = 0.1, X2 = 0.25, Y2 = 1.0,
-        EasingMode = EasingMode.EaseIn
-    };
-    private static readonly TimeSpan _hoverEnterDuration = TimeSpan.FromMilliseconds(150);
-    private static readonly TimeSpan _hoverExitDuration = TimeSpan.FromMilliseconds(250);
-    private static readonly TimeSpan _pressDuration = TimeSpan.FromMilliseconds(130);
-    private static readonly TimeSpan _releaseDuration = TimeSpan.FromMilliseconds(280);
-
-    private void CommonButton_MouseEnter(object sender, MouseEventArgs e)
-    {
-        if (sender is not Button btn) return;
-        if (!btn.IsPressed)
-            AnimateScale(btn, 1.2, _hoverEnterDuration, _btnEase);
-    }
-
-    private void CommonButton_MouseLeave(object sender, MouseEventArgs e)
-    {
-        if (sender is not Button btn) return;
-        if (!btn.IsPressed)
-            AnimateScale(btn, 1.0, _hoverExitDuration, _btnEase);
-    }
-
-    private void CommonButton_MouseDown(object sender, MouseButtonEventArgs e)
-    {
-        if (sender is not Button btn) return;
-        AnimateScale(btn, 0.85, _pressDuration, _btnEase);
-    }
-
-    private void CommonButton_MouseUp(object sender, MouseButtonEventArgs e)
-    {
-        if (sender is not Button btn) return;
-        double target = btn.IsMouseOver ? 1.2 : 1.0;
-        AnimateScale(btn, target, _releaseDuration, _btnEase);
-    }
-
-    private static void AnimateScale(Button btn, double target,
-        TimeSpan duration, IEasingFunction ease)
-    {
-        if (btn.Template.FindName("AnimScale", btn) is ScaleTransform st)
-        {
-            AnimationHelper.AnimateScaleTransform(st, target, (int)duration.TotalMilliseconds, ease);
-        }
     }
 
     // --- Progress slider ---
@@ -219,16 +179,14 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
     // --- Keyboard forwarding ---
     private void RootGrid_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        Log($"PreviewKeyDown: Key={e.Key}");
-        if (_inputHandler?.HandleKeyDown(e, _isFullscreen) == true)
+        if (_vm?.HandleKeyDown(e, _isFullscreen) == true)
             e.Handled = true;
     }
 
     private void RootGrid_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Handled) return;
-        Log($"KeyDown: Key={e.Key}");
-        if (_inputHandler?.HandleKeyDown(e, _isFullscreen) == true)
+        if (_vm?.HandleKeyDown(e, _isFullscreen) == true)
             e.Handled = true;
     }
 

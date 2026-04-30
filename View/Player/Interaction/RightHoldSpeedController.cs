@@ -1,8 +1,6 @@
 using System;
 using System.Windows.Input;
 using System.Windows.Threading;
-using LocalPlayer.Model;
-
 
 namespace LocalPlayer.View.Player.Interaction;
 
@@ -12,7 +10,7 @@ namespace LocalPlayer.View.Player.Interaction;
 /// </summary>
 public class RightHoldSpeedController
 {
-    private readonly IMediaPlayerController _mediaCtrl;
+    private readonly Action<float> _setRate;
     private readonly Func<float> _getCurrentSpeed;
     private readonly Action<float> _onSpeedChanged;
     private readonly float _holdSpeed;
@@ -22,12 +20,12 @@ public class RightHoldSpeedController
     private bool _isHolding;
 
     public RightHoldSpeedController(
-        IMediaPlayerController mediaCtrl,
+        Action<float> setRate,
         Func<float> getCurrentSpeed,
         Action<float> onSpeedChanged,
         float holdSpeed = 3.0f)
     {
-        _mediaCtrl = mediaCtrl;
+        _setRate = setRate;
         _getCurrentSpeed = getCurrentSpeed;
         _onSpeedChanged = onSpeedChanged;
         _holdSpeed = holdSpeed;
@@ -49,7 +47,7 @@ public class RightHoldSpeedController
         if (_isHolding)
         {
             _isHolding = false;
-            _mediaCtrl.Rate = _savedSpeed;
+            _setRate(_savedSpeed);
             _onSpeedChanged(_savedSpeed);
         }
         e.Handled = true;
@@ -60,7 +58,7 @@ public class RightHoldSpeedController
         _timer.Stop();
         _savedSpeed = _getCurrentSpeed();
         _isHolding = true;
-        _mediaCtrl.Rate = _holdSpeed;
+        _setRate(_holdSpeed);
         _onSpeedChanged(_holdSpeed);
     }
 
@@ -70,7 +68,7 @@ public class RightHoldSpeedController
         if (_isHolding)
         {
             _isHolding = false;
-            _mediaCtrl.Rate = _savedSpeed;
+            _setRate(_savedSpeed);
         }
     }
 }
