@@ -6,6 +6,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using LocalPlayer.View.Animations;
+using LocalPlayer.View.Gestures;
 using LocalPlayer.View.Player.Interaction;
 using LocalPlayer.Model;
 using LocalPlayer.ViewModel;
@@ -26,7 +27,7 @@ public partial class FullscreenWindow : Window
     private bool isClosing;
     private Rect originalVideoRect;
 
-    private RightHoldSpeedController _rightHold = null!;
+    private RightHoldGesture _rightHold = null!;
     private ClickRouter _clickRouter = null!;
 
     private readonly DispatcherTimer controlBarHideTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
@@ -90,10 +91,17 @@ public partial class FullscreenWindow : Window
     {
         ControlBar.Setup(_vm);
 
-        _rightHold = new RightHoldSpeedController(
-            rate => _vm.SetRate(rate),
-            () => ControlBar.CurrentSpeed,
-            speed => ControlBar.UpdateSpeedButtonText(speed));
+        _rightHold = new RightHoldGesture();
+        _rightHold.HoldStarted += () =>
+        {
+            _vm.EnterHoldSpeed();
+            ControlBar.UpdateSpeedButtonText(3.0f);
+        };
+        _rightHold.HoldEnded += () =>
+        {
+            _vm.ExitHoldSpeed();
+            ControlBar.UpdateSpeedButtonText(_vm.Rate);
+        };
         ControlBar.IsFullscreen = true;
 
         ControlBar.ControlBarMouseEnter += (_, _) =>

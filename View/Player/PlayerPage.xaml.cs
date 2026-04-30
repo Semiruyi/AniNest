@@ -6,6 +6,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using LocalPlayer.View.Animations;
+using LocalPlayer.View.Gestures;
 using LocalPlayer.View.Player.Interaction;
 using LocalPlayer.ViewModel;
 
@@ -15,7 +16,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 {
     private readonly PlayerViewModel _vm;
 
-    private RightHoldSpeedController _rightHold = null!;
+    private RightHoldGesture _rightHold = null!;
     private ClickRouter _clickRouter = null!;
 
     private Window? parentWindow;
@@ -42,10 +43,17 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         GotKeyboardFocus += PlayerPage_GotKeyboardFocus;
         LostKeyboardFocus += PlayerPage_LostKeyboardFocus;
 
-        _rightHold = new RightHoldSpeedController(
-            rate => _vm.SetRate(rate),
-            () => _vm.Rate,
-            speed => ControlBar.UpdateSpeedButtonText(speed));
+        _rightHold = new RightHoldGesture();
+        _rightHold.HoldStarted += () =>
+        {
+            _vm.EnterHoldSpeed();
+            ControlBar.UpdateSpeedButtonText(3.0f);
+        };
+        _rightHold.HoldEnded += () =>
+        {
+            _vm.ExitHoldSpeed();
+            ControlBar.UpdateSpeedButtonText(_vm.Rate);
+        };
         _clickRouter = new ClickRouter(
             () => _vm.PlayPauseCommand.Execute(null),
             () => _vm.ToggleFullscreenCommand.Execute(null));
