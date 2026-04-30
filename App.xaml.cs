@@ -4,7 +4,8 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
-using LocalPlayer.Services;
+using LocalPlayer.PlayerKit;
+using LocalPlayer.Shared.Services;
 
 namespace LocalPlayer;
 
