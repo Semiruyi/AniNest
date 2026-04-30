@@ -6,8 +6,8 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Animation;
-using LocalPlayer.Shared.Helpers;
-using LocalPlayer.Shared.Services;
+using LocalPlayer.UI.Primitives;
+using LocalPlayer.Infrastructure;
 using LocalPlayer.Pages.Library;
 using LocalPlayer.Pages.Player;
 

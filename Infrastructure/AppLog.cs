@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace LocalPlayer.Shared.Services;
+namespace LocalPlayer.Infrastructure;
 
 public enum LogLevel
 {

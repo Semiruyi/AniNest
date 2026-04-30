@@ -5,9 +5,9 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
-using LocalPlayer.Shared.Models;
+using LocalPlayer.Domain;
 using LocalPlayer.PlayerKit;
-using LocalPlayer.Shared.Services;
+using LocalPlayer.Infrastructure;
 using WinKeyEventArgs = System.Windows.Input.KeyEventArgs;
 using WinKeyEventHandler = System.Windows.Input.KeyEventHandler;
 
@@ -39,7 +39,7 @@ public partial class KeyBindingsWindow : Window
         items.Clear();
         foreach (var def in defaults)
         {
-            var key = current.TryGetValue(def.ActionName, out var k) ? k : def.DefaultKey;
+            var key = current.TryGetValue(def.ActionName, out var k) ? k : (Key)def.DefaultKey;
             items.Add(new BindingItem
             {
                 ActionName = def.ActionName,
@@ -134,7 +134,7 @@ public partial class KeyBindingsWindow : Window
     {
         var defaults = PlayerInputHandler.GetDefaultBindings();
         foreach (var def in defaults)
-            inputHandler.SetBinding(def.ActionName, def.DefaultKey);
+            inputHandler.SetBinding(def.ActionName, (Key)def.DefaultKey);
         CancelWaiting();
         LoadBindings();
         KeyBindingsList.ItemsSource = null;

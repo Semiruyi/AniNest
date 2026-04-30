@@ -4,10 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Windows.Input;
-using LocalPlayer;
-using LocalPlayer.Shared.Models;
+using LocalPlayer.Domain;
 
-namespace LocalPlayer.Shared.Services;
+namespace LocalPlayer.Infrastructure;
 
 public class SettingsService
 {
@@ -61,7 +60,7 @@ public class SettingsService
                 if (settings.KeyBindings != null)
                 {
                     foreach (var kv in settings.KeyBindings)
-                        LogDebug($"Load:   KeyBinding: {kv.Key} = {kv.Value} ({(int)kv.Value})");
+                        LogDebug($"Load:   KeyBinding: {kv.Key} = {(Key)kv.Value} ({kv.Value})");
                 }
             }
             else
@@ -91,7 +90,7 @@ public class SettingsService
         if (settings.KeyBindings != null)
         {
             foreach (var kv in settings.KeyBindings)
-                LogDebug($"Save:   KeyBinding: {kv.Key} = {kv.Value} ({(int)kv.Value})");
+                LogDebug($"Save:   KeyBinding: {kv.Key} = {(Key)kv.Value} ({kv.Value})");
         }
 
         try
@@ -109,7 +108,7 @@ public class SettingsService
     public void AddFolder(string path, string name)
     {
         var settings = Load();
-        
+
         if (!settings.Folders.Exists(f => f.Path == path))
         {
             int maxOrder = settings.Folders.Count > 0 ? settings.Folders.Max(f => f.OrderIndex) : -1;
@@ -245,35 +244,35 @@ public class SettingsService
     {
         return new List<KeyBindingInfo>
         {
-            new() { ActionName = "TogglePlayPause", DisplayName = "播放/暂停", DefaultKey = Key.Space },
-            new() { ActionName = "SeekBackward",  DisplayName = "快退 5 秒", DefaultKey = Key.Left },
-            new() { ActionName = "SeekForward",   DisplayName = "快进 5 秒", DefaultKey = Key.Right },
-            new() { ActionName = "ToggleFullscreen", DisplayName = "全屏", DefaultKey = Key.F },
-            new() { ActionName = "BackOrExitFullscreen", DisplayName = "退出全屏/返回", DefaultKey = Key.Escape },
-            new() { ActionName = "SeekBackwardAlt", DisplayName = "快退 5 秒 (备用)", DefaultKey = Key.J },
-            new() { ActionName = "SeekForwardAlt",  DisplayName = "快进 5 秒 (备用)", DefaultKey = Key.L },
-            new() { ActionName = "NextEpisode",     DisplayName = "下一集", DefaultKey = Key.N },
-            new() { ActionName = "PreviousEpisode", DisplayName = "上一集", DefaultKey = Key.P },
+            new() { ActionName = "TogglePlayPause", DisplayName = "播放/暂停", DefaultKey = (int)Key.Space },
+            new() { ActionName = "SeekBackward",  DisplayName = "快退 5 秒", DefaultKey = (int)Key.Left },
+            new() { ActionName = "SeekForward",   DisplayName = "快进 5 秒", DefaultKey = (int)Key.Right },
+            new() { ActionName = "ToggleFullscreen", DisplayName = "全屏", DefaultKey = (int)Key.F },
+            new() { ActionName = "BackOrExitFullscreen", DisplayName = "退出全屏/返回", DefaultKey = (int)Key.Escape },
+            new() { ActionName = "SeekBackwardAlt", DisplayName = "快退 5 秒 (备用)", DefaultKey = (int)Key.J },
+            new() { ActionName = "SeekForwardAlt",  DisplayName = "快进 5 秒 (备用)", DefaultKey = (int)Key.L },
+            new() { ActionName = "NextEpisode",     DisplayName = "下一集", DefaultKey = (int)Key.N },
+            new() { ActionName = "PreviousEpisode", DisplayName = "上一集", DefaultKey = (int)Key.P },
         };
     }
 
     public Key GetKeyBinding(string actionName)
     {
         var s = Load();
-        if (s.KeyBindings.TryGetValue(actionName, out var key))
-            return key;
+        if (s.KeyBindings.TryGetValue(actionName, out int keyCode))
+            return (Key)keyCode;
         var defaults = GetDefaultKeyBindings();
         var def = defaults.Find(d => d.ActionName == actionName);
-        return def?.DefaultKey ?? Key.None;
+        return def != null ? (Key)def.DefaultKey : Key.None;
     }
 
     public void SetKeyBinding(string actionName, Key key)
     {
         LogDebug($"SetKeyBinding: action={actionName}, key={key} ({(int)key})");
         var s = Load();
-        s.KeyBindings ??= new Dictionary<string, Key>();
+        s.KeyBindings ??= new Dictionary<string, int>();
         LogDebug($"SetKeyBinding: Load 后 KeyBindings 数量: {s.KeyBindings.Count}");
-        s.KeyBindings[actionName] = key;
+        s.KeyBindings[actionName] = (int)key;
         LogDebug($"SetKeyBinding: 设置后 KeyBindings 数量: {s.KeyBindings.Count}");
         Save();
     }
@@ -283,13 +282,13 @@ public class SettingsService
         var result = new Dictionary<string, Key>();
         var defaults = GetDefaultKeyBindings();
         var s = Load();
-        s.KeyBindings ??= new Dictionary<string, Key>();
+        s.KeyBindings ??= new Dictionary<string, int>();
         LogDebug($"GetAllKeyBindings: settings.KeyBindings 数量: {s.KeyBindings.Count}");
         foreach (var def in defaults)
         {
-            var found = s.KeyBindings.TryGetValue(def.ActionName, out var key);
-            result[def.ActionName] = found ? key : def.DefaultKey;
-            LogDebug($"GetAllKeyBindings: {def.ActionName} = {(found ? key.ToString() : def.DefaultKey.ToString())} ({(int)result[def.ActionName]}) [{(found ? "已保存" : "默认")}]");
+            var found = s.KeyBindings.TryGetValue(def.ActionName, out int keyCode);
+            result[def.ActionName] = found ? (Key)keyCode : (Key)def.DefaultKey;
+            LogDebug($"GetAllKeyBindings: {def.ActionName} = {(found ? ((Key)keyCode).ToString() : ((Key)def.DefaultKey).ToString())} ({(int)result[def.ActionName]}) [{(found ? "已保存" : "默认")}]");
         }
         return result;
     }

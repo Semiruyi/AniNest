@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace LocalPlayer.Shared.Services;
+namespace LocalPlayer.Infrastructure;
 
 public enum ThumbnailState
 {
@@ -820,11 +820,7 @@ public class ThumbnailGenerator : IDisposable
 
         Log($"[Progress] {ready}/{total}");
 
-        // 在主线程触发事件
-        System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
-        {
-            ProgressChanged?.Invoke(this, new ThumbnailProgressEventArgs { Ready = ready, Total = total });
-        });
+        ProgressChanged?.Invoke(this, new ThumbnailProgressEventArgs { Ready = ready, Total = total });
     }
 
     // ========== 工具 ==========

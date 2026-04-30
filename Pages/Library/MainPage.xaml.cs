@@ -11,10 +11,9 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using LocalPlayer;
-using LocalPlayer.Shared.Helpers;
-using LocalPlayer.Shared.Models;
-using LocalPlayer.Shared.Services;
-using LocalPlayer.Shared.Controls;
+using LocalPlayer.UI.Primitives;
+using LocalPlayer.Domain;
+using LocalPlayer.Infrastructure;
 
 namespace LocalPlayer.Pages.Library;
 

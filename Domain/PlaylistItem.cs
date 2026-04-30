@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace LocalPlayer.Shared.Models;
+namespace LocalPlayer.Domain;
 
 public class PlaylistItem : INotifyPropertyChanged
 {

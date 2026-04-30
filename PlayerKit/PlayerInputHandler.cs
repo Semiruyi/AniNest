@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using LocalPlayer.Shared.Models;
-using LocalPlayer.Shared.Services;
+using LocalPlayer.Domain;
+using LocalPlayer.Infrastructure;
 using WinKey = System.Windows.Input.Key;
 using WinKeyEventArgs = System.Windows.Input.KeyEventArgs;
 

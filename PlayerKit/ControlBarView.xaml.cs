@@ -6,8 +6,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
-using LocalPlayer.Shared.Helpers;
-using LocalPlayer.Shared.Services;
+using LocalPlayer.UI.Primitives;
+using LocalPlayer.Infrastructure;
 
 // 消歧义：UseWindowsForms 隐式导入与 WPF 类型冲突
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;

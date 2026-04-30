@@ -3,7 +3,7 @@ using System.IO;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LibVLCSharp.Shared;
-using LocalPlayer.Shared.Services;
+using LocalPlayer.Infrastructure;
 
 namespace LocalPlayer.PlayerKit;
 

@@ -2,7 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using LocalPlayer.Shared.Helpers;
+using LocalPlayer.UI.Primitives;
 
 namespace LocalPlayer.Pages.Player;
 

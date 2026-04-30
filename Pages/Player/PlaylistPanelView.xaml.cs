@@ -5,8 +5,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using LocalPlayer.Shared.Helpers;
-using LocalPlayer.Shared.Models;
+using LocalPlayer.UI.Primitives;
+using LocalPlayer.Domain;
 
 // 消歧义：UseWindowsForms 隐式导入与 WPF 类型冲突
 using Button = System.Windows.Controls.Button;

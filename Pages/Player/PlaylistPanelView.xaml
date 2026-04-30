@@ -1,12 +1,11 @@
 <UserControl x:Class="LocalPlayer.Pages.Player.PlaylistPanelView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:sharedCtrls="clr-namespace:LocalPlayer.Shared.Controls"
-             xmlns:helpers="clr-namespace:LocalPlayer.Shared.Helpers">
+             xmlns:primitives="clr-namespace:LocalPlayer.UI.Primitives">
     <UserControl.Resources>
         <ResourceDictionary>
-            <helpers:ProgressToPieConverter x:Key="ProgressToPieConverter"/>
-            <helpers:ProgressToVisibilityConverter x:Key="ProgressToVisibilityConverter"/>
+            <primitives:ProgressToPieConverter x:Key="ProgressToPieConverter"/>
+            <primitives:ProgressToVisibilityConverter x:Key="ProgressToVisibilityConverter"/>
 
             <Style x:Key="EpisodeButton" TargetType="Button">
                 <Setter Property="Width" Value="54"/>
@@ -291,7 +290,7 @@
                      ScrollViewer.VerticalScrollBarVisibility="Auto">
                 <ListBox.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <sharedCtrls:AnimatedWrapPanel Orientation="Horizontal"
+                        <primitives:AnimatedWrapPanel Orientation="Horizontal"
                                                  AnimationDuration="0:0:0.2"/>
                     </ItemsPanelTemplate>
                 </ListBox.ItemsPanel>

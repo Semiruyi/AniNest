@@ -5,9 +5,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using LocalPlayer.Shared.Controls;
-using LocalPlayer.Shared.Models;
-using LocalPlayer.Shared.Services;
+using LocalPlayer.UI.Primitives;
+using LocalPlayer.Domain;
+using LocalPlayer.Infrastructure;
 
 namespace LocalPlayer.Pages.Library;
 
