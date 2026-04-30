@@ -81,12 +81,6 @@ public partial class FullscreenWindow : Window
 
         ControlBar.IsFullscreen = true;
 
-        _vm.PropertyChanged += (_, args) =>
-        {
-            if (args.PropertyName == nameof(PlayerViewModel.Rate))
-                ControlBar.UpdateSpeedButtonText(_vm.Rate);
-        };
-
         ControlBar.ControlBarMouseEnter += (_, _) =>
         {
             controlBarHideTimer.Stop();
@@ -117,11 +111,6 @@ public partial class FullscreenWindow : Window
     public void SetPlaylistItems(int selectedIndex)
     {
         PlaylistPanel.SelectedIndex = selectedIndex;
-    }
-
-    public void SetSpeed(float speed)
-    {
-        ControlBar.SetSpeed(speed);
     }
 
     public void StopAutoHideTimers()

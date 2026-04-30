@@ -1,8 +1,10 @@
 using System;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 
 namespace LocalPlayer.View.Animations;
 
@@ -85,5 +87,37 @@ public class PopupAnimator
             animator.Show();
         else
             animator.Hide();
+    }
+
+    // ========== 附加属性：将 bool 绑定到 Popup 显隐（带动画） ==========
+
+    public static bool GetBindOpen(DependencyObject obj) => (bool)obj.GetValue(BindOpenProperty);
+    public static void SetBindOpen(DependencyObject obj, bool value) => obj.SetValue(BindOpenProperty, value);
+
+    public static readonly DependencyProperty BindOpenProperty =
+        DependencyProperty.RegisterAttached("BindOpen", typeof(bool), typeof(PopupAnimator),
+            new PropertyMetadata(false, OnBindOpenChanged));
+
+    private static void OnBindOpenChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is not Popup popup) return;
+        if (popup.Child is not UIElement child) return;
+
+        var scale = child.RenderTransform as ScaleTransform
+                    ?? (child.RenderTransform as TransformGroup)?.Children
+                        .OfType<ScaleTransform>().FirstOrDefault();
+        if (scale == null) return;
+
+        var animator = new PopupAnimator(scale, child);
+
+        if ((bool)e.NewValue)
+        {
+            popup.IsOpen = true;
+            popup.Dispatcher.BeginInvoke(() => animator.Show(), DispatcherPriority.Loaded);
+        }
+        else
+        {
+            animator.Hide(() => popup.IsOpen = false);
+        }
     }
 }

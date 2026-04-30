@@ -1,9 +1,13 @@
 <UserControl x:Class="LocalPlayer.View.Player.ControlBarView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:LocalPlayer.Converters"
+             xmlns:animations="clr-namespace:LocalPlayer.View.Animations"
              Focusable="True">
     <UserControl.Resources>
         <ResourceDictionary>
+            <converters:IsSpeedMatchConverter x:Key="IsSpeedMatchConverter"/>
+
             <Style x:Key="IconButton" TargetType="Button">
                 <Setter Property="BorderThickness" Value="0"/>
                 <Setter Property="Width" Value="36"/>
@@ -179,6 +183,18 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+                <Style.Triggers>
+                    <DataTrigger Value="True">
+                        <DataTrigger.Binding>
+                            <MultiBinding Converter="{StaticResource IsSpeedMatchConverter}">
+                                <Binding Path="Tag" RelativeSource="{RelativeSource Self}"/>
+                                <Binding Path="PlacementTarget.DataContext.Rate" ElementName="SpeedPopup"/>
+                            </MultiBinding>
+                        </DataTrigger.Binding>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="FontSize" Value="14"/>
+                    </DataTrigger>
+                </Style.Triggers>
             </Style>
 
             <Style x:Key="SliderDecreaseButton" TargetType="RepeatButton">
@@ -379,7 +395,7 @@
             <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                 <!-- 倍速按钮 + 弹出列表 -->
                 <Grid>
-                    <Button x:Name="SpeedBtn" Content="1x"
+                    <Button x:Name="SpeedBtn" Content="{Binding Rate, StringFormat={}{0:0.##}x}"
                             Style="{StaticResource IconButton}"
                             FontSize="11" FontWeight="SemiBold"
                             Foreground="White" Focusable="False"
@@ -387,7 +403,9 @@
                             MouseEnter="SpeedBtn_MouseEnter"
                             MouseLeave="SpeedBtn_MouseLeave"/>
                     <Popup x:Name="SpeedPopup" AllowsTransparency="True"
-                           Placement="Custom" StaysOpen="True">
+                           Placement="Center" StaysOpen="True"
+                           VerticalOffset="-40"
+                           animations:PopupAnimator.BindOpen="{Binding IsSpeedPopupOpen}">
                         <Border Background="#E6282828" CornerRadius="12" Padding="4"
                                 RenderTransformOrigin="0.5,1"
                                 Opacity="0"
@@ -396,15 +414,25 @@
                             <Border.RenderTransform>
                                 <ScaleTransform x:Name="SpeedPopupScale" ScaleX="0" ScaleY="0"/>
                             </Border.RenderTransform>
-                            <StackPanel x:Name="SpeedOptionsPanel">
-                                <Button Content="0.5x"  Style="{StaticResource SpeedOptionButtonStyle}" Click="SpeedOption_Click" Tag="0.5"/>
-                                <Button Content="0.75x" Style="{StaticResource SpeedOptionButtonStyle}" Click="SpeedOption_Click" Tag="0.75"/>
-                                <Button Content="1x"    Style="{StaticResource SpeedOptionButtonStyle}" Click="SpeedOption_Click" Tag="1"/>
-                                <Button Content="1.25x" Style="{StaticResource SpeedOptionButtonStyle}" Click="SpeedOption_Click" Tag="1.25"/>
-                                <Button Content="1.5x"  Style="{StaticResource SpeedOptionButtonStyle}" Click="SpeedOption_Click" Tag="1.5"/>
-                                <Button Content="2x"    Style="{StaticResource SpeedOptionButtonStyle}" Click="SpeedOption_Click" Tag="2"/>
-                                <Button Content="3x"    Style="{StaticResource SpeedOptionButtonStyle}" Click="SpeedOption_Click" Tag="3"/>
-                            </StackPanel>
+                            <ItemsControl x:Name="SpeedOptionsPanel"
+                                          ItemsSource="{Binding SpeedOptions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Style="{StaticResource SpeedOptionButtonStyle}"
+                                                Content="{Binding StringFormat={}{0:0.##}x}"
+                                                Tag="{Binding}"
+                                                Command="{Binding DataContext.ChangeSpeedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}">
+                                            <animations:HighlightBrush.IsActive>
+                                                <MultiBinding Converter="{StaticResource IsSpeedMatchConverter}">
+                                                    <Binding Path="Tag" RelativeSource="{RelativeSource Self}"/>
+                                                    <Binding Path="PlacementTarget.DataContext.Rate" ElementName="SpeedPopup"/>
+                                                </MultiBinding>
+                                            </animations:HighlightBrush.IsActive>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </Border>
                     </Popup>
                 </Grid>

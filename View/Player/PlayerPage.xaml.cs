@@ -57,11 +57,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
                 ControlBar.SetCurrentVideo(_vm.CurrentVideoPath);
                 fullscreenWindow?.ControlBar?.SetCurrentVideo(_vm.CurrentVideoPath);
             }
-            else if (args.PropertyName == nameof(PlayerViewModel.Rate))
-            {
-                ControlBar.UpdateSpeedButtonText(_vm.Rate);
-                fullscreenWindow?.ControlBar?.UpdateSpeedButtonText(_vm.Rate);
-            }
         };
         _vm.OpenKeyBindingsRequested += () =>
         {
@@ -83,8 +78,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             ControlBar.Setup(_vm);
             ControlBar.IsFullscreen = false;
             ControlBar.UpdateButtonTooltips();
-
-            ControlBar.SpeedChanged += speed => _vm.ChangeSpeedCommand.Execute(speed);
 
             PlaylistPanel.EpisodeSelected += (_, item) =>
             {
@@ -220,7 +213,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         ControlBar.CloseSpeedPopup();
 
         fullscreenWindow.SetPlaylistItems(_vm.CurrentIndex);
-        fullscreenWindow.SetSpeed(_vm.Rate);
 
         var source = PresentationSource.FromVisual(VideoContainer);
         var dpiX = source!.CompositionTarget!.TransformToDevice.M11;

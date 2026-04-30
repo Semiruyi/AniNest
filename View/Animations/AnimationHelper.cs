@@ -59,8 +59,8 @@ public static class AnimationHelper
     public static void AnimateFromCurrent(IAnimatable target, DependencyProperty property,
         double to, int durationMs, IEasingFunction? ease = null, Action? onCompleted = null)
     {
-        target.BeginAnimation(property, null);
         var current = (double)((DependencyObject)target).GetValue(property);
+        target.BeginAnimation(property, null);
         Animate(target, property, current, to, durationMs, ease, onCompleted);
     }
 
@@ -102,23 +102,27 @@ public static class AnimationHelper
     public static void AnimateScaleTransform(ScaleTransform transform, double to,
         int durationMs, IEasingFunction? ease = null)
     {
+        double fromX = transform.ScaleX;
+        double fromY = transform.ScaleY;
         transform.BeginAnimation(ScaleTransform.ScaleXProperty, null);
         transform.BeginAnimation(ScaleTransform.ScaleYProperty, null);
         var d = TimeSpan.FromMilliseconds(durationMs);
         var e = ease ?? EaseInOut;
-        transform.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(to, d) { EasingFunction = e });
-        transform.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(to, d) { EasingFunction = e });
+        transform.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(fromX, to, d) { EasingFunction = e });
+        transform.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(fromY, to, d) { EasingFunction = e });
     }
 
     public static void AnimateScaleTransform(ScaleTransform transform, double toX, double toY,
         int durationMs, IEasingFunction? ease = null)
     {
+        double fromX = transform.ScaleX;
+        double fromY = transform.ScaleY;
         transform.BeginAnimation(ScaleTransform.ScaleXProperty, null);
         transform.BeginAnimation(ScaleTransform.ScaleYProperty, null);
         var d = TimeSpan.FromMilliseconds(durationMs);
         var e = ease ?? EaseInOut;
-        transform.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(toX, d) { EasingFunction = e });
-        transform.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(toY, d) { EasingFunction = e });
+        transform.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(fromX, toX, d) { EasingFunction = e });
+        transform.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(fromY, toY, d) { EasingFunction = e });
     }
 
     public static void AnimateTranslate(TranslateTransform transform, double toX, double toY,

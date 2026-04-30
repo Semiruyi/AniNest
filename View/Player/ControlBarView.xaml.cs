@@ -4,7 +4,6 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 using LocalPlayer.View.Animations;
 using LocalPlayer.View.Player.Interaction;
 using LocalPlayer.ViewModel;
@@ -19,10 +18,7 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
     }
 
     private PlayerViewModel? _vm;
-    private SpeedPopupController? _speedPopupView;
     private ThumbnailPreviewController? _thumbnailPreviewView;
-
-    public float CurrentSpeed => _speedPopupView?.CurrentSpeed ?? 1.0f;
 
     private bool _isFullscreen;
     public bool IsFullscreen
@@ -32,7 +28,6 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
     }
 
     // --- Events ---
-    public event Action<float>? SpeedChanged;
     public event EventHandler? ControlBarMouseEnter;
     public event EventHandler? ControlBarMouseLeave;
 
@@ -41,12 +36,16 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
     {
         _vm = vm;
 
-        var border = SpeedPopup.Child as Border;
-        _speedPopupView = new SpeedPopupController(
-            SpeedPopup, SpeedBtn, SpeedPopupScale, SpeedOptionsPanel, RootGrid,
-            rate => _vm.SetRate(rate));
-
-        _speedPopupView.SpeedChanged += speed => SpeedChanged?.Invoke(speed);
+        SpeedPopup.PlacementTarget = SpeedBtn;
+        SpeedPopup.CustomPopupPlacementCallback = (_, targetSize, _) =>
+        {
+            double scale = targetSize.Width / SpeedBtn.ActualWidth;
+            double pw = 90 * scale;
+            double ph = 274 * scale;
+            return new[] { new CustomPopupPlacement(
+                new Point((targetSize.Width - pw) / 2, -ph),
+                PopupPrimaryAxis.Vertical) };
+        };
 
         _thumbnailPreviewView = new ThumbnailPreviewController(
             ProgressSlider, ProgressPopup, ProgressPopupScale,
@@ -72,14 +71,8 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
     public void SetCurrentVideo(string? videoPath)
         => _thumbnailPreviewView?.SetCurrentVideo(videoPath);
 
-    public void SetSpeed(float speed)
-        => _speedPopupView?.SetSpeed(speed);
-
-    public void UpdateSpeedButtonText(float speed)
-        => _speedPopupView?.UpdateButtonText(speed);
-
     public void CloseSpeedPopup()
-        => _speedPopupView?.Close();
+        => _vm?.CloseSpeedPopup();
 
     public void UpdateButtonTooltips()
     {
@@ -137,21 +130,19 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
         }
     }
 
-    // --- Speed popup forwarding ---
+    // --- 倍速弹窗（开关状态由 ViewModel.IsSpeedPopupOpen 控制） ---
+
     private void SpeedBtn_MouseEnter(object sender, MouseEventArgs e)
-        => _speedPopupView?.OnSpeedBtnMouseEnter();
+        => _vm?.OnSpeedEnter();
 
     private void SpeedBtn_MouseLeave(object sender, MouseEventArgs e)
-        => _speedPopupView?.OnSpeedBtnMouseLeave();
+        => _vm?.OnSpeedLeave();
 
     private void SpeedPopup_MouseEnter(object sender, MouseEventArgs e)
-        => _speedPopupView?.OnSpeedPopupMouseEnter();
+        => _vm?.OnSpeedEnter();
 
     private void SpeedPopup_MouseLeave(object sender, MouseEventArgs e)
-        => _speedPopupView?.OnSpeedPopupMouseLeave();
-
-    private void SpeedOption_Click(object sender, RoutedEventArgs e)
-        => _speedPopupView?.OnSpeedOptionClick(sender);
+        => _vm?.OnSpeedLeave();
 
     // --- Thumbnail preview forwarding ---
     private void ProgressSlider_MouseEnter(object sender, MouseEventArgs e)
@@ -198,7 +189,6 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
 
     public void Dispose()
     {
-        _speedPopupView?.Dispose();
         _thumbnailPreviewView?.Dispose();
     }
 }
