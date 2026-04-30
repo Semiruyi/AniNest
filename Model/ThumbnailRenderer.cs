@@ -108,7 +108,11 @@ internal class ThumbnailRenderer
             }, ct);
 
             await process.WaitForExitAsync(ct);
+            AppLog.Info(nameof(ThumbnailRenderer),
+                $"WaitForExit 完成, 等待 stderrTask, PID={process.Id}");
             await stderrTask;
+            AppLog.Info(nameof(ThumbnailRenderer),
+                $"stderrTask 完成, PID={process.Id}");
 
             int exitCode = process.ExitCode;
             AppLog.Info(nameof(ThumbnailRenderer),
@@ -139,13 +143,22 @@ internal class ThumbnailRenderer
         {
             // 取消：杀进程、清 tmp、重抛给 Generator 设 State = Pending
             AppLog.Info(nameof(ThumbnailRenderer),
-                $"被取消: {Path.GetFileName(task.VideoPath)}");
+                $"被取消, HasExited={process.HasExited}, PID={process.Id}");
+            var killSw = Stopwatch.StartNew();
             try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch { }
+            killSw.Stop();
+            AppLog.Info(nameof(ThumbnailRenderer),
+                $"Kill 进程完成, 耗时 {killSw.ElapsedMilliseconds}ms, PID={process.Id}");
             throw;
         }
         finally
         {
+            AppLog.Info(nameof(ThumbnailRenderer), $"进入 finally, PID={process.Id}");
+            var cleanSw = Stopwatch.StartNew();
             try { if (Directory.Exists(tmpDir)) Directory.Delete(tmpDir, true); } catch { }
+            cleanSw.Stop();
+            AppLog.Info(nameof(ThumbnailRenderer),
+                $"finally 完成, 清理 tmp 耗时 {cleanSw.ElapsedMilliseconds}ms, PID={process.Id}");
         }
     }
 

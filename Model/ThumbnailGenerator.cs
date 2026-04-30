@@ -395,13 +395,19 @@ public class ThumbnailGenerator : IDisposable
         catch (OperationCanceledException)
         {
             // Renderer 已杀进程 + 清 tmp，这里重置状态以便下次重试
+            var cancelSw = Stopwatch.StartNew();
             task.State = ThumbnailState.Pending;
+            cancelSw.Stop();
+            Log($"[GenerateForTask] 取消处理完成, 耗时 {cancelSw.ElapsedMilliseconds}ms, 即将重抛");
             throw;
         }
         finally
         {
+            var finallySw = Stopwatch.StartNew();
             SaveIndex();
             UpdateProgress();
+            finallySw.Stop();
+            Log($"[GenerateForTask] finally 完成, SaveIndex+UpdateProgress 耗时 {finallySw.ElapsedMilliseconds}ms");
         }
     }
 
@@ -415,12 +421,18 @@ public class ThumbnailGenerator : IDisposable
         _isShuttingDown = true;
 
         // 取消循环 + 过期清理 → Renderer 内部杀 ffmpeg + 清 tmp
+        Log("[Shutdown] 取消 _loopCts...");
         _loopCts?.Cancel();
+        Log("[Shutdown] 取消 _expiryCts...");
         _expiryCts?.Cancel();
 
         if (_loopTask != null)
         {
+            Log($"[Shutdown] 等待 _loopTask 退出 (Status={_loopTask.Status})...");
+            var waitSw = Stopwatch.StartNew();
             try { _loopTask.Wait(5000); } catch { }
+            waitSw.Stop();
+            Log($"[Shutdown] _loopTask 等待完成, 实际耗时 {waitSw.ElapsedMilliseconds}ms, Status={_loopTask.Status}");
         }
 
         // 兜底清理残留 tmp 目录

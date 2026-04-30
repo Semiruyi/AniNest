@@ -37,7 +37,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
         App.LogStartup($"MainPage.InitializeComponent 完成，耗时 {sw.ElapsedMilliseconds}ms");
 
         thumbnailGenerator.ProgressChanged += (_, args) =>
-            Dispatcher.Invoke(() => UpdateThumbnailProgress(args.Ready, args.Total));
+            Dispatcher.BeginInvoke(() => UpdateThumbnailProgress(args.Ready, args.Total));
 
         Loaded += MainPage_Loaded;
         App.LogStartup($"MainPage 构造函数完成，总耗时 {sw.ElapsedMilliseconds}ms");
