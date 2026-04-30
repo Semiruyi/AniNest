@@ -8,7 +8,7 @@ using System.Windows.Media.Animation;
 using LocalPlayer.Primitives;
 using LocalPlayer.Model;
 
-namespace LocalPlayer.Controls;
+namespace LocalPlayer.View.Player;
 
 public partial class PlaylistPanelView : System.Windows.Controls.UserControl
 {

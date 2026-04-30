@@ -12,7 +12,7 @@ using LocalPlayer.Media;
 using LocalPlayer.Interaction;
 using LocalPlayer.ViewModel;
 
-namespace LocalPlayer.Controls;
+namespace LocalPlayer.View.Player;
 
 public partial class ControlBarView : System.Windows.Controls.UserControl, IDisposable
 {

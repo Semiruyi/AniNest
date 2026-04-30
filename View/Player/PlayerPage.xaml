@@ -1,7 +1,6 @@
 <UserControl x:Class="LocalPlayer.View.Player.PlayerPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:controls="clr-namespace:LocalPlayer.Controls"
              xmlns:local="clr-namespace:LocalPlayer.View.Player"
              Background="{StaticResource BackgroundDark}"
              Focusable="True"
@@ -41,12 +40,12 @@
         </Grid>
 
         <!-- 选集面板 -->
-        <controls:PlaylistPanelView x:Name="PlaylistPanel"
+        <local:PlaylistPanelView x:Name="PlaylistPanel"
                                  Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
                                  Visibility="{Binding IsPlaylistVisible, Converter={StaticResource BoolToVis}}"/>
 
         <!-- 控制栏 -->
-        <controls:ControlBarView x:Name="ControlBar"
+        <local:ControlBarView x:Name="ControlBar"
                               Grid.Row="1" Grid.Column="0"/>
     </Grid>
 </UserControl>
