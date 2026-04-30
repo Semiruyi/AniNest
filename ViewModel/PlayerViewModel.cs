@@ -312,6 +312,23 @@ public partial class PlayerViewModel : ObservableObject
     [RelayCommand]
     private void Settings() => OpenKeyBindingsSettings();
 
+    // ========== Right-hold commands — 供 XAML 手势绑定 ==========
+
+    [RelayCommand]
+    private void EnterRightHold()
+    {
+        _savedRate = Rate;
+        Rate = 3.0f;
+        _media.Rate = 3.0f;
+    }
+
+    [RelayCommand]
+    private void ExitRightHold()
+    {
+        Rate = _savedRate;
+        _media.Rate = _savedRate;
+    }
+
     // ========== Input handler exposed for ControlBar ==========
 
     public PlayerInputHandler InputHandler => _inputHandler;
@@ -329,21 +346,6 @@ public partial class PlayerViewModel : ObservableObject
     // ========== Settings ==========
 
     public void OpenKeyBindingsSettings() => OpenKeyBindingsRequested?.Invoke();
-
-    // ========== Right-hold speed ==========
-
-    public void EnterHoldSpeed(float holdSpeed = 3.0f)
-    {
-        _savedRate = Rate;
-        Rate = holdSpeed;
-        _media.Rate = holdSpeed;
-    }
-
-    public void ExitHoldSpeed()
-    {
-        Rate = _savedRate;
-        _media.Rate = _savedRate;
-    }
 
     // ========== Thumbnail ==========
 

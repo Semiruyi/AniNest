@@ -6,8 +6,6 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using LocalPlayer.View.Animations;
-using LocalPlayer.View.Gestures;
-using LocalPlayer.View.Player.Interaction;
 using LocalPlayer.Model;
 using LocalPlayer.ViewModel;
 
@@ -27,9 +25,6 @@ public partial class FullscreenWindow : Window
     private bool isClosing;
     private Rect originalVideoRect;
 
-    private RightHoldGesture _rightHold = null!;
-    private ClickRouter _clickRouter = null!;
-
     private readonly DispatcherTimer controlBarHideTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
     private readonly DispatcherTimer playlistHideTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
 
@@ -39,10 +34,6 @@ public partial class FullscreenWindow : Window
         DataContext = _vm;
 
         InitializeComponent();
-
-        _clickRouter = new ClickRouter(
-            () => _vm.PlayPauseCommand.Execute(null),
-            () => ExitRequested?.Invoke(this, EventArgs.Empty));
 
         controlBarHideTimer.Tick += (_, _) =>
         {
@@ -68,9 +59,6 @@ public partial class FullscreenWindow : Window
 
         Loaded += (_, _) =>
         {
-            VideoImage.MouseLeftButtonDown += VideoImage_MouseLeftButtonDown;
-            VideoImage.MouseRightButtonDown += VideoImage_MouseRightButtonDown;
-            VideoImage.MouseRightButtonUp += VideoImage_MouseRightButtonUp;
             Keyboard.Focus(this);
         };
 
@@ -91,18 +79,13 @@ public partial class FullscreenWindow : Window
     {
         ControlBar.Setup(_vm);
 
-        _rightHold = new RightHoldGesture();
-        _rightHold.HoldStarted += () =>
-        {
-            _vm.EnterHoldSpeed();
-            ControlBar.UpdateSpeedButtonText(3.0f);
-        };
-        _rightHold.HoldEnded += () =>
-        {
-            _vm.ExitHoldSpeed();
-            ControlBar.UpdateSpeedButtonText(_vm.Rate);
-        };
         ControlBar.IsFullscreen = true;
+
+        _vm.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(PlayerViewModel.Rate))
+                ControlBar.UpdateSpeedButtonText(_vm.Rate);
+        };
 
         ControlBar.ControlBarMouseEnter += (_, _) =>
         {
@@ -130,15 +113,6 @@ public partial class FullscreenWindow : Window
         HideControlBar(immediate: true);
         HidePlaylist(immediate: true);
     }
-
-    private void VideoImage_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        => _clickRouter.OnMouseDown(e);
-
-    private void VideoImage_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
-        => _rightHold.OnMouseDown(e);
-
-    private void VideoImage_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
-        => _rightHold.OnMouseUp(e);
 
     public void SetPlaylistItems(int selectedIndex)
     {

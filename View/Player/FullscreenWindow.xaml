@@ -4,6 +4,7 @@
         xmlns:local="clr-namespace:LocalPlayer.View.Player"
         xmlns:anim="clr-namespace:LocalPlayer.View.Animations"
         xmlns:conv="clr-namespace:LocalPlayer.Converters"
+        xmlns:gest="clr-namespace:LocalPlayer.View.Gestures"
         WindowStyle="None"
         ResizeMode="NoResize"
         Topmost="True"
@@ -16,7 +17,11 @@
         <conv:InverseBoolConverter x:Key="InverseBool"/>
     </Window.Resources>
     <Grid x:Name="RootGrid" Background="Black">
-        <Image x:Name="VideoImage" Stretch="Uniform"/>
+        <Image x:Name="VideoImage" Stretch="Uniform"
+               gest:MouseGesture.LeftClick="{Binding PlayPauseCommand}"
+               gest:MouseGesture.LeftDoubleClick="{Binding ToggleFullscreenCommand}"
+               gest:MouseGesture.RightHold="{Binding EnterRightHoldCommand}"
+               gest:MouseGesture.RightHoldRelease="{Binding ExitRightHoldCommand}"/>
 
         <!-- 全屏控制栏（底部覆盖） -->
         <local:ControlBarView x:Name="ControlBar"

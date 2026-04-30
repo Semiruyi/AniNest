@@ -6,8 +6,6 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using LocalPlayer.View.Animations;
-using LocalPlayer.View.Gestures;
-using LocalPlayer.View.Player.Interaction;
 using LocalPlayer.ViewModel;
 
 namespace LocalPlayer.View.Player;
@@ -15,9 +13,6 @@ namespace LocalPlayer.View.Player;
 public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposable
 {
     private readonly PlayerViewModel _vm;
-
-    private RightHoldGesture _rightHold = null!;
-    private ClickRouter _clickRouter = null!;
 
     private Window? parentWindow;
     private FullscreenWindow? fullscreenWindow;
@@ -43,21 +38,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         GotKeyboardFocus += PlayerPage_GotKeyboardFocus;
         LostKeyboardFocus += PlayerPage_LostKeyboardFocus;
 
-        _rightHold = new RightHoldGesture();
-        _rightHold.HoldStarted += () =>
-        {
-            _vm.EnterHoldSpeed();
-            ControlBar.UpdateSpeedButtonText(3.0f);
-        };
-        _rightHold.HoldEnded += () =>
-        {
-            _vm.ExitHoldSpeed();
-            ControlBar.UpdateSpeedButtonText(_vm.Rate);
-        };
-        _clickRouter = new ClickRouter(
-            () => _vm.PlayPauseCommand.Execute(null),
-            () => _vm.ToggleFullscreenCommand.Execute(null));
-
         _vm.BackRequested += () =>
         {
             _vm.SaveProgress();
@@ -76,6 +56,11 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             {
                 ControlBar.SetCurrentVideo(_vm.CurrentVideoPath);
                 fullscreenWindow?.ControlBar?.SetCurrentVideo(_vm.CurrentVideoPath);
+            }
+            else if (args.PropertyName == nameof(PlayerViewModel.Rate))
+            {
+                ControlBar.UpdateSpeedButtonText(_vm.Rate);
+                fullscreenWindow?.ControlBar?.UpdateSpeedButtonText(_vm.Rate);
             }
         };
         _vm.OpenKeyBindingsRequested += () =>
@@ -115,10 +100,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
                     _vm.SelectEpisode(item.Number - 1);
                 };
             }
-
-            VideoContainer.MouseMove += VideoContainer_MouseMove;
-            VideoContainer.MouseRightButtonDown += VideoContainer_MouseRightButtonDown;
-            VideoContainer.MouseRightButtonUp += VideoContainer_MouseRightButtonUp;
 
             Keyboard.Focus(this);
             FocusManager.SetFocusedElement(this, this);
@@ -221,7 +202,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         if (e.Handled) return;
         Keyboard.Focus(this);
-        _clickRouter.OnMouseDown(e);
     }
 
     private void PlayerPage_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
@@ -277,17 +257,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         ControlBar.Visibility = Visibility.Visible;
         PlaylistPanel.Visibility = Visibility.Visible;
     }
-
-    // ========== 非全屏时无操作 ==========
-    private void VideoContainer_MouseMove(object sender, MouseEventArgs e) { }
-
-    // ========== 右键长按三倍速 ==========
-
-    private void VideoContainer_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
-        => _rightHold.OnMouseDown(e);
-
-    private void VideoContainer_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
-        => _rightHold.OnMouseUp(e);
 
     public void Dispose()
     {
