@@ -8,7 +8,6 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using LocalPlayer.Primitives;
 using LocalPlayer.Model;
-using LocalPlayer.Media;
 using LocalPlayer.View.Player.Interaction;
 using LocalPlayer.ViewModel;
 

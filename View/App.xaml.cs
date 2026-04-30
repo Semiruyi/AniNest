@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
-using LocalPlayer.Media;
 using LocalPlayer.Model;
 using LocalPlayer.View;
 using LocalPlayer.View.Library;

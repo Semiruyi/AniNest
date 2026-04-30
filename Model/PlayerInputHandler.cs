@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using LocalPlayer.Model;
 using WinKey = System.Windows.Input.Key;
 using WinKeyEventArgs = System.Windows.Input.KeyEventArgs;
 
-namespace LocalPlayer.Media;
+namespace LocalPlayer.Model;
 
 public class PlayerInputHandler
 {

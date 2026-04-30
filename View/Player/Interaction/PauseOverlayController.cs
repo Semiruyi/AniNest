@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
-using LocalPlayer.Media;
+using LocalPlayer.Model;
 using LocalPlayer.Primitives;
 
 namespace LocalPlayer.View.Player.Interaction;

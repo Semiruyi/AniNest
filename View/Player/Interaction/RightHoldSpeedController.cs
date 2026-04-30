@@ -1,7 +1,7 @@
 using System;
 using System.Windows.Input;
 using System.Windows.Threading;
-using LocalPlayer.Media;
+using LocalPlayer.Model;
 
 
 namespace LocalPlayer.View.Player.Interaction;

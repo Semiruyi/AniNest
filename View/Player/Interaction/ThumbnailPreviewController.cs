@@ -9,7 +9,6 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LocalPlayer.Primitives;
 using LocalPlayer.Model;
-using LocalPlayer.Media;
 using Image = System.Windows.Controls.Image;
 using Mouse = System.Windows.Input.Mouse;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;

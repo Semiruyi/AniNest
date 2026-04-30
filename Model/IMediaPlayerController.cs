@@ -1,7 +1,7 @@
 using System;
 using System.Windows.Media.Imaging;
 
-namespace LocalPlayer.Media;
+namespace LocalPlayer.Model;
 
 public interface IMediaPlayerController : IDisposable
 {

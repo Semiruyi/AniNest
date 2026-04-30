@@ -3,11 +3,10 @@ using System.IO;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LibVLCSharp.Shared;
-using LocalPlayer.Model;
 
 using LibVlcMedia = LibVLCSharp.Shared.Media;
 
-namespace LocalPlayer.Media;
+namespace LocalPlayer.Model;
 
 public class MediaPlayerController : IMediaPlayerController
 {

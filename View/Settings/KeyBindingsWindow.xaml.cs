@@ -2,9 +2,8 @@ using System;
 using System.Windows;
 using System.Windows.Input;
 using LocalPlayer.Model;
-using LocalPlayer.Media;
 using LocalPlayer.ViewModel;
-using WinKeyEventArgs = System.Windows.Input.KeyEventArgs;
+using WinKeyEventArgs= System.Windows.Input.KeyEventArgs;
 using WinKeyEventHandler = System.Windows.Input.KeyEventHandler;
 
 namespace LocalPlayer.View.Settings;
