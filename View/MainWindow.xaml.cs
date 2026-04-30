@@ -63,7 +63,7 @@ public partial class MainWindow : Window
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         App.LogStartup("ShowMainPage 开始");
-        mainPage = new MainPage();
+        mainPage = new MainPage(SettingsService.Instance, ThumbnailGenerator.Instance);
         App.LogStartup($"MainPage 构造函数完成，耗时 {sw.ElapsedMilliseconds}ms");
         mainPage.FolderSelected += MainPage_FolderSelected;
         PageHost.Content = mainPage;
@@ -86,7 +86,7 @@ public partial class MainWindow : Window
     {
         await FadeMaskToBlackAsync(300);
 
-        playerPage = new PlayerPage(SettingsService.Instance, new MediaPlayerController());
+        playerPage = new PlayerPage(SettingsService.Instance, new MediaPlayerController(), ThumbnailGenerator.Instance);
         playerPage.BackRequested += PlayerPage_BackRequested;
         playerPage.LoadFolder(folderPath, folderName);
         PageHost.Content = playerPage;

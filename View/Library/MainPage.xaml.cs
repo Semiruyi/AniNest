@@ -18,8 +18,8 @@ namespace LocalPlayer.View.Library;
 
 public partial class MainPage : System.Windows.Controls.UserControl
 {
-    private readonly SettingsService settingsService = SettingsService.Instance;
-    private readonly ThumbnailGenerator thumbnailGenerator = ThumbnailGenerator.Instance;
+    private readonly ISettingsService settingsService;
+    private readonly IThumbnailGenerator thumbnailGenerator;
     private readonly ObservableCollection<FolderListItem> folderItems = new();
 
     public event Action<object, string, string>? FolderSelected;
@@ -29,8 +29,11 @@ public partial class MainPage : System.Windows.Controls.UserControl
     private bool _dragInitiated;
     private InsertionAdorner? _insertionAdorner;
 
-    public MainPage()
+    public MainPage(ISettingsService settings, IThumbnailGenerator thumbGen)
     {
+        settingsService = settings;
+        thumbnailGenerator = thumbGen;
+
         var sw = System.Diagnostics.Stopwatch.StartNew();
         App.LogStartup("MainPage 构造函数开始");
         InitializeComponent();

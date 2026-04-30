@@ -27,8 +27,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     private readonly IMediaPlayerController mediaController;
     private readonly ISettingsService settingsService;
-    private readonly PlayerInputHandler inputHandler = new();
-    private readonly ThumbnailGenerator _thumbnailGenerator = ThumbnailGenerator.Instance;
+    private readonly PlayerInputHandler inputHandler;
+    private readonly IThumbnailGenerator _thumbnailGenerator;
     private readonly PlaylistManager playlistManager;
     private readonly DispatcherTimer saveProgressTimer;
 
@@ -48,10 +48,13 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     public event EventHandler? BackRequested;
 
-    public PlayerPage(ISettingsService settings, IMediaPlayerController media)
+    public PlayerPage(ISettingsService settings, IMediaPlayerController media,
+                      IThumbnailGenerator thumbnailGenerator)
     {
         settingsService = settings;
         mediaController = media;
+        _thumbnailGenerator = thumbnailGenerator;
+        inputHandler = new PlayerInputHandler(settings);
 
         try
         {

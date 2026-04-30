@@ -12,7 +12,7 @@ public class PlayerInputHandler
     private static void Log(string message) => AppLog.Info(nameof(PlayerInputHandler), message);
     private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(PlayerInputHandler), message, ex);
 
-    private readonly SettingsService settingsService = SettingsService.Instance;
+    private readonly ISettingsService _settings;
     private Dictionary<WinKey, string> keyToAction = new();
 
     public event EventHandler? TogglePlayPause;
@@ -24,11 +24,16 @@ public class PlayerInputHandler
     public event EventHandler? NextEpisode;
     public event EventHandler? PreviousEpisode;
 
+    public PlayerInputHandler(ISettingsService settings)
+    {
+        _settings = settings;
+    }
+
     public void ReloadBindings()
     {
         Log("ReloadBindings: 开始重新加载快捷键...");
-        settingsService.Reload();
-        var bindings = settingsService.GetAllKeyBindings();
+        _settings.Reload();
+        var bindings = _settings.GetAllKeyBindings();
         Log($"ReloadBindings: GetAllKeyBindings 返回 {bindings.Count} 个绑定");
         keyToAction = new Dictionary<WinKey, string>();
         foreach (var kv in bindings)
@@ -42,12 +47,12 @@ public class PlayerInputHandler
 
     public Dictionary<string, WinKey> GetCurrentBindings()
     {
-        return settingsService.GetAllKeyBindings();
+        return _settings.GetAllKeyBindings();
     }
 
     public void SetBinding(string actionName, WinKey key)
     {
-        settingsService.SetKeyBinding(actionName, key);
+        _settings.SetKeyBinding(actionName, key);
         ReloadBindings();
     }
 
