@@ -20,6 +20,7 @@ public class PlayerInputHandler
     public event EventHandler? Back;
     public event EventHandler? NextEpisode;
     public event EventHandler? PreviousEpisode;
+    public event Action? BindingsChanged;
 
     public PlayerInputHandler(ISettingsService settings)
     {
@@ -40,6 +41,7 @@ public class PlayerInputHandler
                 keyToAction[kv.Value] = kv.Key;
         }
         Log($"ReloadBindings: 最终加载了 {keyToAction.Count} 个快捷键到映射表");
+        BindingsChanged?.Invoke();
     }
 
     public Dictionary<string, WinKey> GetCurrentBindings()

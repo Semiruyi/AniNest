@@ -8,6 +8,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using LocalPlayer.Converters;
 using LocalPlayer.Model;
 
 namespace LocalPlayer.ViewModel;
@@ -325,6 +326,12 @@ public partial class PlayerViewModel : ObservableObject
             });
 
         _inputHandler = new PlayerInputHandler(_settings);
+        _inputHandler.BindingsChanged += () =>
+        {
+            OnPropertyChanged(nameof(PlayPauseTooltip));
+            OnPropertyChanged(nameof(PreviousTooltip));
+            OnPropertyChanged(nameof(NextTooltip));
+        };
 
         _saveTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         _saveTimer.Tick += (_, _) => SaveProgress();
@@ -433,6 +440,17 @@ public partial class PlayerViewModel : ObservableObject
 
     public void ReloadBindings()
         => _inputHandler.ReloadBindings();
+
+    public string PlayPauseTooltip => FormatTooltip("播放/暂停", "TogglePlayPause");
+    public string PreviousTooltip => FormatTooltip("上一集", "PreviousEpisode");
+    public string NextTooltip => FormatTooltip("下一集", "NextEpisode");
+
+    private string FormatTooltip(string label, string actionName)
+    {
+        var bindings = _inputHandler.GetCurrentBindings();
+        var key = bindings.TryGetValue(actionName, out var k) ? k : Key.None;
+        return key == Key.None ? label : $"{label} ({KeyDisplayConverter.Format(key)})";
+    }
 
     // ========== Commands ==========
 

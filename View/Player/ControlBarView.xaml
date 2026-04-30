@@ -311,10 +311,12 @@
 
             <!-- 左侧：播放控制 + 时间 -->
             <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
-                <Button x:Name="PreviousBtn" Style="{StaticResource IconButton}" Command="{Binding PreviousCommand}" ToolTip="上一集 (P)" Focusable="False">
+                <Button x:Name="PreviousBtn" Style="{StaticResource IconButton}" Command="{Binding PreviousCommand}" ToolTip="{Binding PreviousTooltip}" Focusable="False"
+                        animations:ButtonScaleHover.IsEnabled="True">
                     <Image Source="/Resources/Icons/previous.png" Width="14" Height="14"/>
                 </Button>
-                <Button x:Name="PlayPauseBtn" Style="{StaticResource PlayButton}" Command="{Binding PlayPauseCommand}" Margin="2,0" ToolTip="播放/暂停 (Space)" Focusable="False">
+                <Button x:Name="PlayPauseBtn" Style="{StaticResource PlayButton}" Command="{Binding PlayPauseCommand}" Margin="2,0" ToolTip="{Binding PlayPauseTooltip}" Focusable="False"
+                        animations:ButtonScaleHover.IsEnabled="True">
                     <Image x:Name="PlayPauseIcon" Width="20" Height="20">
                         <Image.Style>
                             <Style TargetType="Image">
@@ -328,7 +330,8 @@
                         </Image.Style>
                     </Image>
                 </Button>
-                <Button x:Name="NextBtn" Style="{StaticResource IconButton}" Command="{Binding NextCommand}" ToolTip="下一集 (N)" Focusable="False">
+                <Button x:Name="NextBtn" Style="{StaticResource IconButton}" Command="{Binding NextCommand}" ToolTip="{Binding NextTooltip}" Focusable="False"
+                        animations:ButtonScaleHover.IsEnabled="True">
                     <Image Source="/Resources/Icons/next.png" Width="14" Height="14"/>
                 </Button>
                 <Button x:Name="StopBtn" Style="{StaticResource IconButton}" Command="{Binding StopCommand}" Margin="2,0,0,0" ToolTip="停止" Focusable="False">
@@ -407,7 +410,9 @@
                             MouseEnter="SpeedBtn_MouseEnter"
                             MouseLeave="SpeedBtn_MouseLeave"/>
                     <Popup x:Name="SpeedPopup" AllowsTransparency="True"
-                           Placement="Center" StaysOpen="True"
+                           Placement="Center"
+                           PlacementTarget="{Binding ElementName=SpeedBtn}"
+                           StaysOpen="True"
                            VerticalOffset="-40"
                            animations:PopupAnimator.BindOpen="{Binding IsSpeedPopupOpen}">
                         <Border Background="#E6282828" CornerRadius="12" Padding="4"

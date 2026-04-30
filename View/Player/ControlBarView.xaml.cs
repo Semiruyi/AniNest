@@ -1,74 +1,27 @@
-using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using System.Windows.Media;
-using LocalPlayer.View.Animations;
 using LocalPlayer.ViewModel;
 
 namespace LocalPlayer.View.Player;
 
-public partial class ControlBarView : System.Windows.Controls.UserControl, IDisposable
+public partial class ControlBarView : System.Windows.Controls.UserControl
 {
     public ControlBarView()
     {
         InitializeComponent();
     }
 
-    private PlayerViewModel? _vm;
-
-    // --- Setup ---
-    public void Setup(PlayerViewModel vm)
-    {
-        _vm = vm;
-
-        SpeedPopup.PlacementTarget = SpeedBtn;
-        SpeedPopup.CustomPopupPlacementCallback = (_, targetSize, _) =>
-        {
-            double scale = targetSize.Width / SpeedBtn.ActualWidth;
-            double pw = 90 * scale;
-            double ph = 274 * scale;
-            return new[] { new CustomPopupPlacement(
-                new Point((targetSize.Width - pw) / 2, -ph),
-                PopupPrimaryAxis.Vertical) };
-        };
-
-        WireButtonAnimations();
-        UpdateButtonTooltips();
-    }
-
-    private void WireButtonAnimations()
-    {
-        foreach (var btn in new[] { PlayPauseBtn, PreviousBtn, NextBtn })
-        {
-            if (btn.Template.FindName("AnimScale", btn) is ScaleTransform st)
-                ButtonScaleHover.Attach(btn, st);
-        }
-    }
-
-    public void SetCurrentVideo(string? videoPath) { }
-
-    public void CloseSpeedPopup()
-        => _vm?.CloseSpeedPopup();
-
-    public void UpdateButtonTooltips()
-    {
-        if (_vm == null) return;
-        var bindings = _vm.GetCurrentBindings();
-        if (bindings == null) return;
-
-        PlayPauseBtn.ToolTip = $"播放/暂停 ({KeyDisplayString(bindings["TogglePlayPause"])})";
-        PreviousBtn.ToolTip = $"上一集 ({KeyDisplayString(bindings["PreviousEpisode"])})";
-        NextBtn.ToolTip = $"下一集 ({KeyDisplayString(bindings["NextEpisode"])})";
-    }
+    private PlayerViewModel? GetVm()
+        => DataContext as PlayerViewModel;
 
     // --- Progress slider ---
     private void ProgressSlider_PreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ChangedButton != MouseButton.Left) return;
-        if (DataContext is PlayerViewModel vm)
-            vm.IsSeeking = true;
+        var vm = GetVm();
+        if (vm != null) vm.IsSeeking = true;
 
         if (e.OriginalSource is not Thumb && ProgressSlider.ActualWidth > 0)
         {
@@ -91,7 +44,8 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
     private void ProgressSlider_PreviewMouseUp(object sender, MouseButtonEventArgs e)
     {
         if (e.ChangedButton != MouseButton.Left) return;
-        if (DataContext is PlayerViewModel vm)
+        var vm = GetVm();
+        if (vm != null)
         {
             vm.IsSeeking = false;
             vm.SeekCommand.Execute((long)ProgressSlider.Value);
@@ -100,64 +54,56 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
 
     private void ProgressSlider_LostMouseCapture(object sender, MouseEventArgs e)
     {
-        if (DataContext is PlayerViewModel vm)
+        var vm = GetVm();
+        if (vm != null)
         {
             vm.IsSeeking = false;
             vm.SeekCommand.Execute((long)ProgressSlider.Value);
         }
     }
 
-    // --- 倍速弹窗（开关状态由 ViewModel.IsSpeedPopupOpen 控制） ---
-
+    // --- Speed popup hover forwarding ---
     private void SpeedBtn_MouseEnter(object sender, MouseEventArgs e)
-        => _vm?.OnSpeedEnter();
+        => GetVm()?.OnSpeedEnter();
 
     private void SpeedBtn_MouseLeave(object sender, MouseEventArgs e)
-        => _vm?.OnSpeedLeave();
+        => GetVm()?.OnSpeedLeave();
 
     private void SpeedPopup_MouseEnter(object sender, MouseEventArgs e)
-        => _vm?.OnSpeedEnter();
+        => GetVm()?.OnSpeedEnter();
 
     private void SpeedPopup_MouseLeave(object sender, MouseEventArgs e)
-        => _vm?.OnSpeedLeave();
+        => GetVm()?.OnSpeedLeave();
 
     // --- Thumbnail preview forwarding ---
     private void ProgressSlider_MouseEnter(object sender, MouseEventArgs e)
-        => _vm?.OnThumbnailEnter();
+        => GetVm()?.OnThumbnailEnter();
 
     private void ProgressSlider_MouseLeave(object sender, MouseEventArgs e)
-        => _vm?.OnThumbnailLeave();
+        => GetVm()?.OnThumbnailLeave();
 
     private void ProgressSlider_MouseMove(object sender, MouseEventArgs e)
-        => _vm?.OnThumbnailMove(e.GetPosition(ProgressSlider), ProgressSlider.ActualWidth);
+        => GetVm()?.OnThumbnailMove(e.GetPosition(ProgressSlider), ProgressSlider.ActualWidth);
 
     private void ProgressPopup_MouseEnter(object sender, MouseEventArgs e)
-        => _vm?.OnThumbnailPopupEnter();
+        => GetVm()?.OnThumbnailPopupEnter();
 
     private void ProgressPopup_MouseLeave(object sender, MouseEventArgs e)
-        => _vm?.OnThumbnailPopupLeave();
+        => GetVm()?.OnThumbnailPopupLeave();
 
     // --- Keyboard forwarding ---
     private void RootGrid_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (_vm?.HandleKeyDown(e) == true)
+        var vm = GetVm();
+        if (vm?.HandleKeyDown(e) == true)
             e.Handled = true;
     }
 
     private void RootGrid_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Handled) return;
-        if (_vm?.HandleKeyDown(e) == true)
+        var vm = GetVm();
+        if (vm?.HandleKeyDown(e) == true)
             e.Handled = true;
-    }
-
-    // --- Key display helper ---
-    private static readonly Converters.KeyDisplayConverter _keyConverter = new();
-
-    private static string KeyDisplayString(Key key)
-        => (string)_keyConverter.Convert(key, typeof(string), null, System.Globalization.CultureInfo.InvariantCulture);
-
-    public void Dispose()
-    {
     }
 }

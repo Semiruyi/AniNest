@@ -40,13 +40,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             _vm.SaveProgress();
             BackRequested?.Invoke(this, EventArgs.Empty);
         };
-        _vm.PropertyChanged += (_, args) =>
-        {
-            if (args.PropertyName == nameof(PlayerViewModel.CurrentVideoPath) && _vm.CurrentVideoPath != null)
-            {
-                ControlBar.SetCurrentVideo(_vm.CurrentVideoPath);
-            }
-        };
         _vm.OpenKeyBindingsRequested += () =>
         {
             var window = new View.Settings.KeyBindingsWindow(new KeyBindingsViewModel(_vm.InputHandler))
@@ -54,7 +47,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
                 Owner = Window.GetWindow(this)
             };
             window.ShowDialog();
-            ControlBar.UpdateButtonTooltips();
         };
     }
 
@@ -63,9 +55,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         try
         {
             parentWindow = Window.GetWindow(this);
-
-            ControlBar.Setup(_vm);
-            ControlBar.UpdateButtonTooltips();
 
             Keyboard.Focus(this);
             FocusManager.SetFocusedElement(this, this);
@@ -171,8 +160,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     public void Dispose()
     {
         _vm.SaveProgress();
-
-        ControlBar.Dispose();
 
         _vm.DisposeMedia();
     }

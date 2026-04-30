@@ -7,13 +7,19 @@ namespace LocalPlayer.Converters;
 
 public class KeyDisplayConverter : IValueConverter
 {
+    public static string Format(Key key)
+    {
+        if (key == Key.None) return "(未绑定)";
+        return FormatKeyString(key.ToString());
+    }
+
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
         if (value is not Key key) return "";
+        return Format(key);
+    }
 
-        if (key == Key.None) return "(未绑定)";
-
-        return key.ToString()
+    private static string FormatKeyString(string s) => s
             .Replace("Left", "←").Replace("Right", "→")
             .Replace("Up", "↑").Replace("Down", "↓")
             .Replace("Space", "空格").Replace("Escape", "Esc")
@@ -37,7 +43,6 @@ public class KeyDisplayConverter : IValueConverter
             .Replace("Add", "+").Replace("Subtract", "-")
             .Replace("Multiply", "*").Replace("Divide", "/")
             .Replace("Decimal", ".");
-    }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         => throw new NotImplementedException();

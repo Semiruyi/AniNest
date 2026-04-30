@@ -1,4 +1,5 @@
 using System;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -13,6 +14,23 @@ namespace LocalPlayer.View.Animations;
 /// </summary>
 public static class ButtonScaleHover
 {
+    public static readonly DependencyProperty IsEnabledProperty =
+        DependencyProperty.RegisterAttached("IsEnabled", typeof(bool), typeof(ButtonScaleHover),
+            new PropertyMetadata(false, OnIsEnabledChanged));
+
+    public static bool GetIsEnabled(DependencyObject obj) => (bool)obj.GetValue(IsEnabledProperty);
+    public static void SetIsEnabled(DependencyObject obj, bool value) => obj.SetValue(IsEnabledProperty, value);
+
+    private static void OnIsEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is not Button btn || !(bool)e.NewValue) return;
+        btn.Loaded += (_, _) =>
+        {
+            if (btn.Template.FindName("AnimScale", btn) is ScaleTransform st)
+                Attach(btn, st);
+        };
+    }
+
     /// <param name="button">目标按钮</param>
     /// <param name="scale">按钮模板中的 ScaleTransform（通常叫 AnimScale）</param>
     /// <param name="hoverScale">hover 时缩放倍数</param>
