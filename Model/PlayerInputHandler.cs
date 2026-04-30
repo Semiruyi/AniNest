@@ -17,8 +17,6 @@ public class PlayerInputHandler
     public event EventHandler? TogglePlayPause;
     public event EventHandler? SeekForward;
     public event EventHandler? SeekBackward;
-    public event EventHandler? ToggleFullscreen;
-    public event EventHandler? ExitFullscreen;
     public event EventHandler? Back;
     public event EventHandler? NextEpisode;
     public event EventHandler? PreviousEpisode;
@@ -60,9 +58,9 @@ public class PlayerInputHandler
         return SettingsService.GetDefaultKeyBindings();
     }
 
-    public bool HandleKeyDown(WinKeyEventArgs e, bool isFullscreen)
+    public bool HandleKeyDown(WinKeyEventArgs e)
     {
-        Log($"HandleKeyDown: Key={e.Key}, IsFullscreen={isFullscreen}");
+        Log($"HandleKeyDown: Key={e.Key}");
 
         if (keyToAction.Count == 0)
             ReloadBindings();
@@ -88,14 +86,8 @@ public class PlayerInputHandler
             case "SeekForwardAlt":
                 SeekForward?.Invoke(this, EventArgs.Empty);
                 return true;
-            case "ToggleFullscreen":
-                ToggleFullscreen?.Invoke(this, EventArgs.Empty);
-                return true;
-            case "BackOrExitFullscreen":
-                if (isFullscreen)
-                    ExitFullscreen?.Invoke(this, EventArgs.Empty);
-                else
-                    Back?.Invoke(this, EventArgs.Empty);
+            case "Back":
+                Back?.Invoke(this, EventArgs.Empty);
                 return true;
             case "NextEpisode":
                 NextEpisode?.Invoke(this, EventArgs.Empty);

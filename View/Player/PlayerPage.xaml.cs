@@ -15,7 +15,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private readonly PlayerViewModel _vm;
 
     private Window? parentWindow;
-    private FullscreenWindow? fullscreenWindow;
 
     public event EventHandler? BackRequested;
 
@@ -43,19 +42,11 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             _vm.SaveProgress();
             BackRequested?.Invoke(this, EventArgs.Empty);
         };
-        _vm.FullscreenToggled += () =>
-        {
-            if (_vm.IsFullscreen)
-                ExitFullscreen();
-            else
-                EnterFullscreen();
-        };
         _vm.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName == nameof(PlayerViewModel.CurrentVideoPath) && _vm.CurrentVideoPath != null)
             {
                 ControlBar.SetCurrentVideo(_vm.CurrentVideoPath);
-                fullscreenWindow?.ControlBar?.SetCurrentVideo(_vm.CurrentVideoPath);
             }
         };
         _vm.OpenKeyBindingsRequested += () =>
@@ -76,23 +67,12 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             parentWindow = Window.GetWindow(this);
 
             ControlBar.Setup(_vm);
-            ControlBar.IsFullscreen = false;
             ControlBar.UpdateButtonTooltips();
 
             PlaylistPanel.EpisodeSelected += (_, item) =>
             {
                 _vm.SelectEpisode(item.Number - 1);
             };
-
-            if (fullscreenWindow == null)
-            {
-                fullscreenWindow = new FullscreenWindow(_vm);
-                fullscreenWindow.ExitRequested += (_, _) => ExitFullscreen();
-                fullscreenWindow.EpisodeSelected += (_, item) =>
-                {
-                    _vm.SelectEpisode(item.Number - 1);
-                };
-            }
 
             Keyboard.Focus(this);
             FocusManager.SetFocusedElement(this, this);
@@ -155,7 +135,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     private void ProcessKeyboardEvent(KeyEventArgs e, string source)
     {
-        if (_vm.HandleKeyDown(e, _vm.IsFullscreen))
+        if (_vm.HandleKeyDown(e))
             e.Handled = true;
     }
 
@@ -180,13 +160,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         if (e.ChangedButton == MouseButton.XButton1)
         {
-            if (_vm.IsFullscreen)
-                ExitFullscreen();
-            else
-            {
-                _vm.SaveProgress();
-                BackRequested?.Invoke(this, EventArgs.Empty);
-            }
+            _vm.SaveProgress();
+            BackRequested?.Invoke(this, EventArgs.Empty);
             e.Handled = true;
         }
     }
@@ -203,61 +178,11 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private void PlayerPage_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         => PlayerViewModel.Log($"LostKeyboardFocus: NewFocus={e.NewFocus?.GetType().Name}");
 
-    // ========== 全屏切换 ==========
-
-    private void EnterFullscreen()
-    {
-        if (parentWindow == null || fullscreenWindow == null) return;
-        if (_vm.IsFullscreen) return;
-
-        ControlBar.CloseSpeedPopup();
-
-        fullscreenWindow.SetPlaylistItems(_vm.CurrentIndex);
-
-        var source = PresentationSource.FromVisual(VideoContainer);
-        var dpiX = source!.CompositionTarget!.TransformToDevice.M11;
-        var dpiY = source!.CompositionTarget!.TransformToDevice.M22;
-
-        Point screenPos = VideoContainer.PointToScreen(new Point(0, 0));
-        var fromRect = new Rect(
-            screenPos.X / dpiX, screenPos.Y / dpiY,
-            VideoContainer.ActualWidth, VideoContainer.ActualHeight);
-
-        VideoImage.Source = null;
-        fullscreenWindow.ShowWithAnimation(fromRect);
-
-        _vm.IsFullscreen = true;
-        ControlBar.IsFullscreen = true;
-
-        ControlBar.Visibility = Visibility.Collapsed;
-        PlaylistPanel.Visibility = Visibility.Collapsed;
-    }
-
-    private void ExitFullscreen()
-    {
-        if (!_vm.IsFullscreen || fullscreenWindow == null) return;
-
-        _vm.IsFullscreen = false;
-        ControlBar.IsFullscreen = false;
-
-        fullscreenWindow.StopAutoHideTimers();
-
-        fullscreenWindow.HideWithAnimation();
-
-        VideoImage.Source = _vm.VideoSource;
-
-        ControlBar.Visibility = Visibility.Visible;
-        PlaylistPanel.Visibility = Visibility.Visible;
-    }
-
     public void Dispose()
     {
         _vm.SaveProgress();
 
         ControlBar.Dispose();
-
-        fullscreenWindow?.Close();
-        fullscreenWindow = null;
 
         _vm.DisposeMedia();
     }

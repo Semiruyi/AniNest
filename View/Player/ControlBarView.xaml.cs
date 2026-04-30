@@ -18,17 +18,6 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
 
     private PlayerViewModel? _vm;
 
-    private bool _isFullscreen;
-    public bool IsFullscreen
-    {
-        get => _isFullscreen;
-        set => _isFullscreen = value;
-    }
-
-    // --- Events ---
-    public event EventHandler? ControlBarMouseEnter;
-    public event EventHandler? ControlBarMouseLeave;
-
     // --- Setup ---
     public void Setup(PlayerViewModel vm)
     {
@@ -51,7 +40,7 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
 
     private void WireButtonAnimations()
     {
-        foreach (var btn in new[] { PlayPauseBtn, PreviousBtn, NextBtn, FullscreenBtn })
+        foreach (var btn in new[] { PlayPauseBtn, PreviousBtn, NextBtn })
         {
             if (btn.Template.FindName("AnimScale", btn) is ScaleTransform st)
                 ButtonScaleHover.Attach(btn, st);
@@ -72,7 +61,6 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
         PlayPauseBtn.ToolTip = $"播放/暂停 ({KeyDisplayString(bindings["TogglePlayPause"])})";
         PreviousBtn.ToolTip = $"上一集 ({KeyDisplayString(bindings["PreviousEpisode"])})";
         NextBtn.ToolTip = $"下一集 ({KeyDisplayString(bindings["NextEpisode"])})";
-        FullscreenBtn.ToolTip = $"全屏 ({KeyDisplayString(bindings["ToggleFullscreen"])})";
     }
 
     // --- Progress slider ---
@@ -149,24 +137,17 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
     private void ProgressPopup_MouseLeave(object sender, MouseEventArgs e)
         => _vm?.OnThumbnailPopupLeave();
 
-    // --- Mouse enter/leave on root grid (for fullscreen auto-hide) ---
-    private void RootGrid_MouseEnter(object sender, MouseEventArgs e)
-        => ControlBarMouseEnter?.Invoke(this, EventArgs.Empty);
-
-    private void RootGrid_MouseLeave(object sender, MouseEventArgs e)
-        => ControlBarMouseLeave?.Invoke(this, EventArgs.Empty);
-
     // --- Keyboard forwarding ---
     private void RootGrid_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (_vm?.HandleKeyDown(e, _isFullscreen) == true)
+        if (_vm?.HandleKeyDown(e) == true)
             e.Handled = true;
     }
 
     private void RootGrid_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Handled) return;
-        if (_vm?.HandleKeyDown(e, _isFullscreen) == true)
+        if (_vm?.HandleKeyDown(e) == true)
             e.Handled = true;
     }
 

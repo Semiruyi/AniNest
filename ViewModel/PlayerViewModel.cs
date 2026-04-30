@@ -281,9 +281,6 @@ public partial class PlayerViewModel : ObservableObject
     // ========== UI State ==========
 
     [ObservableProperty]
-    private bool _isFullscreen;
-
-    [ObservableProperty]
     private bool _isPlaylistVisible = true;
 
     [ObservableProperty]
@@ -296,7 +293,6 @@ public partial class PlayerViewModel : ObservableObject
     // ========== Events ==========
 
     public event Action? BackRequested;
-    public event Action? FullscreenToggled;
 
     // ========== Constructor ==========
 
@@ -383,8 +379,6 @@ public partial class PlayerViewModel : ObservableObject
         _inputHandler.SeekBackward += (_, _) => _media.SeekBackward(5000);
         _inputHandler.NextEpisode += (_, _) => PlayNextInternal();
         _inputHandler.PreviousEpisode += (_, _) => PlayPreviousInternal();
-        _inputHandler.ToggleFullscreen += (_, _) => FullscreenToggled?.Invoke();
-        _inputHandler.ExitFullscreen += (_, _) => FullscreenToggled?.Invoke();
         _inputHandler.Back += (_, _) =>
         {
             SaveProgress();
@@ -449,8 +443,8 @@ public partial class PlayerViewModel : ObservableObject
 
     // ========== Input ==========
 
-    public bool HandleKeyDown(KeyEventArgs e, bool isFullscreen)
-        => _inputHandler.HandleKeyDown(e, isFullscreen);
+    public bool HandleKeyDown(KeyEventArgs e)
+        => _inputHandler.HandleKeyDown(e);
 
     public Dictionary<string, Key> GetCurrentBindings()
         => _inputHandler.GetCurrentBindings();
@@ -485,9 +479,6 @@ public partial class PlayerViewModel : ObservableObject
             CurrentIndex = _playlistManager.CurrentIndex;
         }
     }
-
-    [RelayCommand]
-    private void ToggleFullscreen() => FullscreenToggled?.Invoke();
 
     [RelayCommand]
     private void TogglePlaylist() => IsPlaylistVisible = !IsPlaylistVisible;

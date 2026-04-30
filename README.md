@@ -87,7 +87,6 @@ LocalPlayer/
 │   ├── Player/
 │   │   ├── PlayerPage.xaml/.cs        # 视频播放页
 │   │   ├── PlayerPage.Animations.cs   # 页面淡出动画
-│   │   └── FullscreenWindow.xaml/.cs  # 全屏窗口（独立 Window + 缩放过渡动画）
 │   └── Settings/
 │       └── KeyBindingsWindow.xaml/.cs # 键盘快捷键编辑窗口
 │
@@ -111,13 +110,12 @@ View ──→ Controls ──→ Interaction ──→ Media ──→ Model
 | **Interaction** | 播放器交互行为（纯 C#，无 XAML） | 构造注入 WPF 元素，可引用 Primitives；不定义 XAML、不继承 `UserControl` |
 | **Controls** | WPF UserControl | `.xaml` + `.cs` 成对出现；可组合 `Interaction` 中的行为类 |
 | **Primitives** | 通用 WPF 工具（动画助手、缓动函数、值转换器、自定义 Panel/Adorner） | 不依赖任何业务层 |
-| **View** | 页面与窗口组装、页面级动画 | 组装 Controls + Interaction + Media；处理全屏过渡、页面导航 |
+| **View** | 页面与窗口组装、页面级动画 | 组装 Controls + Interaction + Media；处理页面导航 |
 
 无 DI 容器，通信方式：
 - 跨层依赖通过构造函数注入（如 `ControlBarView` 接收 `MediaPlayerController`、`PlayerInputHandler`、`ThumbnailGenerator`）
 - 分层通知通过 C# event（`SpeedChanged`、`EpisodeSelected`、`ProgressUpdated`）
 - 全局单例通过 `Singleton` 模式懒初始化（`SettingsService.Instance`、`ThumbnailGenerator.Instance`）
-- `PlayerPage` 和 `FullscreenWindow` 各自持有独立的 `Interaction` 类实例，通过构造时传入的 `Action` 委托适配差异（如 `ClickRouter` 在 PlayerPage 双击→全屏，在 FullscreenWindow 双击→退出全屏）
 
 ## 环境要求
 
