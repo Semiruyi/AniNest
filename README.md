@@ -44,37 +44,39 @@
 
 ```
 LocalPlayer/
-├── App.xaml/.cs                # 应用入口，LibVLC 预热，缩略图初始化
-├── AppShell/
-│   └── MainWindow.xaml/.cs     # 主窗口，页面导航，DWM 暗色标题栏
 │
-├── Domain/                     # 纯数据模型，零外部依赖
-│   ├── AppSettings.cs          # 应用设置（Key 存为 int，脱离 WPF）
-│   ├── FolderListItem.cs       # 文件夹卡片
-│   └── PlaylistItem.cs         # 选集条目
+├── Model/                       # 数据 + 后台服务，零 UI 依赖
+│   ├── AppSettings.cs           # 应用设置
+│   ├── FolderListItem.cs        # 文件夹卡片
+│   ├── PlaylistItem.cs          # 选集条目
+│   ├── SettingsService.cs       # JSON 配置读写
+│   ├── ThumbnailGenerator.cs    # ffmpeg 后台缩略图队列
+│   ├── VideoScanner.cs          # 视频/封面文件扫描
+│   └── AppLog.cs                # 文件日志
 │
-├── Infrastructure/             # 服务层，不碰 UI
-│   ├── SettingsService.cs      # JSON 配置读写（int ↔ Key 转换在此层）
-│   ├── ThumbnailGenerator.cs   # ffmpeg 后台缩略图队列
-│   ├── VideoScanner.cs         # 视频/封面文件扫描
-│   └── AppLog.cs               # 文件日志
+├── Media/                       # 播放引擎，依赖 LibVLCSharp
+│   ├── MediaPlayerController.cs # LibVLC 封装
+│   ├── VideoFrameProvider.cs    # 双缓冲 BGRA → WriteableBitmap
+│   └── PlayerInputHandler.cs    # 键盘快捷键映射
 │
-├── UI.Primitives/              # 纯 WPF UI 工具，与业务无关
-│   ├── AnimationHelper.cs      # 通用动画工具
-│   ├── CubicBezierEase.cs      # 自定义三次贝塞尔缓动
-│   ├── ThumbnailConverters.cs  # 饼图/可见性值转换器
-│   ├── AnimatedWrapPanel.cs    # 带布局动画的 WrapPanel
-│   └── InsertionAdorner.cs     # 拖拽插入指示器
+├── Controls/                    # 共享播放 UI 控件与交互行为
+│   ├── ControlBarView.xaml/.cs  # 播放控制栏
+│   ├── PlaylistPanelView.xaml/.cs # 选集侧面板
+│   ├── SpeedPopupController.cs  # 倍速弹出菜单
+│   ├── ThumbnailPreviewController.cs # 进度条缩略图预览
+│   ├── ClickRouter.cs           # 单击/双击分发
+│   ├── PauseOverlayController.cs # 暂停图标动画
+│   └── RightHoldSpeedController.cs # 右键长按加速
 │
-├── PlayerKit/                  # 播放引擎模块
-│   ├── MediaPlayerController.cs    # LibVLC 封装，全局共享实例
-│   ├── PlayerInputHandler.cs       # 键盘快捷键映射
-│   ├── VideoFrameProvider.cs       # 双缓冲 BGRA → WriteableBitmap
-│   ├── ControlBarView.xaml/.cs     # 播放控制栏
-│   ├── SpeedPopupController.cs     # 倍速弹出菜单
-│   └── ThumbnailPreviewController.cs # 进度条缩略图预览
-│
-├── Pages/
+├── View/                        # 页面、窗口、UI 工具
+│   ├── App.xaml/.cs             # 应用入口
+│   ├── MainWindow.xaml/.cs      # 主窗口，页面导航
+│   ├── Primitives/              # 通用 WPF 工具（与业务无关）
+│   │   ├── AnimationHelper.cs
+│   │   ├── CubicBezierEase.cs
+│   │   ├── ThumbnailConverters.cs
+│   │   ├── AnimatedWrapPanel.cs
+│   │   └── InsertionAdorner.cs
 │   ├── Library/
 │   │   ├── MainPage.xaml/.cs        # 文件夹卡片浏览
 │   │   ├── MainPage.Animations.cs   # 卡片入场/重排动画
@@ -82,42 +84,28 @@ LocalPlayer/
 │   ├── Player/
 │   │   ├── PlayerPage.xaml/.cs      # 视频播放页
 │   │   ├── PlayerPage.Animations.cs # 页面淡出动画
-│   │   ├── FullscreenWindow.xaml/.cs # 全屏窗口
-│   │   ├── PlaylistPanelView.xaml/.cs # 选集侧面板
-│   │   └── Controllers/
-│   │       ├── ClickRouter.cs       # 单击/双击分发
-│   │       ├── PauseOverlayController.cs # 暂停图标动画
-│   │       └── RightHoldSpeedController.cs # 右键长按加速
+│   │   └── FullscreenWindow.xaml/.cs # 全屏窗口
 │   └── Settings/
 │       └── KeyBindingsWindow.xaml/.cs # 键盘快捷键编辑
 │
-└── Resources/Icons/             # 16 个按钮图标
+└── Resources/Icons/             # 按钮图标
 ```
 
 ## 架构
 
-依赖方向严格单向：
+依赖方向：
 
 ```
-AppShell / App.xaml (组合根)
-  ├── Pages (Library / Player / Settings)
-  │     ├── PlayerKit (播放引擎)
-  │     │     ├── Infrastructure (服务层)
-  │     │     │     └── Domain (纯数据)
-  │     │     └── UI.Primitives (WPF 工具)
-  │     ├── Infrastructure
-  │     ├── Domain
-  │     └── UI.Primitives
-  ├── Infrastructure
-  └── UI.Primitives
+View ──→ Controls ──→ Media ──→ Model
+ │         │            │
+ └─────────┴────────────┴──→ Primitives
 ```
 
-- **Domain** — 纯 C# 数据类，不依赖 WPF，可脱离 GUI 使用
-- **Infrastructure** — 文件 IO、JSON 序列化、ffmpeg 进程管理，不碰 Dispatcher
-- **UI.Primitives** — 动画、缓动、转换器、自定义控件，与业务逻辑无关
-- **PlayerKit** — 播放引擎，依赖 Infrastructure + UI.Primitives + LibVLCSharp
-- **Pages** — UI 页面，组装下层模块形成完整功能
-- **AppShell** — 窗口宿主和页面导航
+- **Model** — 数据类、文件 IO、JSON 序列化、ffmpeg 进程管理。不碰 UI 线程，不引用 WPF 类型
+- **Media** — LibVLC 封装、视频帧回调、按键映射。纯引擎逻辑，不持有 XAML 控件引用
+- **Controls** — 可在 PlayerPage / FullscreenWindow 间复用的 UI 控件和交互行为（控制栏、选集面板、倍速弹窗、鼠标行为等）
+- **View** — 页面组装、窗口管理、入场/退出动画。Primitives 为通用 WPF 工具子目录
+- **Resources** — 静态资源
 
 无 DI 容器，通过单例（SettingsService、ThumbnailGenerator）和事件在组件间通信。
 
