@@ -26,10 +26,6 @@ public partial class PlayerViewModel : ObservableObject
     private bool _updatingSelection;
     private float _savedRate = 1.0f;
 
-    // — 供 View 层订阅的媒体事件 —
-    public event Action? MediaPlaying;
-    public event Action? MediaPaused;
-    public event Action? MediaStopped;
 
     // — 供 View 层处理快捷键窗口 —
     public event Action? OpenKeyBindingsRequested;
@@ -151,7 +147,6 @@ public partial class PlayerViewModel : ObservableObject
             {
                 IsPlaying = true;
                 _saveTimer.Start();
-                MediaPlaying?.Invoke();
             });
 
         _media.Paused += (_, _) =>
@@ -160,7 +155,6 @@ public partial class PlayerViewModel : ObservableObject
                 IsPlaying = false;
                 _saveTimer.Stop();
                 SaveProgress();
-                MediaPaused?.Invoke();
             });
 
         _media.Stopped += (_, _) =>
@@ -168,7 +162,6 @@ public partial class PlayerViewModel : ObservableObject
             {
                 IsPlaying = false;
                 _saveTimer.Stop();
-                MediaStopped?.Invoke();
             });
 
         _media.ProgressUpdated += (_, args) =>

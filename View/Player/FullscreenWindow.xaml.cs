@@ -26,7 +26,6 @@ public partial class FullscreenWindow : Window
     private bool isClosing;
     private Rect originalVideoRect;
 
-    private PauseOverlayController _pauseOverlay = null!;
     private RightHoldSpeedController _rightHold = null!;
     private ClickRouter _clickRouter = null!;
 
@@ -40,7 +39,6 @@ public partial class FullscreenWindow : Window
 
         InitializeComponent();
 
-        _pauseOverlay = new PauseOverlayController(PauseBigIconScale, PauseBigIcon);
         _clickRouter = new ClickRouter(
             () => _vm.PlayPauseCommand.Execute(null),
             () => ExitRequested?.Invoke(this, EventArgs.Empty));
@@ -90,10 +88,6 @@ public partial class FullscreenWindow : Window
 
     private void SetupInternal()
     {
-        _vm.MediaPlaying += () => Dispatcher.Invoke(_pauseOverlay.OnPlaying);
-        _vm.MediaPaused += () => Dispatcher.Invoke(_pauseOverlay.OnPaused);
-        _vm.MediaStopped += () => Dispatcher.Invoke(_pauseOverlay.OnStopped);
-
         ControlBar.Setup(_vm);
 
         _rightHold = new RightHoldSpeedController(
@@ -211,7 +205,11 @@ public partial class FullscreenWindow : Window
         HidePlaylist(immediate: true);
 
         if (!_vm.IsPlaying)
-            _pauseOverlay.ShowImmediate();
+        {
+            PauseBigIconScale.ScaleX = 1;
+            PauseBigIconScale.ScaleY = 1;
+            PauseBigIcon.Opacity = 1;
+        }
 
         Keyboard.Focus(this);
 

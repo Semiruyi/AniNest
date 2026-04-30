@@ -15,7 +15,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 {
     private readonly PlayerViewModel _vm;
 
-    private PauseOverlayController _pauseOverlay = null!;
     private RightHoldSpeedController _rightHold = null!;
     private ClickRouter _clickRouter = null!;
 
@@ -43,7 +42,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         GotKeyboardFocus += PlayerPage_GotKeyboardFocus;
         LostKeyboardFocus += PlayerPage_LostKeyboardFocus;
 
-        _pauseOverlay = new PauseOverlayController(PauseBigIconScale, PauseBigIcon);
         _rightHold = new RightHoldSpeedController(
             rate => _vm.SetRate(rate),
             () => _vm.Rate,
@@ -130,10 +128,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
             _vm.InitializeMedia();
             VideoImage.Source = _vm.VideoSource;
-
-            _vm.MediaPlaying += () => Dispatcher.Invoke(_pauseOverlay.OnPlaying);
-            _vm.MediaPaused += () => Dispatcher.Invoke(_pauseOverlay.OnPaused);
-            _vm.MediaStopped += () => Dispatcher.Invoke(_pauseOverlay.OnStopped);
 
             // 延迟 LoadFolder 在此执行
             if (_pendingFolderPath != null)

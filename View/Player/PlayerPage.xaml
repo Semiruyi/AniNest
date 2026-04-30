@@ -2,12 +2,15 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:LocalPlayer.View.Player"
+             xmlns:anim="clr-namespace:LocalPlayer.View.Animations"
+             xmlns:conv="clr-namespace:LocalPlayer.Converters"
              Background="{StaticResource BackgroundDark}"
              Focusable="True"
              PreviewKeyDown="PlayerPage_PreviewKeyDown"
              KeyDown="PlayerPage_KeyDown">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <conv:InverseBoolConverter x:Key="InverseBool"/>
     </UserControl.Resources>
     <Grid x:Name="PageRoot" Opacity="0">
         <Grid.ColumnDefinitions>
@@ -32,7 +35,8 @@
                    VerticalAlignment="Bottom"
                    Margin="0,0,32,24"
                    Opacity="0"
-                   RenderTransformOrigin="0.5,0.5">
+                   RenderTransformOrigin="0.5,0.5"
+                   anim:PopupAnimator.BindVisible="{Binding IsPlaying, Converter={StaticResource InverseBool}}">
                 <Image.RenderTransform>
                     <ScaleTransform x:Name="PauseBigIconScale" ScaleX="0" ScaleY="0"/>
                 </Image.RenderTransform>

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -59,5 +60,30 @@ public class PopupAnimator
         _scale.ScaleX = 1;
         _scale.ScaleY = 1;
         _element.Opacity = 1;
+    }
+
+    // ========== 附加属性：将 bool 绑定到显隐动画 ==========
+
+    public static bool GetBindVisible(DependencyObject obj) => (bool)obj.GetValue(BindVisibleProperty);
+    public static void SetBindVisible(DependencyObject obj, bool value) => obj.SetValue(BindVisibleProperty, value);
+
+    public static readonly DependencyProperty BindVisibleProperty =
+        DependencyProperty.RegisterAttached("BindVisible", typeof(bool), typeof(PopupAnimator),
+            new PropertyMetadata(false, OnBindVisibleChanged));
+
+    private static void OnBindVisibleChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is not UIElement element) return;
+
+        var scale = element.RenderTransform as ScaleTransform
+                    ?? (element.RenderTransform as TransformGroup)?.Children
+                        .OfType<ScaleTransform>().FirstOrDefault();
+        if (scale == null) return;
+
+        var animator = new PopupAnimator(scale, element);
+        if ((bool)e.NewValue)
+            animator.Show();
+        else
+            animator.Hide();
     }
 }
