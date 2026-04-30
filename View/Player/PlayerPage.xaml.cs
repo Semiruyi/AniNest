@@ -35,9 +35,9 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private readonly ThumbnailGenerator _thumbnailGenerator = ThumbnailGenerator.Instance;
     private readonly DispatcherTimer saveProgressTimer;
 
-    private PauseOverlayView _pauseOverlay = null!;
-    private RightHoldSpeedView _rightHold = null!;
-    private ClickRouterBehavior _clickRouter = null!;
+    private PauseOverlayController _pauseOverlay = null!;
+    private RightHoldSpeedController _rightHold = null!;
+    private ClickRouter _clickRouter = null!;
 
     private string currentFolderPath = "";
     private string currentFolderName = "";
@@ -76,12 +76,12 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         saveProgressTimer.Tick += SaveProgressTimer_Tick;
 
         // 三个共享控制器
-        _pauseOverlay = new PauseOverlayView(PauseBigIconScale, PauseBigIcon);
-        _rightHold = new RightHoldSpeedView(
+        _pauseOverlay = new PauseOverlayController(PauseBigIconScale, PauseBigIcon);
+        _rightHold = new RightHoldSpeedController(
             mediaController,
             () => currentSpeed,
             speed => ControlBar.UpdateSpeedButtonText(speed));
-        _clickRouter = new ClickRouterBehavior(
+        _clickRouter = new ClickRouter(
             () => mediaController.TogglePlayPause(),
             () => ToggleFullscreen());
 

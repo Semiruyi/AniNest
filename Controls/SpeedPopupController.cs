@@ -18,9 +18,9 @@ namespace LocalPlayer.Controls;
 /// <summary>
 /// 倍速弹窗控制器：延迟显隐、动画、倍速选择。
 /// </summary>
-public class SpeedPopupView : IDisposable
+public class SpeedPopupController : IDisposable
 {
-    private static void Log(string message) => AppLog.Info(nameof(SpeedPopupView), message);
+    private static void Log(string message) => AppLog.Info(nameof(SpeedPopupController), message);
 
     private readonly Popup _speedPopup;
     private readonly Button _speedBtn;
@@ -38,7 +38,7 @@ public class SpeedPopupView : IDisposable
 
     public event Action<float>? SpeedChanged;
 
-    public SpeedPopupView(
+    public SpeedPopupController(
         Popup speedPopup,
         Button speedBtn,
         ScaleTransform speedPopupScale,

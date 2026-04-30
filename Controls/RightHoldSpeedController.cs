@@ -2,7 +2,7 @@ using System;
 using System.Windows.Input;
 using System.Windows.Threading;
 using LocalPlayer.Media;
-using LocalPlayer.Controls;
+
 
 namespace LocalPlayer.Controls;
 
@@ -10,7 +10,7 @@ namespace LocalPlayer.Controls;
 /// 右键长按倍速控制器：按住右键 350ms 后切换到指定倍速，松手恢复。
 /// PlayerPage 和 FullscreenWindow 共用。
 /// </summary>
-public class RightHoldSpeedView
+public class RightHoldSpeedController
 {
     private readonly MediaPlayerController _mediaCtrl;
     private readonly Func<float> _getCurrentSpeed;
@@ -21,7 +21,7 @@ public class RightHoldSpeedView
     private float _savedSpeed;
     private bool _isHolding;
 
-    public RightHoldSpeedView(
+    public RightHoldSpeedController(
         MediaPlayerController mediaCtrl,
         Func<float> getCurrentSpeed,
         Action<float> onSpeedChanged,

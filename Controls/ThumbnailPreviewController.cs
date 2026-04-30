@@ -19,10 +19,10 @@ namespace LocalPlayer.Controls;
 /// <summary>
 /// 进度条悬浮缩略图预览控制器：延迟显隐、鼠标追踪、缩略图加载/缓存、弹窗动画。
 /// </summary>
-public class ThumbnailPreviewView : IDisposable
+public class ThumbnailPreviewController : IDisposable
 {
     private static void LogError(string message, Exception? ex = null)
-        => AppLog.Error(nameof(ThumbnailPreviewView), message, ex);
+        => AppLog.Error(nameof(ThumbnailPreviewController), message, ex);
 
     private readonly Slider _progressSlider;
     private readonly Popup _progressPopup;
@@ -42,7 +42,7 @@ public class ThumbnailPreviewView : IDisposable
     private int _lastRequestedSecond = -1;
     private string? _currentThumbVideoPath;
 
-    public ThumbnailPreviewView(
+    public ThumbnailPreviewController(
         Slider progressSlider,
         Popup progressPopup,
         ScaleTransform progressPopupScale,

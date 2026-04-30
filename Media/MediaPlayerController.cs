@@ -4,7 +4,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LibVLCSharp.Shared;
 using LocalPlayer.Model;
-using LocalPlayer.Controls;
+
 using LibVlcMedia = LibVLCSharp.Shared.Media;
 
 namespace LocalPlayer.Media;

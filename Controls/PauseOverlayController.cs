@@ -9,12 +9,12 @@ namespace LocalPlayer.Controls;
 /// <summary>
 /// 暂停大图标动画控制器，PlayerPage 和 FullscreenWindow 共用。
 /// </summary>
-public class PauseOverlayView
+public class PauseOverlayController
 {
     private readonly ScaleTransform _scale;
     private readonly UIElement _icon;
 
-    public PauseOverlayView(ScaleTransform scale, UIElement icon)
+    public PauseOverlayController(ScaleTransform scale, UIElement icon)
     {
         _scale = scale;
         _icon = icon;

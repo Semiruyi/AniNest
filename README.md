@@ -45,37 +45,37 @@
 ```
 LocalPlayer/
 │
-├── Model/                       # 数据 + 后台服务，零 UI 依赖
-│   ├── AppSettings.cs           # 应用设置
-│   ├── FolderListItem.cs        # 文件夹卡片
-│   ├── PlaylistItem.cs          # 选集条目
-│   ├── SettingsService.cs       # JSON 配置读写
-│   ├── ThumbnailGenerator.cs    # ffmpeg 后台缩略图队列
+├── Model/                       # 数据类 + 文件 IO，零 WPF 依赖
+│   ├── AppSettings.cs           # 应用配置实体
+│   ├── FolderListItem.cs        # 文件夹卡片模型
+│   ├── PlaylistItem.cs          # 选集条目模型
+│   ├── SettingsService.cs       # JSON 配置读写（Singleton）
+│   ├── ThumbnailGenerator.cs    # ffmpeg 后台缩略图队列（Singleton）
 │   ├── VideoScanner.cs          # 视频/封面文件扫描
 │   └── AppLog.cs                # 文件日志
 │
-├── Media/                       # 播放引擎，依赖 LibVLCSharp
-│   ├── MediaPlayerController.cs # LibVLC 封装
-│   └── PlayerInputHandler.cs    # 键盘快捷键映射
+├── Media/                       # 播放引擎 + 帧渲染适配器
+│   ├── MediaPlayerController.cs # LibVLC 封装，播放/暂停/快进/进度
+│   ├── PlayerInputHandler.cs    # 可自定义键盘快捷键映射
+│   └── VideoFrameProvider.cs    # 双缓冲 BGRA → WriteableBitmap（本层唯一 WPF 依赖）
 │
-├── Controls/                    # 共享播放 UI 控件与交互行为
-│   ├── ControlBarView.xaml/.cs  # 播放控制栏
-│   ├── PlaylistPanelView.xaml/.cs # 选集侧面板
-│   ├── VideoFrameProvider.cs    # 双缓冲 BGRA → WriteableBitmap
-│   ├── SpeedPopupView.cs        # 倍速弹出菜单
-│   ├── ThumbnailPreviewView.cs  # 进度条缩略图预览
-│   ├── ClickRouterBehavior.cs   # 单击/双击分发
-│   ├── PauseOverlayView.cs      # 暂停图标动画
-│   └── RightHoldSpeedView.cs    # 右键长按加速
+├── Controls/                    # 可复用播放器控制器与 UI 控件
+│   ├── ControlBarView.xaml/.cs  # 播放控制栏 UserControl
+│   ├── PlaylistPanelView.xaml/.cs # 选集侧面板 UserControl
+│   ├── SpeedPopupController.cs  # 倍速弹出菜单（显隐/动画/选择）
+│   ├── ThumbnailPreviewController.cs # 进度条悬浮缩略图（延迟加载/缓存/动画）
+│   ├── ClickRouter.cs           # 单击/双击事件路由
+│   ├── PauseOverlayController.cs # 暂停图标缩放动画
+│   └── RightHoldSpeedController.cs # 右键长按临时倍速
 │
-├── Primitives/                  # 通用 WPF 工具（与业务无关）
+├── Primitives/                  # 通用 WPF 工具（与播放业务无关）
 │   ├── AnimationHelper.cs
 │   ├── CubicBezierEase.cs
 │   ├── ThumbnailConverters.cs
 │   ├── AnimatedWrapPanel.cs
 │   └── InsertionAdorner.cs
 │
-├── View/                        # 页面、窗口、UI 工具
+├── View/                        # 页面、窗口、页面级动画
 │   ├── App.xaml/.cs             # 应用入口
 │   ├── MainWindow.xaml/.cs      # 主窗口，页面导航
 │   ├── Library/
@@ -85,9 +85,9 @@ LocalPlayer/
 │   ├── Player/
 │   │   ├── PlayerPage.xaml/.cs      # 视频播放页
 │   │   ├── PlayerPage.Animations.cs # 页面淡出动画
-│   │   └── FullscreenWindow.xaml/.cs # 全屏窗口
+│   │   └── FullscreenWindow.xaml/.cs # 全屏窗口（独立 Window + 缩放过渡动画）
 │   └── Settings/
-│       └── KeyBindingsWindow.xaml/.cs # 键盘快捷键编辑
+│       └── KeyBindingsWindow.xaml/.cs # 键盘快捷键编辑窗口
 │
 └── Resources/Icons/             # 按钮图标
 ```
@@ -102,14 +102,20 @@ View ──→ Controls ──→ Media ──→ Model
  └─────────┴────────────┴──→ Primitives
 ```
 
-- **Model** — 数据类、文件 IO、JSON 序列化、ffmpeg 进程管理。不碰 UI 线程，不引用 WPF 类型
-- **Media** — LibVLC 封装、按键映射。纯引擎逻辑，不持有 XAML 控件引用
-- **Controls** — 可在 PlayerPage / FullscreenWindow 间复用的 UI 控件和交互行为（控制栏、选集面板、倍速弹窗、视频帧渲染、鼠标行为等）
-- **Primitives** — 通用 WPF 工具（动画助手、缓动函数、值转换器、面板），不依赖任何业务层
-- **View** — 页面组装、窗口管理、入场/退出动画
-- **Resources** — 静态资源
+| 层 | 职责 | WPF 依赖 | 业务依赖 |
+|----|------|----------|----------|
+| **Model** | 数据实体、JSON 序列化、文件 IO、ffmpeg 进程管理 | 无 | 无 |
+| **Media** | LibVLC 封装、快捷键映射、BGRA→WriteableBitmap 帧适配 | 有（仅 VideoFrameProvider） | Model |
+| **Controls** | 可复用播放器控制器（倍速弹窗、缩略图预览、暂停图标、右键加速、单击/双击路由）及 UserControl（控制栏、选集面板） | 有 | Media, Model, Primitives |
+| **Primitives** | 通用 WPF 工具（动画助手、缓动函数、值转换器、自定义 Panel/Adorner） | 有 | 无 |
+| **View** | 页面与窗口组装、页面级动画、全屏过渡动画 | 有 | Controls, Media, Model, Primitives |
+| **Resources** | 静态图标资源 | — | 无 |
 
-无 DI 容器，通过单例（SettingsService、ThumbnailGenerator）和事件在组件间通信。
+无 DI 容器，通信方式：
+- 跨层依赖通过构造函数注入（如 ControlBarView 接收 `MediaPlayerController`、`PlayerInputHandler`、`ThumbnailGenerator`）
+- 同层/跨层通知通过 C# event（如 `SpeedChanged`、`EpisodeSelected`、`ProgressUpdated`）
+- 全局单例通过 `Singleton` 模式（`SettingsService.Instance`、`ThumbnailGenerator.Instance`）
+- `PlayerPage` 和 `FullscreenWindow` 各自持有独立的 Controller 实例（`PauseOverlayController`、`RightHoldSpeedController`、`ClickRouter`），通过构造时传入的 `Action` 委托适配差异
 
 ## 环境要求
 

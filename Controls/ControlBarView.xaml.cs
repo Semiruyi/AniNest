@@ -29,8 +29,8 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
 
     private MediaPlayerController? _mediaController;
     private PlayerInputHandler? _inputHandler;
-    private SpeedPopupView? _speedPopupView;
-    private ThumbnailPreviewView? _thumbnailPreviewView;
+    private SpeedPopupController? _speedPopupView;
+    private ThumbnailPreviewController? _thumbnailPreviewView;
     private bool _isProgressDragging;
 
     public float CurrentSpeed => _speedPopupView?.CurrentSpeed ?? 1.0f;
@@ -73,12 +73,12 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
         _mediaController = mediaController;
         _inputHandler = inputHandler;
 
-        _speedPopupView = new SpeedPopupView(
+        _speedPopupView = new SpeedPopupController(
             SpeedPopup, SpeedBtn, SpeedPopupScale, SpeedOptionsPanel, RootGrid,
             rate => _mediaController.Rate = rate);
         _speedPopupView.SpeedChanged += speed => SpeedChanged?.Invoke(speed);
 
-        _thumbnailPreviewView = new ThumbnailPreviewView(
+        _thumbnailPreviewView = new ThumbnailPreviewController(
             ProgressSlider, ProgressPopup, ProgressPopupScale,
             ThumbnailImage, ThumbnailTimeText,
             thumbnailGenerator,
