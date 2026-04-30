@@ -29,7 +29,7 @@ public class ThumbnailPreviewController : IDisposable
     private readonly ScaleTransform _progressPopupScale;
     private readonly Image _thumbnailImage;
     private readonly TextBlock _thumbnailTimeText;
-    private readonly ThumbnailGenerator _thumbnailGenerator;
+    private readonly IThumbnailGenerator _thumbnailGenerator;
     private readonly Func<long> _getVideoLength;
 
     private readonly DispatcherTimer _showTimer;
@@ -48,7 +48,7 @@ public class ThumbnailPreviewController : IDisposable
         ScaleTransform progressPopupScale,
         Image thumbnailImage,
         TextBlock thumbnailTimeText,
-        ThumbnailGenerator thumbnailGenerator,
+        IThumbnailGenerator thumbnailGenerator,
         Func<long> getVideoLength)
     {
         _progressSlider = progressSlider;

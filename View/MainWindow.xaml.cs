@@ -8,6 +8,7 @@ using System.Windows.Interop;
 using System.Windows.Media.Animation;
 using LocalPlayer.Primitives;
 using LocalPlayer.Model;
+using LocalPlayer.Media;
 using LocalPlayer.View.Library;
 using LocalPlayer.View.Player;
 
@@ -85,7 +86,7 @@ public partial class MainWindow : Window
     {
         await FadeMaskToBlackAsync(300);
 
-        playerPage = new PlayerPage();
+        playerPage = new PlayerPage(SettingsService.Instance, new MediaPlayerController());
         playerPage.BackRequested += PlayerPage_BackRequested;
         playerPage.LoadFolder(folderPath, folderName);
         PageHost.Content = playerPage;

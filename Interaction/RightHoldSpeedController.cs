@@ -12,7 +12,7 @@ namespace LocalPlayer.Interaction;
 /// </summary>
 public class RightHoldSpeedController
 {
-    private readonly MediaPlayerController _mediaCtrl;
+    private readonly IMediaPlayerController _mediaCtrl;
     private readonly Func<float> _getCurrentSpeed;
     private readonly Action<float> _onSpeedChanged;
     private readonly float _holdSpeed;
@@ -22,7 +22,7 @@ public class RightHoldSpeedController
     private bool _isHolding;
 
     public RightHoldSpeedController(
-        MediaPlayerController mediaCtrl,
+        IMediaPlayerController mediaCtrl,
         Func<float> getCurrentSpeed,
         Action<float> onSpeedChanged,
         float holdSpeed = 3.0f)

@@ -23,7 +23,7 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
         InitializeComponent();
     }
 
-    private MediaPlayerController? _mediaController;
+    private IMediaPlayerController? _mediaController;
     private PlayerInputHandler? _inputHandler;
     private SpeedPopupController? _speedPopupView;
     private ThumbnailPreviewController? _thumbnailPreviewView;
@@ -62,9 +62,9 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
     public event Action<long>? SeekRequested;
 
     // --- Setup ---
-    public void Setup(MediaPlayerController mediaController,
+    public void Setup(IMediaPlayerController mediaController,
                       PlayerInputHandler inputHandler,
-                      ThumbnailGenerator thumbnailGenerator)
+                      IThumbnailGenerator thumbnailGenerator)
     {
         _mediaController = mediaController;
         _inputHandler = inputHandler;

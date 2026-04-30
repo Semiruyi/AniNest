@@ -22,7 +22,7 @@ public partial class FullscreenWindow : Window
 {
     private static void Log(string message) => AppLog.Info(nameof(FullscreenWindow), message);
 
-    private MediaPlayerController? mediaController;
+    private IMediaPlayerController? mediaController;
     private PlayerInputHandler? inputHandler;
 
     public event EventHandler? ExitRequested;
@@ -92,8 +92,8 @@ public partial class FullscreenWindow : Window
 
     // ========== 初始化 ==========
 
-    public void Setup(MediaPlayerController mediaCtrl, PlayerInputHandler input,
-                      ThumbnailGenerator thumbnailGenerator)
+    public void Setup(IMediaPlayerController mediaCtrl, PlayerInputHandler input,
+                      IThumbnailGenerator thumbnailGenerator)
     {
         mediaController = mediaCtrl;
         inputHandler = input;

@@ -51,7 +51,7 @@ public class PauseOverlayController
     }
 
     /// <summary>关联 MediaPlayerController 事件，自动响应播放/暂停/停止</summary>
-    public void WireMediaEvents(MediaPlayerController media, Dispatcher dispatcher)
+    public void WireMediaEvents(IMediaPlayerController media, Dispatcher dispatcher)
     {
         media.Playing += (_, _) => dispatcher.Invoke(AnimateOut);
         media.Paused  += (_, _) => dispatcher.Invoke(AnimateIn);

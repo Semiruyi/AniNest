@@ -34,7 +34,7 @@ public class ThumbnailProgressEventArgs : EventArgs
     public int Total { get; init; }
 }
 
-public class ThumbnailGenerator : IDisposable
+public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 {
     private static void Log(string message) => AppLog.Info(nameof(ThumbnailGenerator), message);
     private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(ThumbnailGenerator), message, ex);

@@ -25,8 +25,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private static void Log(string message) => AppLog.Info(nameof(PlayerPage), message);
     private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(PlayerPage), message, ex);
 
-    private readonly MediaPlayerController mediaController = new();
-    private readonly SettingsService settingsService = SettingsService.Instance;
+    private readonly IMediaPlayerController mediaController;
+    private readonly ISettingsService settingsService;
     private readonly PlayerInputHandler inputHandler = new();
     private readonly ThumbnailGenerator _thumbnailGenerator = ThumbnailGenerator.Instance;
     private readonly PlaylistManager playlistManager;
@@ -48,8 +48,11 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
     public event EventHandler? BackRequested;
 
-    public PlayerPage()
+    public PlayerPage(ISettingsService settings, IMediaPlayerController media)
     {
+        settingsService = settings;
+        mediaController = media;
+
         try
         {
             Log("PlayerPage 构造函数开始");
