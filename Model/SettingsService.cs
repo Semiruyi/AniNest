@@ -14,13 +14,10 @@ public class SettingsService : ISettingsService
     private static void LogDebug(string message) => AppLog.Debug(nameof(SettingsService), message);
     private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(SettingsService), message, ex);
 
-    private static readonly Lazy<SettingsService> _instance = new(() => new SettingsService());
-    public static SettingsService Instance => _instance.Value;
-
     private readonly string settingsPath;
     private AppSettings? settings;
 
-    private SettingsService()
+    public SettingsService()
     {
         // 便携模式：数据保存在程序所在目录的 Data 文件夹
         string appFolder = AppDomain.CurrentDomain.BaseDirectory;

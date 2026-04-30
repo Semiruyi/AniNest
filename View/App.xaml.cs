@@ -1,12 +1,14 @@
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using Microsoft.Extensions.DependencyInjection;
 using LocalPlayer.Media;
-using LocalPlayer.Controls;
 using LocalPlayer.Model;
+using LocalPlayer.View;
+using LocalPlayer.View.Library;
+using LocalPlayer.View.Player;
 
 namespace LocalPlayer;
 
@@ -20,13 +22,30 @@ public partial class App : System.Windows.Application
     protected override void OnStartup(StartupEventArgs e)
     {
         var sw = Stopwatch.StartNew();
-        LogStartup($"=== OnStartup 开始 ===");
+        LogStartup("=== OnStartup 开始 ===");
         base.OnStartup(e);
         LogStartup($"base.OnStartup 完成，耗时 {sw.ElapsedMilliseconds}ms");
         Log("=== Application Startup ===");
 
-        // 后台预热 LibVLC，将耗时的 native 模块加载提前到应用启动阶段，
-        // 从而显著缩短第一次进入播放页时的等待时间。
+        var services = new ServiceCollection();
+
+        // 单例服务
+        services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<IThumbnailGenerator, ThumbnailGenerator>();
+
+        // 每个播放页需要独立的 MediaPlayerController
+        services.AddTransient<IMediaPlayerController, MediaPlayerController>();
+
+        // 页面
+        services.AddTransient<MainPage>();
+        services.AddTransient<PlayerPage>();
+
+        // 主窗口（单例）
+        services.AddSingleton<MainWindow>();
+
+        var provider = services.BuildServiceProvider();
+
+        // 后台预热 LibVLC
         Task.Run(() =>
         {
             try
@@ -42,13 +61,15 @@ public partial class App : System.Windows.Application
             }
         });
 
-        // 初始化缩略图生成器（加载索引、检测 ffmpeg、清理残留）
+        // 后台初始化缩略图生成器
+        var thumbGen = (ThumbnailGenerator)provider.GetRequiredService<IThumbnailGenerator>();
+        var settings = provider.GetRequiredService<ISettingsService>();
         Task.Run(() =>
         {
             try
             {
                 var thumbSw = Stopwatch.StartNew();
-                ThumbnailGenerator.Instance.Initialize(() => SettingsService.Instance.GetThumbnailExpiryDays());
+                thumbGen.Initialize(() => settings.GetThumbnailExpiryDays());
                 LogStartup($"后台 ThumbnailGenerator 初始化完成，耗时 {thumbSw.ElapsedMilliseconds}ms");
             }
             catch (Exception ex)
@@ -58,13 +79,13 @@ public partial class App : System.Windows.Application
             }
         });
 
-        Exit += (s, args) =>
+        Exit += (_, _) =>
         {
             Log("Exit 事件触发，正在关闭缩略图生成器...");
-            ThumbnailGenerator.Instance.Shutdown();
+            thumbGen.Shutdown();
         };
 
-        LogStartup($"OnStartup 总耗时 {sw.ElapsedMilliseconds}ms");
+        LogStartup($"OnStartup DI 配置完成，耗时 {sw.ElapsedMilliseconds}ms");
 
         AppDomain.CurrentDomain.UnhandledException += (s, args) =>
         {
@@ -84,5 +105,8 @@ public partial class App : System.Windows.Application
                 LogError("未观察到的Task异常", args.Exception);
             args.SetObserved();
         };
+
+        var mainWindow = provider.GetRequiredService<MainWindow>();
+        mainWindow.Show();
     }
 }

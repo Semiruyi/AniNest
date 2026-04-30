@@ -39,10 +39,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private static void Log(string message) => AppLog.Info(nameof(ThumbnailGenerator), message);
     private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(ThumbnailGenerator), message, ex);
 
-    // Singleton
-    private static readonly Lazy<ThumbnailGenerator> _instance = new(() => new ThumbnailGenerator());
-    public static ThumbnailGenerator Instance => _instance.Value;
-
     // Dependencies
     private Func<int>? _getExpiryDays;
 
@@ -73,7 +69,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     public bool IsFfmpegAvailable => _ffmpegAvailable;
 
-    private ThumbnailGenerator()
+    public ThumbnailGenerator()
     {
         _thumbBaseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "thumbnails");
         _indexPath = Path.Combine(_thumbBaseDir, "index.json");

@@ -1,14 +1,13 @@
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Animation;
-using LocalPlayer.Primitives;
+using Microsoft.Extensions.DependencyInjection;
 using LocalPlayer.Model;
-using LocalPlayer.Media;
+using LocalPlayer.Primitives;
 using LocalPlayer.View.Library;
 using LocalPlayer.View.Player;
 
@@ -19,11 +18,14 @@ public partial class MainWindow : Window
     private static void Log(string message) => AppLog.Info(nameof(MainWindow), message);
     private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(MainWindow), message, ex);
 
+    private readonly IServiceProvider _services;
     private MainPage? mainPage;
     private PlayerPage? playerPage;
 
-    public MainWindow()
+    public MainWindow(IServiceProvider services)
     {
+        _services = services;
+
         var sw = System.Diagnostics.Stopwatch.StartNew();
         App.LogStartup("MainWindow 构造函数开始");
         InitializeComponent();
@@ -63,7 +65,7 @@ public partial class MainWindow : Window
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         App.LogStartup("ShowMainPage 开始");
-        mainPage = new MainPage(SettingsService.Instance, ThumbnailGenerator.Instance);
+        mainPage = _services.GetRequiredService<MainPage>();
         App.LogStartup($"MainPage 构造函数完成，耗时 {sw.ElapsedMilliseconds}ms");
         mainPage.FolderSelected += MainPage_FolderSelected;
         PageHost.Content = mainPage;
@@ -86,7 +88,7 @@ public partial class MainWindow : Window
     {
         await FadeMaskToBlackAsync(300);
 
-        playerPage = new PlayerPage(SettingsService.Instance, new MediaPlayerController(), ThumbnailGenerator.Instance);
+        playerPage = _services.GetRequiredService<PlayerPage>();
         playerPage.BackRequested += PlayerPage_BackRequested;
         playerPage.LoadFolder(folderPath, folderName);
         PageHost.Content = playerPage;
