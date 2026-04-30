@@ -359,9 +359,13 @@
                     VerticalAlignment="Center"
                     Margin="10,0"/>
 
-            <!-- 进度条悬浮预览弹窗 -->
+            <!-- 进度条悬浮预览弹窗（状态由 ViewModel 控制） -->
             <Popup x:Name="ProgressPopup" AllowsTransparency="True"
                    Placement="Relative" StaysOpen="True"
+                   PlacementTarget="{Binding ElementName=ProgressSlider}"
+                   HorizontalOffset="{Binding ThumbnailHOffset}"
+                   VerticalOffset="-120"
+                   animations:PopupAnimator.BindOpen="{Binding IsThumbnailOpen}"
                    MouseEnter="ProgressPopup_MouseEnter"
                    MouseLeave="ProgressPopup_MouseLeave">
                 <Border CornerRadius="10" ClipToBounds="True"
@@ -372,20 +376,21 @@
                         <RectangleGeometry RadiusX="10" RadiusY="10" Rect="0,0,160,90"/>
                     </Border.Clip>
                     <Border.RenderTransform>
-                        <ScaleTransform x:Name="ProgressPopupScale" ScaleX="0.9" ScaleY="0.9"/>
+                        <ScaleTransform ScaleX="0.9" ScaleY="0.9"/>
                     </Border.RenderTransform>
                     <Grid>
-                        <Image x:Name="ThumbnailImage" Stretch="UniformToFill"
+                        <Image Stretch="UniformToFill"
                                Width="160" Height="90"
-                               Visibility="Collapsed"/>
+                               Source="{Binding ThumbnailImageSource}"
+                               Visibility="{Binding ThumbnailImageVisibility}"/>
                         <Border Background="#CC000000" CornerRadius="4"
                                 Padding="6,3"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Bottom">
-                            <TextBlock x:Name="ThumbnailTimeText" Foreground="White"
+                            <TextBlock Foreground="White"
                                        FontSize="12"
                                        FontFamily="Segoe UI, Microsoft YaHei, sans-serif"
-                                       Text=""/>
+                                       Text="{Binding ThumbnailTimeText}"/>
                         </Border>
                     </Grid>
                 </Border>

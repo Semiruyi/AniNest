@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -114,6 +117,165 @@ public partial class PlayerViewModel : ObservableObject
     {
         _speedCloseTimer?.Stop();
         IsSpeedPopupOpen = false;
+    }
+
+    // ========== 缩略图预览弹窗 ==========
+
+    [ObservableProperty]
+    private bool _isThumbnailOpen;
+    [ObservableProperty]
+    private ImageSource? _thumbnailImageSource;
+    [ObservableProperty]
+    private string _thumbnailTimeText = "";
+    [ObservableProperty]
+    private Visibility _thumbnailImageVisibility = Visibility.Collapsed;
+    [ObservableProperty]
+    private double _thumbnailHOffset;
+
+    private readonly Dictionary<int, BitmapSource> _thumbCache = new();
+    private DispatcherTimer? _thumbShowTimer;
+    private DispatcherTimer? _thumbHideTimer;
+    private bool _thumbHovering;
+    private bool _thumbVisible;
+    private bool _thumbClosing;
+    private int _lastRequestedSecond = -1;
+
+    partial void OnCurrentVideoPathChanged(string? value)
+    {
+        _thumbCache.Clear();
+        _lastRequestedSecond = -1;
+    }
+
+    public void OnThumbnailEnter()
+    {
+        _thumbHovering = true;
+        _thumbHideTimer?.Stop();
+        if (!_thumbVisible)
+            (_thumbShowTimer ??= CreateThumbShowTimer()).Start();
+    }
+
+    public void OnThumbnailLeave()
+    {
+        _thumbHovering = false;
+        _thumbShowTimer?.Stop();
+        (_thumbHideTimer ??= CreateThumbHideTimer()).Start();
+    }
+
+    public void OnThumbnailPopupEnter()
+    {
+        _thumbHideTimer?.Stop();
+    }
+
+    public void OnThumbnailPopupLeave()
+    {
+        _thumbHideTimer?.Stop();
+        (_thumbHideTimer ??= CreateThumbHideTimer()).Start();
+    }
+
+    public void OnThumbnailMove(Point pos, double sliderWidth)
+    {
+        long length = MediaLength;
+        if (length <= 0) return;
+
+        double ratio = Math.Max(0, Math.Min(1, pos.X / sliderWidth));
+        long hoverTimeMs = (long)(ratio * length);
+        int hoverSecond = (int)(hoverTimeMs / 1000);
+
+        ThumbnailTimeText = FormatTime(hoverTimeMs);
+        double popupW = 160;
+        ThumbnailHOffset = Math.Max(0, Math.Min(pos.X - popupW / 2, sliderWidth - popupW));
+
+        bool thumbReady = CurrentVideoPath != null &&
+            GetThumbnailState(CurrentVideoPath) == ThumbnailState.Ready;
+        ThumbnailImageVisibility = thumbReady ? Visibility.Visible : Visibility.Collapsed;
+
+        if (hoverSecond == _lastRequestedSecond) return;
+        _lastRequestedSecond = hoverSecond;
+
+        if (thumbReady && CurrentVideoPath != null)
+        {
+            if (_thumbCache.TryGetValue(hoverSecond, out var cached))
+            {
+                ThumbnailImageSource = cached;
+            }
+            else
+            {
+                var bmp = LoadThumbnailJpeg(CurrentVideoPath, hoverSecond);
+                if (bmp != null)
+                {
+                    _thumbCache[hoverSecond] = bmp;
+                    ThumbnailImageSource = bmp;
+
+                    if (_thumbCache.Count > 20)
+                    {
+                        var toRemove = _thumbCache.Keys.OrderBy(k => k).Take(_thumbCache.Count / 2).ToList();
+                        foreach (var k in toRemove) _thumbCache.Remove(k);
+                    }
+                }
+            }
+        }
+    }
+
+    private void ShowThumbnail()
+    {
+        if (_thumbVisible || _thumbClosing) return;
+        _thumbVisible = true;
+        IsThumbnailOpen = true;
+    }
+
+    private void HideThumbnail()
+    {
+        if (!_thumbVisible || _thumbClosing) return;
+        _thumbClosing = true;
+
+        // Reset state immediately — animation completion is handled by PopupAnimator.BindOpen
+        _thumbVisible = false;
+        _thumbClosing = false;
+        IsThumbnailOpen = false;
+    }
+
+    private DispatcherTimer CreateThumbShowTimer()
+    {
+        var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        t.Tick += (_, _) =>
+        {
+            t.Stop();
+            if (!_thumbHovering) return;
+            ShowThumbnail();
+        };
+        _thumbShowTimer = t;
+        return t;
+    }
+
+    private DispatcherTimer CreateThumbHideTimer()
+    {
+        var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
+        t.Tick += (_, _) =>
+        {
+            t.Stop();
+            if (_thumbHovering) return;
+            HideThumbnail();
+        };
+        _thumbHideTimer = t;
+        return t;
+    }
+
+    private BitmapSource? LoadThumbnailJpeg(string videoPath, int second)
+    {
+        var path = GetThumbnailPath(videoPath, second);
+        if (path == null) return null;
+        try
+        {
+            var decoder = new JpegBitmapDecoder(new Uri(path), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+            var frame = decoder.Frames[0];
+            frame.Freeze();
+            return frame;
+        }
+        catch (Exception ex)
+        {
+            LogError($"缩略图解码异常 second={second}", ex);
+            return null;
+        }
     }
 
     // ========== UI State ==========
@@ -377,18 +539,16 @@ public partial class PlayerViewModel : ObservableObject
     public void DisposeMedia() => _media.Dispose();
     public void SetRate(float rate) { _media.Rate = rate; Rate = rate; }
 
-    // ========== Thumbnail (供 View 调用) ==========
+    // ========== Thumbnail helpers ==========
 
     public ThumbnailState GetThumbnailState(string path) => _thumbnailGenerator.GetState(path);
-
-    // ========== Settings ==========
-
-    public void OpenKeyBindingsSettings() => OpenKeyBindingsRequested?.Invoke();
-
-    // ========== Thumbnail ==========
 
     public string? GetThumbnailPath(string videoPath, int second)
         => _thumbnailGenerator.GetThumbnailPath(videoPath, second);
 
     public long MediaLength => _media.Length;
+
+    // ========== Settings ==========
+
+    public void OpenKeyBindingsSettings() => OpenKeyBindingsRequested?.Invoke();
 }

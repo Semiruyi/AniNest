@@ -5,7 +5,6 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using LocalPlayer.View.Animations;
-using LocalPlayer.View.Player.Interaction;
 using LocalPlayer.ViewModel;
 
 namespace LocalPlayer.View.Player;
@@ -18,7 +17,6 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
     }
 
     private PlayerViewModel? _vm;
-    private ThumbnailPreviewController? _thumbnailPreviewView;
 
     private bool _isFullscreen;
     public bool IsFullscreen
@@ -47,14 +45,6 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
                 PopupPrimaryAxis.Vertical) };
         };
 
-        _thumbnailPreviewView = new ThumbnailPreviewController(
-            ProgressSlider, ProgressPopup, ProgressPopupScale,
-            ThumbnailImage, ThumbnailTimeText,
-            () => _vm.MediaLength,
-            (path, second) => _vm.GetThumbnailPath(path, second),
-            path => (int)_vm.GetThumbnailState(path),
-            ms => PlayerViewModel.FormatTime(ms));
-
         WireButtonAnimations();
         UpdateButtonTooltips();
     }
@@ -68,8 +58,7 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
         }
     }
 
-    public void SetCurrentVideo(string? videoPath)
-        => _thumbnailPreviewView?.SetCurrentVideo(videoPath);
+    public void SetCurrentVideo(string? videoPath) { }
 
     public void CloseSpeedPopup()
         => _vm?.CloseSpeedPopup();
@@ -146,19 +135,19 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
 
     // --- Thumbnail preview forwarding ---
     private void ProgressSlider_MouseEnter(object sender, MouseEventArgs e)
-        => _thumbnailPreviewView?.OnSliderMouseEnter();
+        => _vm?.OnThumbnailEnter();
 
     private void ProgressSlider_MouseLeave(object sender, MouseEventArgs e)
-        => _thumbnailPreviewView?.OnSliderMouseLeave();
+        => _vm?.OnThumbnailLeave();
 
     private void ProgressSlider_MouseMove(object sender, MouseEventArgs e)
-        => _thumbnailPreviewView?.OnSliderMouseMove(e);
+        => _vm?.OnThumbnailMove(e.GetPosition(ProgressSlider), ProgressSlider.ActualWidth);
 
     private void ProgressPopup_MouseEnter(object sender, MouseEventArgs e)
-        => _thumbnailPreviewView?.OnPopupMouseEnter();
+        => _vm?.OnThumbnailPopupEnter();
 
     private void ProgressPopup_MouseLeave(object sender, MouseEventArgs e)
-        => _thumbnailPreviewView?.OnPopupMouseLeave();
+        => _vm?.OnThumbnailPopupLeave();
 
     // --- Mouse enter/leave on root grid (for fullscreen auto-hide) ---
     private void RootGrid_MouseEnter(object sender, MouseEventArgs e)
@@ -189,6 +178,5 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
 
     public void Dispose()
     {
-        _thumbnailPreviewView?.Dispose();
     }
 }
