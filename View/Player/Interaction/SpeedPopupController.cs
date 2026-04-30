@@ -6,7 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
-using LocalPlayer.Primitives;
+using LocalPlayer.View.Primitives;
 using LocalPlayer.Model;
 using Button = System.Windows.Controls.Button;
 using Panel = System.Windows.Controls.Panel;

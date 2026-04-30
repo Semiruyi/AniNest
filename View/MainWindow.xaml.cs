@@ -7,7 +7,7 @@ using System.Windows.Interop;
 using System.Windows.Media.Animation;
 using Microsoft.Extensions.DependencyInjection;
 using LocalPlayer.Model;
-using LocalPlayer.Primitives;
+using LocalPlayer.View.Primitives;
 using LocalPlayer.View.Library;
 using LocalPlayer.View.Player;
 

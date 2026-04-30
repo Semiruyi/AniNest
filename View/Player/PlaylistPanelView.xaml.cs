@@ -5,7 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using LocalPlayer.Primitives;
+using LocalPlayer.View.Primitives;
 using LocalPlayer.Model;
 
 namespace LocalPlayer.View.Player;

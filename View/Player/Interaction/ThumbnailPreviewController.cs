@@ -7,7 +7,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using LocalPlayer.Primitives;
+using LocalPlayer.View.Primitives;
 using LocalPlayer.Model;
 using Image = System.Windows.Controls.Image;
 using Mouse = System.Windows.Input.Mouse;

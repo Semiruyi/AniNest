@@ -4,7 +4,7 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 
-namespace LocalPlayer.Primitives;
+namespace LocalPlayer.View.Primitives;
 
 public class InsertionAdorner : Adorner
 {

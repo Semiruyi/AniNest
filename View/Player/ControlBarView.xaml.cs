@@ -6,7 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
-using LocalPlayer.Primitives;
+using LocalPlayer.View.Primitives;
 using LocalPlayer.Model;
 using LocalPlayer.View.Player.Interaction;
 using LocalPlayer.ViewModel;

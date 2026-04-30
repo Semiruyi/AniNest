@@ -5,7 +5,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using Point = System.Windows.Point;
 
-namespace LocalPlayer.Primitives;
+namespace LocalPlayer.View.Primitives;
 
 public static class AnimationHelper
 {

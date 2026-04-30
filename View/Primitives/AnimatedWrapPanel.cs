@@ -4,7 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 
-namespace LocalPlayer.Primitives;
+namespace LocalPlayer.View.Primitives;
 
 /// <summary>
 /// 带布局动画的 WrapPanel。当子元素位置因增删改或窗口大小变化而改变时，
