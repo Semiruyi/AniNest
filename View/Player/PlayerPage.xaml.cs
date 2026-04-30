@@ -29,18 +29,16 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     private readonly SettingsService settingsService = SettingsService.Instance;
     private readonly PlayerInputHandler inputHandler = new();
     private readonly ThumbnailGenerator _thumbnailGenerator = ThumbnailGenerator.Instance;
+    private readonly PlaylistManager playlistManager;
     private readonly DispatcherTimer saveProgressTimer;
 
     private PauseOverlayController _pauseOverlay = null!;
     private RightHoldSpeedController _rightHold = null!;
     private ClickRouter _clickRouter = null!;
 
-    private string currentFolderPath = "";
-    private string currentFolderName = "";
-    private string[] videoFiles = Array.Empty<string>();
-    private List<PlaylistItem> _playlistItems = new();
     private string? pendingLoadFolderPath;
     private string? pendingLoadFolderName;
+    private bool _updatingSelection;
 
     private float currentSpeed = 1.0f;
 
@@ -68,10 +66,13 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         GotKeyboardFocus += PlayerPage_GotKeyboardFocus;
         LostKeyboardFocus += PlayerPage_LostKeyboardFocus;
 
-        saveProgressTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
-        saveProgressTimer.Tick += SaveProgressTimer_Tick;
+        playlistManager = new PlaylistManager(
+            settingsService, mediaController,
+            path => _thumbnailGenerator.GetState(path));
 
-        // 三个共享控制器
+        saveProgressTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        saveProgressTimer.Tick += (_, _) => playlistManager.SaveProgress();
+
         _pauseOverlay = new PauseOverlayController(PauseBigIconScale, PauseBigIcon);
         _rightHold = new RightHoldSpeedController(
             mediaController,
@@ -86,7 +87,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         inputHandler.SeekBackward += (_, _) => mediaController.SeekBackward(5000);
         inputHandler.Back += (_, _) =>
         {
-            SaveCurrentProgress();
+            playlistManager.SaveProgress();
             BackRequested?.Invoke(this, EventArgs.Empty);
         };
         inputHandler.NextEpisode += (_, _) => PlayNext();
@@ -96,38 +97,16 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         inputHandler.ReloadBindings();
 
-        _thumbnailGenerator.VideoReady += OnVideoThumbnailReady;
-        _thumbnailGenerator.VideoProgress += OnVideoThumbnailProgress;
-    }
+        _thumbnailGenerator.VideoReady += path =>
+            Dispatcher.Invoke(() => playlistManager.UpdateThumbnailReady(path));
+        _thumbnailGenerator.VideoProgress += (path, percent) =>
+            Dispatcher.Invoke(() => playlistManager.UpdateThumbnailProgress(path, percent));
 
-    private void OnVideoThumbnailProgress(string videoPath, int percent)
-    {
-        Dispatcher.Invoke(() =>
+        playlistManager.VideoPlayed += filePath =>
         {
-            foreach (var pi in _playlistItems)
-            {
-                if (string.Equals(pi.FilePath, videoPath, StringComparison.OrdinalIgnoreCase))
-                {
-                    pi.ThumbnailProgress = percent;
-                    break;
-                }
-            }
-        });
-    }
-
-    private void OnVideoThumbnailReady(string videoPath)
-    {
-        Dispatcher.Invoke(() =>
-        {
-            foreach (var pi in _playlistItems)
-            {
-                if (string.Equals(pi.FilePath, videoPath, StringComparison.OrdinalIgnoreCase))
-                {
-                    pi.IsThumbnailReady = true;
-                    break;
-                }
-            }
-        });
+            ControlBar.SetCurrentVideo(filePath);
+            fullscreenWindow?.ControlBar?.SetCurrentVideo(filePath);
+        };
     }
 
     private void PlayerPage_Loaded(object sender, RoutedEventArgs e)
@@ -142,7 +121,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             ControlBar.IsFullscreen = false;
             ControlBar.UpdateButtonTooltips();
 
-            // 控制栏按钮事件
             ControlBar.PlayPauseClicked += (_, _) => mediaController.TogglePlayPause();
             ControlBar.PreviousClicked += (_, _) => PlayPrevious();
             ControlBar.NextClicked += (_, _) => PlayNext();
@@ -166,18 +144,16 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             ControlBar.SpeedChanged += speed => currentSpeed = speed;
             ControlBar.SeekRequested += time => mediaController.SeekTo(time);
 
-            // 选集面板事件
             PlaylistPanel.EpisodeSelected += (_, item) =>
             {
-                int index = item.Number - 1;
-                if (index >= 0 && index < videoFiles.Length)
+                if (_updatingSelection)
                 {
-                    SaveCurrentProgress();
-                    PlayVideo(videoFiles[index]);
+                    _updatingSelection = false;
+                    return;
                 }
+                playlistManager.PlayEpisode(item.Number - 1);
             };
 
-            // 创建全屏窗口（只创建一次，复用）
             if (fullscreenWindow == null)
             {
                 fullscreenWindow = new FullscreenWindow();
@@ -185,12 +161,12 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
                 fullscreenWindow.ExitRequested += (_, _) => ExitFullscreen();
                 fullscreenWindow.EpisodeSelected += (_, item) =>
                 {
-                    int index = item.Number - 1;
-                    if (index >= 0 && index < videoFiles.Length)
+                    if (_updatingSelection)
                     {
-                        SaveCurrentProgress();
-                        PlayVideo(videoFiles[index]);
+                        _updatingSelection = false;
+                        return;
                     }
+                    playlistManager.PlayEpisode(item.Number - 1);
                 };
             }
 
@@ -249,113 +225,28 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             return;
         }
 
-        currentFolderPath = folderPath;
-        currentFolderName = folderName;
+        playlistManager.LoadFolder(folderPath, folderName);
 
-        videoFiles = VideoScanner.GetVideoFiles(folderPath);
-        Log($"扫描到 {videoFiles.Length} 个视频文件");
-
-        _playlistItems = new List<PlaylistItem>();
-        for (int i = 0; i < videoFiles.Length; i++)
-        {
-            var filePath = videoFiles[i];
-            _playlistItems.Add(new PlaylistItem
-            {
-                Number = i + 1,
-                Title = Path.GetFileName(filePath),
-                FilePath = filePath,
-                IsPlayed = settingsService.IsVideoPlayed(filePath),
-                IsThumbnailReady = _thumbnailGenerator.GetState(filePath) == ThumbnailState.Ready
-            });
-        }
-
-        PlaylistPanel.SetItems(_playlistItems);
+        PlaylistPanel.SetItems(playlistManager.Items);
         _ = PlaylistPanel.AnimateEpisodeButtonsEntrance();
-
-        var folderProgress = settingsService.GetFolderProgress(folderPath);
-        string? targetVideo = folderProgress?.LastVideoPath;
-
-        if (string.IsNullOrEmpty(targetVideo) || !File.Exists(targetVideo))
-        {
-            targetVideo = videoFiles.Length > 0 ? videoFiles[0] : null;
-        }
-
-        if (!string.IsNullOrEmpty(targetVideo))
-        {
-            int index = Array.IndexOf(videoFiles, targetVideo);
-            if (index >= 0)
-            {
-                PlaylistPanel.SelectedIndex = index;
-            }
-            else
-            {
-                PlayVideo(targetVideo);
-            }
-        }
-    }
-
-    private void PlayVideo(string filePath)
-    {
-        Log($"[PlayVideo] 开始: {Path.GetFileName(filePath)}");
-
-        ControlBar.SetCurrentVideo(filePath);
-        fullscreenWindow?.ControlBar?.SetCurrentVideo(filePath);
-
-        long startTime = 0;
-        var progress = settingsService.GetVideoProgress(filePath);
-        if (progress != null)
-        {
-            startTime = progress.Position;
-            if (progress.Duration > 0 && startTime > progress.Duration * 0.9)
-            {
-                startTime = 0;
-            }
-        }
-
-        mediaController.Play(filePath, startTime);
-        settingsService.SetFolderProgress(currentFolderPath, filePath);
-        settingsService.MarkVideoPlayed(filePath);
+        PlaylistPanel.SelectedIndex = playlistManager.CurrentIndex;
     }
 
     private void PlayNext()
     {
-        int idx = PlaylistPanel.SelectedIndex;
-        if (idx < PlaylistPanel.ItemCount - 1)
+        if (playlistManager.PlayNext())
         {
-            var oldItem = PlaylistPanel.SelectedItem;
-            if (oldItem != null)
-                oldItem.IsPlayed = true;
-            PlaylistPanel.SelectedIndex = idx + 1;
+            _updatingSelection = true;
+            PlaylistPanel.SelectedIndex = playlistManager.CurrentIndex;
         }
     }
 
     private void PlayPrevious()
     {
-        int idx = PlaylistPanel.SelectedIndex;
-        if (idx > 0)
+        if (playlistManager.PlayPrevious())
         {
-            var oldItem = PlaylistPanel.SelectedItem;
-            if (oldItem != null)
-                oldItem.IsPlayed = true;
-            PlaylistPanel.SelectedIndex = idx - 1;
-        }
-    }
-
-    private void SaveProgressTimer_Tick(object? sender, EventArgs e)
-    {
-        SaveCurrentProgress();
-    }
-
-    private void SaveCurrentProgress()
-    {
-        string? filePath = mediaController.CurrentFilePath;
-        if (string.IsNullOrEmpty(filePath)) return;
-
-        long time = mediaController.Time;
-        long length = mediaController.Length;
-        if (length > 0)
-        {
-            settingsService.SetVideoProgress(filePath, time, length);
+            _updatingSelection = true;
+            PlaylistPanel.SelectedIndex = playlistManager.CurrentIndex;
         }
     }
 
@@ -393,7 +284,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
                 ExitFullscreen();
             else
             {
-                SaveCurrentProgress();
+                playlistManager.SaveProgress();
                 BackRequested?.Invoke(this, EventArgs.Empty);
             }
             e.Handled = true;
@@ -434,11 +325,9 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
 
         ControlBar.CloseSpeedPopup();
 
-        // 同步选集到全屏窗口
-        fullscreenWindow.SetPlaylistItems(_playlistItems, PlaylistPanel.SelectedIndex);
+        fullscreenWindow.SetPlaylistItems(playlistManager.Items, PlaylistPanel.SelectedIndex);
         fullscreenWindow.SetSpeed(ControlBar.CurrentSpeed);
 
-        // 记录 VideoContainer 屏幕位置（DIP），用于退出回缩动画
         var source = PresentationSource.FromVisual(VideoContainer);
         var dpiX = source!.CompositionTarget!.TransformToDevice.M11;
         var dpiY = source!.CompositionTarget!.TransformToDevice.M22;
@@ -448,14 +337,12 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             screenPos.X / dpiX, screenPos.Y / dpiY,
             VideoContainer.ActualWidth, VideoContainer.ActualHeight);
 
-        // WriteableBitmap 切给全屏窗口
         VideoImage.Source = null;
         fullscreenWindow.ShowWithAnimation(fromRect);
 
         isFullscreen = true;
         ControlBar.IsFullscreen = true;
 
-        // 隐藏正常模式下的控制栏和选集
         ControlBar.Visibility = Visibility.Collapsed;
         PlaylistPanel.Visibility = Visibility.Collapsed;
     }
@@ -467,16 +354,12 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         isFullscreen = false;
         ControlBar.IsFullscreen = false;
 
-        // 停止全屏窗口的自动隐藏定时器
         fullscreenWindow.StopAutoHideTimers();
 
-        // 全屏窗口播放回缩动画并隐藏
         fullscreenWindow.HideWithAnimation();
 
-        // WriteableBitmap 切回主窗口
         VideoImage.Source = mediaController.VideoBitmap;
 
-        // 恢复正常模式下的控制栏和选集
         ControlBar.Visibility = Visibility.Visible;
         PlaylistPanel.Visibility = Visibility.Visible;
     }
@@ -496,7 +379,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         Log("Dispose 开始");
         saveProgressTimer.Stop();
-        SaveCurrentProgress();
+        playlistManager.SaveProgress();
 
         ControlBar.Dispose();
 

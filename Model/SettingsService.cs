@@ -8,7 +8,7 @@ using LocalPlayer.Model;
 
 namespace LocalPlayer.Model;
 
-public class SettingsService
+public class SettingsService : ISettingsService
 {
     private static void Log(string message) => AppLog.Info(nameof(SettingsService), message);
     private static void LogDebug(string message) => AppLog.Debug(nameof(SettingsService), message);

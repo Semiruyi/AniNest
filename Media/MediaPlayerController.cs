@@ -9,7 +9,7 @@ using LibVlcMedia = LibVLCSharp.Shared.Media;
 
 namespace LocalPlayer.Media;
 
-public class MediaPlayerController : IDisposable
+public class MediaPlayerController : IMediaPlayerController
 {
     private static void Log(string message) => AppLog.Info(nameof(MediaPlayerController), message);
     private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(MediaPlayerController), message, ex);
