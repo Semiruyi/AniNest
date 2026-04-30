@@ -26,7 +26,6 @@ public partial class PlayerViewModel : ObservableObject
     private DispatcherTimer _saveTimer = null!;
     private bool _initialized;
 
-    private bool _updatingSelection;
     private float _savedRate = 1.0f;
 
 
@@ -397,41 +396,24 @@ public partial class PlayerViewModel : ObservableObject
         EpisodeCountText = items.Count > 0 ? $"{items.Count} 集" : "";
 
         CurrentIndex = _playlistManager.CurrentIndex;
+
+        _playlistManager.PlayCurrentVideo();
     }
 
     public PlaylistItem? CurrentItem => _playlistManager.CurrentItem;
 
     public System.Collections.ObjectModel.ObservableCollection<PlaylistItem> PlaylistItems => _playlistManager.Items;
 
-    // ========== Selection ==========
-
-    public void SelectEpisode(int index)
-    {
-        if (_updatingSelection)
-        {
-            _updatingSelection = false;
-            return;
-        }
-        _playlistManager.PlayEpisode(index);
-        CurrentIndex = _playlistManager.CurrentIndex;
-    }
-
     private void PlayNextInternal()
     {
         if (_playlistManager.PlayNext())
-        {
-            _updatingSelection = true;
             CurrentIndex = _playlistManager.CurrentIndex;
-        }
     }
 
     private void PlayPreviousInternal()
     {
         if (_playlistManager.PlayPrevious())
-        {
-            _updatingSelection = true;
             CurrentIndex = _playlistManager.CurrentIndex;
-        }
     }
 
     // ========== Progress ==========
@@ -464,20 +446,28 @@ public partial class PlayerViewModel : ObservableObject
     private void Next()
     {
         if (_playlistManager.PlayNext())
-        {
-            _updatingSelection = true;
             CurrentIndex = _playlistManager.CurrentIndex;
-        }
     }
 
     [RelayCommand]
     private void Previous()
     {
         if (_playlistManager.PlayPrevious())
-        {
-            _updatingSelection = true;
             CurrentIndex = _playlistManager.CurrentIndex;
-        }
+    }
+
+    [RelayCommand]
+    private void PlayEpisode(PlaylistItem item)
+    {
+        int index = item.Number - 1;
+        if (index < 0 || index >= _playlistManager.Items.Count) return;
+        if (index == CurrentIndex) return;
+
+        if (CurrentIndex >= 0 && CurrentIndex < _playlistManager.Items.Count)
+            _playlistManager.Items[CurrentIndex].IsPlayed = true;
+
+        _playlistManager.PlayEpisode(index);
+        CurrentIndex = _playlistManager.CurrentIndex;
     }
 
     [RelayCommand]

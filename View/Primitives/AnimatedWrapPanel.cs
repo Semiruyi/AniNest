@@ -1,39 +1,51 @@
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 
 namespace LocalPlayer.View.Primitives;
 
 /// <summary>
 /// 带布局动画的 WrapPanel。当子元素位置因增删改或窗口大小变化而改变时，
-/// 会平滑过渡到新位置，而不是瞬间跳动。
+/// 会平滑过渡到新位置，而不是瞬间跳动。新子元素自动执行交错入场动画。
 /// </summary>
 public class AnimatedWrapPanel : WrapPanel
 {
-    /// <summary>
-    /// 位置过渡动画时长。
-    /// </summary>
     public Duration AnimationDuration { get; set; } = new Duration(TimeSpan.FromMilliseconds(250));
 
-    protected override System.Windows.Size ArrangeOverride(System.Windows.Size finalSize)
+    // Entrance animation
+    public double EntranceFromScale { get; set; } = 0.88;
+    public int EntranceScaleDurationMs { get; set; } = 420;
+    public int EntranceOpacityDurationMs { get; set; } = 320;
+    public int EntranceStaggerDelayMs { get; set; } = 35;
+
+    private readonly HashSet<UIElement> _entranceDone = new();
+
+    protected override Size ArrangeOverride(Size finalSize)
     {
-        // 1. 记录当前视觉位置（包含正在进行的动画偏移）
-        var positions = new System.Collections.Generic.Dictionary<UIElement, System.Windows.Point>();
+        var entranceCandidates = new List<UIElement>();
+
+        // 1. Record current visual positions
+        var positions = new Dictionary<UIElement, Point>();
         foreach (UIElement child in InternalChildren)
         {
             if (child == null) continue;
+
+            if (!_entranceDone.Contains(child))
+                entranceCandidates.Add(child);
+
             try
             {
-                positions[child] = child.TransformToAncestor(this).Transform(new System.Windows.Point(0, 0));
+                positions[child] = child.TransformToAncestor(this).Transform(new Point(0, 0));
             }
             catch
             {
-                positions[child] = new System.Windows.Point(0, 0);
+                positions[child] = new Point(0, 0);
             }
 
-            // 暂停并清除旧的动画/Transform，避免干扰本次 Arrange 后的位置计算
             if (child.RenderTransform is TranslateTransform oldTt)
             {
                 oldTt.BeginAnimation(TranslateTransform.XProperty, null);
@@ -42,19 +54,21 @@ public class AnimatedWrapPanel : WrapPanel
             child.RenderTransform = null;
         }
 
-        // 2. 执行标准 Arrange
-        System.Windows.Size result = base.ArrangeOverride(finalSize);
+        // 2. Standard arrange
+        Size result = base.ArrangeOverride(finalSize);
 
-        // 3. 计算位移并播放动画
+        // 3. Position animation for existing children
         foreach (UIElement child in InternalChildren)
         {
-            if (child == null || !positions.TryGetValue(child, out System.Windows.Point oldVisualPos))
+            if (child == null || entranceCandidates.Contains(child))
+                continue;
+            if (!positions.TryGetValue(child, out Point oldVisualPos))
                 continue;
 
-            System.Windows.Point newLayoutPos;
+            Point newLayoutPos;
             try
             {
-                newLayoutPos = child.TransformToAncestor(this).Transform(new System.Windows.Point(0, 0));
+                newLayoutPos = child.TransformToAncestor(this).Transform(new Point(0, 0));
             }
             catch
             {
@@ -63,9 +77,14 @@ public class AnimatedWrapPanel : WrapPanel
 
             Vector offset = oldVisualPos - newLayoutPos;
             if (Math.Abs(offset.X) > 0.5 || Math.Abs(offset.Y) > 0.5)
-            {
                 AnimateOffset(child, offset);
-            }
+        }
+
+        // 4. Entrance animation for new children
+        if (entranceCandidates.Count > 0)
+        {
+            Dispatcher.BeginInvoke(() => AnimateEntrance(entranceCandidates),
+                DispatcherPriority.Loaded);
         }
 
         return result;
@@ -93,12 +112,50 @@ public class AnimatedWrapPanel : WrapPanel
         {
             if (tt != child.RenderTransform) return;
             if (Math.Abs(tt.X) < 0.01 && Math.Abs(tt.Y) < 0.01)
-            {
                 child.RenderTransform = null;
-            }
         };
 
         tt.BeginAnimation(TranslateTransform.XProperty, animX);
         tt.BeginAnimation(TranslateTransform.YProperty, animY);
+    }
+
+    private void AnimateEntrance(List<UIElement> children)
+    {
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+        for (int i = 0; i < children.Count; i++)
+        {
+            var child = children[i];
+            if (child == null || !InternalChildren.Contains(child)) continue;
+
+            _entranceDone.Add(child);
+
+            child.RenderTransformOrigin = new Point(0.5, 0.5);
+            child.RenderTransform = new ScaleTransform(EntranceFromScale, EntranceFromScale);
+            child.Opacity = 0;
+
+            int delayMs = i * EntranceStaggerDelayMs;
+
+            child.BeginAnimation(OpacityProperty,
+                new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(EntranceOpacityDurationMs))
+                {
+                    BeginTime = TimeSpan.FromMilliseconds(delayMs),
+                    EasingFunction = ease
+                });
+
+            var scale = (ScaleTransform)child.RenderTransform;
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty,
+                new DoubleAnimation(EntranceFromScale, 1.0, TimeSpan.FromMilliseconds(EntranceScaleDurationMs))
+                {
+                    BeginTime = TimeSpan.FromMilliseconds(delayMs),
+                    EasingFunction = ease
+                });
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty,
+                new DoubleAnimation(EntranceFromScale, 1.0, TimeSpan.FromMilliseconds(EntranceScaleDurationMs))
+                {
+                    BeginTime = TimeSpan.FromMilliseconds(delayMs),
+                    EasingFunction = ease
+                });
+        }
     }
 }

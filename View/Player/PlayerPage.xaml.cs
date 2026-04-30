@@ -4,8 +4,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Threading;
-using LocalPlayer.View.Animations;
 using LocalPlayer.ViewModel;
 
 namespace LocalPlayer.View.Player;
@@ -69,11 +67,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             ControlBar.Setup(_vm);
             ControlBar.UpdateButtonTooltips();
 
-            PlaylistPanel.EpisodeSelected += (_, item) =>
-            {
-                _vm.SelectEpisode(item.Number - 1);
-            };
-
             Keyboard.Focus(this);
             FocusManager.SetFocusedElement(this, this);
 
@@ -126,9 +119,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
         }
 
         _vm.LoadFolder(folderPath, folderName);
-
-        _ = PlaylistPanel.AnimateEpisodeButtonsEntrance();
-        PlaylistPanel.SelectedIndex = _vm.CurrentIndex;
     }
 
     // ========== 键盘事件 ==========
