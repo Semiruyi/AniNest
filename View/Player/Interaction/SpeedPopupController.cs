@@ -13,7 +13,7 @@ using Panel = System.Windows.Controls.Panel;
 using Mouse = System.Windows.Input.Mouse;
 using Point = System.Windows.Point;
 
-namespace LocalPlayer.Interaction;
+namespace LocalPlayer.View.Player.Interaction;
 
 /// <summary>
 /// 倍速弹窗控制器：延迟显隐、动画、倍速选择。

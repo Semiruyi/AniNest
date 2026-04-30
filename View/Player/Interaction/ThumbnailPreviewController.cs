@@ -14,7 +14,7 @@ using Image = System.Windows.Controls.Image;
 using Mouse = System.Windows.Input.Mouse;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 
-namespace LocalPlayer.Interaction;
+namespace LocalPlayer.View.Player.Interaction;
 
 /// <summary>
 /// 进度条悬浮缩略图预览控制器：延迟显隐、鼠标追踪、缩略图加载/缓存、弹窗动画。

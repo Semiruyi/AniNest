@@ -2,7 +2,7 @@ using System;
 using System.Windows.Input;
 using System.Windows.Threading;
 
-namespace LocalPlayer.Interaction;
+namespace LocalPlayer.View.Player.Interaction;
 
 /// <summary>
 /// 单击/双击路由器：在等待窗口内区分单击和双击。

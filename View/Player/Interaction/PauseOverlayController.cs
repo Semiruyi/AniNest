@@ -6,7 +6,7 @@ using System.Windows.Threading;
 using LocalPlayer.Media;
 using LocalPlayer.Primitives;
 
-namespace LocalPlayer.Interaction;
+namespace LocalPlayer.View.Player.Interaction;
 
 /// <summary>
 /// 暂停大图标动画控制器，PlayerPage 和 FullscreenWindow 共用。

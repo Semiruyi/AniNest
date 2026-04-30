@@ -12,7 +12,7 @@ using System.Windows.Threading;
 using LocalPlayer.Primitives;
 using LocalPlayer.Model;
 using LocalPlayer.Media;
-using LocalPlayer.Interaction;
+using LocalPlayer.View.Player.Interaction;
 using LocalPlayer.View.Player;
 using LocalPlayer.View.Settings;
 using LocalPlayer.ViewModel;

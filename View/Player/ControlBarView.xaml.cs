@@ -9,7 +9,7 @@ using System.Windows.Media.Imaging;
 using LocalPlayer.Primitives;
 using LocalPlayer.Model;
 using LocalPlayer.Media;
-using LocalPlayer.Interaction;
+using LocalPlayer.View.Player.Interaction;
 using LocalPlayer.ViewModel;
 
 namespace LocalPlayer.View.Player;
