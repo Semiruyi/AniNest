@@ -6,7 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
-using LocalPlayer.View.Primitives;
+using LocalPlayer.Primitives;
 using LocalPlayer.Model;
 using LocalPlayer.Media;
 
@@ -29,11 +29,11 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
 
     private MediaPlayerController? _mediaController;
     private PlayerInputHandler? _inputHandler;
-    private SpeedPopupController? _speedPopupController;
-    private ThumbnailPreviewController? _thumbnailPreviewController;
+    private SpeedPopupView? _speedPopupView;
+    private ThumbnailPreviewView? _thumbnailPreviewView;
     private bool _isProgressDragging;
 
-    public float CurrentSpeed => _speedPopupController?.CurrentSpeed ?? 1.0f;
+    public float CurrentSpeed => _speedPopupView?.CurrentSpeed ?? 1.0f;
 
     private bool _isFullscreen;
     public bool IsFullscreen
@@ -73,12 +73,12 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
         _mediaController = mediaController;
         _inputHandler = inputHandler;
 
-        _speedPopupController = new SpeedPopupController(
+        _speedPopupView = new SpeedPopupView(
             SpeedPopup, SpeedBtn, SpeedPopupScale, SpeedOptionsPanel, RootGrid,
             rate => _mediaController.Rate = rate);
-        _speedPopupController.SpeedChanged += speed => SpeedChanged?.Invoke(speed);
+        _speedPopupView.SpeedChanged += speed => SpeedChanged?.Invoke(speed);
 
-        _thumbnailPreviewController = new ThumbnailPreviewController(
+        _thumbnailPreviewView = new ThumbnailPreviewView(
             ProgressSlider, ProgressPopup, ProgressPopupScale,
             ThumbnailImage, ThumbnailTimeText,
             thumbnailGenerator,
@@ -93,16 +93,16 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
     }
 
     public void SetCurrentVideo(string? videoPath)
-        => _thumbnailPreviewController?.SetCurrentVideo(videoPath);
+        => _thumbnailPreviewView?.SetCurrentVideo(videoPath);
 
     public void SetSpeed(float speed)
-        => _speedPopupController?.SetSpeed(speed);
+        => _speedPopupView?.SetSpeed(speed);
 
     public void UpdateSpeedButtonText(float speed)
-        => _speedPopupController?.UpdateButtonText(speed);
+        => _speedPopupView?.UpdateButtonText(speed);
 
     public void CloseSpeedPopup()
-        => _speedPopupController?.Close();
+        => _speedPopupView?.Close();
 
     public void UpdateButtonTooltips()
     {
@@ -253,35 +253,35 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
 
     // --- Speed popup forwarding ---
     private void SpeedBtn_MouseEnter(object sender, MouseEventArgs e)
-        => _speedPopupController?.OnSpeedBtnMouseEnter();
+        => _speedPopupView?.OnSpeedBtnMouseEnter();
 
     private void SpeedBtn_MouseLeave(object sender, MouseEventArgs e)
-        => _speedPopupController?.OnSpeedBtnMouseLeave();
+        => _speedPopupView?.OnSpeedBtnMouseLeave();
 
     private void SpeedPopup_MouseEnter(object sender, MouseEventArgs e)
-        => _speedPopupController?.OnSpeedPopupMouseEnter();
+        => _speedPopupView?.OnSpeedPopupMouseEnter();
 
     private void SpeedPopup_MouseLeave(object sender, MouseEventArgs e)
-        => _speedPopupController?.OnSpeedPopupMouseLeave();
+        => _speedPopupView?.OnSpeedPopupMouseLeave();
 
     private void SpeedOption_Click(object sender, RoutedEventArgs e)
-        => _speedPopupController?.OnSpeedOptionClick(sender);
+        => _speedPopupView?.OnSpeedOptionClick(sender);
 
     // --- Thumbnail preview forwarding ---
     private void ProgressSlider_MouseEnter(object sender, MouseEventArgs e)
-        => _thumbnailPreviewController?.OnSliderMouseEnter();
+        => _thumbnailPreviewView?.OnSliderMouseEnter();
 
     private void ProgressSlider_MouseLeave(object sender, MouseEventArgs e)
-        => _thumbnailPreviewController?.OnSliderMouseLeave();
+        => _thumbnailPreviewView?.OnSliderMouseLeave();
 
     private void ProgressSlider_MouseMove(object sender, MouseEventArgs e)
-        => _thumbnailPreviewController?.OnSliderMouseMove(e);
+        => _thumbnailPreviewView?.OnSliderMouseMove(e);
 
     private void ProgressPopup_MouseEnter(object sender, MouseEventArgs e)
-        => _thumbnailPreviewController?.OnPopupMouseEnter();
+        => _thumbnailPreviewView?.OnPopupMouseEnter();
 
     private void ProgressPopup_MouseLeave(object sender, MouseEventArgs e)
-        => _thumbnailPreviewController?.OnPopupMouseLeave();
+        => _thumbnailPreviewView?.OnPopupMouseLeave();
 
     // --- Mouse enter/leave on root grid (for fullscreen auto-hide) ---
     private void RootGrid_MouseEnter(object sender, MouseEventArgs e)
@@ -325,7 +325,7 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
             _mediaController.Stopped -= OnStopped;
             _mediaController.ProgressUpdated -= OnProgressUpdated;
         }
-        _speedPopupController?.Dispose();
-        _thumbnailPreviewController?.Dispose();
+        _speedPopupView?.Dispose();
+        _thumbnailPreviewView?.Dispose();
     }
 }

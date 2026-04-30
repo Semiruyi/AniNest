@@ -11,7 +11,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using LocalPlayer;
-using LocalPlayer.View.Primitives;
+using LocalPlayer.Primitives;
 using LocalPlayer.Model;
 
 namespace LocalPlayer.View.Library;

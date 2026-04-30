@@ -2,7 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Media.Animation;
 
-namespace LocalPlayer.View.Primitives;
+namespace LocalPlayer.Primitives;
 
 public class CubicBezierEase : EasingFunctionBase
 {

@@ -56,27 +56,28 @@ LocalPlayer/
 │
 ├── Media/                       # 播放引擎，依赖 LibVLCSharp
 │   ├── MediaPlayerController.cs # LibVLC 封装
-│   ├── VideoFrameProvider.cs    # 双缓冲 BGRA → WriteableBitmap
 │   └── PlayerInputHandler.cs    # 键盘快捷键映射
 │
 ├── Controls/                    # 共享播放 UI 控件与交互行为
 │   ├── ControlBarView.xaml/.cs  # 播放控制栏
 │   ├── PlaylistPanelView.xaml/.cs # 选集侧面板
-│   ├── SpeedPopupController.cs  # 倍速弹出菜单
-│   ├── ThumbnailPreviewController.cs # 进度条缩略图预览
-│   ├── ClickRouter.cs           # 单击/双击分发
-│   ├── PauseOverlayController.cs # 暂停图标动画
-│   └── RightHoldSpeedController.cs # 右键长按加速
+│   ├── VideoFrameProvider.cs    # 双缓冲 BGRA → WriteableBitmap
+│   ├── SpeedPopupView.cs        # 倍速弹出菜单
+│   ├── ThumbnailPreviewView.cs  # 进度条缩略图预览
+│   ├── ClickRouterBehavior.cs   # 单击/双击分发
+│   ├── PauseOverlayView.cs      # 暂停图标动画
+│   └── RightHoldSpeedView.cs    # 右键长按加速
+│
+├── Primitives/                  # 通用 WPF 工具（与业务无关）
+│   ├── AnimationHelper.cs
+│   ├── CubicBezierEase.cs
+│   ├── ThumbnailConverters.cs
+│   ├── AnimatedWrapPanel.cs
+│   └── InsertionAdorner.cs
 │
 ├── View/                        # 页面、窗口、UI 工具
 │   ├── App.xaml/.cs             # 应用入口
 │   ├── MainWindow.xaml/.cs      # 主窗口，页面导航
-│   ├── Primitives/              # 通用 WPF 工具（与业务无关）
-│   │   ├── AnimationHelper.cs
-│   │   ├── CubicBezierEase.cs
-│   │   ├── ThumbnailConverters.cs
-│   │   ├── AnimatedWrapPanel.cs
-│   │   └── InsertionAdorner.cs
 │   ├── Library/
 │   │   ├── MainPage.xaml/.cs        # 文件夹卡片浏览
 │   │   ├── MainPage.Animations.cs   # 卡片入场/重排动画
@@ -102,9 +103,10 @@ View ──→ Controls ──→ Media ──→ Model
 ```
 
 - **Model** — 数据类、文件 IO、JSON 序列化、ffmpeg 进程管理。不碰 UI 线程，不引用 WPF 类型
-- **Media** — LibVLC 封装、视频帧回调、按键映射。纯引擎逻辑，不持有 XAML 控件引用
-- **Controls** — 可在 PlayerPage / FullscreenWindow 间复用的 UI 控件和交互行为（控制栏、选集面板、倍速弹窗、鼠标行为等）
-- **View** — 页面组装、窗口管理、入场/退出动画。Primitives 为通用 WPF 工具子目录
+- **Media** — LibVLC 封装、按键映射。纯引擎逻辑，不持有 XAML 控件引用
+- **Controls** — 可在 PlayerPage / FullscreenWindow 间复用的 UI 控件和交互行为（控制栏、选集面板、倍速弹窗、视频帧渲染、鼠标行为等）
+- **Primitives** — 通用 WPF 工具（动画助手、缓动函数、值转换器、面板），不依赖任何业务层
+- **View** — 页面组装、窗口管理、入场/退出动画
 - **Resources** — 静态资源
 
 无 DI 容器，通过单例（SettingsService、ThumbnailGenerator）和事件在组件间通信。

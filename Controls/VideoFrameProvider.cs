@@ -6,7 +6,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LibVLCSharp.Shared;
 
-namespace LocalPlayer.Media;
+namespace LocalPlayer.Controls;
 
 public class VideoFrameProvider : IDisposable
 {

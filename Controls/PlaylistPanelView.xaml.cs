@@ -5,7 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using LocalPlayer.View.Primitives;
+using LocalPlayer.Primitives;
 using LocalPlayer.Model;
 
 // 消歧义：UseWindowsForms 隐式导入与 WPF 类型冲突

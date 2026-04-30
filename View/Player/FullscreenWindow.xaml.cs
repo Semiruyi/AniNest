@@ -5,7 +5,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
-using LocalPlayer.View.Primitives;
+using LocalPlayer.Primitives;
 using LocalPlayer.Model;
 using LocalPlayer.Media;
 using LocalPlayer.Controls;
@@ -34,9 +34,9 @@ public partial class FullscreenWindow : Window
     private Rect originalVideoRect;
 
     // 共享控制器
-    private PauseOverlayController _pauseOverlay = null!;
-    private RightHoldSpeedController _rightHold = null!;
-    private ClickRouter _clickRouter = null!;
+    private PauseOverlayView _pauseOverlay = null!;
+    private RightHoldSpeedView _rightHold = null!;
+    private ClickRouterBehavior _clickRouter = null!;
 
     // 控制栏/选集自动隐藏
     private readonly DispatcherTimer controlBarHideTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
@@ -46,8 +46,8 @@ public partial class FullscreenWindow : Window
     {
         InitializeComponent();
 
-        _pauseOverlay = new PauseOverlayController(PauseBigIconScale, PauseBigIcon);
-        _clickRouter = new ClickRouter(
+        _pauseOverlay = new PauseOverlayView(PauseBigIconScale, PauseBigIcon);
+        _clickRouter = new ClickRouterBehavior(
             () => mediaController?.TogglePlayPause(),
             () => ExitRequested?.Invoke(this, EventArgs.Empty));
 
@@ -105,7 +105,7 @@ public partial class FullscreenWindow : Window
 
         ControlBar.Setup(mediaCtrl, input, thumbnailGenerator);
 
-        _rightHold = new RightHoldSpeedController(
+        _rightHold = new RightHoldSpeedView(
             mediaCtrl,
             () => ControlBar.CurrentSpeed,
             speed => ControlBar.UpdateSpeedButtonText(speed));

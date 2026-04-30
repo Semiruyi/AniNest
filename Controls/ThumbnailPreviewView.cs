@@ -7,7 +7,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using LocalPlayer.View.Primitives;
+using LocalPlayer.Primitives;
 using LocalPlayer.Model;
 using LocalPlayer.Media;
 using Image = System.Windows.Controls.Image;
@@ -19,10 +19,10 @@ namespace LocalPlayer.Controls;
 /// <summary>
 /// 进度条悬浮缩略图预览控制器：延迟显隐、鼠标追踪、缩略图加载/缓存、弹窗动画。
 /// </summary>
-public class ThumbnailPreviewController : IDisposable
+public class ThumbnailPreviewView : IDisposable
 {
     private static void LogError(string message, Exception? ex = null)
-        => AppLog.Error(nameof(ThumbnailPreviewController), message, ex);
+        => AppLog.Error(nameof(ThumbnailPreviewView), message, ex);
 
     private readonly Slider _progressSlider;
     private readonly Popup _progressPopup;
@@ -42,7 +42,7 @@ public class ThumbnailPreviewController : IDisposable
     private int _lastRequestedSecond = -1;
     private string? _currentThumbVideoPath;
 
-    public ThumbnailPreviewController(
+    public ThumbnailPreviewView(
         Slider progressSlider,
         Popup progressPopup,
         ScaleTransform progressPopupScale,

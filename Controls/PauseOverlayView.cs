@@ -2,19 +2,19 @@ using System;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using LocalPlayer.View.Primitives;
+using LocalPlayer.Primitives;
 
 namespace LocalPlayer.Controls;
 
 /// <summary>
 /// 暂停大图标动画控制器，PlayerPage 和 FullscreenWindow 共用。
 /// </summary>
-public class PauseOverlayController
+public class PauseOverlayView
 {
     private readonly ScaleTransform _scale;
     private readonly UIElement _icon;
 
-    public PauseOverlayController(ScaleTransform scale, UIElement icon)
+    public PauseOverlayView(ScaleTransform scale, UIElement icon)
     {
         _scale = scale;
         _icon = icon;

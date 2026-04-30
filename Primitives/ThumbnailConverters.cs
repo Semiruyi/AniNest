@@ -6,7 +6,7 @@ using System.Windows.Media;
 
 using WpfPoint = System.Windows.Point;
 
-namespace LocalPlayer.View.Primitives;
+namespace LocalPlayer.Primitives;
 
 public class ProgressToPieConverter : IValueConverter
 {

@@ -6,7 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
-using LocalPlayer.View.Primitives;
+using LocalPlayer.Primitives;
 using LocalPlayer.Model;
 using Button = System.Windows.Controls.Button;
 using Panel = System.Windows.Controls.Panel;
@@ -18,9 +18,9 @@ namespace LocalPlayer.Controls;
 /// <summary>
 /// 倍速弹窗控制器：延迟显隐、动画、倍速选择。
 /// </summary>
-public class SpeedPopupController : IDisposable
+public class SpeedPopupView : IDisposable
 {
-    private static void Log(string message) => AppLog.Info(nameof(SpeedPopupController), message);
+    private static void Log(string message) => AppLog.Info(nameof(SpeedPopupView), message);
 
     private readonly Popup _speedPopup;
     private readonly Button _speedBtn;
@@ -38,7 +38,7 @@ public class SpeedPopupController : IDisposable
 
     public event Action<float>? SpeedChanged;
 
-    public SpeedPopupController(
+    public SpeedPopupView(
         Popup speedPopup,
         Button speedBtn,
         ScaleTransform speedPopupScale,
