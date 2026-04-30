@@ -2,6 +2,8 @@ using System;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
+using LocalPlayer.Media;
 using LocalPlayer.Primitives;
 
 namespace LocalPlayer.Interaction;
@@ -46,5 +48,13 @@ public class PauseOverlayController
         _scale.ScaleX = 1;
         _scale.ScaleY = 1;
         _icon.Opacity = 1;
+    }
+
+    /// <summary>关联 MediaPlayerController 事件，自动响应播放/暂停/停止</summary>
+    public void WireMediaEvents(MediaPlayerController media, Dispatcher dispatcher)
+    {
+        media.Playing += (_, _) => dispatcher.Invoke(AnimateOut);
+        media.Paused  += (_, _) => dispatcher.Invoke(AnimateIn);
+        media.Stopped += (_, _) => dispatcher.Invoke(AnimateOut);
     }
 }

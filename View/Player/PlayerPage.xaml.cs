@@ -215,9 +215,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             mediaController.Initialize();
             VideoImage.Source = mediaController.VideoBitmap;
 
-            mediaController.Playing += (_, _) => Dispatcher.Invoke(_pauseOverlay.AnimateOut);
-            mediaController.Paused += (_, _) => Dispatcher.Invoke(_pauseOverlay.AnimateIn);
-            mediaController.Stopped += (_, _) => Dispatcher.Invoke(_pauseOverlay.AnimateOut);
+            _pauseOverlay.WireMediaEvents(mediaController, Dispatcher);
 
             saveProgressTimer.Start();
 

@@ -48,7 +48,7 @@ public partial class App : System.Windows.Application
             try
             {
                 var thumbSw = Stopwatch.StartNew();
-                ThumbnailGenerator.Instance.Initialize();
+                ThumbnailGenerator.Instance.Initialize(() => SettingsService.Instance.GetThumbnailExpiryDays());
                 LogStartup($"后台 ThumbnailGenerator 初始化完成，耗时 {thumbSw.ElapsedMilliseconds}ms");
             }
             catch (Exception ex)

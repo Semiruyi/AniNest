@@ -167,6 +167,10 @@ public class SettingsService
     public void SetVideoProgress(string filePath, long position, long duration)
     {
         var settings = Load();
+        if (settings.VideoProgress.TryGetValue(filePath, out var existing) &&
+            existing.Position == position && existing.Duration == duration)
+            return;
+
         var progress = new VideoProgress
         {
             FilePath = filePath,
@@ -182,6 +186,10 @@ public class SettingsService
     public void MarkVideoPlayed(string filePath)
     {
         var settings = Load();
+        if (settings.VideoProgress.TryGetValue(filePath, out var existing) &&
+            existing.IsPlayed)
+            return;
+
         if (!settings.VideoProgress.TryGetValue(filePath, out var progress))
         {
             progress = new VideoProgress { FilePath = filePath };

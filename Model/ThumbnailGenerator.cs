@@ -43,6 +43,9 @@ public class ThumbnailGenerator : IDisposable
     private static readonly Lazy<ThumbnailGenerator> _instance = new(() => new ThumbnailGenerator());
     public static ThumbnailGenerator Instance => _instance.Value;
 
+    // Dependencies
+    private Func<int>? _getExpiryDays;
+
     // Paths
     private readonly string _thumbBaseDir;
     private readonly string _indexPath;
@@ -84,8 +87,10 @@ public class ThumbnailGenerator : IDisposable
     /// <summary>
     /// 启动时调用：加载索引、清理残留、检测 ffmpeg。
     /// </summary>
-    public void Initialize()
+    public void Initialize(Func<int> getExpiryDays)
     {
+        _getExpiryDays = getExpiryDays;
+
         var sw = Stopwatch.StartNew();
         Log("[Initialize] 开始初始化");
 
@@ -487,13 +492,7 @@ public class ThumbnailGenerator : IDisposable
 
     private void CleanupExpired()
     {
-        int expiryDays = 30;
-        try
-        {
-            var settings = SettingsService.Instance;
-            expiryDays = settings.GetThumbnailExpiryDays();
-        }
-        catch { }
+        int expiryDays = _getExpiryDays?.Invoke() ?? 30;
 
         if (expiryDays <= 0) return; // 永不过期
 

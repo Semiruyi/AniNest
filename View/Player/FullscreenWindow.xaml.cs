@@ -98,9 +98,7 @@ public partial class FullscreenWindow : Window
         mediaController = mediaCtrl;
         inputHandler = input;
 
-        mediaController.Playing += (_, _) => Dispatcher.Invoke(_pauseOverlay.AnimateOut);
-        mediaController.Paused += (_, _) => Dispatcher.Invoke(_pauseOverlay.AnimateIn);
-        mediaController.Stopped += (_, _) => Dispatcher.Invoke(_pauseOverlay.AnimateOut);
+        _pauseOverlay.WireMediaEvents(mediaController, Dispatcher);
 
         ControlBar.Setup(mediaCtrl, input, thumbnailGenerator);
 
