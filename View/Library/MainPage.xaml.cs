@@ -191,14 +191,14 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     private void AddFolderBtn_Click(object sender, RoutedEventArgs e)
     {
-        using var dialog = new System.Windows.Forms.FolderBrowserDialog
+        var dialog = new Microsoft.Win32.OpenFolderDialog
         {
-            Description = "选择包含视频的文件夹"
+            Title = "选择包含视频的文件夹"
         };
 
-        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        if (dialog.ShowDialog() == true)
         {
-            string path = dialog.SelectedPath;
+            string path = dialog.FolderName;
             string name = Path.GetFileName(path);
 
             if (folderItems.Any(i => i.Path == path))

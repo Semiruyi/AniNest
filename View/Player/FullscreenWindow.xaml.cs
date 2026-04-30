@@ -13,10 +13,8 @@ using LocalPlayer.Interaction;
 using LocalPlayer.View.Player;
 using LocalPlayer.View.Settings;
 
-// 消歧义：UseWindowsForms 隐式导入与 WPF 类型冲突
-using MouseEventArgs = System.Windows.Input.MouseEventArgs;
-using KeyEventArgs = System.Windows.Input.KeyEventArgs;
-using Point = System.Windows.Point;
+using System.Windows.Interop;
+using System.Runtime.InteropServices;
 
 namespace LocalPlayer.View.Player;
 
@@ -190,16 +188,20 @@ public partial class FullscreenWindow : Window
         var mainWindow = System.Windows.Application.Current.MainWindow;
         Owner = mainWindow;
 
-        var hwnd = new System.Windows.Interop.WindowInteropHelper(mainWindow).Handle;
-        var screen = System.Windows.Forms.Screen.FromHandle(hwnd);
-        using var g = System.Drawing.Graphics.FromHwnd(hwnd);
-        float targetDpiX = g.DpiX;
-        float targetDpiY = g.DpiY;
+        var hwnd = new WindowInteropHelper(mainWindow).Handle;
+        var hwndSource = HwndSource.FromHwnd(hwnd);
+        double dpiX = hwndSource.CompositionTarget.TransformToDevice.M11;
+        double dpiY = hwndSource.CompositionTarget.TransformToDevice.M22;
 
-        Left   = screen.Bounds.Left   * 96.0 / targetDpiX;
-        Top    = screen.Bounds.Top    * 96.0 / targetDpiY;
-        Width  = screen.Bounds.Width  * 96.0 / targetDpiX;
-        Height = screen.Bounds.Height * 96.0 / targetDpiY;
+        IntPtr monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+        var mi = new MONITORINFO();
+        mi.cbSize = (uint)Marshal.SizeOf<MONITORINFO>();
+        GetMonitorInfo(monitor, ref mi);
+
+        Left   = mi.rcMonitor.Left   / dpiX;
+        Top    = mi.rcMonitor.Top    / dpiY;
+        Width  = mi.rcMonitor.Width  / dpiX;
+        Height = mi.rcMonitor.Height / dpiY;
 
         double origCenterX = fromRect.Left + fromRect.Width / 2;
         double origCenterY = fromRect.Top + fromRect.Height / 2;
@@ -450,5 +452,35 @@ public partial class FullscreenWindow : Window
     {
         base.OnClosed(e);
         VideoImage.Source = null;
+    }
+
+    // ========== P/Invoke: 屏幕信息（替代 WinForms Screen / System.Drawing） ==========
+
+    private const uint MONITOR_DEFAULTTONEAREST = 2;
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+        public readonly int Width => Right - Left;
+        public readonly int Height => Bottom - Top;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MONITORINFO
+    {
+        public uint cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public uint dwFlags;
     }
 }

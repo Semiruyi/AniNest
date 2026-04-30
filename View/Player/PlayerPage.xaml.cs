@@ -17,11 +17,6 @@ using LocalPlayer.Interaction;
 using LocalPlayer.View.Player;
 using LocalPlayer.View.Settings;
 
-// 消歧义：UseWindowsForms 隐式导入与 WPF 类型冲突
-using MouseEventArgs = System.Windows.Input.MouseEventArgs;
-using KeyEventArgs = System.Windows.Input.KeyEventArgs;
-using Point = System.Windows.Point;
-using Panel = System.Windows.Controls.Panel;
 
 namespace LocalPlayer.View.Player;
 

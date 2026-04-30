@@ -8,9 +8,6 @@ using System.Windows.Media.Animation;
 using LocalPlayer.Primitives;
 using LocalPlayer.Model;
 
-// 消歧义：UseWindowsForms 隐式导入与 WPF 类型冲突
-using Button = System.Windows.Controls.Button;
-using Point = System.Windows.Point;
 
 namespace LocalPlayer.Controls;
 
