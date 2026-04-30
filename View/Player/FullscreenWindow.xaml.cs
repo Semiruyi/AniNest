@@ -85,6 +85,8 @@ public partial class FullscreenWindow : Window
         };
 
         SetupInternal(media, thumbnailGenerator);
+
+        _vm.BindingsChanged += () => ControlBar.UpdateButtonTooltips();
     }
 
     private void SetupInternal(IMediaPlayerController mediaCtrl, IThumbnailGenerator thumbnailGenerator)
@@ -98,18 +100,6 @@ public partial class FullscreenWindow : Window
             () => ControlBar.CurrentSpeed,
             speed => ControlBar.UpdateSpeedButtonText(speed));
         ControlBar.IsFullscreen = true;
-
-        ControlBar.PlayPauseClicked += (_, _) => mediaCtrl.TogglePlayPause();
-        ControlBar.PreviousClicked += (_, _) => { };
-        ControlBar.NextClicked += (_, _) => { };
-        ControlBar.StopClicked += (_, _) => mediaCtrl.Stop();
-        ControlBar.FullscreenClicked += (_, _) => ExitRequested?.Invoke(this, EventArgs.Empty);
-        ControlBar.SettingsClicked += (_, _) =>
-        {
-            _vm.OpenKeyBindingsSettings();
-            ControlBar.UpdateButtonTooltips();
-        };
-        ControlBar.SeekRequested += time => mediaCtrl.SeekTo(time);
 
         ControlBar.ControlBarMouseEnter += (_, _) =>
         {

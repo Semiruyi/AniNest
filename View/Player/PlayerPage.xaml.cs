@@ -80,6 +80,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             _vm.SaveProgress();
             BackRequested?.Invoke(this, EventArgs.Empty);
         };
+        _vm.BindingsChanged += () => ControlBar.UpdateButtonTooltips();
         _vm.FullscreenToggled += () =>
         {
             if (_vm.IsFullscreen)
@@ -109,24 +110,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             ControlBar.IsFullscreen = false;
             ControlBar.UpdateButtonTooltips();
 
-            ControlBar.PlayPauseClicked += (_, _) => _media.TogglePlayPause();
-            ControlBar.PreviousClicked += (_, _) => _vm.PreviousCommand.Execute(null);
-            ControlBar.NextClicked += (_, _) => _vm.NextCommand.Execute(null);
-            ControlBar.StopClicked += (_, _) => _media.Stop();
-            ControlBar.FullscreenClicked += (_, _) => EnterFullscreen();
-            ControlBar.PlaylistToggleClicked += (_, _) =>
-            {
-                PlaylistPanel.Visibility = PlaylistPanel.Visibility == Visibility.Visible
-                    ? Visibility.Collapsed
-                    : Visibility.Visible;
-            };
-            ControlBar.SettingsClicked += (_, _) =>
-            {
-                _vm.OpenKeyBindingsSettings();
-                ControlBar.UpdateButtonTooltips();
-            };
             ControlBar.SpeedChanged += speed => _vm.ChangeSpeedCommand.Execute(speed);
-            ControlBar.SeekRequested += time => _media.SeekTo(time);
 
             PlaylistPanel.EpisodeSelected += (_, item) =>
             {

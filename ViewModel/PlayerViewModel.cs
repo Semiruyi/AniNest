@@ -306,6 +306,15 @@ public partial class PlayerViewModel : ObservableObject
         BackRequested?.Invoke();
     }
 
+    public event Action? BindingsChanged;
+
+    [RelayCommand]
+    private void Settings()
+    {
+        OpenKeyBindingsSettings();
+        BindingsChanged?.Invoke();
+    }
+
     // ========== Input handler exposed for ControlBar ==========
 
     public PlayerInputHandler InputHandler => _inputHandler;

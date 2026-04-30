@@ -7,6 +7,9 @@
              Focusable="True"
              PreviewKeyDown="PlayerPage_PreviewKeyDown"
              KeyDown="PlayerPage_KeyDown">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </UserControl.Resources>
     <Grid x:Name="PageRoot" Opacity="0">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -39,7 +42,8 @@
 
         <!-- 选集面板 -->
         <controls:PlaylistPanelView x:Name="PlaylistPanel"
-                                 Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"/>
+                                 Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
+                                 Visibility="{Binding IsPlaylistVisible, Converter={StaticResource BoolToVis}}"/>
 
         <!-- 控制栏 -->
         <controls:ControlBarView x:Name="ControlBar"

@@ -38,17 +38,9 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
     }
 
     // --- Events ---
-    public event EventHandler? PlayPauseClicked;
-    public event EventHandler? PreviousClicked;
-    public event EventHandler? NextClicked;
-    public event EventHandler? StopClicked;
-    public event EventHandler? FullscreenClicked;
-    public event EventHandler? PlaylistToggleClicked;
-    public event EventHandler? SettingsClicked;
     public event Action<float>? SpeedChanged;
     public event EventHandler? ControlBarMouseEnter;
     public event EventHandler? ControlBarMouseLeave;
-    public event Action<long>? SeekRequested;
 
     // --- Setup ---
     public void Setup(IMediaPlayerController mediaController,
@@ -95,29 +87,7 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
         FullscreenBtn.ToolTip = $"全屏 ({KeyDisplayString(bindings["ToggleFullscreen"])})";
     }
 
-    // --- Button click handlers ---
-    private void PlayPauseBtn_Click(object sender, RoutedEventArgs e)
-        => PlayPauseClicked?.Invoke(this, EventArgs.Empty);
-
-    private void PreviousBtn_Click(object sender, RoutedEventArgs e)
-        => PreviousClicked?.Invoke(this, EventArgs.Empty);
-
-    private void NextBtn_Click(object sender, RoutedEventArgs e)
-        => NextClicked?.Invoke(this, EventArgs.Empty);
-
-    private void StopBtn_Click(object sender, RoutedEventArgs e)
-        => StopClicked?.Invoke(this, EventArgs.Empty);
-
-    private void FullscreenBtn_Click(object sender, RoutedEventArgs e)
-        => FullscreenClicked?.Invoke(this, EventArgs.Empty);
-
-    private void PlaylistToggleBtn_Click(object sender, RoutedEventArgs e)
-        => PlaylistToggleClicked?.Invoke(this, EventArgs.Empty);
-
-    private void SettingsBtn_Click(object sender, RoutedEventArgs e)
-        => SettingsClicked?.Invoke(this, EventArgs.Empty);
-
-    // --- Common button animations ---
+    // --- Progress slider ---
     private static readonly CubicBezierEase _btnEase = new()
     {
         X1 = 0.25, Y1 = 0.1, X2 = 0.25, Y2 = 1.0,
@@ -193,15 +163,19 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
     {
         if (e.ChangedButton != MouseButton.Left) return;
         if (DataContext is PlayerViewModel vm)
+        {
             vm.IsSeeking = false;
-        SeekRequested?.Invoke((long)ProgressSlider.Value);
+            vm.SeekCommand.Execute((long)ProgressSlider.Value);
+        }
     }
 
     private void ProgressSlider_LostMouseCapture(object sender, MouseEventArgs e)
     {
         if (DataContext is PlayerViewModel vm)
+        {
             vm.IsSeeking = false;
-        SeekRequested?.Invoke((long)ProgressSlider.Value);
+            vm.SeekCommand.Execute((long)ProgressSlider.Value);
+        }
     }
 
     // --- Speed popup forwarding ---
@@ -260,14 +234,10 @@ public partial class ControlBarView : System.Windows.Controls.UserControl, IDisp
     }
 
     // --- Key display helper ---
+    private static readonly Converters.KeyDisplayConverter _keyConverter = new();
+
     private static string KeyDisplayString(Key key)
-    {
-        return key.ToString()
-            .Replace("Left", "←").Replace("Right", "→")
-            .Replace("Space", "空格").Replace("Escape", "Esc")
-            .Replace("PageUp", "PgUp").Replace("PageDown", "PgDn")
-            .Replace("Return", "Enter");
-    }
+        => (string)_keyConverter.Convert(key, typeof(string), null, System.Globalization.CultureInfo.InvariantCulture);
 
     public void Dispose()
     {

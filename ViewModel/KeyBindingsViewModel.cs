@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using LocalPlayer.Converters;
 using LocalPlayer.Media;
 using LocalPlayer.Model;
 
@@ -92,6 +94,8 @@ public partial class KeyBindingsViewModel : ObservableObject
 
 public class BindingItem : ObservableObject
 {
+    private static readonly KeyDisplayConverter _keyConverter = new();
+
     public string ActionName { get; set; } = "";
     public string DisplayName { get; set; } = "";
 
@@ -122,41 +126,7 @@ public class BindingItem : ObservableObject
         get
         {
             if (IsWaiting) return "按下一个键...";
-            if (CurrentKey == Key.None) return "(未绑定)";
-            var name = CurrentKey.ToString();
-            return name
-                .Replace("Left", "←")
-                .Replace("Right", "→")
-                .Replace("Up", "↑")
-                .Replace("Down", "↓")
-                .Replace("Space", "空格")
-                .Replace("Escape", "Esc")
-                .Replace("Return", "Enter")
-                .Replace("PageUp", "PgUp")
-                .Replace("PageDown", "PgDn")
-                .Replace("OemComma", ",")
-                .Replace("OemPeriod", ".")
-                .Replace("OemMinus", "-")
-                .Replace("OemPlus", "=")
-                .Replace("OemQuestion", "/")
-                .Replace("OemSemicolon", ";")
-                .Replace("OemQuotes", "\"")
-                .Replace("OemOpenBrackets", "[")
-                .Replace("OemCloseBrackets", "]")
-                .Replace("OemPipe", "\\")
-                .Replace("OemTilde", "~")
-                .Replace("D0", "0").Replace("D1", "1").Replace("D2", "2")
-                .Replace("D3", "3").Replace("D4", "4").Replace("D5", "5")
-                .Replace("D6", "6").Replace("D7", "7").Replace("D8", "8")
-                .Replace("D9", "9")
-                .Replace("NumPad0", "Num0").Replace("NumPad1", "Num1")
-                .Replace("NumPad2", "Num2").Replace("NumPad3", "Num3")
-                .Replace("NumPad4", "Num4").Replace("NumPad5", "Num5")
-                .Replace("NumPad6", "Num6").Replace("NumPad7", "Num7")
-                .Replace("NumPad8", "Num8").Replace("NumPad9", "Num9")
-                .Replace("Add", "+").Replace("Subtract", "-")
-                .Replace("Multiply", "*").Replace("Divide", "/")
-                .Replace("Decimal", ".");
+            return (string)_keyConverter.Convert(CurrentKey, typeof(string), null, CultureInfo.InvariantCulture);
         }
     }
 }
