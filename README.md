@@ -45,51 +45,53 @@
 ```
 LocalPlayer/
 │
-├── Model/                       # 数据类 + 文件 IO，零 WPF 依赖
-│   ├── AppSettings.cs           # 应用配置实体
-│   ├── FolderListItem.cs        # 文件夹卡片模型
-│   ├── PlaylistItem.cs          # 选集条目模型
-│   ├── SettingsService.cs       # JSON 配置读写（Singleton）
-│   ├── ThumbnailGenerator.cs    # ffmpeg 后台缩略图队列（Singleton）
-│   ├── VideoScanner.cs          # 视频/封面文件扫描
-│   └── AppLog.cs                # 文件日志
+├── Model/                         # 数据类 + 文件 IO，零 WPF 依赖
+│   ├── AppSettings.cs             # 应用配置实体
+│   ├── FolderListItem.cs          # 文件夹卡片模型
+│   ├── PlaylistItem.cs            # 选集条目模型
+│   ├── SettingsService.cs         # JSON 配置读写（Singleton）
+│   ├── ThumbnailGenerator.cs      # ffmpeg 后台缩略图队列（Singleton）
+│   ├── VideoScanner.cs            # 视频/封面文件扫描
+│   └── AppLog.cs                  # 文件日志
 │
-├── Media/                       # 播放引擎 + 帧渲染适配器
-│   ├── MediaPlayerController.cs # LibVLC 封装，播放/暂停/快进/进度
-│   ├── PlayerInputHandler.cs    # 可自定义键盘快捷键映射
-│   └── VideoFrameProvider.cs    # 双缓冲 BGRA → WriteableBitmap（本层唯一 WPF 依赖）
+├── Media/                         # 播放引擎 + 帧渲染适配器
+│   ├── MediaPlayerController.cs   # LibVLC 封装，播放/暂停/快进/进度
+│   ├── PlayerInputHandler.cs      # 可自定义键盘快捷键映射
+│   └── VideoFrameProvider.cs      # 双缓冲 BGRA → WriteableBitmap（本层唯一 WPF 依赖）
 │
-├── Controls/                    # 可复用播放器控制器与 UI 控件
-│   ├── ControlBarView.xaml/.cs  # 播放控制栏 UserControl
-│   ├── PlaylistPanelView.xaml/.cs # 选集侧面板 UserControl
-│   ├── SpeedPopupController.cs  # 倍速弹出菜单（显隐/动画/选择）
-│   ├── ThumbnailPreviewController.cs # 进度条悬浮缩略图（延迟加载/缓存/动画）
-│   ├── ClickRouter.cs           # 单击/双击事件路由
-│   ├── PauseOverlayController.cs # 暂停图标缩放动画
-│   └── RightHoldSpeedController.cs # 右键长按临时倍速
+├── Interaction/                   # 播放器交互行为（纯 C#，无 XAML）
+│   ├── ClickRouter.cs             # 单击/双击事件路由
+│   ├── PauseOverlayController.cs  # 暂停图标缩放动画
+│   ├── RightHoldSpeedController.cs # 右键长按临时倍速
+│   ├── SpeedPopupController.cs    # 倍速弹窗（显隐/动画/选择）
+│   └── ThumbnailPreviewController.cs # 进度条悬浮缩略图（延迟加载/缓存/动画）
 │
-├── Primitives/                  # 通用 WPF 工具（与播放业务无关）
+├── Controls/                      # WPF UserControl（有 XAML，可组合 Interaction 中的行为）
+│   ├── ControlBarView.xaml/.cs    # 播放控制栏
+│   └── PlaylistPanelView.xaml/.cs # 选集侧面板
+│
+├── Primitives/                    # 通用 WPF 工具（与播放业务无关）
 │   ├── AnimationHelper.cs
 │   ├── CubicBezierEase.cs
 │   ├── ThumbnailConverters.cs
 │   ├── AnimatedWrapPanel.cs
 │   └── InsertionAdorner.cs
 │
-├── View/                        # 页面、窗口、页面级动画
-│   ├── App.xaml/.cs             # 应用入口
-│   ├── MainWindow.xaml/.cs      # 主窗口，页面导航
+├── View/                          # 页面、窗口、页面级动画
+│   ├── App.xaml/.cs               # 应用入口
+│   ├── MainWindow.xaml/.cs        # 主窗口，页面导航
 │   ├── Library/
-│   │   ├── MainPage.xaml/.cs        # 文件夹卡片浏览
-│   │   ├── MainPage.Animations.cs   # 卡片入场/重排动画
-│   │   └── MainPage.DragDrop.cs     # 拖拽排序
+│   │   ├── MainPage.xaml/.cs          # 文件夹卡片浏览
+│   │   ├── MainPage.Animations.cs     # 卡片入场/重排动画
+│   │   └── MainPage.DragDrop.cs       # 拖拽排序
 │   ├── Player/
-│   │   ├── PlayerPage.xaml/.cs      # 视频播放页
-│   │   ├── PlayerPage.Animations.cs # 页面淡出动画
-│   │   └── FullscreenWindow.xaml/.cs # 全屏窗口（独立 Window + 缩放过渡动画）
+│   │   ├── PlayerPage.xaml/.cs        # 视频播放页
+│   │   ├── PlayerPage.Animations.cs   # 页面淡出动画
+│   │   └── FullscreenWindow.xaml/.cs  # 全屏窗口（独立 Window + 缩放过渡动画）
 │   └── Settings/
 │       └── KeyBindingsWindow.xaml/.cs # 键盘快捷键编辑窗口
 │
-└── Resources/Icons/             # 按钮图标
+└── Resources/Icons/               # 按钮图标
 ```
 
 ## 架构
@@ -97,25 +99,25 @@ LocalPlayer/
 依赖方向：
 
 ```
-View ──→ Controls ──→ Media ──→ Model
- │         │            │
- └─────────┴────────────┴──→ Primitives
+View ──→ Controls ──→ Interaction ──→ Media ──→ Model
+ │         │               │               │
+ └─────────┴───────────────┴───────────────┴──→ Primitives
 ```
 
-| 层 | 职责 | WPF 依赖 | 业务依赖 |
-|----|------|----------|----------|
-| **Model** | 数据实体、JSON 序列化、文件 IO、ffmpeg 进程管理 | 无 | 无 |
-| **Media** | LibVLC 封装、快捷键映射、BGRA→WriteableBitmap 帧适配 | 有（仅 VideoFrameProvider） | Model |
-| **Controls** | 可复用播放器控制器（倍速弹窗、缩略图预览、暂停图标、右键加速、单击/双击路由）及 UserControl（控制栏、选集面板） | 有 | Media, Model, Primitives |
-| **Primitives** | 通用 WPF 工具（动画助手、缓动函数、值转换器、自定义 Panel/Adorner） | 有 | 无 |
-| **View** | 页面与窗口组装、页面级动画、全屏过渡动画 | 有 | Controls, Media, Model, Primitives |
-| **Resources** | 静态图标资源 | — | 无 |
+| 层 | 职责 | 规则 |
+|----|------|------|
+| **Model** | 数据实体、JSON 序列化、文件 IO、ffmpeg 进程管理 | 零 WPF 依赖，不引用 `System.Windows.*` |
+| **Media** | LibVLC 封装、快捷键映射、帧适配 | 仅 `VideoFrameProvider` 持有 WPF 依赖（`WriteableBitmap`），不引用 XAML 控件 |
+| **Interaction** | 播放器交互行为（纯 C#，无 XAML） | 构造注入 WPF 元素，可引用 Primitives；不定义 XAML、不继承 `UserControl` |
+| **Controls** | WPF UserControl | `.xaml` + `.cs` 成对出现；可组合 `Interaction` 中的行为类 |
+| **Primitives** | 通用 WPF 工具（动画助手、缓动函数、值转换器、自定义 Panel/Adorner） | 不依赖任何业务层 |
+| **View** | 页面与窗口组装、页面级动画 | 组装 Controls + Interaction + Media；处理全屏过渡、页面导航 |
 
 无 DI 容器，通信方式：
-- 跨层依赖通过构造函数注入（如 ControlBarView 接收 `MediaPlayerController`、`PlayerInputHandler`、`ThumbnailGenerator`）
-- 同层/跨层通知通过 C# event（如 `SpeedChanged`、`EpisodeSelected`、`ProgressUpdated`）
-- 全局单例通过 `Singleton` 模式（`SettingsService.Instance`、`ThumbnailGenerator.Instance`）
-- `PlayerPage` 和 `FullscreenWindow` 各自持有独立的 Controller 实例（`PauseOverlayController`、`RightHoldSpeedController`、`ClickRouter`），通过构造时传入的 `Action` 委托适配差异
+- 跨层依赖通过构造函数注入（如 `ControlBarView` 接收 `MediaPlayerController`、`PlayerInputHandler`、`ThumbnailGenerator`）
+- 分层通知通过 C# event（`SpeedChanged`、`EpisodeSelected`、`ProgressUpdated`）
+- 全局单例通过 `Singleton` 模式懒初始化（`SettingsService.Instance`、`ThumbnailGenerator.Instance`）
+- `PlayerPage` 和 `FullscreenWindow` 各自持有独立的 `Interaction` 类实例，通过构造时传入的 `Action` 委托适配差异（如 `ClickRouter` 在 PlayerPage 双击→全屏，在 FullscreenWindow 双击→退出全屏）
 
 ## 环境要求
 

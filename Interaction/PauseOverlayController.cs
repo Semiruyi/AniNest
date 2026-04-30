@@ -4,7 +4,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using LocalPlayer.Primitives;
 
-namespace LocalPlayer.Controls;
+namespace LocalPlayer.Interaction;
 
 /// <summary>
 /// 暂停大图标动画控制器，PlayerPage 和 FullscreenWindow 共用。

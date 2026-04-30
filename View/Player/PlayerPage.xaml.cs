@@ -13,6 +13,7 @@ using LocalPlayer.Primitives;
 using LocalPlayer.Model;
 using LocalPlayer.Media;
 using LocalPlayer.Controls;
+using LocalPlayer.Interaction;
 using LocalPlayer.View.Player;
 using LocalPlayer.View.Settings;
 

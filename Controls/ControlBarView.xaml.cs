@@ -9,6 +9,7 @@ using System.Windows.Media.Imaging;
 using LocalPlayer.Primitives;
 using LocalPlayer.Model;
 using LocalPlayer.Media;
+using LocalPlayer.Interaction;
 
 // 消歧义：UseWindowsForms 隐式导入与 WPF 类型冲突
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;

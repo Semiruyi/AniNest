@@ -4,7 +4,7 @@ using System.Windows.Threading;
 using LocalPlayer.Media;
 
 
-namespace LocalPlayer.Controls;
+namespace LocalPlayer.Interaction;
 
 /// <summary>
 /// 右键长按倍速控制器：按住右键 350ms 后切换到指定倍速，松手恢复。
