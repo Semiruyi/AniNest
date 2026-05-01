@@ -9,7 +9,7 @@
              xmlns:converters="clr-namespace:LocalPlayer.Converters"
              Background="{StaticResource BackgroundDark}"
              Focusable="True"
-             behaviors:FocusOnLoadedBehavior.Enabled="True"
+             behaviors:LoadedCommandBehavior.FocusOnLoaded="True"
              behaviors:KeyboardBehavior.KeyDownCommand="{Binding KeyDownCommand}">
     <UserControl.Resources>
         <ResourceDictionary>

@@ -5,6 +5,8 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media.Animation;
 using Microsoft.Extensions.DependencyInjection;
+using CommunityToolkit.Mvvm.Messaging;
+using LocalPlayer.Messages;
 using LocalPlayer.Model;
 using LocalPlayer.View.Animations;
 using LocalPlayer.View.Library;
@@ -30,6 +32,10 @@ public partial class MainWindow : Window
         App.LogStartup("MainWindow 构造函数开始");
         InitializeComponent();
         App.LogStartup($"MainWindow.InitializeComponent 完成，耗时 {sw.ElapsedMilliseconds}ms");
+
+        WeakReferenceMessenger.Default.Register<FolderSelectedMessage>(this, (_, m) =>
+            _ = MainPage_FolderSelected(m));
+
         Loaded += MainWindow_Loaded;
         App.LogStartup($"MainWindow 构造函数完成，总耗时 {sw.ElapsedMilliseconds}ms");
     }
@@ -61,11 +67,8 @@ public partial class MainWindow : Window
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         App.LogStartup("ShowMainPage 开始");
-        if (mainPage != null)
-            mainPage.FolderSelected -= MainPage_FolderSelected;
         mainPage = _services.GetRequiredService<MainPage>();
         App.LogStartup($"MainPage 构造函数完成，耗时 {sw.ElapsedMilliseconds}ms");
-        mainPage.FolderSelected += MainPage_FolderSelected;
         PageHost.Content = mainPage;
         playerPage = null;
         App.LogStartup($"ShowMainPage 完成，总耗时 {sw.ElapsedMilliseconds}ms");
@@ -82,14 +85,14 @@ public partial class MainWindow : Window
             onCompleted: () => TransitionMask.Visibility = Visibility.Collapsed);
     }
 
-    private async void MainPage_FolderSelected(object? sender, string folderPath, string folderName)
+    private async Task MainPage_FolderSelected(FolderSelectedMessage m)
     {
         await FadeMaskToBlackAsync(300);
 
         playerPage = _services.GetRequiredService<PlayerPage>();
         var playerVm = (PlayerViewModel)playerPage.DataContext;
         playerVm.BackRequested += PlayerPage_BackRequested;
-        playerPage.LoadFolder(folderPath, folderName);
+        playerPage.LoadFolder(m.Path, m.Name);
         PageHost.Content = playerPage;
 
         await Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.Loaded);

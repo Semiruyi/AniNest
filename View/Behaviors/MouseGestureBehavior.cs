@@ -152,7 +152,7 @@ public static class MouseGestureBehavior
                 {
                     s.HoldFired = true;
                     Log($"{tag} Hold {dur}ms");
-                    Execute(GetCmd(el, Hold(left)));
+                    Execute(GetCmd(el, Hold(left)), GetCommandParameter(el));
                 }
             });
             s.HoldTimer.Start();
@@ -172,14 +172,14 @@ public static class MouseGestureBehavior
         {
             s.Pending = false;
             Log($"{tag} ▲ → DoubleClick");
-            Execute(GetCmd(el, DoubleClick(left)));
+            Execute(GetCmd(el, DoubleClick(left)), GetCommandParameter(el));
             return;
         }
 
         if (s.HoldFired)
         {
             s.HoldFired = false;
-            Execute(GetCmd(el, HoldRelease(left)));
+            Execute(GetCmd(el, HoldRelease(left)), GetCommandParameter(el));
             return;
         }
 
@@ -187,12 +187,13 @@ public static class MouseGestureBehavior
         if (doubleCmd != null)
         {
             int win = GetDoubleClickWindow(el);
-            s.WaitTimer = NewTimer(win, () => Execute(GetCmd(el, Click(left))));
+            var param = GetCommandParameter(el);
+            s.WaitTimer = NewTimer(win, () => Execute(GetCmd(el, Click(left)), param));
             s.WaitTimer.Start();
         }
         else
         {
-            Execute(GetCmd(el, Click(left)));
+            Execute(GetCmd(el, Click(left)), GetCommandParameter(el));
         }
     }
 
@@ -228,9 +229,16 @@ public static class MouseGestureBehavior
 
     private static void Log(string msg) => AppLog.Debug(nameof(MouseGestureBehavior), msg);
 
-    private static void Execute(ICommand? cmd)
+    public static readonly DependencyProperty CommandParameterProperty =
+        DependencyProperty.RegisterAttached("CommandParameter", typeof(object), typeof(MouseGestureBehavior),
+            new PropertyMetadata(null));
+
+    public static object? GetCommandParameter(DependencyObject o) => o.GetValue(CommandParameterProperty);
+    public static void SetCommandParameter(DependencyObject o, object? v) => o.SetValue(CommandParameterProperty, v);
+
+    private static void Execute(ICommand? cmd, object? param = null)
     {
-        if (cmd?.CanExecute(null) == true) cmd.Execute(null);
+        if (cmd?.CanExecute(param) == true) cmd.Execute(param);
     }
 
     private static DispatcherTimer NewTimer(int ms, Action action)

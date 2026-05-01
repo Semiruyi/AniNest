@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using LocalPlayer.Messages;
 using LocalPlayer.Model;
 
 namespace LocalPlayer.ViewModel;
@@ -32,8 +34,6 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty]
     private bool _isThumbnailProgressVisible;
 
-    public event Action<object, string, string>? FolderSelected;
-
     public MainPageViewModel(ISettingsService settings, IThumbnailGenerator thumbnailGenerator)
     {
         _settings = settings;
@@ -44,6 +44,18 @@ public partial class MainPageViewModel : ObservableObject
         _thumbnailGenerator.ProgressChanged += (_, args) =>
             Application.Current.Dispatcher.BeginInvoke(
                 () => UpdateThumbnailProgress(args.Ready, args.Total));
+    }
+
+    [RelayCommand]
+    private async Task LoadDataAsync()
+    {
+        var loadedItems = await Task.Run(() => LoadFoldersData());
+
+        FolderItems.Clear();
+        foreach (var item in loadedItems)
+            FolderItems.Add(item);
+
+        EnqueueAllFolders(loadedItems);
     }
 
     public List<FolderListItem> LoadFoldersData()
@@ -129,8 +141,17 @@ public partial class MainPageViewModel : ObservableObject
         FolderItems.Add(newItem);
     }
 
-    public void DeleteFolder(FolderListItem item)
+    [RelayCommand]
+    private void SelectFolder(FolderListItem? item)
     {
+        if (item != null)
+            TrySelectFolder(item.Path, out _);
+    }
+
+    [RelayCommand]
+    private void DeleteFolder(FolderListItem? item)
+    {
+        if (item == null) return;
         _settings.RemoveFolder(item.Path);
         _thumbnailGenerator.DeleteForFolder(item.Path);
         FolderItems.Remove(item);
@@ -165,7 +186,7 @@ public partial class MainPageViewModel : ObservableObject
             return false;
         }
         name = Path.GetFileName(path);
-        FolderSelected?.Invoke(this, path, name);
+        WeakReferenceMessenger.Default.Send(new FolderSelectedMessage(path, name));
         return true;
     }
 
