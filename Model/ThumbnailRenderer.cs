@@ -28,11 +28,13 @@ internal class ThumbnailRenderer
 
     private readonly string _ffmpegPath;
     private readonly string _thumbBaseDir;
+    private readonly Func<string, double> _getDuration;
 
-    public ThumbnailRenderer(string ffmpegPath, string thumbBaseDir)
+    public ThumbnailRenderer(string ffmpegPath, string thumbBaseDir, Func<string, double> getDuration)
     {
         _ffmpegPath = ffmpegPath;
         _thumbBaseDir = thumbBaseDir;
+        _getDuration = getDuration;
     }
 
     public async Task<RenderResult> GenerateAsync(
@@ -102,6 +104,7 @@ internal class ThumbnailRenderer
                         if (percent > lastPercent && percent <= 100)
                         {
                             lastPercent = percent;
+                            Log.Debug($"进度回调: {Path.GetFileName(task.VideoPath)}={percent}%");
                             onProgress?.Invoke(task.VideoPath, percent);
                         }
                     }
@@ -168,27 +171,15 @@ internal class ThumbnailRenderer
     {
         try
         {
-            string ffprobePath = _ffmpegPath.Replace("ffmpeg.exe", "ffprobe.exe");
-            var psi = new ProcessStartInfo
-            {
-                FileName = ffprobePath,
-                Arguments = $"-v quiet -show_entries format=duration -of csv=p=0 \"{videoPath}\"",
-                CreateNoWindow = true,
-                UseShellExecute = false,
-                RedirectStandardOutput = true
-            };
-            using var proc = Process.Start(psi);
-            if (proc == null) return 0;
-            var output = proc.StandardOutput.ReadToEnd();
-            proc.WaitForExit(5000);
-            if (double.TryParse(output.Trim(), out var sec))
-                return sec;
+            double sec = _getDuration(videoPath);
+            if (sec <= 0)
+                Log.Warning($"GetVideoDuration=0, 视频={Path.GetFileName(videoPath)}, 进度回调将不触发");
+            return sec;
         }
         catch (Exception ex)
         {
-            Log.Info(
-                $"ffprobe 失败: {ex.Message}");
+            Log.Warning($"获取视频时长异常: {Path.GetFileName(videoPath)}, {ex.GetType().Name}: {ex.Message}");
+            return 0;
         }
-        return 0;
     }
 }

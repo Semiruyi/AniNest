@@ -25,9 +25,7 @@
   <!-- ffmpeg：必须排除单文件打包，因为代码用 Process.Start 调用 -->
   <ItemGroup>
     <Content Include="tools\ffmpeg\ffmpeg.exe" CopyToOutputDirectory="PreserveNewest" Link="ffmpeg.exe" Visible="false"
-             CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
-    <Content Include="tools\ffmpeg\ffprobe.exe" CopyToOutputDirectory="PreserveNewest" Link="ffprobe.exe" Visible="false"
-             CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+             CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Condition="Exists('tools\ffmpeg\ffmpeg.exe')" />
   </ItemGroup>
 
   <ItemGroup>

@@ -122,7 +122,7 @@ View ──→ Controls ──→ Interaction ──→ Media ──→ Model
 - Windows 10/11 (x64)
 - [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 - LibVLCSharp.WPF + VideoLAN.LibVLC.Windows（NuGet 自动还原）
-- ffmpeg.exe + ffprobe.exe（可选，放在 exe 同级目录即可启用缩略图功能）
+- ffmpeg.exe（可选，放在 exe 同级目录即可启用缩略图功能，视频时长通过 VLC 获取）
 
 ## 构建与运行
 

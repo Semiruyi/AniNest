@@ -145,6 +145,7 @@ public class PlaylistManager
         {
             if (string.Equals(item.FilePath, videoPath, StringComparison.OrdinalIgnoreCase))
             {
+                Log.Info($"缩略图就绪: {Path.GetFileName(videoPath)}");
                 item.IsThumbnailReady = true;
                 return;
             }
@@ -159,6 +160,7 @@ public class PlaylistManager
         {
             if (string.Equals(item.FilePath, videoPath, StringComparison.OrdinalIgnoreCase))
             {
+                Log.Debug($"缩略图进度: {Path.GetFileName(videoPath)}={percent}% (Items.Count={Items.Count})");
                 item.ThumbnailProgress = percent;
                 return;
             }

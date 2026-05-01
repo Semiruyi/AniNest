@@ -74,7 +74,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         _thumbBaseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "thumbnails");
         _indexPath = Path.Combine(_thumbBaseDir, "index.json");
         _ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe");
-        _renderer = new ThumbnailRenderer(_ffmpegPath, _thumbBaseDir);
+        _renderer = new ThumbnailRenderer(_ffmpegPath, _thumbBaseDir, GetVideoDuration);
 
         Directory.CreateDirectory(_thumbBaseDir);
         Log.Info($"初始化: thumbBaseDir={_thumbBaseDir}");
@@ -358,7 +358,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             }
             catch (Exception ex)
             {
-                Log.Info($"[ProcessLoop] 生成异常: {ex.GetType().Name}: {ex.Message}");
+                Log.Error($"[ProcessLoop] 生成异常: {ex.GetType().Name}: {ex.Message}");
                 task.State = ThumbnailState.Failed;
                 SaveIndex();
                 UpdateProgress();
@@ -374,13 +374,16 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
         try
         {
-            var result = await _renderer.GenerateAsync(task, ct, VideoProgress);
+            // VideoProgress 是事件，直接传参会被求值为快照（此时可能无订阅者）
+            // 用 lambda 每次动态 Invoke，后订阅的也能收到
+            var result = await _renderer.GenerateAsync(task, ct, (p, v) => VideoProgress?.Invoke(p, v));
 
             if (result.State == ThumbnailState.Ready)
             {
                 task.State = ThumbnailState.Ready;
                 task.TotalFrames = result.FrameCount;
                 lock (_taskLock) { _readyCount++; }
+                Log.Debug($"VideoProgress(100%) + VideoReady: {Path.GetFileName(task.VideoPath)}, 订阅者={(VideoProgress != null ? "有" : "无")}");
                 VideoProgress?.Invoke(task.VideoPath, 100);
                 VideoReady?.Invoke(task.VideoPath);
             }
@@ -457,7 +460,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
         catch (Exception ex)
         {
-            Log.Info($"[CleanupTemp] 清理异常: {ex.Message}");
+            Log.Error($"[CleanupTemp] 清理异常: {ex.Message}");
         }
     }
 
@@ -515,7 +518,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             }
             catch (Exception ex)
             {
-                Log.Info($"[ExpiryCleanup] 删除目录失败: {dir}, {ex.Message}");
+                Log.Error($"[ExpiryCleanup] 删除目录失败: {dir}, {ex.Message}");
             }
 
             lock (_taskLock)
@@ -580,7 +583,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
         catch (Exception ex)
         {
-            Log.Info($"[SaveIndex] 保存异常: {ex.Message}");
+            Log.Error($"[SaveIndex] 保存异常: {ex.Message}");
         }
     }
 
@@ -601,6 +604,51 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     }
 
     // ========== 工具 ==========
+
+    private static double GetVideoDuration(string videoPath)
+    {
+        try
+        {
+            string ffmpeg = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe");
+            if (!File.Exists(ffmpeg)) return 0;
+            var psi = new ProcessStartInfo
+            {
+                FileName = ffmpeg,
+                Arguments = $"-i \"{videoPath}\"",
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true
+            };
+            using var proc = Process.Start(psi);
+            if (proc == null) return 0;
+            string stderr = proc.StandardError.ReadToEnd();
+            proc.WaitForExit(5000);
+            // ffmpeg stderr: "  Duration: 00:24:00.04, start: ..."
+            int idx = stderr.IndexOf("Duration:", StringComparison.Ordinal);
+            if (idx >= 0)
+            {
+                int start = idx + 9;
+                while (start < stderr.Length && stderr[start] == ' ') start++;
+                int end = stderr.IndexOf(',', start);
+                if (end > start)
+                {
+                    string dur = stderr.Substring(start, end - start).Trim();
+                    if (TimeSpan.TryParse(dur, out var ts))
+                    {
+                        Log.Info($"ffmpeg 时长: {Path.GetFileName(videoPath)}={ts.TotalSeconds:F1}s");
+                        return ts.TotalSeconds;
+                    }
+                }
+            }
+            Log.Warning($"ffmpeg 时长解析失败: {Path.GetFileName(videoPath)}");
+        }
+        catch (Exception ex)
+        {
+            Log.Warning($"VLC 获取时长异常: {Path.GetFileName(videoPath)}, {ex.GetType().Name}: {ex.Message}");
+        }
+        return 0;
+    }
 
     private static string ComputeMd5(string input)
     {

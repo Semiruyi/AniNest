@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -14,6 +15,7 @@ namespace LocalPlayer.ViewModel.Player;
 
 public partial class PlayerViewModel : ObservableObject
 {
+    private static readonly Logger Log = AppLog.For<PlayerViewModel>();
     private readonly ISettingsService _settings;
     private readonly IMediaPlayerController _media;
     private readonly PlayerInputHandler _inputHandler;
@@ -90,13 +92,23 @@ public partial class PlayerViewModel : ObservableObject
             Application.Current.Dispatcher.Invoke(() =>
             {
                 if (_initialized)
+                {
+                    Log.Debug($"VideoReady → UpdateThumbnailReady: {Path.GetFileName(path)}");
                     _playlistManager.UpdateThumbnailReady(path);
+                }
+                else
+                    Log.Debug($"VideoReady 跳过 (_initialized=false): {Path.GetFileName(path)}");
             });
         thumbnailGenerator.VideoProgress += (path, percent) =>
             Application.Current.Dispatcher.Invoke(() =>
             {
                 if (_initialized)
+                {
+                    Log.Debug($"VideoProgress → UpdateThumbnailProgress: {Path.GetFileName(path)}={percent}%");
                     _playlistManager.UpdateThumbnailProgress(path, percent);
+                }
+                else
+                    Log.Debug($"VideoProgress 跳过 (_initialized=false): {Path.GetFileName(path)}={percent}%");
             });
 
         // 定时保存
