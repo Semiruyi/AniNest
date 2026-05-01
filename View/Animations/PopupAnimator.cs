@@ -13,18 +13,19 @@ namespace LocalPlayer.View.Animations;
 public class PopupAnimator
 {
     private readonly UIElement _element;
-    private readonly double _hideToScale;
-    private readonly int _hideDurationMs;
-    private readonly IEasingFunction _hideEase;
+    private readonly ExitEffect _exitEffect;
 
     public PopupAnimator(UIElement element,
         double hideToScale = 0, int hideDurationMs = 180,
         IEasingFunction? hideEase = null)
     {
         _element = element;
-        _hideToScale = hideToScale;
-        _hideDurationMs = hideDurationMs;
-        _hideEase = hideEase ?? AnimationHelper.EaseIn;
+        _exitEffect = new ExitEffect
+        {
+            Scale = new AnimationEffect { From = 1.0, To = hideToScale, DurationMs = hideDurationMs, Easing = hideEase ?? AnimationHelper.EaseIn },
+            Opacity = new AnimationEffect { From = 1, To = 0, DurationMs = hideDurationMs, Easing = hideEase ?? AnimationHelper.EaseIn },
+            Origin = ExitEffect.Default.Origin,
+        };
     }
 
     public void Show()
@@ -34,9 +35,7 @@ public class PopupAnimator
 
     public void Hide(Action? onCompleted = null)
     {
-        if (_element.RenderTransform is not ScaleTransform scale) return;
-        AnimationHelper.AnimateScaleTransform(scale, _hideToScale, _hideDurationMs, _hideEase);
-        AnimationHelper.AnimateFromCurrent(_element, UIElement.OpacityProperty, 0, _hideDurationMs, _hideEase, onCompleted);
+        AnimationHelper.ApplyExit(_element, _exitEffect, onCompleted);
     }
 
     public void ShowImmediate()

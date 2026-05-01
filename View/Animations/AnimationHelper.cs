@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -154,5 +155,28 @@ public static class AnimationHelper
         var opacityAnim = effect.Opacity.ToDoubleAnimation(beginTimeMs);
         opacityAnim.Completed += (_, _) => element.Opacity = effect.Opacity.To;
         element.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
+    }
+
+    public static void ApplyExit(UIElement element, ExitEffect effect, Action? onCompleted = null)
+    {
+        element.RenderTransformOrigin = effect.Origin;
+        element.IsHitTestVisible = false;
+
+        var scale = element.RenderTransform as ScaleTransform
+                    ?? (element.RenderTransform as TransformGroup)?.Children
+                        .OfType<ScaleTransform>().FirstOrDefault();
+        if (scale != null)
+        {
+            double curX = scale.ScaleX;
+            double curY = scale.ScaleY;
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            scale.ScaleX = curX;
+            scale.ScaleY = curY;
+            AnimateScaleTransform(scale, effect.Scale.To, effect.Scale.DurationMs, effect.Scale.Easing);
+        }
+
+        Animate(element, UIElement.OpacityProperty, effect.Opacity.From, effect.Opacity.To,
+            effect.Opacity.DurationMs, effect.Opacity.Easing, onCompleted);
     }
 }

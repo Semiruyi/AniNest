@@ -36,3 +36,17 @@ public readonly struct EntranceEffect
         Origin = new Point(0.5, 0.5),
     };
 }
+
+public readonly struct ExitEffect
+{
+    public AnimationEffect Scale { get; init; }
+    public AnimationEffect Opacity { get; init; }
+    public Point Origin { get; init; }
+
+    public static ExitEffect Default => new()
+    {
+        Scale = new AnimationEffect { From = 1.0, To = 0, DurationMs = 300, Easing = AnimationHelper.EaseIn },
+        Opacity = new AnimationEffect { From = 1, To = 0, DurationMs = 300, Easing = AnimationHelper.EaseIn },
+        Origin = new Point(0.5, 0.5),
+    };
+}

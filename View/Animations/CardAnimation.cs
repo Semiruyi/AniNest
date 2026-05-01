@@ -403,23 +403,7 @@ public static class CardAnimation
 
     private static void AnimateContainerExit(FrameworkElement container, int durationMs, Action onCompleted)
     {
-        container.IsHitTestVisible = false;
-        var ease = AnimationHelper.EaseIn;
-        AnimationHelper.AnimateFromCurrent(container, UIElement.OpacityProperty, 0, durationMs, ease, onCompleted);
-
-        var scale = container.RenderTransform as ScaleTransform
-                    ?? (container.RenderTransform as TransformGroup)?.Children
-                        .OfType<ScaleTransform>().FirstOrDefault();
-        if (scale != null)
-        {
-            double curX = scale.ScaleX;
-            double curY = scale.ScaleY;
-            scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-            scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-            scale.ScaleX = curX;
-            scale.ScaleY = curY;
-            AnimationHelper.AnimateScaleTransform(scale, 0, durationMs, ease);
-        }
+        AnimationHelper.ApplyExit(container, ExitEffect.Default, onCompleted);
     }
 
     // ── Helpers ──────────────────────────────────────────────────
