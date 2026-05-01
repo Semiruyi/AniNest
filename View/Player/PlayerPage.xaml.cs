@@ -5,11 +5,10 @@ using LocalPlayer.ViewModel;
 
 namespace LocalPlayer.View.Player;
 
-public partial class PlayerPage : UserControl, IDisposable
+public partial class PlayerPage : UserControl
 {
     private readonly PlayerViewModel _vm;
-
-    public event EventHandler? BackRequested;
+    private bool _disposed;
 
     public PlayerPage(PlayerViewModel vm)
     {
@@ -26,68 +25,22 @@ public partial class PlayerPage : UserControl, IDisposable
             throw;
         }
 
-        Loaded += PlayerPage_Loaded;
-        Unloaded += PlayerPage_Unloaded;
+        _vm.InitializeMedia();
+        VideoImage.Source = _vm.VideoSource;
 
-        _vm.BackRequested += () =>
-        {
-            _vm.SaveProgress();
-            BackRequested?.Invoke(this, EventArgs.Empty);
-        };
-        _vm.OpenKeyBindingsRequested += () =>
-        {
-            var window = new View.Settings.KeyBindingsWindow(new KeyBindingsViewModel(_vm.InputHandler))
-            {
-                Owner = Window.GetWindow(this)
-            };
-            window.ShowDialog();
-        };
-    }
-
-    private void PlayerPage_Loaded(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            _vm.InitializeMedia();
-            VideoImage.Source = _vm.VideoSource;
-
-            if (_pendingFolderPath != null)
-            {
-                var path = _pendingFolderPath;
-                var name = _pendingFolderName ?? "";
-                _pendingFolderPath = null;
-                _pendingFolderName = null;
-                LoadFolder(path, name);
-            }
-        }
-        catch (Exception ex)
-        {
-            PlayerViewModel.LogError("Loaded 异常", ex);
-            throw;
-        }
-    }
-
-    private string? _pendingFolderPath;
-    private string? _pendingFolderName;
-
-    private void PlayerPage_Unloaded(object sender, RoutedEventArgs e)
-    {
-        Dispose();
+        Unloaded += (_, _) => Cleanup();
     }
 
     public void LoadFolder(string folderPath, string folderName)
-    {
-        if (!IsLoaded)
-        {
-            _pendingFolderPath = folderPath;
-            _pendingFolderName = folderName;
-            return;
-        }
-        _vm.LoadFolder(folderPath, folderName);
-    }
+        => _vm.LoadFolder(folderPath, folderName);
 
     public void Dispose()
+        => Cleanup();
+
+    private void Cleanup()
     {
+        if (_disposed) return;
+        _disposed = true;
         _vm.SaveProgress();
         _vm.DisposeMedia();
     }

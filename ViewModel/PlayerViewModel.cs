@@ -31,7 +31,6 @@ public partial class PlayerViewModel : ObservableObject
 
 
     // — 供 View 层处理快捷键窗口 —
-    public event Action? OpenKeyBindingsRequested;
 
     // — 媒体源（替代 View 直接访问 _media.VideoBitmap）—
     public System.Windows.Media.ImageSource? VideoSource => _media.VideoBitmap;
@@ -536,9 +535,6 @@ public partial class PlayerViewModel : ObservableObject
         BackRequested?.Invoke();
     }
 
-    [RelayCommand]
-    private void Settings() => OpenKeyBindingsSettings();
-
     // ========== Right-hold commands — 供 XAML 手势绑定 ==========
 
     [RelayCommand]
@@ -575,7 +571,4 @@ public partial class PlayerViewModel : ObservableObject
 
     public long MediaLength => _media.Length;
 
-    // ========== Settings ==========
-
-    public void OpenKeyBindingsSettings() => OpenKeyBindingsRequested?.Invoke();
 }

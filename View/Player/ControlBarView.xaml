@@ -448,9 +448,6 @@
                 <Button x:Name="PlaylistToggleBtn" Style="{StaticResource IconButton}" Command="{Binding TogglePlaylistCommand}" ToolTip="选集" Focusable="False">
                     <Image Source="/Resources/Icons/playlist.png" Width="16" Height="16"/>
                 </Button>
-                <Button x:Name="SettingsBtn" Style="{StaticResource IconButton}" Command="{Binding SettingsCommand}" ToolTip="快捷键设置" Focusable="False">
-                    <Image Source="/Resources/Icons/settings.png" Width="16" Height="16"/>
-                </Button>
             </StackPanel>
         </Grid>
     </Grid>

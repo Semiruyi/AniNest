@@ -9,6 +9,7 @@ using LocalPlayer.Model;
 using LocalPlayer.View.Animations;
 using LocalPlayer.View.Library;
 using LocalPlayer.View.Player;
+using LocalPlayer.ViewModel;
 
 namespace LocalPlayer.View;
 
@@ -84,7 +85,8 @@ public partial class MainWindow : Window
         await FadeMaskToBlackAsync(300);
 
         playerPage = _services.GetRequiredService<PlayerPage>();
-        playerPage.BackRequested += PlayerPage_BackRequested;
+        var playerVm = (PlayerViewModel)playerPage.DataContext;
+        playerVm.BackRequested += PlayerPage_BackRequested;
         playerPage.LoadFolder(folderPath, folderName);
         PageHost.Content = playerPage;
 
@@ -93,7 +95,7 @@ public partial class MainWindow : Window
         await FadeMaskFromBlackAsync(350);
     }
 
-    private async void PlayerPage_BackRequested(object? sender, System.EventArgs e)
+    private async void PlayerPage_BackRequested()
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         Log("BackRequested 开始");
