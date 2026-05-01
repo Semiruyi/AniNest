@@ -15,7 +15,10 @@ public static class AnimationHelper
 
     public static IEasingFunction EaseInOut => _easeInOut ??= new CubicEase { EasingMode = EasingMode.EaseInOut };
     public static IEasingFunction EaseOut => _easeOut ??= new CubicEase { EasingMode = EasingMode.EaseOut };
-    public static IEasingFunction EaseIn => _easeIn ??= new CubicEase { EasingMode = EasingMode.EaseIn };
+
+    // 删除等退出动画用 Material 标准 Accelerate 曲线 (0.4,0,1,1),
+    // t=0.5 时进度 35%, 比原生 CubicEase-In (12.5%) 启动快得多
+    public static IEasingFunction EaseIn => _easeIn ??= new CubicBezierEase { X1 = 0.4, Y1 = 0, X2 = 1, Y2 = 1 };
 
     public static DoubleAnimation CreateAnim(double from, double to, int durationMs, IEasingFunction? ease = null, int beginTimeMs = 0)
     {
