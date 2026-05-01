@@ -32,7 +32,14 @@
                                 Background="{StaticResource SurfaceDark}"
                                 CornerRadius="10" Cursor="Hand"
                                 behaviors:MouseGestureBehavior.LeftClick="{Binding DataContext.SelectFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                behaviors:MouseGestureBehavior.CommandParameter="{Binding}">
+                                behaviors:MouseGestureBehavior.CommandParameter="{Binding}"
+                                animations:CardAnimation.Enabled="True"
+                                animations:CardAnimation.HoverDurationMs="250"
+                                animations:CardAnimation.PressDipMs="100"
+                                animations:CardAnimation.PressRecoverMs="350"
+                                animations:CardAnimation.CoverScale="1.12"
+                                animations:CardAnimation.CoverShiftY="-8"
+                                animations:CardAnimation.CoverDurationMs="400">
                             <Border.Effect>
                                 <DropShadowEffect Color="Black" BlurRadius="10" ShadowDepth="3" Opacity="0.35"/>
                             </Border.Effect>
