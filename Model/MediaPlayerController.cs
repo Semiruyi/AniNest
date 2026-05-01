@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LibVLCSharp.Shared;
@@ -38,9 +39,14 @@ public class MediaPlayerController : IMediaPlayerController
     public event EventHandler? Stopped;
     public event EventHandler<ProgressUpdatedEventArgs>? ProgressUpdated;
 
+    static MediaPlayerController()
+    {
+        Task.Run(Preinitialize);
+    }
+
     /// <summary>
-    /// 全局预热 LibVLC，建议在应用启动时于后台线程调用，
-    /// 可显著缩短第一次进入播放页时的等待时间。
+    /// 全局预热 LibVLC，可显著缩短第一次进入播放页时的等待时间。
+    /// 由静态构造函数在后台触发，无需外部调用。
     /// </summary>
     public static void Preinitialize()
     {

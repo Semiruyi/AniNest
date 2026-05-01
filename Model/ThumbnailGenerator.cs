@@ -40,7 +40,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(ThumbnailGenerator), message, ex);
 
     // Dependencies
-    private Func<int>? _getExpiryDays;
+    private readonly ISettingsService _settings;
 
     // Paths
     private readonly string _thumbBaseDir;
@@ -69,8 +69,9 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     public bool IsFfmpegAvailable => _ffmpegAvailable;
 
-    public ThumbnailGenerator()
+    public ThumbnailGenerator(ISettingsService settings)
     {
+        _settings = settings;
         _thumbBaseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "thumbnails");
         _indexPath = Path.Combine(_thumbBaseDir, "index.json");
         _ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe");
@@ -78,15 +79,12 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
         Directory.CreateDirectory(_thumbBaseDir);
         Log($"初始化: thumbBaseDir={_thumbBaseDir}");
+
+        Task.Run(Initialize);
     }
 
-    /// <summary>
-    /// 启动时调用：加载索引、清理残留、检测 ffmpeg。
-    /// </summary>
-    public void Initialize(Func<int> getExpiryDays)
+    private void Initialize()
     {
-        _getExpiryDays = getExpiryDays;
-
         var sw = Stopwatch.StartNew();
         Log("[Initialize] 开始初始化");
 
@@ -98,7 +96,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
         else
         {
-            // 获取 ffmpeg 版本
             try
             {
                 var versionProc = Process.Start(new ProcessStartInfo
@@ -488,7 +485,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private void CleanupExpired()
     {
-        int expiryDays = _getExpiryDays?.Invoke() ?? 30;
+        int expiryDays = _settings.GetThumbnailExpiryDays();
 
         if (expiryDays <= 0) return; // 永不过期
 

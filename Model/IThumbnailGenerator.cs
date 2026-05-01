@@ -14,6 +14,8 @@ public interface IThumbnailGenerator
         string? lastPlayedPath, HashSet<string> playedPaths);
     void DeleteForFolder(string folderPath);
 
+    void Shutdown();
+
     event EventHandler<ThumbnailProgressEventArgs>? ProgressChanged;
     event Action<string, int>? VideoProgress;
     event Action<string>? VideoReady;
