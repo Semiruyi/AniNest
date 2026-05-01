@@ -21,13 +21,27 @@ public static class ButtonScaleHover
     public static bool GetIsEnabled(DependencyObject obj) => (bool)obj.GetValue(IsEnabledProperty);
     public static void SetIsEnabled(DependencyObject obj, bool value) => obj.SetValue(IsEnabledProperty, value);
 
+    public static readonly DependencyProperty HoverScaleProperty =
+        DependencyProperty.RegisterAttached("HoverScale", typeof(double), typeof(ButtonScaleHover),
+            new PropertyMetadata(1.2));
+
+    public static double GetHoverScale(DependencyObject obj) => (double)obj.GetValue(HoverScaleProperty);
+    public static void SetHoverScale(DependencyObject obj, double value) => obj.SetValue(HoverScaleProperty, value);
+
+    public static readonly DependencyProperty PressScaleProperty =
+        DependencyProperty.RegisterAttached("PressScale", typeof(double), typeof(ButtonScaleHover),
+            new PropertyMetadata(0.85));
+
+    public static double GetPressScale(DependencyObject obj) => (double)obj.GetValue(PressScaleProperty);
+    public static void SetPressScale(DependencyObject obj, double value) => obj.SetValue(PressScaleProperty, value);
+
     private static void OnIsEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is not Button btn || !(bool)e.NewValue) return;
         btn.Loaded += (_, _) =>
         {
             if (btn.Template.FindName("AnimScale", btn) is ScaleTransform st)
-                Attach(btn, st);
+                Attach(btn, st, GetHoverScale(btn), GetPressScale(btn));
         };
     }
 

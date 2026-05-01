@@ -29,12 +29,15 @@
                 <Setter Property="FontWeight" Value="Medium"/>
                 <Setter Property="FontSize" Value="15"/>
                 <Setter Property="FontFamily" Value="Segoe UI, Microsoft YaHei, sans-serif"/>
+                <Setter Property="anim:ButtonScaleHover.IsEnabled" Value="True"/>
+                <Setter Property="anim:ButtonScaleHover.HoverScale" Value="1.04"/>
+                <Setter Property="anim:ButtonScaleHover.PressScale" Value="0.96"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
                             <Grid x:Name="ButtonRoot" RenderTransformOrigin="0.5,0.5">
                                 <Grid.RenderTransform>
-                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                    <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
                                 </Grid.RenderTransform>
                                 <Border x:Name="BgBorder" CornerRadius="14">
                                     <Border.Background>
@@ -76,20 +79,6 @@
                                     <Trigger.EnterActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                    To="1.04" Duration="0:0:0.2">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <CubicEase EasingMode="EaseOut"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                    To="1.04" Duration="0:0:0.2">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <CubicEase EasingMode="EaseOut"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
                                                 <ColorAnimation Storyboard.TargetName="BgBrush"
                                                     Storyboard.TargetProperty="Color"
                                                     To="#3A3A3C" Duration="0:0:0.2"/>
@@ -99,20 +88,6 @@
                                     <Trigger.ExitActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                    To="1" Duration="0:0:0.25">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <CubicEase EasingMode="EaseOut"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                    To="1" Duration="0:0:0.25">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <CubicEase EasingMode="EaseOut"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
                                                 <ColorAnimation Storyboard.TargetName="BgBrush"
                                                     Storyboard.TargetProperty="Color"
                                                     Duration="0:0:0.25" FillBehavior="Stop"/>
@@ -125,20 +100,6 @@
                                     <Trigger.EnterActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                    To="0.96" Duration="0:0:0.08">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <CubicEase EasingMode="EaseOut"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                    To="0.96" Duration="0:0:0.08">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <CubicEase EasingMode="EaseOut"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
                                                 <ColorAnimation Storyboard.TargetName="BgBrush"
                                                     Storyboard.TargetProperty="Color"
                                                     To="#1C1C1E" Duration="0:0:0.08"/>
@@ -148,20 +109,6 @@
                                     <Trigger.ExitActions>
                                         <BeginStoryboard>
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                    To="1" Duration="0:0:0.4">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <CubicEase EasingMode="EaseOut"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                    To="1" Duration="0:0:0.4">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <CubicEase EasingMode="EaseOut"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
                                                 <ColorAnimation Storyboard.TargetName="BgBrush"
                                                     Storyboard.TargetProperty="Color"
                                                     Duration="0:0:0.25" FillBehavior="Stop"/>

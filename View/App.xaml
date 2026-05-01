@@ -4,6 +4,10 @@
              >
     <Application.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/View/Styles/SharedStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
             <!-- 核心颜色 -->
             <SolidColorBrush x:Key="BackgroundDark" Color="#FF0A0A0A"/>
             <SolidColorBrush x:Key="SurfaceDark" Color="#FF141414"/>

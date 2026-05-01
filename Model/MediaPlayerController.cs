@@ -15,7 +15,7 @@ public class MediaPlayerController : IMediaPlayerController
     private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(MediaPlayerController), message, ex);
 
     private static LibVLC? _sharedLibVLC;
-    private static readonly object _sharedLibVLock = new();
+    private static Task<LibVLC>? _preinitTask;
 
     private LibVLC? libVLC;
     private MediaPlayer? mediaPlayer;
@@ -41,32 +41,14 @@ public class MediaPlayerController : IMediaPlayerController
 
     static MediaPlayerController()
     {
-        Task.Run(Preinitialize);
-    }
-
-    /// <summary>
-    /// 全局预热 LibVLC，可显著缩短第一次进入播放页时的等待时间。
-    /// 由静态构造函数在后台触发，无需外部调用。
-    /// </summary>
-    public static void Preinitialize()
-    {
-        lock (_sharedLibVLock)
+        _preinitTask = Task.Run(() =>
         {
-            if (_sharedLibVLC == null)
-            {
-                try
-                {
-                    Log("[Preinitialize] 开始创建全局 LibVLC...");
-                    _sharedLibVLC = new LibVLC();
-                    Log("[Preinitialize] 全局 LibVLC 创建成功");
-                }
-                catch (Exception ex)
-                {
-                    Log($"[Preinitialize] 失败: {ex.Message}");
-                    throw;
-                }
-            }
-        }
+            Log("[Preinitialize] 开始创建全局 LibVLC...");
+            var vlc = new LibVLC();
+            _sharedLibVLC = vlc;
+            Log("[Preinitialize] 全局 LibVLC 创建成功");
+            return vlc;
+        });
     }
 
     public void Initialize()
@@ -74,15 +56,13 @@ public class MediaPlayerController : IMediaPlayerController
         try
         {
             Log("开始初始化 LibVLC...");
-            lock (_sharedLibVLock)
+            var vlc = _sharedLibVLC;
+            if (vlc == null)
             {
-                if (_sharedLibVLC == null)
-                {
-                    _sharedLibVLC = new LibVLC();
-                    Log("LibVLC 创建成功(非预热)");
-                }
-                libVLC = _sharedLibVLC;
+                vlc = _preinitTask!.GetAwaiter().GetResult();
+                Log("等待预热 LibVLC 完成");
             }
+            libVLC = vlc;
 
             mediaPlayer = new MediaPlayer(libVLC);
             Log("MediaPlayer 创建成功");
