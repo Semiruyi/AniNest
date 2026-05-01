@@ -1,7 +1,9 @@
+using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using GeneratorStatus = System.Windows.Controls.Primitives.GeneratorStatus;
 
 namespace LocalPlayer.View.Animations;
@@ -46,7 +48,34 @@ public static class StaggeredItemsAnimation
         var ic = (ItemsControl)sender;
         ic.Loaded -= OnLoaded;
         ic.SetValue(NextIndexProperty, 0);
+
         ic.ItemContainerGenerator.StatusChanged += (_, _) => AnimatePending(ic);
+
+        // 初始加载后 generator 一直处于 ContainersGenerated，新增单个 item 不改变状态，
+        // StatusChanged 不会再触发，因此直接监听集合变化来捕获后续的 Add。
+        if (ic.ItemsSource is INotifyCollectionChanged ncc)
+        {
+            ncc.CollectionChanged += (_, args) =>
+            {
+                if (args.Action == NotifyCollectionChangedAction.Add)
+                {
+                    ic.Dispatcher.BeginInvoke(
+                        new Action(() => AnimatePending(ic)),
+                        DispatcherPriority.Loaded);
+                }
+                else if (args.Action == NotifyCollectionChangedAction.Remove)
+                {
+                    int nextIdx = (int)ic.GetValue(NextIndexProperty);
+                    if (args.OldStartingIndex < nextIdx)
+                        ic.SetValue(NextIndexProperty, nextIdx - 1);
+                }
+                else if (args.Action == NotifyCollectionChangedAction.Reset)
+                {
+                    ic.SetValue(NextIndexProperty, 0);
+                }
+            };
+        }
+
         AnimatePending(ic);
     }
 

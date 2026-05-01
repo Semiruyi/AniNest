@@ -179,6 +179,18 @@ public static class CardAnimation
         border.MouseLeave += OnMouseLeave;
         border.PreviewMouseLeftButtonDown += OnMouseDown;
         border.PreviewMouseLeftButtonUp += OnMouseUp;
+
+        // 删除按钮初始隐藏 (Opacity=0 + Scale=0)
+        var deleteBtn = FindChild<Button>(border);
+        if (deleteBtn != null)
+        {
+            deleteBtn.Opacity = 0;
+            deleteBtn.IsHitTestVisible = false;
+            deleteBtn.RenderTransformOrigin = new Point(0.5, 0.5);
+            deleteBtn.RenderTransform = new ScaleTransform(0, 0);
+            deleteBtn.PreviewMouseDown += OnDeleteBtnDown;
+            deleteBtn.PreviewMouseUp += OnDeleteBtnUp;
+        }
     }
 
     // ── Hover Enter ──────────────────────────────────────────────
@@ -213,6 +225,15 @@ public static class CardAnimation
             AnimationHelper.AnimateScaleTransform((ScaleTransform)g.Children[0], coverScale, coverMs, ease);
             AnimationHelper.AnimateFromCurrent(g.Children[1], TranslateTransform.YProperty, coverShiftY, coverMs, ease);
         }
+
+        // 删除按钮显示 (scale + opacity, 参考 PopupAnimator)
+        var deleteBtn = FindChild<Button>(border);
+        if (deleteBtn != null && deleteBtn.RenderTransform is ScaleTransform btnScale)
+        {
+            deleteBtn.IsHitTestVisible = true;
+            AnimationHelper.AnimateFromCurrent(deleteBtn, UIElement.OpacityProperty, 1, hoverMs, ease);
+            AnimationHelper.AnimateScaleTransform(btnScale, 1, hoverMs, ease);
+        }
     }
 
     // ── Hover Leave ──────────────────────────────────────────────
@@ -240,6 +261,26 @@ public static class CardAnimation
         {
             AnimationHelper.AnimateScaleTransform((ScaleTransform)g.Children[0], 1.0, coverMs, ease);
             AnimationHelper.AnimateFromCurrent(g.Children[1], TranslateTransform.YProperty, 0, coverMs, ease);
+        }
+
+        // 删除按钮隐藏 (scale + opacity, 参考 PopupAnimator)
+        var deleteBtn = FindChild<Button>(border);
+        if (deleteBtn != null && deleteBtn.RenderTransform is ScaleTransform btnScale)
+        {
+            var pos = e.GetPosition(border);
+            // 如果鼠标仍在 Border 范围内（因子元素捕获鼠标导致的伪 Leave），跳过隐藏
+            if (pos.X >= 0 && pos.Y >= 0 && pos.X <= border.ActualWidth && pos.Y <= border.ActualHeight)
+                return;
+            deleteBtn.IsHitTestVisible = false;
+            // 先固化当前动画值，避免 AnimateScaleTransform 内部 BeginAnimation(null) 回退到 base value
+            double curX = btnScale.ScaleX;
+            double curY = btnScale.ScaleY;
+            btnScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            btnScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            btnScale.ScaleX = curX;
+            btnScale.ScaleY = curY;
+            AnimationHelper.AnimateFromCurrent(deleteBtn, UIElement.OpacityProperty, 0, leaveMs, ease);
+            AnimationHelper.AnimateScaleTransform(btnScale, 0, leaveMs, ease);
         }
     }
 
@@ -283,6 +324,34 @@ public static class CardAnimation
 
         var ease = AnimationHelper.EaseOut;
         AnimationHelper.AnimateScaleTransform(scale, hoverScale, recoverMs, ease);
+    }
+
+    // ── Delete Button Press (参考 ButtonScaleHover / CardAnimation press) ──
+
+    private static void OnDeleteBtnDown(object sender, MouseButtonEventArgs e)
+    {
+        var btn = (Button)sender;
+        var scale = (ScaleTransform)btn.RenderTransform;
+        double currentX = scale.ScaleX;
+        double currentY = scale.ScaleY;
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        scale.ScaleX = currentX;
+        scale.ScaleY = currentY;
+        AnimationHelper.AnimateScaleTransform(scale, 0.85, 100, AnimationHelper.EaseIn);
+    }
+
+    private static void OnDeleteBtnUp(object sender, MouseButtonEventArgs e)
+    {
+        var btn = (Button)sender;
+        var scale = (ScaleTransform)btn.RenderTransform;
+        double currentX = scale.ScaleX;
+        double currentY = scale.ScaleY;
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        scale.ScaleX = currentX;
+        scale.ScaleY = currentY;
+        AnimationHelper.AnimateScaleTransform(scale, 1.0, 250, AnimationHelper.EaseOut);
     }
 
     // ── Helpers ──────────────────────────────────────────────────
