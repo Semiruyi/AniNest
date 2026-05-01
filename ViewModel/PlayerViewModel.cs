@@ -95,6 +95,12 @@ public partial class PlayerViewModel : ObservableObject
         IsSpeedPopupOpen = true;
     }
 
+    [RelayCommand]
+    private void SpeedEnter() => OnSpeedEnter();
+
+    [RelayCommand]
+    private void SpeedLeave() => OnSpeedLeave();
+
     public void OnSpeedLeave()
     {
         if (_speedCloseTimer == null)
@@ -154,6 +160,12 @@ public partial class PlayerViewModel : ObservableObject
             (_thumbShowTimer ??= CreateThumbShowTimer()).Start();
     }
 
+    [RelayCommand]
+    private void ThumbnailEnter() => OnThumbnailEnter();
+
+    [RelayCommand]
+    private void ThumbnailLeave() => OnThumbnailLeave();
+
     public void OnThumbnailLeave()
     {
         _thumbHovering = false;
@@ -165,6 +177,12 @@ public partial class PlayerViewModel : ObservableObject
     {
         _thumbHideTimer?.Stop();
     }
+
+    [RelayCommand]
+    private void ThumbnailPopupEnter() => OnThumbnailPopupEnter();
+
+    [RelayCommand]
+    private void ThumbnailPopupLeave() => OnThumbnailPopupLeave();
 
     public void OnThumbnailPopupLeave()
     {
@@ -214,6 +232,13 @@ public partial class PlayerViewModel : ObservableObject
                 }
             }
         }
+    }
+
+    [RelayCommand]
+    private void ThumbnailMove(MouseEventArgs e)
+    {
+        if (e.Source is FrameworkElement el)
+            OnThumbnailMove(e.GetPosition(el), el.ActualWidth);
     }
 
     private void ShowThumbnail()
@@ -434,6 +459,9 @@ public partial class PlayerViewModel : ObservableObject
 
     public bool HandleKeyDown(KeyEventArgs e)
         => _inputHandler.HandleKeyDown(e);
+
+    [RelayCommand]
+    private void KeyDown(KeyEventArgs e) => HandleKeyDown(e);
 
     public Dictionary<string, Key> GetCurrentBindings()
         => _inputHandler.GetCurrentBindings();
