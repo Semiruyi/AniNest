@@ -17,9 +17,7 @@ public static class LoadedAnimator
         el.Opacity = 0;
         el.Loaded += (_, _) =>
         {
-            AnimationHelper.Animate(el, UIElement.OpacityProperty, 0, 1, 300,
-                AnimationHelper.EaseInOut,
-                onCompleted: () => el.Opacity = 1);
+            AnimationHelper.ApplyEntrance(el, EntranceEffect.Default);
         };
     }
 }

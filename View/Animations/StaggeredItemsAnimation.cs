@@ -1,8 +1,6 @@
 using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using GeneratorStatus = System.Windows.Controls.Primitives.GeneratorStatus;
 
@@ -85,46 +83,16 @@ public static class StaggeredItemsAnimation
             return;
 
         int stagger = GetStaggerMs(ic);
-        int duration = GetDurationMs(ic);
-        var ease = AnimationHelper.EaseOut;
-        var durationSpan = TimeSpan.FromMilliseconds(duration);
         int index = (int)ic.GetValue(NextIndexProperty);
 
         while (index < ic.Items.Count)
         {
             var container = ic.ItemContainerGenerator.ContainerFromIndex(index) as FrameworkElement;
             if (container == null) break;
-            AnimateContainer(container, index * stagger, durationSpan, ease);
+            AnimationHelper.ApplyEntrance(container, EntranceEffect.Default, index * stagger);
             index++;
         }
 
         ic.SetValue(NextIndexProperty, index);
-    }
-
-    private static void AnimateContainer(FrameworkElement container, int delayMs,
-        TimeSpan duration, IEasingFunction ease)
-    {
-        var group = new TransformGroup();
-        var scale = new ScaleTransform(0.6, 0.6);
-        group.Children.Add(scale);
-        container.RenderTransformOrigin = new Point(0.5, 0.5);
-        container.RenderTransform = group;
-        container.Opacity = 0;
-
-        var scaleAnim = new DoubleAnimation(0.6, 1.0, duration)
-        {
-            BeginTime = TimeSpan.FromMilliseconds(delayMs),
-            EasingFunction = ease
-        };
-        scale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleAnim);
-        scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleAnim);
-
-        var opacityAnim = new DoubleAnimation(0, 1.0, duration)
-        {
-            BeginTime = TimeSpan.FromMilliseconds(delayMs),
-            EasingFunction = ease
-        };
-        opacityAnim.Completed += (_, _) => container.Opacity = 1;
-        container.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
     }
 }

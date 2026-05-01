@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using LocalPlayer.View.Animations;
 
 namespace LocalPlayer.View.Primitives;
 
@@ -16,10 +17,6 @@ public class AnimatedWrapPanel : WrapPanel
 {
     public Duration AnimationDuration { get; set; } = new Duration(TimeSpan.FromMilliseconds(250));
 
-    // Entrance animation
-    public double EntranceFromScale { get; set; } = 0.88;
-    public int EntranceScaleDurationMs { get; set; } = 420;
-    public int EntranceOpacityDurationMs { get; set; } = 320;
     public int EntranceStaggerDelayMs { get; set; } = 35;
 
     private readonly HashSet<UIElement> _entranceDone = new();
@@ -121,41 +118,13 @@ public class AnimatedWrapPanel : WrapPanel
 
     private void AnimateEntrance(List<UIElement> children)
     {
-        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-
         for (int i = 0; i < children.Count; i++)
         {
             var child = children[i];
             if (child == null || !InternalChildren.Contains(child)) continue;
 
             _entranceDone.Add(child);
-
-            child.RenderTransformOrigin = new Point(0.5, 0.5);
-            child.RenderTransform = new ScaleTransform(EntranceFromScale, EntranceFromScale);
-            child.Opacity = 0;
-
-            int delayMs = i * EntranceStaggerDelayMs;
-
-            child.BeginAnimation(OpacityProperty,
-                new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(EntranceOpacityDurationMs))
-                {
-                    BeginTime = TimeSpan.FromMilliseconds(delayMs),
-                    EasingFunction = ease
-                });
-
-            var scale = (ScaleTransform)child.RenderTransform;
-            scale.BeginAnimation(ScaleTransform.ScaleXProperty,
-                new DoubleAnimation(EntranceFromScale, 1.0, TimeSpan.FromMilliseconds(EntranceScaleDurationMs))
-                {
-                    BeginTime = TimeSpan.FromMilliseconds(delayMs),
-                    EasingFunction = ease
-                });
-            scale.BeginAnimation(ScaleTransform.ScaleYProperty,
-                new DoubleAnimation(EntranceFromScale, 1.0, TimeSpan.FromMilliseconds(EntranceScaleDurationMs))
-                {
-                    BeginTime = TimeSpan.FromMilliseconds(delayMs),
-                    EasingFunction = ease
-                });
+            AnimationHelper.ApplyEntrance(child, EntranceEffect.Default, i * EntranceStaggerDelayMs);
         }
     }
 }

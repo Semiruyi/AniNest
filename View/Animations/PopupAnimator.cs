@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
@@ -13,54 +12,43 @@ namespace LocalPlayer.View.Animations;
 /// </summary>
 public class PopupAnimator
 {
-    private readonly ScaleTransform _scale;
     private readonly UIElement _element;
-    private readonly double _showFromScale;
-    private readonly double _showToScale;
-    private readonly int _showDurationMs;
     private readonly double _hideToScale;
     private readonly int _hideDurationMs;
-    private readonly IEasingFunction _showEase;
     private readonly IEasingFunction _hideEase;
 
-    public PopupAnimator(ScaleTransform scale, UIElement element,
-        double showFromScale = 0, double showToScale = 1.0, int showDurationMs = 250,
+    public PopupAnimator(UIElement element,
         double hideToScale = 0, int hideDurationMs = 180,
-        IEasingFunction? showEase = null, IEasingFunction? hideEase = null)
+        IEasingFunction? hideEase = null)
     {
-        _scale = scale;
         _element = element;
-        _showFromScale = showFromScale;
-        _showToScale = showToScale;
-        _showDurationMs = showDurationMs;
         _hideToScale = hideToScale;
         _hideDurationMs = hideDurationMs;
-        _showEase = showEase ?? AnimationHelper.EaseOut;
         _hideEase = hideEase ?? AnimationHelper.EaseIn;
     }
 
     public void Show()
     {
-        _scale.ScaleX = _showFromScale;
-        _scale.ScaleY = _showFromScale;
-        _element.Opacity = 0;
-        AnimationHelper.AnimateScaleTransform(_scale, _showToScale, _showDurationMs, _showEase);
-        AnimationHelper.Animate(_element, UIElement.OpacityProperty, 0, 1, _showDurationMs, _showEase);
+        AnimationHelper.ApplyEntrance(_element, EntranceEffect.Default);
     }
 
     public void Hide(Action? onCompleted = null)
     {
-        AnimationHelper.AnimateScaleTransform(_scale, _hideToScale, _hideDurationMs, _hideEase);
+        if (_element.RenderTransform is not ScaleTransform scale) return;
+        AnimationHelper.AnimateScaleTransform(scale, _hideToScale, _hideDurationMs, _hideEase);
         AnimationHelper.AnimateFromCurrent(_element, UIElement.OpacityProperty, 0, _hideDurationMs, _hideEase, onCompleted);
     }
 
     public void ShowImmediate()
     {
-        _scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-        _scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        if (_element.RenderTransform is ScaleTransform scale)
+        {
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            scale.ScaleX = 1;
+            scale.ScaleY = 1;
+        }
         _element.BeginAnimation(UIElement.OpacityProperty, null);
-        _scale.ScaleX = 1;
-        _scale.ScaleY = 1;
         _element.Opacity = 1;
     }
 
@@ -77,12 +65,7 @@ public class PopupAnimator
     {
         if (d is not UIElement element) return;
 
-        var scale = element.RenderTransform as ScaleTransform
-                    ?? (element.RenderTransform as TransformGroup)?.Children
-                        .OfType<ScaleTransform>().FirstOrDefault();
-        if (scale == null) return;
-
-        var animator = new PopupAnimator(scale, element);
+        var animator = new PopupAnimator(element);
         if ((bool)e.NewValue)
             animator.Show();
         else
@@ -103,12 +86,7 @@ public class PopupAnimator
         if (d is not Popup popup) return;
         if (popup.Child is not UIElement child) return;
 
-        var scale = child.RenderTransform as ScaleTransform
-                    ?? (child.RenderTransform as TransformGroup)?.Children
-                        .OfType<ScaleTransform>().FirstOrDefault();
-        if (scale == null) return;
-
-        var animator = new PopupAnimator(scale, child);
+        var animator = new PopupAnimator(child);
 
         if ((bool)e.NewValue)
         {
