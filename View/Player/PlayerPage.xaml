@@ -4,7 +4,7 @@
              xmlns:local="clr-namespace:LocalPlayer.View.Player"
              xmlns:anim="clr-namespace:LocalPlayer.View.Animations"
              xmlns:conv="clr-namespace:LocalPlayer.Converters"
-             xmlns:gest="clr-namespace:LocalPlayer.View.Gestures"
+             xmlns:behaviors="clr-namespace:LocalPlayer.View.Behaviors"
              xmlns:primitives="clr-namespace:LocalPlayer.View.Primitives"
              xmlns:converters="clr-namespace:LocalPlayer.Converters"
              Background="{StaticResource BackgroundDark}"
@@ -290,9 +290,9 @@
         <Grid x:Name="VideoContainer" Grid.Row="0" Grid.Column="0" Background="Black"
               MouseLeftButtonDown="VideoContainer_MouseLeftButtonDown"
               MouseDown="VideoContainer_MouseDown"
-              gest:MouseGesture.LeftClick="{Binding PlayPauseCommand}"
-              gest:MouseGesture.RightHold="{Binding EnterRightHoldCommand}"
-              gest:MouseGesture.RightHoldRelease="{Binding ExitRightHoldCommand}">
+              behaviors:MouseGestureBehavior.LeftClick="{Binding PlayPauseCommand}"
+              behaviors:MouseGestureBehavior.RightHold="{Binding EnterRightHoldCommand}"
+              behaviors:MouseGestureBehavior.RightHoldRelease="{Binding ExitRightHoldCommand}">
             <Image x:Name="VideoImage" Stretch="Uniform"/>
             <!-- 暂停大图标（右下角） -->
             <Image x:Name="PauseBigIcon"

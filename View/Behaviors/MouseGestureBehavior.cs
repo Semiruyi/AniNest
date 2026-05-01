@@ -6,14 +6,9 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using LocalPlayer.Model;
 
-namespace LocalPlayer.View.Gestures;
+namespace LocalPlayer.View.Behaviors;
 
-/// <summary>
-/// 鼠标手势识别附加行为。绑定 ICommand 即可：
-/// LeftClick / LeftDoubleClick / LeftHold / LeftHoldRelease
-/// RightClick / RightDoubleClick / RightHold / RightHoldRelease
-/// </summary>
-public static class MouseGesture
+public static class MouseGestureBehavior
 {
     // ================================================================
     //  附加属性
@@ -46,19 +41,19 @@ public static class MouseGesture
     public static void SetRightHoldRelease(DependencyObject o, ICommand v) => o.SetValue(RightHoldReleaseProperty, v);
 
     public static readonly DependencyProperty HoldDurationProperty =
-        DependencyProperty.RegisterAttached("HoldDuration", typeof(int), typeof(MouseGesture),
+        DependencyProperty.RegisterAttached("HoldDuration", typeof(int), typeof(MouseGestureBehavior),
             new PropertyMetadata(500));
     public static int GetHoldDuration(DependencyObject o) => (int)o.GetValue(HoldDurationProperty);
     public static void SetHoldDuration(DependencyObject o, int v) => o.SetValue(HoldDurationProperty, v);
 
     public static readonly DependencyProperty DoubleClickWindowProperty =
-        DependencyProperty.RegisterAttached("DoubleClickWindow", typeof(int), typeof(MouseGesture),
+        DependencyProperty.RegisterAttached("DoubleClickWindow", typeof(int), typeof(MouseGestureBehavior),
             new PropertyMetadata(GetSystemDoubleClickTime()));
     public static int GetDoubleClickWindow(DependencyObject o) => (int)o.GetValue(DoubleClickWindowProperty);
     public static void SetDoubleClickWindow(DependencyObject o, int v) => o.SetValue(DoubleClickWindowProperty, v);
 
     private static DependencyProperty RegisterCommand(string name) =>
-        DependencyProperty.RegisterAttached(name, typeof(ICommand), typeof(MouseGesture),
+        DependencyProperty.RegisterAttached(name, typeof(ICommand), typeof(MouseGestureBehavior),
             new PropertyMetadata(null, OnCommandChanged));
 
     // ================================================================
@@ -84,7 +79,7 @@ public static class MouseGesture
     // ================================================================
 
     private static readonly DependencyProperty _stateKey =
-        DependencyProperty.RegisterAttached("__State", typeof(ButtonState), typeof(MouseGesture));
+        DependencyProperty.RegisterAttached("__State", typeof(ButtonState), typeof(MouseGestureBehavior));
 
     private static ButtonState GetState(UIElement e) => (ButtonState)e.GetValue(_stateKey);
 
@@ -185,9 +180,6 @@ public static class MouseGesture
     private static Gesture Hold(bool left)        => left ? Gesture.Hold : (Gesture)6;
     private static Gesture HoldRelease(bool left) => left ? Gesture.HoldRelease : (Gesture)7;
 
-    // Inner enum values: LeftClick=0, LeftDoubleClick=1, LeftHold=2, LeftHoldRelease=3,
-    //                    RightClick=4, RightDoubleClick=5, RightHold=6, RightHoldRelease=7
-
     private static ICommand? GetCmd(UIElement el, Gesture g) => g switch
     {
         Gesture.Click       => GetLeftClick(el),
@@ -207,7 +199,7 @@ public static class MouseGesture
 
     private static string Tag(UIElement el, bool left) => $"{(left ? "L" : "R")}:{el.GetHashCode():X4}";
 
-    private static void Log(string msg) => AppLog.Debug(nameof(MouseGesture), msg);
+    private static void Log(string msg) => AppLog.Debug(nameof(MouseGestureBehavior), msg);
 
     private static void Execute(ICommand? cmd)
     {
