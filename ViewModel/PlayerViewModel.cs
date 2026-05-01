@@ -30,8 +30,6 @@ public partial class PlayerViewModel : ObservableObject
     private float _savedRate = 1.0f;
 
 
-    // — 供 View 层处理快捷键窗口 —
-
     // — 媒体源（替代 View 直接访问 _media.VideoBitmap）—
     public System.Windows.Media.ImageSource? VideoSource => _media.VideoBitmap;
 

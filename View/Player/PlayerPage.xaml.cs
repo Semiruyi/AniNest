@@ -34,10 +34,7 @@ public partial class PlayerPage : UserControl
     public void LoadFolder(string folderPath, string folderName)
         => _vm.LoadFolder(folderPath, folderName);
 
-    public void Dispose()
-        => Cleanup();
-
-    private void Cleanup()
+    public void Cleanup()
     {
         if (_disposed) return;
         _disposed = true;

@@ -61,6 +61,8 @@ public partial class MainWindow : Window
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         App.LogStartup("ShowMainPage 开始");
+        if (mainPage != null)
+            mainPage.FolderSelected -= MainPage_FolderSelected;
         mainPage = _services.GetRequiredService<MainPage>();
         App.LogStartup($"MainPage 构造函数完成，耗时 {sw.ElapsedMilliseconds}ms");
         mainPage.FolderSelected += MainPage_FolderSelected;
@@ -109,7 +111,7 @@ public partial class MainWindow : Window
         TransitionMask.BeginAnimation(OpacityProperty, null);
         TransitionMask.Opacity = 1;
 
-        playerPage?.Dispose();
+        playerPage?.Cleanup();
         Log($"playerPage.Dispose 完成，耗时 {sw.ElapsedMilliseconds}ms");
         ShowMainPage();
         Log($"ShowMainPage 完成，总耗时 {sw.ElapsedMilliseconds}ms");

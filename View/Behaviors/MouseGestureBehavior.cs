@@ -22,7 +22,9 @@ public static class MouseGestureBehavior
     public static readonly DependencyProperty RightDoubleClickProperty = RegisterCommand("RightDoubleClick");
     public static readonly DependencyProperty RightHoldProperty        = RegisterCommand("RightHold");
     public static readonly DependencyProperty RightHoldReleaseProperty = RegisterCommand("RightHoldRelease");
-    public static readonly DependencyProperty XButton1Property          = RegisterSimple("XButton1");
+    public static readonly DependencyProperty XButton1Property =
+        DependencyProperty.RegisterAttached("XButton1", typeof(ICommand), typeof(MouseGestureBehavior),
+            new PropertyMetadata(null, OnXButton1Changed));
 
     public static ICommand GetLeftClick(DependencyObject o)        => (ICommand)o.GetValue(LeftClickProperty);
     public static void SetLeftClick(DependencyObject o, ICommand v) => o.SetValue(LeftClickProperty, v);
@@ -59,13 +61,9 @@ public static class MouseGestureBehavior
         DependencyProperty.RegisterAttached(name, typeof(ICommand), typeof(MouseGestureBehavior),
             new PropertyMetadata(null, OnCommandChanged));
 
-    private static DependencyProperty RegisterSimple(string name) =>
-        DependencyProperty.RegisterAttached(name, typeof(ICommand), typeof(MouseGestureBehavior),
-            new PropertyMetadata(null, OnSimpleCommandChanged));
-
-    private static void OnSimpleCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    private static void OnXButton1Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is UIElement el && _xbuttonSubscribed.Add(el))
+        if (d is FrameworkElement el && _xbuttonSubscribed.Add(el))
         {
             el.PreviewMouseDown += (_, args) =>
             {
@@ -79,6 +77,7 @@ public static class MouseGestureBehavior
                     }
                 }
             };
+            el.Unloaded += (_, _) => _xbuttonSubscribed.Remove(el);
         }
     }
 
@@ -86,18 +85,19 @@ public static class MouseGestureBehavior
     //  订阅
     // ================================================================
 
-    private static readonly HashSet<UIElement> _subscribed = new();
-    private static readonly HashSet<UIElement> _xbuttonSubscribed = new();
+    private static readonly HashSet<FrameworkElement> _subscribed = new();
+    private static readonly HashSet<FrameworkElement> _xbuttonSubscribed = new();
 
     private static void OnCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is UIElement el && _subscribed.Add(el))
+        if (d is FrameworkElement el && _subscribed.Add(el))
         {
             el.SetValue(_stateKey, new ButtonState());
             el.PreviewMouseLeftButtonDown  += (_, e) => OnDown(el, e, left: true);
             el.PreviewMouseLeftButtonUp    += (_, e) => OnUp(el, e, left: true);
             el.PreviewMouseRightButtonDown += (_, e) => OnDown(el, e, left: false);
             el.PreviewMouseRightButtonUp   += (_, e) => OnUp(el, e, left: false);
+            el.Unloaded += (_, _) => _subscribed.Remove(el);
         }
     }
 

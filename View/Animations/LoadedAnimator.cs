@@ -1,5 +1,4 @@
 using System.Windows;
-using System.Windows.Media.Animation;
 
 namespace LocalPlayer.View.Animations;
 
@@ -18,14 +17,9 @@ public static class LoadedAnimator
         el.Opacity = 0;
         el.Loaded += (_, _) =>
         {
-            var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
-            var anim = new DoubleAnimation(0, 1, System.TimeSpan.FromMilliseconds(300)) { EasingFunction = ease };
-            anim.Completed += (_, _) =>
-            {
-                el.BeginAnimation(UIElement.OpacityProperty, null);
-                el.Opacity = 1;
-            };
-            el.BeginAnimation(UIElement.OpacityProperty, anim);
+            AnimationHelper.Animate(el, UIElement.OpacityProperty, 0, 1, 300,
+                AnimationHelper.EaseInOut,
+                onCompleted: () => el.Opacity = 1);
         };
     }
 }
