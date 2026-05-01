@@ -125,6 +125,9 @@ public static class MouseGestureBehavior
 
     private static void OnDown(UIElement el, MouseButtonEventArgs e, bool left)
     {
+        if (e.OriginalSource is DependencyObject d && AncestorIsButton(d, el))
+            return;
+
         var s = GetState(el);
         string tag = Tag(el, left);
         Log.Debug($"{tag} ▼ CC={e.ClickCount} down={s.Down} pending={s.Pending} hold={s.HoldFired}");
@@ -161,6 +164,9 @@ public static class MouseGestureBehavior
 
     private static void OnUp(UIElement el, MouseButtonEventArgs e, bool left)
     {
+        if (e.OriginalSource is DependencyObject d && AncestorIsButton(d, el))
+            return;
+
         var s = GetState(el);
         string tag = Tag(el, left);
         Log.Debug($"{tag} ▲ CC={e.ClickCount} down={s.Down} pending={s.Pending} hold={s.HoldFired}");
@@ -226,6 +232,18 @@ public static class MouseGestureBehavior
     // ================================================================
 
     private static string Tag(UIElement el, bool left) => $"{(left ? "L" : "R")}:{el.GetHashCode():X4}";
+
+    private static bool AncestorIsButton(DependencyObject source, DependencyObject boundary)
+    {
+        var current = source;
+        while (current != null && current != boundary)
+        {
+            if (current is System.Windows.Controls.Primitives.ButtonBase)
+                return true;
+            current = System.Windows.Media.VisualTreeHelper.GetParent(current);
+        }
+        return false;
+    }
 
     private static readonly Logger Log = AppLog.For(nameof(MouseGestureBehavior));
 

@@ -1,0 +1,153 @@
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using LocalPlayer.View.Animations;
+
+namespace LocalPlayer.View.Primitives;
+
+/// <summary>
+/// 支持 opacity 过渡动画的 ContentControl。
+/// Content 变化时：旧内容留在原 presenter 不动（避免 re-parent 触发 Unloaded），
+/// 新内容放入另一个 presenter，通过 ZIndex 层叠，同时播放淡入淡出。
+/// </summary>
+public class TransitioningContentControl : ContentControl
+{
+    private Grid _rootPanel = null!;
+    private readonly ContentPresenter _presenterA = new();
+    private readonly ContentPresenter _presenterB = new();
+    private ContentPresenter _activePresenter = null!;
+    private bool _isTransitioning;
+
+    #region DependencyProperty
+
+    public static readonly DependencyProperty TransitionDurationProperty =
+        DependencyProperty.Register(nameof(TransitionDuration), typeof(int), typeof(TransitioningContentControl),
+            new PropertyMetadata(500));
+
+    public int TransitionDuration
+    {
+        get => (int)GetValue(TransitionDurationProperty);
+        set => SetValue(TransitionDurationProperty, value);
+    }
+
+    private static readonly DependencyPropertyKey IsTransitioningPropertyKey =
+        DependencyProperty.RegisterReadOnly(nameof(IsTransitioning), typeof(bool), typeof(TransitioningContentControl),
+            new PropertyMetadata(false));
+
+    public static readonly DependencyProperty IsTransitioningProperty = IsTransitioningPropertyKey.DependencyProperty;
+
+    public bool IsTransitioning
+    {
+        get => (bool)GetValue(IsTransitioningProperty);
+        private set => SetValue(IsTransitioningPropertyKey, value);
+    }
+
+    #endregion
+
+    public TransitioningContentControl()
+    {
+        _presenterA = new ContentPresenter();
+        _presenterB = new ContentPresenter();
+
+        _rootPanel = new Grid();
+        _rootPanel.Children.Add(_presenterA);
+        _rootPanel.Children.Add(_presenterB);
+
+        _activePresenter = _presenterA;
+
+        AddVisualChild(_rootPanel);
+    }
+
+    protected override int VisualChildrenCount => 1;
+    protected override Visual GetVisualChild(int index) => _rootPanel;
+
+    protected override Size ArrangeOverride(Size arrangeBounds)
+    {
+        _rootPanel.Arrange(new Rect(arrangeBounds));
+        return arrangeBounds;
+    }
+
+    protected override Size MeasureOverride(Size constraint)
+    {
+        _rootPanel.Measure(constraint);
+        return _rootPanel.DesiredSize;
+    }
+
+    protected override void OnContentChanged(object oldContent, object newContent)
+    {
+        base.OnContentChanged(oldContent, newContent);
+
+        if (oldContent == null || _rootPanel == null || newContent == null)
+        {
+            _activePresenter.Content = newContent;
+            return;
+        }
+
+        if (_isTransitioning)
+            AbortTransition();
+
+        StartTransition(newContent);
+    }
+
+    private void StartTransition(object newContent)
+    {
+        _isTransitioning = true;
+        IsTransitioning = true;
+
+        var exitPresenter = _activePresenter;
+        var enterPresenter = Other(exitPresenter);
+
+        int duration = TransitionDuration;
+        var ease = AnimationHelper.EaseInOut;
+
+        // 退出 presenter 在上层，遮住进入 presenter
+        Panel.SetZIndex(exitPresenter, 1);
+        Panel.SetZIndex(enterPresenter, 0);
+
+        // 进入 presenter：新内容，初始不可见
+        enterPresenter.Content = newContent;
+        enterPresenter.Visibility = Visibility.Visible;
+        enterPresenter.Opacity = 0;
+
+        // 退出动画（旧内容留在 exitPresenter 不动，不会触发 Unloaded）
+        AnimationHelper.Animate(exitPresenter, UIElement.OpacityProperty, 1, 0, duration, ease,
+            () =>
+            {
+                // 动画结束后才清除旧内容，此时画面已经是新内容了
+                exitPresenter.Content = null;
+                exitPresenter.Visibility = Visibility.Collapsed;
+                exitPresenter.Opacity = 1;
+                Panel.SetZIndex(exitPresenter, 0);
+                _isTransitioning = false;
+                IsTransitioning = false;
+            });
+
+        // 进入动画
+        AnimationHelper.Animate(enterPresenter, UIElement.OpacityProperty, 0, 1, duration, ease);
+
+        _activePresenter = enterPresenter;
+    }
+
+    private void AbortTransition()
+    {
+        var inactive = Other(_activePresenter);
+
+        // 停止所有动画
+        foreach (var p in new ContentPresenter[] { _presenterA, _presenterB })
+            p.BeginAnimation(UIElement.OpacityProperty, null);
+
+        // 清除非活跃 presenter
+        inactive.Content = null;
+        inactive.Visibility = Visibility.Collapsed;
+        inactive.Opacity = 1;
+        Panel.SetZIndex(inactive, 0);
+
+        // 活跃 presenter 立即可见
+        _activePresenter.Opacity = 1;
+
+        _isTransitioning = false;
+        IsTransitioning = false;
+    }
+
+    private ContentPresenter Other(ContentPresenter p) => ReferenceEquals(p, _presenterA) ? _presenterB : _presenterA;
+}
