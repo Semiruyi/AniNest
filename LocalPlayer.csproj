@@ -9,16 +9,25 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
     <DefaultItemExcludes>$(DefaultItemExcludes);Tests\**\*</DefaultItemExcludes>
+
+    <!-- Release 发布：自包含单文件 exe，输出到 dist/ -->
+    <PublishDir Condition="'$(Configuration)' == 'Release'">$(MSBuildProjectDirectory)\bin\Release\LocalPlayer\</PublishDir>
+    <SelfContained Condition="'$(Configuration)' == 'Release'">true</SelfContained>
+    <PublishSingleFile Condition="'$(Configuration)' == 'Release'">true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract Condition="'$(Configuration)' == 'Release'">true</IncludeNativeLibrariesForSelfExtract>
+    <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="LocalPlayer.Tests" />
   </ItemGroup>
 
-  <!-- ffmpeg 缩略图生成依赖：将 tools\ffmpeg\*.exe 复制到输出目录 -->
+  <!-- ffmpeg：必须排除单文件打包，因为代码用 Process.Start 调用 -->
   <ItemGroup>
-    <Content Include="tools\ffmpeg\ffmpeg.exe" CopyToOutputDirectory="PreserveNewest" Link="ffmpeg.exe" Visible="false" />
-    <Content Include="tools\ffmpeg\ffprobe.exe" CopyToOutputDirectory="PreserveNewest" Link="ffprobe.exe" Visible="false" />
+    <Content Include="tools\ffmpeg\ffmpeg.exe" CopyToOutputDirectory="PreserveNewest" Link="ffmpeg.exe" Visible="false"
+             CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <Content Include="tools\ffmpeg\ffprobe.exe" CopyToOutputDirectory="PreserveNewest" Link="ffprobe.exe" Visible="false"
+             CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>

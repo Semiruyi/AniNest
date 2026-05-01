@@ -18,6 +18,15 @@ public static class AppLog
 
     public static LogLevel MinimumLevel { get; set; } = LogLevel.Debug;
 
+    static AppLog()
+    {
+#if DEBUG
+        try { File.Delete(Path.Combine(BaseDir, "player.log")); } catch { }
+#else
+        MinimumLevel = LogLevel.Info;
+#endif
+    }
+
     public static void Write(string fileName, string category, LogLevel level, string message)
     {
         if (level < MinimumLevel) return;
