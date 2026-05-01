@@ -17,7 +17,10 @@
         </Grid.RowDefinitions>
 
         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
-            <ItemsControl Margin="24" ItemsSource="{Binding FolderItems}">
+            <ItemsControl Margin="24" ItemsSource="{Binding FolderItems}"
+                          animations:StaggeredItemsAnimation.Enabled="True"
+                          animations:StaggeredItemsAnimation.StaggerMs="50"
+                          animations:StaggeredItemsAnimation.DurationMs="500">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel HorizontalAlignment="Center"/>
