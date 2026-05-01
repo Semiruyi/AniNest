@@ -1,4 +1,4 @@
-namespace LocalPlayer.View.Player;
+namespace LocalPlayer.View.Pages.Player;
 
 public partial class ControlBarView : System.Windows.Controls.UserControl
 {

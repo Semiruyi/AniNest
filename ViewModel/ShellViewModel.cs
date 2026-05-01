@@ -2,8 +2,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using LocalPlayer.Messages;
-using LocalPlayer.View.Library;
-using LocalPlayer.View.Player;
+using LocalPlayer.View.Pages.Library;
+using LocalPlayer.View.Pages.Player;
 
 namespace LocalPlayer.ViewModel;
 

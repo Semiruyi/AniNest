@@ -1,6 +1,6 @@
 using LocalPlayer.ViewModel.Player;
 
-namespace LocalPlayer.View.Player;
+namespace LocalPlayer.View.Pages.Player;
 
 public partial class PlayerPage : System.Windows.Controls.UserControl
 {

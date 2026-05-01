@@ -3,8 +3,8 @@ using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using LocalPlayer.Model;
 using LocalPlayer.View;
-using LocalPlayer.View.Library;
-using LocalPlayer.View.Player;
+using LocalPlayer.View.Pages.Library;
+using LocalPlayer.View.Pages.Player;
 using LocalPlayer.ViewModel;
 using LocalPlayer.ViewModel.Player;
 
