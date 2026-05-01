@@ -12,8 +12,6 @@ namespace LocalPlayer.ViewModel.Player;
 
 public partial class ControlBarViewModel : ObservableObject
 {
-    public static void Log(string message) => AppLog.Info(nameof(ControlBarViewModel), message);
-
     private readonly IMediaPlayerController _media;
     private readonly PlayerInputHandler _inputHandler;
 

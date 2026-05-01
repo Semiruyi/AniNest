@@ -15,8 +15,6 @@ namespace LocalPlayer.ViewModel;
 
 public partial class MainPageViewModel : ObservableObject
 {
-    public static void Log(string message) => AppLog.Info(nameof(MainPageViewModel), message);
-
     private readonly ISettingsService _settings;
     private readonly IThumbnailGenerator _thumbnailGenerator;
 

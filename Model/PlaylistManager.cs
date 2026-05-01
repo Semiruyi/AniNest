@@ -6,7 +6,7 @@ namespace LocalPlayer.Model;
 
 public class PlaylistManager
 {
-    private static void Log(string message) => AppLog.Info(nameof(PlaylistManager), message);
+    private static readonly Logger Log = AppLog.For<PlaylistManager>();
 
     private readonly ISettingsService _settings;
     private readonly IMediaPlayerController _media;
@@ -39,7 +39,7 @@ public class PlaylistManager
         CurrentFolderName = folderName;
 
         VideoFiles = VideoScanner.GetVideoFiles(folderPath);
-        Log($"扫描到 {VideoFiles.Length} 个视频文件");
+        Log.Info($"扫描到 {VideoFiles.Length} 个视频文件");
 
         Items.Clear();
         for (int i = 0; i < VideoFiles.Length; i++)
@@ -80,7 +80,7 @@ public class PlaylistManager
         if (CurrentIndex < 0 || CurrentIndex >= VideoFiles.Length) return;
 
         string filePath = VideoFiles[CurrentIndex];
-        Log($"[PlayVideo] 开始: {Path.GetFileName(filePath)}");
+        Log.Info($"[PlayVideo] 开始: {Path.GetFileName(filePath)}");
 
         long startTime = 0;
         var progress = _settings.GetVideoProgress(filePath);
@@ -146,9 +146,11 @@ public class PlaylistManager
             if (string.Equals(item.FilePath, videoPath, StringComparison.OrdinalIgnoreCase))
             {
                 item.IsThumbnailReady = true;
-                break;
+                return;
             }
         }
+        Log.Warning(
+            $"缩略图就绪事件未匹配到选集: {Path.GetFileName(videoPath)} (Items.Count={Items.Count})");
     }
 
     public void UpdateThumbnailProgress(string videoPath, int percent)
@@ -158,8 +160,10 @@ public class PlaylistManager
             if (string.Equals(item.FilePath, videoPath, StringComparison.OrdinalIgnoreCase))
             {
                 item.ThumbnailProgress = percent;
-                break;
+                return;
             }
         }
+        Log.Warning(
+            $"缩略图进度事件未匹配到选集: {Path.GetFileName(videoPath)}={percent}% (Items.Count={Items.Count})");
     }
 }

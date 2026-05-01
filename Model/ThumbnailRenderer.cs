@@ -24,6 +24,8 @@ internal readonly struct RenderResult
 /// </summary>
 internal class ThumbnailRenderer
 {
+    private static readonly Logger Log = AppLog.For<ThumbnailRenderer>();
+
     private readonly string _ffmpegPath;
     private readonly string _thumbBaseDir;
 
@@ -45,7 +47,7 @@ internal class ThumbnailRenderer
 
         if (!File.Exists(task.VideoPath))
         {
-            AppLog.Info(nameof(ThumbnailRenderer),
+            Log.Info(
                 $"视频文件不存在: {task.VideoPath}");
             return new RenderResult(ThumbnailState.Failed);
         }
@@ -53,7 +55,7 @@ internal class ThumbnailRenderer
         Directory.CreateDirectory(tmpDir);
 
         double totalSec = GetVideoDuration(task.VideoPath);
-        AppLog.Info(nameof(ThumbnailRenderer),
+        Log.Info(
             $"开始: {Path.GetFileName(task.VideoPath)}, 时长={totalSec:F1}s, tmpDir={tmpDir}");
 
         string args = $"-y -i \"{task.VideoPath}\" " +
@@ -76,7 +78,7 @@ internal class ThumbnailRenderer
         {
             ct.ThrowIfCancellationRequested();
             process.Start();
-            AppLog.Info(nameof(ThumbnailRenderer), $"ffmpeg 进程已启动, PID={process.Id}");
+            Log.Info( $"ffmpeg 进程已启动, PID={process.Id}");
 
             int lastPercent = -1;
             var stderrTask = Task.Run(() =>
@@ -108,14 +110,14 @@ internal class ThumbnailRenderer
             }, ct);
 
             await process.WaitForExitAsync(ct);
-            AppLog.Info(nameof(ThumbnailRenderer),
+            Log.Info(
                 $"WaitForExit 完成, 等待 stderrTask, PID={process.Id}");
             await stderrTask;
-            AppLog.Info(nameof(ThumbnailRenderer),
+            Log.Info(
                 $"stderrTask 完成, PID={process.Id}");
 
             int exitCode = process.ExitCode;
-            AppLog.Info(nameof(ThumbnailRenderer),
+            Log.Info(
                 $"ffmpeg 退出, ExitCode={exitCode}, 视频={Path.GetFileName(task.VideoPath)}");
 
             if (exitCode == 0)
@@ -128,13 +130,13 @@ internal class ThumbnailRenderer
                     Directory.Delete(finalDir, recursive: true);
                 Directory.Move(tmpDir, finalDir);
 
-                AppLog.Info(nameof(ThumbnailRenderer),
+                Log.Info(
                     $"完成: {Path.GetFileName(task.VideoPath)}, {frameCount} 帧");
                 return new RenderResult(ThumbnailState.Ready, frameCount);
             }
             else
             {
-                AppLog.Info(nameof(ThumbnailRenderer),
+                Log.Info(
                     $"失败: {Path.GetFileName(task.VideoPath)}, ExitCode={exitCode}");
                 return new RenderResult(ThumbnailState.Failed);
             }
@@ -142,22 +144,22 @@ internal class ThumbnailRenderer
         catch (OperationCanceledException)
         {
             // 取消：杀进程、清 tmp、重抛给 Generator 设 State = Pending
-            AppLog.Info(nameof(ThumbnailRenderer),
+            Log.Info(
                 $"被取消, HasExited={process.HasExited}, PID={process.Id}");
             var killSw = Stopwatch.StartNew();
             try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch { }
             killSw.Stop();
-            AppLog.Info(nameof(ThumbnailRenderer),
+            Log.Info(
                 $"Kill 进程完成, 耗时 {killSw.ElapsedMilliseconds}ms, PID={process.Id}");
             throw;
         }
         finally
         {
-            AppLog.Info(nameof(ThumbnailRenderer), $"进入 finally, PID={process.Id}");
+            Log.Info( $"进入 finally, PID={process.Id}");
             var cleanSw = Stopwatch.StartNew();
             try { if (Directory.Exists(tmpDir)) Directory.Delete(tmpDir, true); } catch { }
             cleanSw.Stop();
-            AppLog.Info(nameof(ThumbnailRenderer),
+            Log.Info(
                 $"finally 完成, 清理 tmp 耗时 {cleanSw.ElapsedMilliseconds}ms, PID={process.Id}");
         }
     }
@@ -184,7 +186,7 @@ internal class ThumbnailRenderer
         }
         catch (Exception ex)
         {
-            AppLog.Info(nameof(ThumbnailRenderer),
+            Log.Info(
                 $"ffprobe 失败: {ex.Message}");
         }
         return 0;

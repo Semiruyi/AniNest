@@ -16,6 +16,8 @@ internal class ThumbnailEntryDto
 
 internal static class ThumbnailIndex
 {
+    private static readonly Logger Log = AppLog.For(nameof(ThumbnailIndex));
+
     public static void Save(string indexPath, IReadOnlyCollection<ThumbnailTask> tasks)
     {
         var entries = new Dictionary<string, ThumbnailEntryDto>();
@@ -40,7 +42,7 @@ internal static class ThumbnailIndex
 
         if (!File.Exists(indexPath))
         {
-            AppLog.Info(nameof(ThumbnailIndex), "index.json 不存在，跳过");
+            Log.Info( "index.json 不存在，跳过");
             return tasks;
         }
 
@@ -70,14 +72,14 @@ internal static class ThumbnailIndex
                 if (files.Length > 0)
                 {
                     state = ThumbnailState.Ready;
-                    AppLog.Info(nameof(ThumbnailIndex),
+                    Log.Info(
                         $"磁盘目录已存在 {files.Length} 帧，标记 Ready: {Path.GetFileName(kv.Key)}");
                 }
             }
             else if (state == ThumbnailState.Ready && !Directory.Exists(fullDir))
             {
                 state = ThumbnailState.Pending;
-                AppLog.Info(nameof(ThumbnailIndex),
+                Log.Info(
                     $"目录缺失，重置为 Pending: {kv.Key}");
             }
 

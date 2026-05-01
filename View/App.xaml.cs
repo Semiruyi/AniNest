@@ -12,6 +12,7 @@ namespace LocalPlayer;
 
 public partial class App : Application
 {
+    private static readonly Logger Log = AppLog.For<App>();
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -47,19 +48,19 @@ public partial class App : Application
     {
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
         {
-            AppLog.Error("App", "未处理异常", args.ExceptionObject as Exception);
+            Log.Error( "未处理异常", args.ExceptionObject as Exception);
         };
 
         DispatcherUnhandledException += (_, args) =>
         {
-            AppLog.Error("App", "Dispatcher未处理异常", args.Exception);
+            Log.Error( "Dispatcher未处理异常", args.Exception);
             args.Handled = true;
         };
 
         TaskScheduler.UnobservedTaskException += (_, args) =>
         {
             if (args.Exception != null)
-                AppLog.Error("App", "未观察到的Task异常", args.Exception);
+                Log.Error( "未观察到的Task异常", args.Exception);
             args.SetObserved();
         };
     }

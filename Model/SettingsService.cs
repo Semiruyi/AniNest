@@ -10,9 +10,7 @@ namespace LocalPlayer.Model;
 
 public class SettingsService : ISettingsService
 {
-    private static void Log(string message) => AppLog.Info(nameof(SettingsService), message);
-    private static void LogDebug(string message) => AppLog.Debug(nameof(SettingsService), message);
-    private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(SettingsService), message, ex);
+    private static readonly Logger Log = AppLog.For<SettingsService>();
 
     private readonly string settingsPath;
     private AppSettings? settings;
@@ -28,12 +26,12 @@ public class SettingsService : ISettingsService
 
         settingsPath = Path.Combine(dataFolder, "settings.json");
 
-        Log($"SettingsService 创建, 路径: {settingsPath}");
+        Log.Info($"SettingsService 创建, 路径: {settingsPath}");
     }
 
     public void Reload()
     {
-        LogDebug("Reload: 清除缓存");
+        Log.Debug("Reload: 清除缓存");
         settings = null;
     }
 
@@ -41,7 +39,7 @@ public class SettingsService : ISettingsService
     {
         if (settings != null)
         {
-            LogDebug($"Load: 返回缓存, KeyBindings 数量: {settings.KeyBindings?.Count ?? 0}");
+            Log.Debug($"Load: 返回缓存, KeyBindings 数量: {settings.KeyBindings?.Count ?? 0}");
             return settings;
         }
 
@@ -51,25 +49,25 @@ public class SettingsService : ISettingsService
             if (File.Exists(settingsPath))
             {
                 string json = File.ReadAllText(settingsPath);
-                LogDebug($"Load: 读取文件 {settingsPath}, 大小 {json.Length} 字节, 耗时 {sw.ElapsedMilliseconds}ms");
+                Log.Debug($"Load: 读取文件 {settingsPath}, 大小 {json.Length} 字节, 耗时 {sw.ElapsedMilliseconds}ms");
                 settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
-                LogDebug($"Load: 反序列化完成, KeyBindings 数量: {settings.KeyBindings?.Count ?? 0}, 总耗时 {sw.ElapsedMilliseconds}ms");
+                Log.Debug($"Load: 反序列化完成, KeyBindings 数量: {settings.KeyBindings?.Count ?? 0}, 总耗时 {sw.ElapsedMilliseconds}ms");
                 if (settings.KeyBindings != null)
                 {
                     foreach (var kv in settings.KeyBindings)
-                        LogDebug($"Load:   KeyBinding: {kv.Key} = {(Key)kv.Value} ({kv.Value})");
+                        Log.Debug($"Load:   KeyBinding: {kv.Key} = {(Key)kv.Value} ({kv.Value})");
                 }
             }
             else
             {
                 settings = new AppSettings();
-                Log($"Load: 文件不存在, 创建空配置, 耗时 {sw.ElapsedMilliseconds}ms");
+                Log.Info($"Load: 文件不存在, 创建空配置, 耗时 {sw.ElapsedMilliseconds}ms");
             }
         }
         catch (Exception ex)
         {
             settings = new AppSettings();
-            LogError("Load 异常", ex);
+            Log.Error("Load 异常", ex);
         }
 
         return settings;
@@ -79,26 +77,26 @@ public class SettingsService : ISettingsService
     {
         if (settings == null)
         {
-            LogDebug("Save: settings 为 null, 跳过");
+            Log.Debug("Save: settings 为 null, 跳过");
             return;
         }
 
-        LogDebug($"Save: 开始保存, KeyBindings 数量: {settings.KeyBindings?.Count ?? 0}");
+        Log.Debug($"Save: 开始保存, KeyBindings 数量: {settings.KeyBindings?.Count ?? 0}");
         if (settings.KeyBindings != null)
         {
             foreach (var kv in settings.KeyBindings)
-                LogDebug($"Save:   KeyBinding: {kv.Key} = {(Key)kv.Value} ({kv.Value})");
+                Log.Debug($"Save:   KeyBinding: {kv.Key} = {(Key)kv.Value} ({kv.Value})");
         }
 
         try
         {
             string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(settingsPath, json);
-            Log("配置保存成功");
+            Log.Info("配置保存成功");
         }
         catch (Exception ex)
         {
-            LogError("Save 异常", ex);
+            Log.Error("Save 异常", ex);
         }
     }
 
@@ -272,12 +270,12 @@ public class SettingsService : ISettingsService
 
     public void SetKeyBinding(string actionName, Key key)
     {
-        LogDebug($"SetKeyBinding: action={actionName}, key={key} ({(int)key})");
+        Log.Debug($"SetKeyBinding: action={actionName}, key={key} ({(int)key})");
         var s = Load();
         s.KeyBindings ??= new Dictionary<string, int>();
-        LogDebug($"SetKeyBinding: Load 后 KeyBindings 数量: {s.KeyBindings.Count}");
+        Log.Debug($"SetKeyBinding: Load 后 KeyBindings 数量: {s.KeyBindings.Count}");
         s.KeyBindings[actionName] = (int)key;
-        LogDebug($"SetKeyBinding: 设置后 KeyBindings 数量: {s.KeyBindings.Count}");
+        Log.Debug($"SetKeyBinding: 设置后 KeyBindings 数量: {s.KeyBindings.Count}");
         Save();
     }
 
@@ -287,12 +285,12 @@ public class SettingsService : ISettingsService
         var defaults = GetDefaultKeyBindings();
         var s = Load();
         s.KeyBindings ??= new Dictionary<string, int>();
-        LogDebug($"GetAllKeyBindings: settings.KeyBindings 数量: {s.KeyBindings.Count}");
+        Log.Debug($"GetAllKeyBindings: settings.KeyBindings 数量: {s.KeyBindings.Count}");
         foreach (var def in defaults)
         {
             var found = s.KeyBindings.TryGetValue(def.ActionName, out int keyCode);
             result[def.ActionName] = found ? (Key)keyCode : (Key)def.DefaultKey;
-            LogDebug($"GetAllKeyBindings: {def.ActionName} = {(found ? ((Key)keyCode).ToString() : ((Key)def.DefaultKey).ToString())} ({(int)result[def.ActionName]}) [{(found ? "已保存" : "默认")}]");
+            Log.Debug($"GetAllKeyBindings: {def.ActionName} = {(found ? ((Key)keyCode).ToString() : ((Key)def.DefaultKey).ToString())} ({(int)result[def.ActionName]}) [{(found ? "已保存" : "默认")}]");
         }
         return result;
     }

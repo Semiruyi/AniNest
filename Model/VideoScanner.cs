@@ -22,7 +22,7 @@ public class VideoScanner
         ".jpg", ".jpeg", ".png", ".bmp", ".gif"
     };
 
-    private static void Log(string message) => AppLog.Info(nameof(VideoScanner), message);
+    private static readonly Logger Log = AppLog.For<VideoScanner>();
 
     /// <summary>
     /// 一次 Directory.GetFiles 同时返回视频数量和封面路径，避免重复 IO
@@ -36,7 +36,7 @@ public class VideoScanner
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var files = Directory.GetFiles(folderPath);
-            Log($"ScanFolder({Path.GetFileName(folderPath)}) GetFiles 耗时 {sw.ElapsedMilliseconds}ms，共 {files.Length} 个文件");
+            Log.Info($"ScanFolder({Path.GetFileName(folderPath)}) GetFiles 耗时 {sw.ElapsedMilliseconds}ms，共 {files.Length} 个文件");
 
             int videoCount = 0;
             string? coverPath = null;
@@ -89,7 +89,7 @@ public class VideoScanner
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var files = Directory.GetFiles(folderPath);
-            Log($"Directory.GetFiles({Path.GetFileName(folderPath)}) 耗时 {sw.ElapsedMilliseconds}ms，共 {files.Length} 个文件");
+            Log.Info($"Directory.GetFiles({Path.GetFileName(folderPath)}) 耗时 {sw.ElapsedMilliseconds}ms，共 {files.Length} 个文件");
             int count = files.Count(f => IsVideoFile(f));
             return count;
         }
@@ -126,7 +126,7 @@ public class VideoScanner
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var files = Directory.GetFiles(folderPath);
-            Log($"FindCoverImage.Directory.GetFiles({Path.GetFileName(folderPath)}) 耗时 {sw.ElapsedMilliseconds}ms，共 {files.Length} 个文件");
+            Log.Info($"FindCoverImage.Directory.GetFiles({Path.GetFileName(folderPath)}) 耗时 {sw.ElapsedMilliseconds}ms，共 {files.Length} 个文件");
 
             // 1. 先找常见命名
             foreach (var file in files)

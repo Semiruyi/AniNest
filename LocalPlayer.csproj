@@ -15,6 +15,12 @@
     <InternalsVisibleTo Include="LocalPlayer.Tests" />
   </ItemGroup>
 
+  <!-- ffmpeg 缩略图生成依赖：将 tools\ffmpeg\*.exe 复制到输出目录 -->
+  <ItemGroup>
+    <Content Include="tools\ffmpeg\ffmpeg.exe" CopyToOutputDirectory="PreserveNewest" Link="ffmpeg.exe" Visible="false" />
+    <Content Include="tools\ffmpeg\ffprobe.exe" CopyToOutputDirectory="PreserveNewest" Link="ffprobe.exe" Visible="false" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="LibVLCSharp.WPF" Version="3.9.7.1" />

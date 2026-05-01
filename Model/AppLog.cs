@@ -53,4 +53,21 @@ public static class AppLog
         string detail = ex != null ? $" | {ex.GetType().Name}: {ex.Message}" : "";
         Write(DefaultLogFile, category, LogLevel.Error, $"{message}{detail}");
     }
+
+    public static Logger For<T>() => new(typeof(T).Name);
+    public static Logger For(string category) => new(category);
+}
+
+/// <summary>零分配、零 ceremony 的日志入口。用法：Log.Info("message"); Log.Warning("..."); Log.Error("...", ex);</summary>
+public readonly struct Logger
+{
+    private readonly string _category;
+
+    internal Logger(string category) => _category = category;
+
+    public void Debug(string message) => AppLog.Debug(_category, message);
+    public void Info(string message) => AppLog.Info(_category, message);
+    public void Warning(string message) => AppLog.Warning(_category, message);
+    public void Error(string message) => AppLog.Error(_category, message);
+    public void Error(string message, Exception? ex) => AppLog.Error(_category, message, ex);
 }

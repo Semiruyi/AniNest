@@ -36,8 +36,7 @@ public class ThumbnailProgressEventArgs : EventArgs
 
 public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 {
-    private static void Log(string message) => AppLog.Info(nameof(ThumbnailGenerator), message);
-    private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(ThumbnailGenerator), message, ex);
+    private static readonly Logger Log = AppLog.For<ThumbnailGenerator>();
 
     // Dependencies
     private readonly ISettingsService _settings;
@@ -78,7 +77,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         _renderer = new ThumbnailRenderer(_ffmpegPath, _thumbBaseDir);
 
         Directory.CreateDirectory(_thumbBaseDir);
-        Log($"初始化: thumbBaseDir={_thumbBaseDir}");
+        Log.Info($"初始化: thumbBaseDir={_thumbBaseDir}");
 
         Task.Run(Initialize);
     }
@@ -86,13 +85,13 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private void Initialize()
     {
         var sw = Stopwatch.StartNew();
-        Log("[Initialize] 开始初始化");
+        Log.Info("[Initialize] 开始初始化");
 
         // 检测 ffmpeg
         _ffmpegAvailable = File.Exists(_ffmpegPath);
         if (!_ffmpegAvailable)
         {
-            Log($"[Initialize] ffmpeg 不可用，未找到: {_ffmpegPath}，缩略图功能将不工作");
+            Log.Info($"[Initialize] ffmpeg 不可用，未找到: {_ffmpegPath}，缩略图功能将不工作");
         }
         else
         {
@@ -110,13 +109,13 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
                 if (versionProc != null)
                 {
                     var verOutput = versionProc.StandardOutput.ReadLine();
-                    Log($"[Initialize] ffmpeg 可用: {verOutput}");
+                    Log.Info($"[Initialize] ffmpeg 可用: {verOutput}");
                     versionProc.Dispose();
                 }
             }
             catch (Exception ex)
             {
-                Log($"[Initialize] ffmpeg 版本检测异常: {ex.Message}");
+                Log.Info($"[Initialize] ffmpeg 版本检测异常: {ex.Message}");
             }
         }
 
@@ -127,13 +126,13 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         LoadIndex();
 
         sw.Stop();
-        Log($"[Initialize] 初始化完成, 就绪 {_readyCount}/{_totalCount}, 总耗时 {sw.ElapsedMilliseconds}ms");
+        Log.Info($"[Initialize] 初始化完成, 就绪 {_readyCount}/{_totalCount}, 总耗时 {sw.ElapsedMilliseconds}ms");
 
         // 信号：初始化完成，允许队列开始处理
         _initTcs.TrySetResult();
         EnsureLoopRunning();
         StartExpiryCleanup();
-        Log("[Initialize] 已触发队列处理 + 过期清理");
+        Log.Info("[Initialize] 已触发队列处理 + 过期清理");
     }
 
     // ========== 入队 ==========
@@ -147,13 +146,13 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     {
         if (!_ffmpegAvailable)
         {
-            Log($"[EnqueueFolder] ffmpeg 不可用，跳过: {Path.GetFileName(folderPath)}");
+            Log.Info($"[EnqueueFolder] ffmpeg 不可用，跳过: {Path.GetFileName(folderPath)}");
             return;
         }
 
         var sw = Stopwatch.StartNew();
         var videoFiles = VideoScanner.GetVideoFiles(folderPath);
-        Log($"[EnqueueFolder] {Path.GetFileName(folderPath)}: {videoFiles.Length} 个视频, cardOrder={cardOrder}");
+        Log.Info($"[EnqueueFolder] {Path.GetFileName(folderPath)}: {videoFiles.Length} 个视频, cardOrder={cardOrder}");
 
         int added = 0;
         foreach (var videoPath in videoFiles)
@@ -167,7 +166,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
                     {
                         existing.MarkedForDeletionAt = 0;
                         SaveIndex();
-                        Log($"[EnqueueFolder] 清除待删除标记: {Path.GetFileName(videoPath)}");
+                        Log.Info($"[EnqueueFolder] 清除待删除标记: {Path.GetFileName(videoPath)}");
                     }
                     continue;
                 }
@@ -203,7 +202,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         EnsureLoopRunning(); // 总是确保循环在运行，即使没有新任务
 
         sw.Stop();
-        Log($"[EnqueueFolder] {Path.GetFileName(folderPath)}: 新增 {added} 个任务, 总耗时 {sw.ElapsedMilliseconds}ms");
+        Log.Info($"[EnqueueFolder] {Path.GetFileName(folderPath)}: 新增 {added} 个任务, 总耗时 {sw.ElapsedMilliseconds}ms");
     }
 
     /// <summary>
@@ -238,7 +237,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
         SaveIndex();
         sw.Stop();
-        Log($"[DeleteForFolder] {folderPath}: 标记待删除 {marked} 个, 总耗时 {sw.ElapsedMilliseconds}ms");
+        Log.Info($"[DeleteForFolder] {folderPath}: 标记待删除 {marked} 个, 总耗时 {sw.ElapsedMilliseconds}ms");
 
         // 列出所有被标记的视频路径
         lock (_taskLock)
@@ -248,7 +247,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
                 t.VideoPath.StartsWith(folderPath, StringComparison.OrdinalIgnoreCase))
                 .Select(t => t.VideoPath);
             foreach (var p in markedPaths)
-                Log($"[DeleteForFolder] 已标记: {p}");
+                Log.Info($"[DeleteForFolder] 已标记: {p}");
         }
     }
 
@@ -260,7 +259,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
                 task.State == ThumbnailState.Ready && task.MarkedForDeletionAt == 0)
             {
                 task.MarkedForDeletionAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                Log($"[MarkForDeletion] {videoPath}");
+                Log.Info($"[MarkForDeletion] {videoPath}");
             }
         }
     }
@@ -336,9 +335,9 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private async Task ProcessQueueLoop(CancellationToken ct)
     {
-        Log("[ProcessLoop] 排队等待初始化完成...");
+        Log.Info("[ProcessLoop] 排队等待初始化完成...");
         await _initTcs.Task;
-        Log("[ProcessLoop] 初始化已完成, 开始处理队列");
+        Log.Info("[ProcessLoop] 初始化已完成, 开始处理队列");
         while (!ct.IsCancellationRequested && !_isShuttingDown)
         {
             var task = DequeueNext();
@@ -359,13 +358,13 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             }
             catch (Exception ex)
             {
-                Log($"[ProcessLoop] 生成异常: {ex.GetType().Name}: {ex.Message}");
+                Log.Info($"[ProcessLoop] 生成异常: {ex.GetType().Name}: {ex.Message}");
                 task.State = ThumbnailState.Failed;
                 SaveIndex();
                 UpdateProgress();
             }
         }
-        Log("[ProcessLoop] 队列处理循环结束");
+        Log.Info("[ProcessLoop] 队列处理循环结束");
     }
 
     private async Task GenerateForTask(ThumbnailTask task, CancellationToken ct)
@@ -396,7 +395,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             var cancelSw = Stopwatch.StartNew();
             task.State = ThumbnailState.Pending;
             cancelSw.Stop();
-            Log($"[GenerateForTask] 取消处理完成, 耗时 {cancelSw.ElapsedMilliseconds}ms, 即将重抛");
+            Log.Info($"[GenerateForTask] 取消处理完成, 耗时 {cancelSw.ElapsedMilliseconds}ms, 即将重抛");
             throw;
         }
         finally
@@ -405,7 +404,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             SaveIndex();
             UpdateProgress();
             finallySw.Stop();
-            Log($"[GenerateForTask] finally 完成, SaveIndex+UpdateProgress 耗时 {finallySw.ElapsedMilliseconds}ms");
+            Log.Info($"[GenerateForTask] finally 完成, SaveIndex+UpdateProgress 耗时 {finallySw.ElapsedMilliseconds}ms");
         }
     }
 
@@ -414,23 +413,23 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     public void Shutdown()
     {
         var sw = Stopwatch.StartNew();
-        Log("[Shutdown] 开始安全关闭");
+        Log.Info("[Shutdown] 开始安全关闭");
 
         _isShuttingDown = true;
 
         // 取消循环 + 过期清理 → Renderer 内部杀 ffmpeg + 清 tmp
-        Log("[Shutdown] 取消 _loopCts...");
+        Log.Info("[Shutdown] 取消 _loopCts...");
         _loopCts?.Cancel();
-        Log("[Shutdown] 取消 _expiryCts...");
+        Log.Info("[Shutdown] 取消 _expiryCts...");
         _expiryCts?.Cancel();
 
         if (_loopTask != null)
         {
-            Log($"[Shutdown] 等待 _loopTask 退出 (Status={_loopTask.Status})...");
+            Log.Info($"[Shutdown] 等待 _loopTask 退出 (Status={_loopTask.Status})...");
             var waitSw = Stopwatch.StartNew();
             try { _loopTask.Wait(5000); } catch { }
             waitSw.Stop();
-            Log($"[Shutdown] _loopTask 等待完成, 实际耗时 {waitSw.ElapsedMilliseconds}ms, Status={_loopTask.Status}");
+            Log.Info($"[Shutdown] _loopTask 等待完成, 实际耗时 {waitSw.ElapsedMilliseconds}ms, Status={_loopTask.Status}");
         }
 
         // 兜底清理残留 tmp 目录
@@ -438,7 +437,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
         SaveIndex();
         sw.Stop();
-        Log($"[Shutdown] 安全关闭完成, 总耗时 {sw.ElapsedMilliseconds}ms");
+        Log.Info($"[Shutdown] 安全关闭完成, 总耗时 {sw.ElapsedMilliseconds}ms");
     }
 
     private void CleanupTempDirs()
@@ -448,17 +447,17 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             var tmpDirs = Directory.GetDirectories(_thumbBaseDir, ".tmp_*");
             if (tmpDirs.Length > 0)
             {
-                Log($"[CleanupTemp] 清理 {tmpDirs.Length} 个残留 tmp 目录");
+                Log.Info($"[CleanupTemp] 清理 {tmpDirs.Length} 个残留 tmp 目录");
                 foreach (var dir in tmpDirs)
                 {
                     try { Directory.Delete(dir, true); }
-                    catch (Exception ex) { Log($"[CleanupTemp] 删除失败: {dir}, {ex.Message}"); }
+                    catch (Exception ex) { Log.Info($"[CleanupTemp] 删除失败: {dir}, {ex.Message}"); }
                 }
             }
         }
         catch (Exception ex)
         {
-            Log($"[CleanupTemp] 清理异常: {ex.Message}");
+            Log.Info($"[CleanupTemp] 清理异常: {ex.Message}");
         }
     }
 
@@ -474,13 +473,13 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private async Task ExpiryCleanupLoop(CancellationToken ct)
     {
-        Log("[ExpiryCleanup] 启动过期清理循环");
+        Log.Info("[ExpiryCleanup] 启动过期清理循环");
         while (!ct.IsCancellationRequested)
         {
             try { await Task.Delay(TimeSpan.FromHours(1), ct); } catch { break; }
             CleanupExpired();
         }
-        Log("[ExpiryCleanup] 过期清理循环结束");
+        Log.Info("[ExpiryCleanup] 过期清理循环结束");
     }
 
     private void CleanupExpired()
@@ -502,21 +501,21 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         if (expired.Count == 0) return;
 
         var sw = Stopwatch.StartNew();
-        Log($"[ExpiryCleanup] 发现 {expired.Count} 个过期缩略图 (过期天数={expiryDays})");
+        Log.Info($"[ExpiryCleanup] 发现 {expired.Count} 个过期缩略图 (过期天数={expiryDays})");
 
         foreach (var t in expired)
         {
-            Log($"[ExpiryCleanup] 删除: 视频={t.VideoPath}, 目录={t.Md5Dir}");
+            Log.Info($"[ExpiryCleanup] 删除: 视频={t.VideoPath}, 目录={t.Md5Dir}");
             string dir = Path.Combine(_thumbBaseDir, t.Md5Dir);
             try
             {
                 if (Directory.Exists(dir))
                     Directory.Delete(dir, recursive: true);
-                Log($"[ExpiryCleanup] 已删除目录: {dir}");
+                Log.Info($"[ExpiryCleanup] 已删除目录: {dir}");
             }
             catch (Exception ex)
             {
-                Log($"[ExpiryCleanup] 删除目录失败: {dir}, {ex.Message}");
+                Log.Info($"[ExpiryCleanup] 删除目录失败: {dir}, {ex.Message}");
             }
 
             lock (_taskLock)
@@ -531,7 +530,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         SaveIndex();
         UpdateProgress();
         sw.Stop();
-        Log($"[ExpiryCleanup] 清理完成, 删除 {expired.Count} 个, 耗时 {sw.ElapsedMilliseconds}ms");
+        Log.Info($"[ExpiryCleanup] 清理完成, 删除 {expired.Count} 个, 耗时 {sw.ElapsedMilliseconds}ms");
     }
 
     // ========== 索引持久化 ==========
@@ -562,12 +561,12 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             }
 
             sw.Stop();
-            Log($"[LoadIndex] 加载完成, {_totalCount} 个条目 ({_readyCount} 就绪), 耗时 {sw.ElapsedMilliseconds}ms");
+            Log.Info($"[LoadIndex] 加载完成, {_totalCount} 个条目 ({_readyCount} 就绪), 耗时 {sw.ElapsedMilliseconds}ms");
         }
         catch (Exception ex)
         {
             sw.Stop();
-            Log($"[LoadIndex] 加载异常: {ex.Message}, 耗时 {sw.ElapsedMilliseconds}ms");
+            Log.Info($"[LoadIndex] 加载异常: {ex.Message}, 耗时 {sw.ElapsedMilliseconds}ms");
         }
     }
 
@@ -581,7 +580,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
         catch (Exception ex)
         {
-            Log($"[SaveIndex] 保存异常: {ex.Message}");
+            Log.Info($"[SaveIndex] 保存异常: {ex.Message}");
         }
     }
 
@@ -596,7 +595,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             total = _totalCount;
         }
 
-        Log($"[Progress] {ready}/{total}");
+        Log.Info($"[Progress] {ready}/{total}");
 
         ProgressChanged?.Invoke(this, new ThumbnailProgressEventArgs { Ready = ready, Total = total });
     }

@@ -8,8 +8,6 @@ namespace LocalPlayer.ViewModel.Player;
 
 public partial class PlaylistViewModel : ObservableObject
 {
-    public static void Log(string message) => AppLog.Info(nameof(PlaylistViewModel), message);
-
     private PlaylistManager _playlistManager = null!;
 
     [ObservableProperty]

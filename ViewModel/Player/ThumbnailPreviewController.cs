@@ -14,8 +14,7 @@ namespace LocalPlayer.ViewModel.Player;
 
 public partial class ThumbnailPreviewController : ObservableObject
 {
-    private static void LogError(string message, Exception? ex = null)
-        => AppLog.Error(nameof(ThumbnailPreviewController), message, ex);
+    private static readonly Logger Log = AppLog.For<ThumbnailPreviewController>();
 
     private readonly IThumbnailGenerator _thumbnailGenerator;
     private readonly Func<string?> _getCurrentVideoPath;
@@ -217,7 +216,7 @@ public partial class ThumbnailPreviewController : ObservableObject
         }
         catch (Exception ex)
         {
-            LogError($"缩略图解码异常 second={second}", ex);
+            Log.Error($"缩略图解码异常 second={second}", ex);
             return null;
         }
     }

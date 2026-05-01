@@ -14,8 +14,6 @@ namespace LocalPlayer.ViewModel.Player;
 
 public partial class PlayerViewModel : ObservableObject
 {
-    public static void Log(string message) => AppLog.Info(nameof(PlayerViewModel), message);
-
     private readonly ISettingsService _settings;
     private readonly IMediaPlayerController _media;
     private readonly PlayerInputHandler _inputHandler;

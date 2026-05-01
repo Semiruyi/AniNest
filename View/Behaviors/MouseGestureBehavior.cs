@@ -127,7 +127,7 @@ public static class MouseGestureBehavior
     {
         var s = GetState(el);
         string tag = Tag(el, left);
-        Log($"{tag} ▼ CC={e.ClickCount} down={s.Down} pending={s.Pending} hold={s.HoldFired}");
+        Log.Debug($"{tag} ▼ CC={e.ClickCount} down={s.Down} pending={s.Pending} hold={s.HoldFired}");
 
         if (e.ClickCount >= 2)
         {
@@ -151,7 +151,7 @@ public static class MouseGestureBehavior
                 if (s.Down && !s.HoldFired)
                 {
                     s.HoldFired = true;
-                    Log($"{tag} Hold {dur}ms");
+                    Log.Debug($"{tag} Hold {dur}ms");
                     Execute(GetCmd(el, Hold(left)), GetCommandParameter(el));
                 }
             });
@@ -163,7 +163,7 @@ public static class MouseGestureBehavior
     {
         var s = GetState(el);
         string tag = Tag(el, left);
-        Log($"{tag} ▲ CC={e.ClickCount} down={s.Down} pending={s.Pending} hold={s.HoldFired}");
+        Log.Debug($"{tag} ▲ CC={e.ClickCount} down={s.Down} pending={s.Pending} hold={s.HoldFired}");
 
         s.Down = false;
         s.HoldTimer?.Stop();
@@ -171,7 +171,7 @@ public static class MouseGestureBehavior
         if (s.Pending)
         {
             s.Pending = false;
-            Log($"{tag} ▲ → DoubleClick");
+            Log.Debug($"{tag} ▲ → DoubleClick");
             Execute(GetCmd(el, DoubleClick(left)), GetCommandParameter(el));
             return;
         }
@@ -227,7 +227,7 @@ public static class MouseGestureBehavior
 
     private static string Tag(UIElement el, bool left) => $"{(left ? "L" : "R")}:{el.GetHashCode():X4}";
 
-    private static void Log(string msg) => AppLog.Debug(nameof(MouseGestureBehavior), msg);
+    private static readonly Logger Log = AppLog.For(nameof(MouseGestureBehavior));
 
     public static readonly DependencyProperty CommandParameterProperty =
         DependencyProperty.RegisterAttached("CommandParameter", typeof(object), typeof(MouseGestureBehavior),

@@ -11,8 +11,7 @@ namespace LocalPlayer.Model;
 
 public class MediaPlayerController : IMediaPlayerController
 {
-    private static void Log(string message) => AppLog.Info(nameof(MediaPlayerController), message);
-    private static void LogError(string message, Exception? ex = null) => AppLog.Error(nameof(MediaPlayerController), message, ex);
+    private static readonly Logger Log = AppLog.For<MediaPlayerController>();
 
     private static LibVLC? _sharedLibVLC;
     private static Task<LibVLC>? _preinitTask;
@@ -43,10 +42,10 @@ public class MediaPlayerController : IMediaPlayerController
     {
         _preinitTask = Task.Run(() =>
         {
-            Log("[Preinitialize] 开始创建全局 LibVLC...");
+            Log.Info("[Preinitialize] 开始创建全局 LibVLC...");
             var vlc = new LibVLC();
             _sharedLibVLC = vlc;
-            Log("[Preinitialize] 全局 LibVLC 创建成功");
+            Log.Info("[Preinitialize] 全局 LibVLC 创建成功");
             return vlc;
         });
     }
@@ -55,31 +54,31 @@ public class MediaPlayerController : IMediaPlayerController
     {
         try
         {
-            Log("开始初始化 LibVLC...");
+            Log.Info("开始初始化 LibVLC...");
             var vlc = _sharedLibVLC;
             if (vlc == null)
             {
                 vlc = _preinitTask!.GetAwaiter().GetResult();
-                Log("等待预热 LibVLC 完成");
+                Log.Info("等待预热 LibVLC 完成");
             }
             libVLC = vlc;
 
             mediaPlayer = new MediaPlayer(libVLC);
-            Log("MediaPlayer 创建成功");
+            Log.Info("MediaPlayer 创建成功");
 
             frameProvider = new VideoFrameProvider();
             frameProvider.AttachToPlayer(mediaPlayer);
-            Log("VideoFrameProvider 已关联 MediaPlayer");
+            Log.Info("VideoFrameProvider 已关联 MediaPlayer");
         }
         catch (Exception ex)
         {
-            LogError("初始化失败", ex);
+            Log.Error("初始化失败", ex);
             throw;
         }
 
         mediaPlayer.Playing += (s, e) =>
         {
-            Log("Playing 事件触发");
+            Log.Info("Playing 事件触发");
             Playing?.Invoke(this, EventArgs.Empty);
         };
         mediaPlayer.Paused += (s, e) => Paused?.Invoke(this, EventArgs.Empty);
@@ -89,7 +88,7 @@ public class MediaPlayerController : IMediaPlayerController
         updateTimer.Tick += UpdateTimer_Tick;
         updateTimer.Start();
 
-        Log("VLC 初始化完成");
+        Log.Info("VLC 初始化完成");
     }
 
     private void UpdateTimer_Tick(object? sender, EventArgs e)
@@ -105,14 +104,14 @@ public class MediaPlayerController : IMediaPlayerController
 
     public void Play(string filePath, long startTimeMs = 0)
     {
-        Log($"Play 被调用: {filePath}, startTimeMs={startTimeMs}");
+        Log.Info($"Play 被调用: {filePath}, startTimeMs={startTimeMs}");
         if (mediaPlayer == null || libVLC == null)
         {
-            Log($"Play 提前返回，mediaPlayer={mediaPlayer}, libVLC={libVLC}");
+            Log.Info($"Play 提前返回，mediaPlayer={mediaPlayer}, libVLC={libVLC}");
             return;
         }
 
-        Log($"开始播放: {Path.GetFileName(filePath)}");
+        Log.Info($"开始播放: {Path.GetFileName(filePath)}");
         CurrentFilePath = filePath;
 
         var media = new LibVlcMedia(libVLC, filePath);
@@ -121,7 +120,7 @@ public class MediaPlayerController : IMediaPlayerController
             media.AddOption($":start-time={startTimeMs / 1000.0:F1}");
         }
         bool result = mediaPlayer.Play(media);
-        Log($"mediaPlayer.Play 返回: {result}");
+        Log.Info($"mediaPlayer.Play 返回: {result}");
     }
 
     public void TogglePlayPause()
@@ -159,7 +158,7 @@ public class MediaPlayerController : IMediaPlayerController
     {
         if (mediaPlayer == null || mediaPlayer.Length <= 0) return;
         long target = Math.Max(0, Math.Min(mediaPlayer.Length, time));
-        Console.WriteLine($"[MediaPlayerController] SeekTo {target}ms");
+        Log.Debug($"SeekTo {target}ms");
         mediaPlayer.Time = target;
     }
 
@@ -175,22 +174,22 @@ public class MediaPlayerController : IMediaPlayerController
     public void Dispose()
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        Log("Dispose 开始");
+        Log.Info("Dispose 开始");
         updateTimer?.Stop();
         updateTimer = null;
-        Log($"updateTimer.Stop 耗时 {sw.ElapsedMilliseconds}ms");
+        Log.Info($"updateTimer.Stop 耗时 {sw.ElapsedMilliseconds}ms");
 
         frameProvider?.Dispose();
-        Log($"frameProvider.Dispose 耗时 {sw.ElapsedMilliseconds}ms");
+        Log.Info($"frameProvider.Dispose 耗时 {sw.ElapsedMilliseconds}ms");
         mediaPlayer?.Stop();
-        Log($"mediaPlayer.Stop 耗时 {sw.ElapsedMilliseconds}ms");
+        Log.Info($"mediaPlayer.Stop 耗时 {sw.ElapsedMilliseconds}ms");
         mediaPlayer?.Dispose();
-        Log($"mediaPlayer.Dispose 耗时 {sw.ElapsedMilliseconds}ms");
+        Log.Info($"mediaPlayer.Dispose 耗时 {sw.ElapsedMilliseconds}ms");
         mediaPlayer = null;
 
         // libVLC 改为全局单例，不在此处释放，避免下次进入播放页重复初始化
         // libVLC?.Dispose();
-        // Log($"libVLC.Dispose 耗时 {sw.ElapsedMilliseconds}ms");
+        // Log.Info($"libVLC.Dispose 耗时 {sw.ElapsedMilliseconds}ms");
         libVLC = null;
     }
 }
