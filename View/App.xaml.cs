@@ -6,6 +6,7 @@ using LocalPlayer.View;
 using LocalPlayer.View.Library;
 using LocalPlayer.View.Player;
 using LocalPlayer.ViewModel;
+using LocalPlayer.ViewModel.Player;
 
 namespace LocalPlayer;
 

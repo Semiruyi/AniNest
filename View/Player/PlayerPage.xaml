@@ -314,7 +314,8 @@
         <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
                 Width="276" Background="#1A1A1C"
                 BorderBrush="#222224" BorderThickness="1,0,0,0"
-                Visibility="{Binding IsPlaylistVisible, Converter={StaticResource BoolToVis}}">
+                DataContext="{Binding Playlist}"
+                Visibility="{Binding IsVisible, Converter={StaticResource BoolToVis}}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -332,7 +333,7 @@
                 <!-- Episode Grid -->
                 <ListBox Grid.Row="1" Background="Transparent" BorderThickness="0"
                          Margin="14,4,14,14"
-                         ItemsSource="{Binding PlaylistItems}"
+                         ItemsSource="{Binding Items}"
                          SelectedIndex="{Binding CurrentIndex, Mode=OneWay}"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          ScrollViewer.VerticalScrollBarVisibility="Auto">
@@ -345,7 +346,7 @@
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <Button Style="{StaticResource EpisodeButton}"
-                                    Command="{Binding DataContext.PlayEpisodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    Command="{Binding DataContext.PlayEpisodeCommand, RelativeSource={RelativeSource AncestorType=Border}}"
                                     CommandParameter="{Binding}">
                                 <TextBlock Text="{Binding Number, StringFormat={}{0:D2}}"
                                            Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
@@ -371,6 +372,7 @@
 
         <!-- 控制栏 -->
         <local:ControlBarView x:Name="ControlBar"
-                              Grid.Row="1" Grid.Column="0"/>
+                              Grid.Row="1" Grid.Column="0"
+                              DataContext="{Binding ControlBar}"/>
     </Grid>
 </UserControl>

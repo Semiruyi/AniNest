@@ -354,9 +354,9 @@
                     Maximum="{Binding TotalTime}"
                     behaviors:SeekSliderBehavior.IsSeeking="{Binding IsSeeking, Mode=TwoWay}"
                     behaviors:SeekSliderBehavior.SeekCommand="{Binding SeekCommand}"
-                    behaviors:HoverBehavior.MouseEnterCommand="{Binding ThumbnailEnterCommand}"
-                    behaviors:HoverBehavior.MouseLeaveCommand="{Binding ThumbnailLeaveCommand}"
-                    behaviors:MouseMoveBehavior.MouseMoveCommand="{Binding ThumbnailMoveCommand}"
+                    behaviors:HoverBehavior.MouseEnterCommand="{Binding ThumbnailPreview.EnterCommand}"
+                    behaviors:HoverBehavior.MouseLeaveCommand="{Binding ThumbnailPreview.LeaveCommand}"
+                    behaviors:MouseMoveBehavior.MouseMoveCommand="{Binding ThumbnailPreview.MoveCommand}"
                     VerticalAlignment="Center"
                     Margin="10,0"/>
 
@@ -364,11 +364,11 @@
             <Popup x:Name="ProgressPopup" AllowsTransparency="True"
                    Placement="Relative" StaysOpen="True"
                    PlacementTarget="{Binding ElementName=ProgressSlider}"
-                   HorizontalOffset="{Binding ThumbnailHOffset}"
+                   HorizontalOffset="{Binding ThumbnailPreview.HOffset}"
                    VerticalOffset="-120"
-                   animations:PopupAnimator.BindOpen="{Binding IsThumbnailOpen}"
-                   behaviors:HoverBehavior.MouseEnterCommand="{Binding ThumbnailPopupEnterCommand}"
-                   behaviors:HoverBehavior.MouseLeaveCommand="{Binding ThumbnailPopupLeaveCommand}">
+                   animations:PopupAnimator.BindOpen="{Binding ThumbnailPreview.IsOpen}"
+                   behaviors:HoverBehavior.MouseEnterCommand="{Binding ThumbnailPreview.PopupEnterCommand}"
+                   behaviors:HoverBehavior.MouseLeaveCommand="{Binding ThumbnailPreview.PopupLeaveCommand}">
                 <Border CornerRadius="10" ClipToBounds="True"
                         Width="160" Height="90" Background="#1A1A1C"
                         RenderTransformOrigin="0.5,1"
@@ -382,8 +382,8 @@
                     <Grid>
                         <Image Stretch="UniformToFill"
                                Width="160" Height="90"
-                               Source="{Binding ThumbnailImageSource}"
-                               Visibility="{Binding ThumbnailImageVisibility}"/>
+                               Source="{Binding ThumbnailPreview.ImageSource}"
+                               Visibility="{Binding ThumbnailPreview.ImageVisibility}"/>
                         <Border Background="#CC000000" CornerRadius="4"
                                 Padding="6,3"
                                 HorizontalAlignment="Center"
@@ -391,7 +391,7 @@
                             <TextBlock Foreground="White"
                                        FontSize="12"
                                        FontFamily="Segoe UI, Microsoft YaHei, sans-serif"
-                                       Text="{Binding ThumbnailTimeText}"/>
+                                       Text="{Binding ThumbnailPreview.TimeText}"/>
                         </Border>
                     </Grid>
                 </Border>

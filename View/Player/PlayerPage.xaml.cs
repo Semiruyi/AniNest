@@ -1,4 +1,4 @@
-using LocalPlayer.ViewModel;
+using LocalPlayer.ViewModel.Player;
 
 namespace LocalPlayer.View.Player;
 
