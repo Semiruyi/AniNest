@@ -2,7 +2,6 @@ using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Animation;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,10 +30,6 @@ public partial class MainWindow : Window
         InitializeComponent();
         App.LogStartup($"MainWindow.InitializeComponent 完成，耗时 {sw.ElapsedMilliseconds}ms");
         Loaded += MainWindow_Loaded;
-        PreviewKeyDown += MainWindow_PreviewKeyDown;
-        KeyDown += MainWindow_KeyDown;
-        GotKeyboardFocus += MainWindow_GotKeyboardFocus;
-        LostKeyboardFocus += MainWindow_LostKeyboardFocus;
         App.LogStartup($"MainWindow 构造函数完成，总耗时 {sw.ElapsedMilliseconds}ms");
     }
 
@@ -120,35 +115,5 @@ public partial class MainWindow : Window
         await Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.Loaded);
 
         await FadeMaskFromBlackAsync(350);
-    }
-
-    private void MainWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-    {
-        Log($"PreviewKeyDown: Key={e.Key}, OriginalSource={e.OriginalSource?.GetType().Name}, FocusedElement={FocusManager.GetFocusedElement(this)?.GetType().Name}");
-
-        if (playerPage != null && PageHost.Content == playerPage)
-        {
-            playerPage.HandlePreviewKeyDown(e);
-        }
-    }
-
-    private void MainWindow_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-    {
-        Log($"KeyDown (冒泡): Key={e.Key}, OriginalSource={e.OriginalSource?.GetType().Name}, FocusedElement={FocusManager.GetFocusedElement(this)?.GetType().Name}");
-
-        if (playerPage != null && PageHost.Content == playerPage)
-        {
-            playerPage.HandleKeyDown(e);
-        }
-    }
-
-    private void MainWindow_GotKeyboardFocus(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e)
-    {
-        Log($"GotKeyboardFocus: NewFocus={e.NewFocus?.GetType().Name}");
-    }
-
-    private void MainWindow_LostKeyboardFocus(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e)
-    {
-        Log($"LostKeyboardFocus: NewFocus={e.NewFocus?.GetType().Name}");
     }
 }

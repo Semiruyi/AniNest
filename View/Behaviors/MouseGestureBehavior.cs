@@ -22,6 +22,7 @@ public static class MouseGestureBehavior
     public static readonly DependencyProperty RightDoubleClickProperty = RegisterCommand("RightDoubleClick");
     public static readonly DependencyProperty RightHoldProperty        = RegisterCommand("RightHold");
     public static readonly DependencyProperty RightHoldReleaseProperty = RegisterCommand("RightHoldRelease");
+    public static readonly DependencyProperty XButton1Property          = RegisterSimple("XButton1");
 
     public static ICommand GetLeftClick(DependencyObject o)        => (ICommand)o.GetValue(LeftClickProperty);
     public static void SetLeftClick(DependencyObject o, ICommand v) => o.SetValue(LeftClickProperty, v);
@@ -39,6 +40,8 @@ public static class MouseGestureBehavior
     public static void SetRightHold(DependencyObject o, ICommand v) => o.SetValue(RightHoldProperty, v);
     public static ICommand GetRightHoldRelease(DependencyObject o) => (ICommand)o.GetValue(RightHoldReleaseProperty);
     public static void SetRightHoldRelease(DependencyObject o, ICommand v) => o.SetValue(RightHoldReleaseProperty, v);
+    public static ICommand GetXButton1(DependencyObject o) => (ICommand)o.GetValue(XButton1Property);
+    public static void SetXButton1(DependencyObject o, ICommand v) => o.SetValue(XButton1Property, v);
 
     public static readonly DependencyProperty HoldDurationProperty =
         DependencyProperty.RegisterAttached("HoldDuration", typeof(int), typeof(MouseGestureBehavior),
@@ -56,11 +59,35 @@ public static class MouseGestureBehavior
         DependencyProperty.RegisterAttached(name, typeof(ICommand), typeof(MouseGestureBehavior),
             new PropertyMetadata(null, OnCommandChanged));
 
+    private static DependencyProperty RegisterSimple(string name) =>
+        DependencyProperty.RegisterAttached(name, typeof(ICommand), typeof(MouseGestureBehavior),
+            new PropertyMetadata(null, OnSimpleCommandChanged));
+
+    private static void OnSimpleCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is UIElement el && _xbuttonSubscribed.Add(el))
+        {
+            el.PreviewMouseDown += (_, args) =>
+            {
+                if (args is MouseButtonEventArgs mb && mb.ChangedButton == MouseButton.XButton1)
+                {
+                    var cmd = GetXButton1(el);
+                    if (cmd?.CanExecute(null) == true)
+                    {
+                        cmd.Execute(null);
+                        args.Handled = true;
+                    }
+                }
+            };
+        }
+    }
+
     // ================================================================
     //  订阅
     // ================================================================
 
     private static readonly HashSet<UIElement> _subscribed = new();
+    private static readonly HashSet<UIElement> _xbuttonSubscribed = new();
 
     private static void OnCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {

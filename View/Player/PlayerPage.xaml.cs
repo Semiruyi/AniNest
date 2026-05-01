@@ -1,18 +1,13 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Animation;
 using LocalPlayer.ViewModel;
 
 namespace LocalPlayer.View.Player;
 
-public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposable
+public partial class PlayerPage : UserControl, IDisposable
 {
     private readonly PlayerViewModel _vm;
-
-    private Window? parentWindow;
 
     public event EventHandler? BackRequested;
 
@@ -30,10 +25,9 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             PlayerViewModel.LogError("构造函数异常", ex);
             throw;
         }
+
         Loaded += PlayerPage_Loaded;
         Unloaded += PlayerPage_Unloaded;
-        GotKeyboardFocus += PlayerPage_GotKeyboardFocus;
-        LostKeyboardFocus += PlayerPage_LostKeyboardFocus;
 
         _vm.BackRequested += () =>
         {
@@ -54,26 +48,9 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
     {
         try
         {
-            parentWindow = Window.GetWindow(this);
-
-            Keyboard.Focus(this);
-            FocusManager.SetFocusedElement(this, this);
-
-            var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
-            var duration = TimeSpan.FromMilliseconds(300);
-
-            var anim = new DoubleAnimation(0, 1, duration) { EasingFunction = ease };
-            anim.Completed += (_, _) =>
-            {
-                PageRoot.BeginAnimation(OpacityProperty, null);
-                PageRoot.Opacity = 1;
-            };
-            PageRoot.BeginAnimation(OpacityProperty, anim);
-
             _vm.InitializeMedia();
             VideoImage.Source = _vm.VideoSource;
 
-            // 延迟 LoadFolder 在此执行
             if (_pendingFolderPath != null)
             {
                 var path = _pendingFolderPath;
@@ -106,61 +83,12 @@ public partial class PlayerPage : System.Windows.Controls.UserControl, IDisposab
             _pendingFolderName = folderName;
             return;
         }
-
         _vm.LoadFolder(folderPath, folderName);
     }
-
-    // ========== 键盘事件 ==========
-
-    private void ProcessKeyboardEvent(KeyEventArgs e, string source)
-    {
-        if (_vm.HandleKeyDown(e))
-            e.Handled = true;
-    }
-
-    public void HandlePreviewKeyDown(KeyEventArgs e) => ProcessKeyboardEvent(e, "PreviewKeyDown (MainWindow)");
-    public void HandleKeyDown(KeyEventArgs e) => ProcessKeyboardEvent(e, "KeyDown (MainWindow)");
-
-    private void PlayerPage_PreviewKeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Handled) return;
-        ProcessKeyboardEvent(e, "PP_PreviewKeyDown");
-    }
-
-    private void PlayerPage_KeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Handled) return;
-        ProcessKeyboardEvent(e, "PP_KeyDown");
-    }
-
-    // ========== 鼠标事件 ==========
-
-    private void VideoContainer_MouseDown(object sender, MouseButtonEventArgs e)
-    {
-        if (e.ChangedButton == MouseButton.XButton1)
-        {
-            _vm.SaveProgress();
-            BackRequested?.Invoke(this, EventArgs.Empty);
-            e.Handled = true;
-        }
-    }
-
-    private void VideoContainer_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        if (e.Handled) return;
-        Keyboard.Focus(this);
-    }
-
-    private void PlayerPage_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
-        => PlayerViewModel.Log($"GotKeyboardFocus: NewFocus={e.NewFocus?.GetType().Name}");
-
-    private void PlayerPage_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
-        => PlayerViewModel.Log($"LostKeyboardFocus: NewFocus={e.NewFocus?.GetType().Name}");
 
     public void Dispose()
     {
         _vm.SaveProgress();
-
         _vm.DisposeMedia();
     }
 }

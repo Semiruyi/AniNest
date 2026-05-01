@@ -125,7 +125,7 @@ public class BindingItem : ObservableObject
         get
         {
             if (IsWaiting) return "按下一个键...";
-            return (string)_keyConverter.Convert(CurrentKey, typeof(string), null, CultureInfo.InvariantCulture);
+            return (string)_keyConverter.Convert(CurrentKey, typeof(string), null!, CultureInfo.InvariantCulture);
         }
     }
 }

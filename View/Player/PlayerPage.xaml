@@ -9,8 +9,8 @@
              xmlns:converters="clr-namespace:LocalPlayer.Converters"
              Background="{StaticResource BackgroundDark}"
              Focusable="True"
-             PreviewKeyDown="PlayerPage_PreviewKeyDown"
-             KeyDown="PlayerPage_KeyDown">
+             behaviors:FocusOnLoadedBehavior.Enabled="True"
+             behaviors:KeyboardBehavior.KeyDownCommand="{Binding KeyDownCommand}">
     <UserControl.Resources>
         <ResourceDictionary>
             <BooleanToVisibilityConverter x:Key="BoolToVis"/>
@@ -276,7 +276,7 @@
             </Style>
         </ResourceDictionary>
     </UserControl.Resources>
-    <Grid x:Name="PageRoot" Opacity="0">
+    <Grid x:Name="PageRoot" anim:LoadedAnimator.Enabled="True">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
@@ -288,9 +288,8 @@
 
         <!-- 视频区 -->
         <Grid x:Name="VideoContainer" Grid.Row="0" Grid.Column="0" Background="Black"
-              MouseLeftButtonDown="VideoContainer_MouseLeftButtonDown"
-              MouseDown="VideoContainer_MouseDown"
               behaviors:MouseGestureBehavior.LeftClick="{Binding PlayPauseCommand}"
+              behaviors:MouseGestureBehavior.XButton1="{Binding GoBackCommand}"
               behaviors:MouseGestureBehavior.RightHold="{Binding EnterRightHoldCommand}"
               behaviors:MouseGestureBehavior.RightHoldRelease="{Binding ExitRightHoldCommand}">
             <Image x:Name="VideoImage" Stretch="Uniform"/>
