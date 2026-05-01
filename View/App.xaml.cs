@@ -44,7 +44,8 @@ public partial class App : System.Windows.Application
         services.AddTransient<MainPage>();
         services.AddTransient<PlayerPage>();
 
-        // 主窗口（单例）
+        // ShellViewModel + 主窗口（单例）
+        services.AddSingleton<ShellViewModel>();
         services.AddSingleton<MainWindow>();
 
         var provider = services.BuildServiceProvider();
