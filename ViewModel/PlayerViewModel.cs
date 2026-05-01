@@ -8,7 +8,9 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using LocalPlayer.Converters;
+using LocalPlayer.Messages;
 using LocalPlayer.Model;
 
 namespace LocalPlayer.ViewModel;
@@ -312,10 +314,6 @@ public partial class PlayerViewModel : ObservableObject
     [ObservableProperty]
     private string? _currentVideoPath;
 
-    // ========== Events ==========
-
-    public event Action? BackRequested;
-
     // ========== Constructor ==========
 
     public PlayerViewModel(ISettingsService settings, IThumbnailGenerator thumbnailGenerator,
@@ -362,6 +360,11 @@ public partial class PlayerViewModel : ObservableObject
         WireInputEvents();
 
         _inputHandler.ReloadBindings();
+
+        WeakReferenceMessenger.Default.Register<LoadPlayerFolderMessage>(this, (_, m) =>
+            LoadFolder(m.Path, m.Name));
+
+        _media.Initialize();
     }
 
     private void WireMediaEvents()
@@ -410,7 +413,7 @@ public partial class PlayerViewModel : ObservableObject
         _inputHandler.Back += (_, _) =>
         {
             SaveProgress();
-            BackRequested?.Invoke();
+            WeakReferenceMessenger.Default.Send(new BackRequestedMessage());
         };
     }
 
@@ -530,7 +533,7 @@ public partial class PlayerViewModel : ObservableObject
     private void GoBack()
     {
         SaveProgress();
-        BackRequested?.Invoke();
+        WeakReferenceMessenger.Default.Send(new BackRequestedMessage());
     }
 
     // ========== Right-hold commands — 供 XAML 手势绑定 ==========
@@ -554,10 +557,20 @@ public partial class PlayerViewModel : ObservableObject
 
     public PlayerInputHandler InputHandler => _inputHandler;
 
-    // ========== Media lifecycle (供 View 调用，替代 _media 直接访问) ==========
+    // ========== Media lifecycle ==========
 
-    public void InitializeMedia() => _media.Initialize();
-    public void DisposeMedia() => _media.Dispose();
+    [RelayCommand]
+    private void Initialize() => _media.Initialize();
+
+    [RelayCommand]
+    private void Cleanup()
+    {
+        _initialized = false;
+        _saveTimer.Stop();
+        SaveProgress();
+        _media.Dispose();
+    }
+
     public void SetRate(float rate) { _media.Rate = rate; Rate = rate; }
 
     // ========== Thumbnail helpers ==========

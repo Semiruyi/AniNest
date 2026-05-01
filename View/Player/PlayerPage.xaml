@@ -10,6 +10,7 @@
              Background="{StaticResource BackgroundDark}"
              Focusable="True"
              behaviors:LoadedCommandBehavior.FocusOnLoaded="True"
+             behaviors:LoadedCommandBehavior.UnloadedCommand="{Binding CleanupCommand}"
              behaviors:KeyboardBehavior.KeyDownCommand="{Binding KeyDownCommand}">
     <UserControl.Resources>
         <ResourceDictionary>
@@ -292,7 +293,7 @@
               behaviors:MouseGestureBehavior.XButton1="{Binding GoBackCommand}"
               behaviors:MouseGestureBehavior.RightHold="{Binding EnterRightHoldCommand}"
               behaviors:MouseGestureBehavior.RightHoldRelease="{Binding ExitRightHoldCommand}">
-            <Image x:Name="VideoImage" Stretch="Uniform"/>
+            <Image x:Name="VideoImage" Stretch="Uniform" Source="{Binding VideoSource}"/>
             <!-- 暂停大图标（右下角） -->
             <Image x:Name="PauseBigIcon"
                    Source="/Resources/Icons/pause-big.png"

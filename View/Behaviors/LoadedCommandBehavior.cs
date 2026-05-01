@@ -13,11 +13,18 @@ public static class LoadedCommandBehavior
         DependencyProperty.RegisterAttached("FocusOnLoaded", typeof(bool), typeof(LoadedCommandBehavior),
             new PropertyMetadata(false, OnLoadedChanged));
 
+    public static readonly DependencyProperty UnloadedCommandProperty =
+        DependencyProperty.RegisterAttached("UnloadedCommand", typeof(ICommand), typeof(LoadedCommandBehavior),
+            new PropertyMetadata(null, OnUnloadedCommandChanged));
+
     public static ICommand? GetCommand(DependencyObject o) => (ICommand?)o.GetValue(CommandProperty);
     public static void SetCommand(DependencyObject o, ICommand? v) => o.SetValue(CommandProperty, v);
 
     public static bool GetFocusOnLoaded(DependencyObject o) => (bool)o.GetValue(FocusOnLoadedProperty);
     public static void SetFocusOnLoaded(DependencyObject o, bool v) => o.SetValue(FocusOnLoadedProperty, v);
+
+    public static ICommand? GetUnloadedCommand(DependencyObject o) => (ICommand?)o.GetValue(UnloadedCommandProperty);
+    public static void SetUnloadedCommand(DependencyObject o, ICommand? v) => o.SetValue(UnloadedCommandProperty, v);
 
     private static void OnLoadedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
@@ -37,5 +44,19 @@ public static class LoadedCommandBehavior
             Keyboard.Focus(el);
             FocusManager.SetFocusedElement(el, el);
         }
+    }
+
+    private static void OnUnloadedCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is FrameworkElement el && e.NewValue is ICommand)
+        {
+            el.Unloaded += OnElementUnloaded;
+        }
+    }
+
+    private static void OnElementUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement el) return;
+        GetUnloadedCommand(el)?.Execute(null);
     }
 }
