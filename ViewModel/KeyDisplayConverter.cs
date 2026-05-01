@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Input;
 
-namespace LocalPlayer.Converters;
+namespace LocalPlayer.ViewModel;
 
 public class KeyDisplayConverter : IValueConverter
 {

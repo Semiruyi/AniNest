@@ -2,7 +2,7 @@ using System;
 using System.Globalization;
 using System.Windows.Data;
 
-namespace LocalPlayer.Converters;
+namespace LocalPlayer.View.Converters;
 
 public class IsSpeedMatchConverter : IMultiValueConverter
 {

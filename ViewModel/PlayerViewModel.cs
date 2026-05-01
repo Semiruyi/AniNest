@@ -9,7 +9,6 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using LocalPlayer.Converters;
 using LocalPlayer.Messages;
 using LocalPlayer.Model;
 
