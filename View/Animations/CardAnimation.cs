@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -132,6 +134,15 @@ public static class CardAnimation
     public static double GetShadowOpacityHover(DependencyObject o) => (double)o.GetValue(ShadowOpacityHoverProperty);
     public static void SetShadowOpacityHover(DependencyObject o, double v) => o.SetValue(ShadowOpacityHoverProperty, v);
 
+    // ── IsExiting (退出动画中，冻结 hover 状态) ──────────────────
+
+    private static readonly DependencyProperty IsExitingProperty =
+        DependencyProperty.RegisterAttached("IsExiting", typeof(bool), typeof(CardAnimation),
+            new PropertyMetadata(false));
+
+    private static bool GetIsExiting(DependencyObject o) => (bool)o.GetValue(IsExitingProperty);
+    private static void SetIsExiting(DependencyObject o, bool v) => o.SetValue(IsExitingProperty, v);
+
     // ── Setup ────────────────────────────────────────────────────
 
     private static void OnEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -190,6 +201,36 @@ public static class CardAnimation
             deleteBtn.RenderTransform = new ScaleTransform(0, 0);
             deleteBtn.PreviewMouseDown += OnDeleteBtnDown;
             deleteBtn.PreviewMouseUp += OnDeleteBtnUp;
+
+            // 拦截删除按钮点击：先播退出动画，动画完成后再执行命令。
+            // 先把 Command 保存下来然后清空，防止 Button 自动执行命令。
+            var savedCmd = deleteBtn.Command;
+            var savedParam = deleteBtn.CommandParameter;
+            deleteBtn.Command = null;
+            deleteBtn.Click += (s, ce) =>
+            {
+                // 标记退出中，冻结卡片 hover 状态
+                border.SetValue(IsExitingProperty, true);
+
+                var container = FindAncestor<ContentPresenter>(deleteBtn);
+                if (container != null)
+                {
+                    AnimateContainerExit(container, 400, () =>
+                    {
+                        deleteBtn.Dispatcher.BeginInvoke(
+                            new Action(() =>
+                            {
+                                if (savedCmd?.CanExecute(savedParam) == true)
+                                    savedCmd.Execute(savedParam);
+                            }));
+                    });
+                }
+                else
+                {
+                    if (savedCmd?.CanExecute(savedParam) == true)
+                        savedCmd.Execute(savedParam);
+                }
+            };
         }
     }
 
@@ -198,6 +239,7 @@ public static class CardAnimation
     private static void OnMouseEnter(object sender, MouseEventArgs e)
     {
         var border = (Border)sender;
+        if (GetIsExiting(border)) return;
         double hoverScale = GetHoverScale(border);
         double coverScale = GetCoverScale(border);
         double coverShiftY = GetCoverShiftY(border);
@@ -241,6 +283,7 @@ public static class CardAnimation
     private static void OnMouseLeave(object sender, MouseEventArgs e)
     {
         var border = (Border)sender;
+        if (GetIsExiting(border)) return;
         double blurNormal = GetShadowBlurNormal(border);
         double opNormal = GetShadowOpacityNormal(border);
         int leaveMs = GetLeaveDurationMs(border);
@@ -289,6 +332,7 @@ public static class CardAnimation
     private static void OnMouseDown(object sender, MouseButtonEventArgs e)
     {
         var border = (Border)sender;
+        if (GetIsExiting(border)) return;
         if (e.OriginalSource is DependencyObject d && IsInsideButton(d, border))
             return;
 
@@ -309,6 +353,7 @@ public static class CardAnimation
     private static void OnMouseUp(object sender, MouseButtonEventArgs e)
     {
         var border = (Border)sender;
+        if (GetIsExiting(border)) return;
         if (e.OriginalSource is DependencyObject d && IsInsideButton(d, border))
             return;
 
@@ -354,6 +399,29 @@ public static class CardAnimation
         AnimationHelper.AnimateScaleTransform(scale, 1.0, 250, AnimationHelper.EaseOut);
     }
 
+    // ── Container Exit Animation ─────────────────────────────────
+
+    private static void AnimateContainerExit(FrameworkElement container, int durationMs, Action onCompleted)
+    {
+        container.IsHitTestVisible = false;
+        var ease = AnimationHelper.EaseIn;
+        AnimationHelper.AnimateFromCurrent(container, UIElement.OpacityProperty, 0, durationMs, ease, onCompleted);
+
+        var scale = container.RenderTransform as ScaleTransform
+                    ?? (container.RenderTransform as TransformGroup)?.Children
+                        .OfType<ScaleTransform>().FirstOrDefault();
+        if (scale != null)
+        {
+            double curX = scale.ScaleX;
+            double curY = scale.ScaleY;
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            scale.ScaleX = curX;
+            scale.ScaleY = curY;
+            AnimationHelper.AnimateScaleTransform(scale, 0, durationMs, ease);
+        }
+    }
+
     // ── Helpers ──────────────────────────────────────────────────
 
     private static TransformGroup? EnsureImageTransform(Border border)
@@ -380,6 +448,17 @@ public static class CardAnimation
             if (child is T result) return result;
             var desc = FindChild<T>(child);
             if (desc != null) return desc;
+        }
+        return null;
+    }
+
+    private static T? FindAncestor<T>(DependencyObject child) where T : DependencyObject
+    {
+        var parent = VisualTreeHelper.GetParent(child);
+        while (parent != null)
+        {
+            if (parent is T result) return result;
+            parent = VisualTreeHelper.GetParent(parent);
         }
         return null;
     }
