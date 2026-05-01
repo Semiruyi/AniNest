@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using LocalPlayer.View.Animations;
 using LocalPlayer.Model;
@@ -12,40 +11,43 @@ namespace LocalPlayer.View.Library;
 
 public partial class MainPage
 {
+    private IEnumerable<Border> EnumerateCardBorders()
+    {
+        foreach (var item in _vm.FolderItems)
+        {
+            var container = FolderList.ItemContainerGenerator.ContainerFromItem(item);
+            var border = FindChildBorder(container);
+            if (border != null)
+                yield return border;
+        }
+    }
+
     private void AnimateCardsEntrance()
     {
         if (!IsLoaded) return;
 
         var borders = new List<FrameworkElement>();
-        foreach (var item in _vm.FolderItems)
-        {
-            var container = FolderList.ItemContainerGenerator.ContainerFromItem(item);
-            var border = FindChildBorder(container);
-            if (border != null)
-                borders.Add(border);
-        }
+        foreach (var border in EnumerateCardBorders())
+            borders.Add(border);
 
         _ = StaggeredEntranceAnimator.AnimateAsync(borders);
         FolderList.Opacity = 1;
     }
 
-    internal Dictionary<FolderListItem, System.Windows.Point> CaptureCardPositions()
+    internal Dictionary<FolderListItem, Point> CaptureCardPositions()
     {
-        var positions = new Dictionary<FolderListItem, System.Windows.Point>();
+        var positions = new Dictionary<FolderListItem, Point>();
         foreach (var item in _vm.FolderItems)
         {
             var container = FolderList.ItemContainerGenerator.ContainerFromItem(item);
             var border = FindChildBorder(container);
             if (border != null)
-            {
-                var pos = border.TranslatePoint(new System.Windows.Point(0, 0), FolderList);
-                positions[item] = pos;
-            }
+                positions[item] = border.TranslatePoint(new Point(0, 0), FolderList);
         }
         return positions;
     }
 
-    internal void AnimateCardsReposition(Dictionary<FolderListItem, System.Windows.Point> oldPositions)
+    internal void AnimateCardsReposition(Dictionary<FolderListItem, Point> oldPositions)
     {
         _ = Dispatcher.BeginInvoke(new Action(() =>
         {
@@ -59,7 +61,7 @@ public partial class MainPage
                 var border = FindChildBorder(container);
                 if (border == null) continue;
 
-                var newPos = border.TranslatePoint(new System.Windows.Point(0, 0), FolderList);
+                var newPos = border.TranslatePoint(new Point(0, 0), FolderList);
                 var deltaX = oldPos.X - newPos.X;
                 var deltaY = oldPos.Y - newPos.Y;
 
@@ -70,20 +72,8 @@ public partial class MainPage
                 var translate = new TranslateTransform(deltaX, deltaY);
                 border.RenderTransform = translate;
 
-                var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-                var dur = TimeSpan.FromMilliseconds(350);
-                var delay = TimeSpan.FromMilliseconds(i * 25);
-
-                var animX = new DoubleAnimation(deltaX, 0, dur)
-                {
-                    BeginTime = delay,
-                    EasingFunction = ease
-                };
-                var animY = new DoubleAnimation(deltaY, 0, dur)
-                {
-                    BeginTime = delay,
-                    EasingFunction = ease
-                };
+                var animX = AnimationHelper.CreateAnim(deltaX, 0, 350, AnimationHelper.EaseOut, beginTimeMs: i * 25);
+                var animY = AnimationHelper.CreateAnim(deltaY, 0, 350, AnimationHelper.EaseOut, beginTimeMs: i * 25);
 
                 EventHandler? cleanupHandler = null;
                 cleanupHandler = (_, _) =>
@@ -99,18 +89,6 @@ public partial class MainPage
                 translate.BeginAnimation(TranslateTransform.XProperty, animX);
                 translate.BeginAnimation(TranslateTransform.YProperty, animY);
             }
-        }), DispatcherPriority.Loaded);
-    }
-
-    internal void AnimateCardAdded(FolderListItem newItem)
-    {
-        _ = Dispatcher.BeginInvoke(new Action(() =>
-        {
-            var container = FolderList.ItemContainerGenerator.ContainerFromItem(newItem);
-            var border = FindChildBorder(container);
-            if (border == null) return;
-
-            _ = StaggeredEntranceAnimator.AnimateSingleAsync(border);
         }), DispatcherPriority.Loaded);
     }
 }

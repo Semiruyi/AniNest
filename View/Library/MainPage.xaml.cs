@@ -25,7 +25,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     private FolderListItem? _dragItem;
     private System.Windows.Point _dragStartPoint;
-    private bool _dragInitiated;
+    private DragState _dragState;
     private InsertionAdorner? _insertionAdorner;
 
     public MainPage(MainPageViewModel vm)

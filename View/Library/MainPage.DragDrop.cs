@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,6 +11,10 @@ namespace LocalPlayer.View.Library;
 
 public partial class MainPage
 {
+    private const string FolderItemFormat = "FolderListItem";
+
+    private enum DragState { None, Pending, Dragging }
+
     private void Card_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (sender is not Border border || border.Tag is not string path) return;
@@ -19,7 +22,7 @@ public partial class MainPage
 
         _dragItem = _vm.FolderItems.FirstOrDefault(i => i.Path == path);
         _dragStartPoint = e.GetPosition(null);
-        _dragInitiated = false;
+        _dragState = DragState.Pending;
     }
 
     private static bool IsOriginalSourceInsideButton(object? originalSource, Border cardBorder)
@@ -36,10 +39,11 @@ public partial class MainPage
 
     private void Card_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
     {
-        if (_dragItem == null || _dragInitiated) return;
+        if (_dragState != DragState.Pending) return;
         if (e.LeftButton != MouseButtonState.Pressed)
         {
             _dragItem = null;
+            _dragState = DragState.None;
             return;
         }
 
@@ -49,14 +53,14 @@ public partial class MainPage
         if (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
             Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance)
         {
-            _dragInitiated = true;
+            _dragState = DragState.Dragging;
             var sourceItem = _dragItem;
 
             var sourceBorder = FindTemplateRoot(sourceItem);
             if (sourceBorder != null) sourceBorder.Opacity = 0.4;
 
             var oldPositions = CaptureCardPositions();
-            var data = new System.Windows.DataObject("FolderListItem", sourceItem);
+            var data = new System.Windows.DataObject(FolderItemFormat, sourceItem);
             System.Windows.DragDrop.DoDragDrop(FolderList, data, System.Windows.DragDropEffects.Move);
 
             if (sourceBorder != null)
@@ -65,7 +69,7 @@ public partial class MainPage
                 sourceBorder.Opacity = 1;
             }
             _dragItem = null;
-            _dragInitiated = false;
+            _dragState = DragState.None;
             HideInsertionIndicator();
             AnimateCardsReposition(oldPositions);
         }
@@ -73,7 +77,7 @@ public partial class MainPage
 
     private void Card_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        if (_dragItem != null && !_dragInitiated)
+        if (_dragState == DragState.Pending)
         {
             if (sender is Border border && border.Tag is string path)
             {
@@ -81,12 +85,12 @@ public partial class MainPage
             }
         }
         _dragItem = null;
-        _dragInitiated = false;
+        _dragState = DragState.None;
     }
 
     private void FolderList_DragOver(object sender, System.Windows.DragEventArgs e)
     {
-        if (!e.Data.GetDataPresent("FolderListItem"))
+        if (!e.Data.GetDataPresent(FolderItemFormat))
         {
             e.Effects = System.Windows.DragDropEffects.None;
             return;
@@ -102,8 +106,8 @@ public partial class MainPage
 
     private void FolderList_Drop(object sender, System.Windows.DragEventArgs e)
     {
-        if (!e.Data.GetDataPresent("FolderListItem") ||
-            e.Data.GetData("FolderListItem") is not FolderListItem sourceItem)
+        if (!e.Data.GetDataPresent(FolderItemFormat) ||
+            e.Data.GetData(FolderItemFormat) is not FolderListItem sourceItem)
             return;
 
         var pos = e.GetPosition(FolderList);
