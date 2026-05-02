@@ -20,8 +20,8 @@
                         <Grid.RenderTransform>
                             <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
                         </Grid.RenderTransform>
-                        <Ellipse x:Name="HoverBg" Fill="{DynamicResource HoverBackground}"
-                                 Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" Opacity="0"/>
+                        <Border x:Name="HoverBg" CornerRadius="8"
+                                Background="{DynamicResource HoverBackground}" Opacity="0"/>
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Grid>
                     <ControlTemplate.Triggers>

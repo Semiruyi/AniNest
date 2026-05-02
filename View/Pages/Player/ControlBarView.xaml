@@ -17,6 +17,16 @@
                 <Setter Property="FontSize" Value="13"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Margin" Value="2"/>
+                <Setter Property="animations:ButtonScaleHover.IsEnabled" Value="True"/>
+                <Setter Property="animations:ButtonScaleHover.HoverScaleEnabled" Value="False"/>
+                <Setter Property="animations:ButtonScaleHover.PressScale" Value="0.95"/>
+                <Setter Property="animations:ButtonScaleHover.PressDurationMs" Value="60"/>
+                <Setter Property="animations:ButtonScaleHover.ReleaseDurationMs" Value="250"/>
+                <Setter Property="animations:ButtonScaleHover.Easing">
+                    <Setter.Value>
+                        <ElasticEase Oscillations="1" Springiness="8" EasingMode="EaseOut"/>
+                    </Setter.Value>
+                </Setter>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
@@ -25,7 +35,7 @@
                                     <SolidColorBrush x:Name="BgBrush" Color="Transparent"/>
                                 </Border.Background>
                                 <Border.RenderTransform>
-                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                    <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
                                 </Border.RenderTransform>
                                 <Grid>
                                     <Border x:Name="HoverOverlay" CornerRadius="8"
@@ -50,40 +60,6 @@
                                                 <DoubleAnimation Storyboard.TargetName="HoverOverlay"
                                                     Storyboard.TargetProperty="Opacity"
                                                     To="0" Duration="0:0:0.3"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.ExitActions>
-                                </Trigger>
-                                <Trigger Property="IsPressed" Value="True">
-                                    <Trigger.EnterActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="BgBorder"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                    To="0.95" Duration="0:0:0.06"/>
-                                                <DoubleAnimation Storyboard.TargetName="BgBorder"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                    To="0.95" Duration="0:0:0.06"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.EnterActions>
-                                    <Trigger.ExitActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="BgBorder"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                    To="1" Duration="0:0:0.25">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <ElasticEase Oscillations="1" Springiness="8" EasingMode="EaseOut"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
-                                                <DoubleAnimation Storyboard.TargetName="BgBorder"
-                                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                    To="1" Duration="0:0:0.25">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <ElasticEase Oscillations="1" Springiness="8" EasingMode="EaseOut"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
                                             </Storyboard>
                                         </BeginStoryboard>
                                     </Trigger.ExitActions>
@@ -220,10 +196,11 @@
             <!-- 左侧：播放控制 + 时间 -->
             <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
                 <Button x:Name="PreviousBtn" Style="{StaticResource IconButton}" Command="{Binding PreviousCommand}" ToolTip="{Binding PreviousTooltip}" Focusable="False"
+                        Margin="0,0,4,0"
                         animations:ButtonScaleHover.IsEnabled="True">
                     <Image Source="/Resources/Icons/previous.png" Width="14" Height="14"/>
                 </Button>
-                <Button x:Name="PlayPauseBtn" Style="{StaticResource IconButton}" Width="34" Height="34" Opacity="0.85" Command="{Binding PlayPauseCommand}" Margin="2,0" ToolTip="{Binding PlayPauseTooltip}" Focusable="False"
+                <Button x:Name="PlayPauseBtn" Style="{StaticResource IconButton}" Width="34" Height="34" Opacity="0.85" Command="{Binding PlayPauseCommand}" Margin="4,0" ToolTip="{Binding PlayPauseTooltip}" Focusable="False"
                         animations:ButtonScaleHover.IsEnabled="True">
                     <Image x:Name="PlayPauseIcon" Width="20" Height="20">
                         <Image.Style>
@@ -239,10 +216,11 @@
                     </Image>
                 </Button>
                 <Button x:Name="NextBtn" Style="{StaticResource IconButton}" Command="{Binding NextCommand}" ToolTip="{Binding NextTooltip}" Focusable="False"
+                        Margin="0,0,4,0"
                         animations:ButtonScaleHover.IsEnabled="True">
                     <Image Source="/Resources/Icons/next.png" Width="14" Height="14"/>
                 </Button>
-                <Button x:Name="StopBtn" Style="{StaticResource IconButton}" Command="{Binding StopCommand}" Margin="2,0,0,0" ToolTip="停止" Focusable="False">
+                <Button x:Name="StopBtn" Style="{StaticResource IconButton}" Command="{Binding StopCommand}" Margin="4,0,0,0" ToolTip="停止" Focusable="False">
                     <Image Source="/Resources/Icons/stop.png" Width="14" Height="14"/>
                 </Button>
                 <TextBlock Text="{Binding CurrentTimeText, FallbackValue='00:00'}"
@@ -313,7 +291,7 @@
                             Style="{StaticResource IconButton}"
                             FontSize="11" FontWeight="SemiBold"
                             Foreground="White" Focusable="False"
-                            Margin="0,0,2,0"
+                            Margin="0,0,4,0"
                             behaviors:HoverBehavior.MouseEnterCommand="{Binding SpeedEnterCommand}"
                             behaviors:HoverBehavior.MouseLeaveCommand="{Binding SpeedLeaveCommand}"/>
                     <Popup x:Name="SpeedPopup" AllowsTransparency="True"
@@ -355,7 +333,7 @@
                     </Popup>
                 </Grid>
 
-                <Button x:Name="PlaylistToggleBtn" Style="{StaticResource IconButton}" Command="{Binding TogglePlaylistCommand}" ToolTip="选集" Focusable="False">
+                <Button x:Name="PlaylistToggleBtn" Style="{StaticResource IconButton}" Command="{Binding TogglePlaylistCommand}" Margin="4,0,0,0" ToolTip="选集" Focusable="False">
                     <Image Source="/Resources/Icons/playlist.png" Width="16" Height="16"/>
                 </Button>
             </StackPanel>

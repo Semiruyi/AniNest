@@ -1,8 +1,5 @@
-using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 
@@ -10,7 +7,13 @@ namespace LocalPlayer.View.Animations;
 
 /// <summary>
 /// 按钮 hover/press 缩放动画附加行为。
-/// 替代 ControlBarView 中重复的 4 个鼠标事件处理器 + AnimateScale 方法。
+/// <example>
+/// &lt;Button animations:ButtonScaleHover.IsEnabled="True"
+///         animations:ButtonScaleHover.HoverScale="1.15"
+///         animations:ButtonScaleHover.Easing&gt;
+///     &lt;ElasticEase Oscillations="1" Springiness="8" EasingMode="EaseOut"/&gt;
+/// &lt;/animations:ButtonScaleHover.Easing&gt;
+/// </example>
 /// </summary>
 public static class ButtonScaleHover
 {
@@ -18,22 +21,68 @@ public static class ButtonScaleHover
         DependencyProperty.RegisterAttached("IsEnabled", typeof(bool), typeof(ButtonScaleHover),
             new PropertyMetadata(false, OnIsEnabledChanged));
 
-    public static bool GetIsEnabled(DependencyObject obj) => (bool)obj.GetValue(IsEnabledProperty);
-    public static void SetIsEnabled(DependencyObject obj, bool value) => obj.SetValue(IsEnabledProperty, value);
-
     public static readonly DependencyProperty HoverScaleProperty =
         DependencyProperty.RegisterAttached("HoverScale", typeof(double), typeof(ButtonScaleHover),
             new PropertyMetadata(1.2));
 
-    public static double GetHoverScale(DependencyObject obj) => (double)obj.GetValue(HoverScaleProperty);
-    public static void SetHoverScale(DependencyObject obj, double value) => obj.SetValue(HoverScaleProperty, value);
+    public static readonly DependencyProperty HoverScaleEnabledProperty =
+        DependencyProperty.RegisterAttached("HoverScaleEnabled", typeof(bool), typeof(ButtonScaleHover),
+            new PropertyMetadata(true));
 
     public static readonly DependencyProperty PressScaleProperty =
         DependencyProperty.RegisterAttached("PressScale", typeof(double), typeof(ButtonScaleHover),
             new PropertyMetadata(0.85));
 
+    public static readonly DependencyProperty HoverEnterDurationMsProperty =
+        DependencyProperty.RegisterAttached("HoverEnterDurationMs", typeof(int), typeof(ButtonScaleHover),
+            new PropertyMetadata(150));
+
+    public static readonly DependencyProperty HoverExitDurationMsProperty =
+        DependencyProperty.RegisterAttached("HoverExitDurationMs", typeof(int), typeof(ButtonScaleHover),
+            new PropertyMetadata(250));
+
+    public static readonly DependencyProperty PressDurationMsProperty =
+        DependencyProperty.RegisterAttached("PressDurationMs", typeof(int), typeof(ButtonScaleHover),
+            new PropertyMetadata(130));
+
+    public static readonly DependencyProperty ReleaseDurationMsProperty =
+        DependencyProperty.RegisterAttached("ReleaseDurationMs", typeof(int), typeof(ButtonScaleHover),
+            new PropertyMetadata(280));
+
+    public static readonly DependencyProperty EasingProperty =
+        DependencyProperty.RegisterAttached("Easing", typeof(IEasingFunction), typeof(ButtonScaleHover),
+            new PropertyMetadata(null));
+
+    // ---- getter / setter ----
+
+    public static bool GetIsEnabled(DependencyObject obj) => (bool)obj.GetValue(IsEnabledProperty);
+    public static void SetIsEnabled(DependencyObject obj, bool value) => obj.SetValue(IsEnabledProperty, value);
+
+    public static double GetHoverScale(DependencyObject obj) => (double)obj.GetValue(HoverScaleProperty);
+    public static void SetHoverScale(DependencyObject obj, double value) => obj.SetValue(HoverScaleProperty, value);
+
+    public static bool GetHoverScaleEnabled(DependencyObject obj) => (bool)obj.GetValue(HoverScaleEnabledProperty);
+    public static void SetHoverScaleEnabled(DependencyObject obj, bool value) => obj.SetValue(HoverScaleEnabledProperty, value);
+
     public static double GetPressScale(DependencyObject obj) => (double)obj.GetValue(PressScaleProperty);
     public static void SetPressScale(DependencyObject obj, double value) => obj.SetValue(PressScaleProperty, value);
+
+    public static int GetHoverEnterDurationMs(DependencyObject obj) => (int)obj.GetValue(HoverEnterDurationMsProperty);
+    public static void SetHoverEnterDurationMs(DependencyObject obj, int value) => obj.SetValue(HoverEnterDurationMsProperty, value);
+
+    public static int GetHoverExitDurationMs(DependencyObject obj) => (int)obj.GetValue(HoverExitDurationMsProperty);
+    public static void SetHoverExitDurationMs(DependencyObject obj, int value) => obj.SetValue(HoverExitDurationMsProperty, value);
+
+    public static int GetPressDurationMs(DependencyObject obj) => (int)obj.GetValue(PressDurationMsProperty);
+    public static void SetPressDurationMs(DependencyObject obj, int value) => obj.SetValue(PressDurationMsProperty, value);
+
+    public static int GetReleaseDurationMs(DependencyObject obj) => (int)obj.GetValue(ReleaseDurationMsProperty);
+    public static void SetReleaseDurationMs(DependencyObject obj, int value) => obj.SetValue(ReleaseDurationMsProperty, value);
+
+    public static IEasingFunction GetEasing(DependencyObject obj) => (IEasingFunction)obj.GetValue(EasingProperty);
+    public static void SetEasing(DependencyObject obj, IEasingFunction value) => obj.SetValue(EasingProperty, value);
+
+    // ---- 绑定启用 ----
 
     private static void OnIsEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
@@ -41,41 +90,36 @@ public static class ButtonScaleHover
         btn.Loaded += (_, _) =>
         {
             if (btn.Template.FindName("AnimScale", btn) is ScaleTransform st)
-                Attach(btn, st, GetHoverScale(btn), GetPressScale(btn));
+                Attach(btn, st,
+                    GetHoverScale(btn), GetPressScale(btn),
+                    GetHoverScaleEnabled(btn),
+                    GetHoverEnterDurationMs(btn), GetHoverExitDurationMs(btn),
+                    GetPressDurationMs(btn), GetReleaseDurationMs(btn),
+                    GetEasing(btn));
         };
     }
 
-    /// <param name="button">目标按钮</param>
-    /// <param name="scale">按钮模板中的 ScaleTransform（通常叫 AnimScale）</param>
-    /// <param name="hoverScale">hover 时缩放倍数</param>
-    /// <param name="pressScale">按下时缩放倍数</param>
-    /// <param name="hoverEnterMs">hover 入场动画时长</param>
-    /// <param name="hoverExitMs">hover 退场动画时长</param>
-    /// <param name="pressMs">按下动画时长</param>
-    /// <param name="releaseMs">松开动画时长</param>
-    /// <param name="ease">缓动函数</param>
+    // ---- 核心逻辑 ----
+
     public static void Attach(Button button, ScaleTransform scale,
         double hoverScale = 1.2, double pressScale = 0.85,
+        bool hoverScaleEnabled = true,
         int hoverEnterMs = 150, int hoverExitMs = 250,
         int pressMs = 130, int releaseMs = 280,
         IEasingFunction? ease = null)
     {
-        var e = ease ?? new CubicBezierEase
-        {
-            X1 = 0.25, Y1 = 0.1, X2 = 0.25, Y2 = 1.0,
-            EasingMode = EasingMode.EaseIn
-        };
+        var e = ease ?? DefaultEase();
 
         button.MouseEnter += (_, _) =>
         {
-            if (!button.IsPressed)
-                AnimationHelper.AnimateScaleTransform(scale, hoverScale, hoverEnterMs, e);
+            if (!hoverScaleEnabled || button.IsPressed) return;
+            AnimationHelper.AnimateScaleTransform(scale, hoverScale, hoverEnterMs, e);
         };
 
         button.MouseLeave += (_, _) =>
         {
-            if (!button.IsPressed)
-                AnimationHelper.AnimateScaleTransform(scale, 1.0, hoverExitMs, e);
+            if (!hoverScaleEnabled || button.IsPressed) return;
+            AnimationHelper.AnimateScaleTransform(scale, 1.0, hoverExitMs, e);
         };
 
         button.PreviewMouseDown += (_, _) =>
@@ -85,8 +129,14 @@ public static class ButtonScaleHover
 
         button.PreviewMouseUp += (_, _) =>
         {
-            double target = button.IsMouseOver ? hoverScale : 1.0;
+            double target = (hoverScaleEnabled && button.IsMouseOver) ? hoverScale : 1.0;
             AnimationHelper.AnimateScaleTransform(scale, target, releaseMs, e);
         };
     }
+
+    private static IEasingFunction DefaultEase() => new CubicBezierEase
+    {
+        X1 = 0.25, Y1 = 0.1, X2 = 0.25, Y2 = 1.0,
+        EasingMode = EasingMode.EaseIn
+    };
 }
