@@ -153,7 +153,6 @@ public partial class PlayerViewModel : ObservableObject
             Application.Current.Dispatcher.Invoke(() =>
             {
                 IsPlaying = true;
-                ControlBar.UpdateIsPlaying(true);
                 _saveTimer.Start();
             });
 
@@ -161,7 +160,6 @@ public partial class PlayerViewModel : ObservableObject
             Application.Current.Dispatcher.Invoke(() =>
             {
                 IsPlaying = false;
-                ControlBar.UpdateIsPlaying(false);
                 _saveTimer.Stop();
                 SaveProgress();
             });
@@ -170,15 +168,8 @@ public partial class PlayerViewModel : ObservableObject
             Application.Current.Dispatcher.Invoke(() =>
             {
                 IsPlaying = false;
-                ControlBar.UpdateIsPlaying(false);
                 _saveTimer.Stop();
             });
-
-        _media.ProgressUpdated += (_, args) =>
-        {
-            if (!ControlBar.IsSeeking)
-                ControlBar.UpdateProgress(args.CurrentTime, args.TotalTime);
-        };
     }
 
     private void WireInputEvents()

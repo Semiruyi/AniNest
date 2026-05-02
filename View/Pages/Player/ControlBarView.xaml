@@ -288,6 +288,8 @@
                     behaviors:HoverBehavior.MouseEnterCommand="{Binding ThumbnailPreview.EnterCommand}"
                     behaviors:HoverBehavior.MouseLeaveCommand="{Binding ThumbnailPreview.LeaveCommand}"
                     behaviors:MouseMoveBehavior.MouseMoveCommand="{Binding ThumbnailPreview.MoveCommand}"
+                    animations:ValueSmoother.Enabled="True"
+                    animations:ValueSmoother.IsSuppressed="{Binding IsSeeking, Mode=OneWay}"
                     VerticalAlignment="Center"
                     Margin="{StaticResource ControlBarSliderMargin}"/>
 

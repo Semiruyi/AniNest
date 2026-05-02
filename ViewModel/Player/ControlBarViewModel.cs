@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -16,6 +17,7 @@ public partial class ControlBarViewModel : ObservableObject
     private readonly PlayerInputHandler _inputHandler;
 
     private float _savedRate = 1.0f;
+    private long _lastNonZeroTime;
 
     // ========== 缩略图预览（组合） ==========
 
@@ -132,6 +134,35 @@ public partial class ControlBarViewModel : ObservableObject
             OnPropertyChanged(nameof(PlayPauseTooltip));
             OnPropertyChanged(nameof(PreviousTooltip));
             OnPropertyChanged(nameof(NextTooltip));
+        };
+
+        _media.Playing += (_, _) =>
+            Application.Current.Dispatcher.Invoke(() => IsPlaying = true);
+
+        _media.Paused += (_, _) =>
+            Application.Current.Dispatcher.Invoke(() => IsPlaying = false);
+
+        _media.Stopped += (_, _) =>
+            Application.Current.Dispatcher.Invoke(() => IsPlaying = false);
+
+        _media.ProgressUpdated += (_, args) =>
+        {
+            if (IsSeeking) return;
+
+            // 新视频加载中或 VLC 重 seek 期间：CurrentTime=0 为中间态，抑制避免闪烁
+            if (args.CurrentTime == 0 && IsPlaying)
+            {
+                if (_lastNonZeroTime > 0)
+                    CurrentTime = _lastNonZeroTime;
+                TotalTime = args.TotalTime;
+                return;
+            }
+
+            _lastNonZeroTime = args.CurrentTime;
+            CurrentTime = args.CurrentTime;
+            TotalTime = args.TotalTime;
+            CurrentTimeText = MediaPlayerController.FormatTime(args.CurrentTime);
+            TotalTimeText = MediaPlayerController.FormatTime(args.TotalTime);
         };
     }
 
@@ -264,15 +295,4 @@ public partial class ControlBarViewModel : ObservableObject
     [RelayCommand]
     private void KeyDown(KeyEventArgs e) => HandleKeyDown(e);
 
-    // ========== 播放进度更新（由 PlayerViewModel 驱动） ==========
-
-    public void UpdateProgress(long currentTime, long totalTime)
-    {
-        CurrentTime = currentTime;
-        TotalTime = totalTime;
-        CurrentTimeText = MediaPlayerController.FormatTime(currentTime);
-        TotalTimeText = MediaPlayerController.FormatTime(totalTime);
-    }
-
-    public void UpdateIsPlaying(bool playing) => IsPlaying = playing;
 }
