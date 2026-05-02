@@ -49,19 +49,12 @@
                                 </Grid.Clip>
 
                                 <!-- 删除按钮 -->
-                                <Button Width="26" Height="26" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="6"
-                                        Background="#CCFF4444" Foreground="White" BorderThickness="0"
+                                <Button Style="{StaticResource DeleteIconButton}"
+                                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="6"
                                         Command="{Binding DataContext.DeleteFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         CommandParameter="{Binding}"
-                                        Cursor="Hand" Panel.ZIndex="10">
-                                    <Button.Template>
-                                        <ControlTemplate TargetType="Button">
-                                            <Grid>
-                                                <Ellipse Fill="{TemplateBinding Background}"/>
-                                                <TextBlock Text="&#x2715;" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-1,0,0"/>
-                                            </Grid>
-                                        </ControlTemplate>
-                                    </Button.Template>
+                                        Panel.ZIndex="10">
+                                    <TextBlock Text="&#x2715;" FontSize="12" Margin="0,-1,0,0"/>
                                 </Button>
 
                                 <!-- 封面图 -->
