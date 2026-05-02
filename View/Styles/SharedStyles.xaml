@@ -2,16 +2,11 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:animations="clr-namespace:LocalPlayer.View.Animations">
 
-    <!-- 统一的圆形悬浮图标按钮：合并了原 IconButton 和 PlayButton。
-         使用方式：<Button Style="{StaticResource IconButton}" Width="36" Content="..." />
-         ButtonScaleHover.IsEnabled 可附加 hover/press 缩放动画。 -->
+    <!-- ═══ 通用图标按钮 ═══ -->
     <Style x:Key="IconButton" TargetType="Button">
-        <Style.Resources>
-            <CornerRadius x:Key="ButtonCornerRadius">8</CornerRadius>
-        </Style.Resources>
+        <Setter Property="Width" Value="{StaticResource IconButtonDefault}"/>
+        <Setter Property="Height" Value="{StaticResource IconButtonDefault}"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Width" Value="36"/>
-        <Setter Property="Height" Value="36"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Opacity" Value="0.8"/>
         <Setter Property="Background" Value="Transparent"/>
@@ -54,14 +49,15 @@
             </Setter.Value>
         </Setter>
     </Style>
-    <!-- 标题栏图标按钮：基于 IconButton，覆盖圆角 -->
+
+    <!-- ═══ 标题栏图标按钮（无圆角） ═══ -->
     <Style x:Key="TitleBarIconButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
         <Style.Resources>
             <CornerRadius x:Key="ButtonCornerRadius">0</CornerRadius>
         </Style.Resources>
     </Style>
 
-    <!-- 标题栏关闭按钮：基于 IconButton，hover 红色，覆盖圆角 -->
+    <!-- ═══ 标题栏关闭按钮（hover 红色，无圆角） ═══ -->
     <Style x:Key="CloseIconButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
         <Style.Resources>
             <SolidColorBrush x:Key="HoverBackground" Color="#E81123"/>
@@ -69,7 +65,7 @@
         </Style.Resources>
     </Style>
 
-    <!-- 删除图标按钮：红色圆形，Content 自由设置图标 -->
+    <!-- ═══ 删除图标按钮 ═══ -->
     <Style x:Key="DeleteIconButton" TargetType="Button">
         <Setter Property="Width" Value="26"/>
         <Setter Property="Height" Value="26"/>

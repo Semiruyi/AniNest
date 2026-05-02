@@ -1,0 +1,39 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- ═══ 圆角 ═══ -->
+    <CornerRadius x:Key="WindowCornerRadius">8</CornerRadius>
+    <CornerRadius x:Key="ButtonCornerRadius">8</CornerRadius>
+    <CornerRadius x:Key="CardCornerRadius">14</CornerRadius>
+    <CornerRadius x:Key="FolderCardCornerRadius">10</CornerRadius>
+    <CornerRadius x:Key="ThumbnailCornerRadius">10</CornerRadius>
+    <CornerRadius x:Key="SpeedPopupCornerRadius">12</CornerRadius>
+
+    <!-- ═══ 标题栏 ═══ -->
+    <Thickness x:Key="TitleBarLeftMargin">12,0,0,0</Thickness>
+
+    <!-- ═══ 间距 ═══ -->
+    <Thickness x:Key="ControlBarHorizontalMargin">10,0,10,0</Thickness>
+    <Thickness x:Key="ControlBarSliderMargin">10,0</Thickness>
+    <Thickness x:Key="ButtonGapRight">0,0,4,0</Thickness>
+    <Thickness x:Key="ButtonGapLeft">4,0,0,0</Thickness>
+    <Thickness x:Key="ButtonGapBoth">4,0</Thickness>
+    <Thickness x:Key="TimeTextLeftMargin">10,0,0,0</Thickness>
+    <Thickness x:Key="TimeSeparatorMargin">2,0</Thickness>
+    <Thickness x:Key="PlaylistHeaderMargin">20,18,20,10</Thickness>
+    <Thickness x:Key="PlaylistItemsMargin">14,4,14,14</Thickness>
+    <Thickness x:Key="PauseBigIconMargin">0,0,32,75</Thickness>
+    <Thickness x:Key="SpeedOptionMargin">2</Thickness>
+
+    <!-- ═══ 库页面 ═══ -->
+    <Thickness x:Key="LibraryPageMargin">24</Thickness>
+    <Thickness x:Key="FolderCardMargin">12</Thickness>
+    <Thickness x:Key="ToolbarHorizontalMargin">24,0</Thickness>
+    <Thickness x:Key="CardInfoMargin">12,44,12,12</Thickness>
+
+    <!-- ═══ 弹窗偏移 ═══ -->
+    <system:Double x:Key="ThumbnailPopupOffset">-120</system:Double>
+    <system:Double x:Key="SpeedPopupOffset">-40</system:Double>
+
+</ResourceDictionary>

@@ -22,8 +22,8 @@ public partial class MainWindow : Window
         WeakReferenceMessenger.Default.Register<ToggleFullscreenMessage>(this, (_, _) =>
         {
             TitleBarRow.Height = TitleBarRow.Height.Value > 0
-                ? new System.Windows.GridLength(0)
-                : LayoutConstants.TitleBarRowHeight;
+                ? new GridLength(0)
+                : (GridLength)FindResource("TitleBarRowHeight");
         });
     }
 

@@ -1,18 +1,21 @@
 <Window x:Class="LocalPlayer.View.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:view="clr-namespace:LocalPlayer.View"
         xmlns:primitives="clr-namespace:LocalPlayer.View.Primitives"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
-        Title="LocalPlayer" Height="720" Width="1280"
-        MinWidth="800" MinHeight="500"
+        Title="LocalPlayer"
+        Height="{StaticResource WindowDefaultHeight}"
+        Width="{StaticResource WindowDefaultWidth}"
+        MinWidth="{StaticResource WindowMinWidth}"
+        MinHeight="{StaticResource WindowMinHeight}"
         Background="Transparent"
         WindowStartupLocation="CenterScreen"
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize">
 
     <shell:WindowChrome.WindowChrome>
-        <shell:WindowChrome CaptionHeight="{x:Static view:LayoutConstants.TitleBarHeight}" ResizeBorderThickness="6"
+        <shell:WindowChrome CaptionHeight="{StaticResource TitleBarHeight}"
+                            ResizeBorderThickness="6"
                             GlassFrameThickness="0" UseAeroCaptionButtons="False"/>
     </shell:WindowChrome.WindowChrome>
 
@@ -20,7 +23,7 @@
             Background="{StaticResource BackgroundDark}">
         <Border.Style>
             <Style TargetType="Border">
-                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="CornerRadius" Value="{StaticResource WindowCornerRadius}"/>
                 <Style.Triggers>
                     <DataTrigger Value="Maximized"
                         Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}">
@@ -31,7 +34,7 @@
         </Border.Style>
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition x:Name="TitleBarRow" Height="{x:Static view:LayoutConstants.TitleBarRowHeight}"/>
+                <RowDefinition x:Name="TitleBarRow" Height="{StaticResource TitleBarRowHeight}"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
@@ -47,49 +50,52 @@
                     <!-- 左侧：App 图标 -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal"
                                 HorizontalAlignment="Center" VerticalAlignment="Center"
-                                Margin="{x:Static view:LayoutConstants.TitleBarLeftMargin}">
-                        <Viewbox Width="{x:Static view:LayoutConstants.TitleBarAppIconSize}"
-                                 Height="{x:Static view:LayoutConstants.TitleBarAppIconSize}"
+                                Margin="{StaticResource TitleBarLeftMargin}">
+                        <Viewbox Width="{StaticResource TitleBarAppIconSize}"
+                                 Height="{StaticResource TitleBarAppIconSize}"
                                  VerticalAlignment="Center">
                             <Path Data="{StaticResource AppIconGeometry}"
                                   Fill="{StaticResource AccentBlue}"/>
                         </Viewbox>
                     </StackPanel>
 
-                    <!-- 中间拖拽区域（WindowChrome caption 自动处理拖拽和双击最大化） -->
+                    <!-- 中间拖拽区域 -->
                     <Grid Grid.Column="1"/>
 
                     <!-- 右侧：窗口控制按钮 -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal"
                                 VerticalAlignment="Center">
-                        <!-- 最小化 -->
                         <Button Style="{StaticResource TitleBarIconButton}"
-                                Width="{x:Static view:LayoutConstants.TitleBarButtonWidth}"
-                                Height="{x:Static view:LayoutConstants.TitleBarButtonHeight}"
+                                Width="{StaticResource TitleBarButtonWidth}"
+                                Height="{StaticResource TitleBarButtonHeight}"
                                 Click="MinimizeButton_Click" ToolTip="最小化"
                                 shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                            <Viewbox Width="{x:Static view:LayoutConstants.TitleBarIconSize}"
-                                     Height="{x:Static view:LayoutConstants.TitleBarIconSize}">
+                            <Viewbox Width="{StaticResource TitleBarIconSize}"
+                                     Height="{StaticResource TitleBarIconSize}">
                                 <Path Data="{StaticResource MinimizeIconGeometry}" Stroke="White"
-                                      StrokeThickness="{x:Static view:LayoutConstants.TitleBarIconStroke}" StrokeEndLineCap="Round"/>
+                                      StrokeThickness="{StaticResource TitleBarIconStroke}"
+                                      StrokeEndLineCap="Round"/>
                             </Viewbox>
                         </Button>
 
-                        <!-- 最大化 / 还原 -->
                         <Button Click="MaximizeButton_Click"
-                                Width="{x:Static view:LayoutConstants.TitleBarButtonWidth}"
-                                Height="{x:Static view:LayoutConstants.TitleBarButtonHeight}"
+                                Width="{StaticResource TitleBarButtonWidth}"
+                                Height="{StaticResource TitleBarButtonHeight}"
                                 shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                            <Viewbox Width="{x:Static view:LayoutConstants.TitleBarIconSize}"
-                                     Height="{x:Static view:LayoutConstants.TitleBarIconSize}">
-                                <Path Stroke="White" StrokeThickness="{x:Static view:LayoutConstants.TitleBarIconStroke}" StrokeLineJoin="Round">
+                            <Viewbox Width="{StaticResource TitleBarIconSize}"
+                                     Height="{StaticResource TitleBarIconSize}">
+                                <Path Stroke="White"
+                                      StrokeThickness="{StaticResource TitleBarIconStroke}"
+                                      StrokeLineJoin="Round">
                                     <Path.Style>
                                         <Style TargetType="Path">
-                                            <Setter Property="Data" Value="{StaticResource MaximizeIconGeometry}"/>
+                                            <Setter Property="Data"
+                                                    Value="{StaticResource MaximizeIconGeometry}"/>
                                             <Style.Triggers>
                                                 <DataTrigger Value="Maximized"
                                                     Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}">
-                                                    <Setter Property="Data" Value="{StaticResource RestoreIconGeometry}"/>
+                                                    <Setter Property="Data"
+                                                            Value="{StaticResource RestoreIconGeometry}"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
@@ -97,7 +103,8 @@
                                 </Path>
                             </Viewbox>
                             <Button.Style>
-                                <Style TargetType="Button" BasedOn="{StaticResource TitleBarIconButton}">
+                                <Style TargetType="Button"
+                                       BasedOn="{StaticResource TitleBarIconButton}">
                                     <Setter Property="ToolTip" Value="最大化"/>
                                     <Style.Triggers>
                                         <DataTrigger Value="Maximized"
@@ -109,16 +116,16 @@
                             </Button.Style>
                         </Button>
 
-                        <!-- 关闭 -->
                         <Button Style="{StaticResource CloseIconButton}"
-                                Width="{x:Static view:LayoutConstants.TitleBarButtonWidth}"
-                                Height="{x:Static view:LayoutConstants.TitleBarButtonHeight}"
+                                Width="{StaticResource TitleBarButtonWidth}"
+                                Height="{StaticResource TitleBarButtonHeight}"
                                 Click="CloseButton_Click" ToolTip="关闭"
                                 shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                            <Viewbox Width="{x:Static view:LayoutConstants.TitleBarIconSize}"
-                                     Height="{x:Static view:LayoutConstants.TitleBarIconSize}">
+                            <Viewbox Width="{StaticResource TitleBarIconSize}"
+                                     Height="{StaticResource TitleBarIconSize}">
                                 <Path Data="{StaticResource CloseIconGeometry}" Stroke="White"
-                                      StrokeThickness="{x:Static view:LayoutConstants.TitleBarIconStroke}" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                                      StrokeThickness="{StaticResource TitleBarIconStroke}"
+                                      StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
                             </Viewbox>
                         </Button>
                     </StackPanel>

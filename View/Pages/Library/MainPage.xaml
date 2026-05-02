@@ -4,7 +4,6 @@
              xmlns:behaviors="clr-namespace:LocalPlayer.View.Behaviors"
              xmlns:animations="clr-namespace:LocalPlayer.View.Animations"
              behaviors:LoadedCommandBehavior.Command="{Binding LoadDataCommand}"
-
              Background="{StaticResource BackgroundDark}">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
@@ -17,7 +16,8 @@
         </Grid.RowDefinitions>
 
         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
-            <ItemsControl Margin="24" ItemsSource="{Binding FolderItems}"
+            <ItemsControl Margin="{StaticResource LibraryPageMargin}"
+                          ItemsSource="{Binding FolderItems}"
                           animations:StaggeredItemsAnimation.Enabled="True"
                           animations:StaggeredItemsAnimation.StaggerMs="50"
                           animations:StaggeredItemsAnimation.DurationMs="500">
@@ -28,9 +28,12 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Width="190" Height="253" Margin="12"
+                        <Border Width="{StaticResource FolderCardWidth}"
+                                Height="{StaticResource FolderCardHeight}"
+                                Margin="{StaticResource FolderCardMargin}"
                                 Background="{StaticResource SurfaceDark}"
-                                CornerRadius="10" Cursor="Hand"
+                                CornerRadius="{StaticResource FolderCardCornerRadius}"
+                                Cursor="Hand"
                                 behaviors:MouseGestureBehavior.LeftClick="{Binding DataContext.SelectFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                 behaviors:MouseGestureBehavior.CommandParameter="{Binding}"
                                 animations:CardAnimation.Enabled="True"
@@ -45,7 +48,8 @@
                             </Border.Effect>
                             <Grid>
                                 <Grid.Clip>
-                                    <RectangleGeometry RadiusX="10" RadiusY="10" Rect="0,0,190,253"/>
+                                    <RectangleGeometry RadiusX="10" RadiusY="10"
+                                                      Rect="0,0,190,253"/>
                                 </Grid.Clip>
 
                                 <!-- 删除按钮 -->
@@ -85,14 +89,15 @@
                                     </Grid.Style>
                                     <Rectangle Fill="#252525"/>
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Text="&#x1F3AC;" FontSize="32" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                        <TextBlock Text="&#x1F3AC;" FontSize="32" HorizontalAlignment="Center"
+                                                   Margin="0,0,0,8"/>
                                         <TextBlock Text="暂无封面" Foreground="#666666" FontSize="13"/>
                                     </StackPanel>
                                 </Grid>
 
                                 <!-- 底部渐变遮罩 + 信息 -->
                                 <Grid VerticalAlignment="Bottom">
-                                    <Rectangle Height="100">
+                                    <Rectangle Height="{StaticResource FolderCardGradientHeight}">
                                         <Rectangle.Fill>
                                             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                                                 <GradientStop Color="Transparent" Offset="0"/>
@@ -100,7 +105,7 @@
                                             </LinearGradientBrush>
                                         </Rectangle.Fill>
                                     </Rectangle>
-                                    <StackPanel Margin="12,44,12,12">
+                                    <StackPanel Margin="{StaticResource CardInfoMargin}">
                                         <TextBlock Text="{Binding Name}" Foreground="White"
                                                    FontSize="14" FontWeight="SemiBold"
                                                    TextTrimming="CharacterEllipsis"/>
@@ -116,32 +121,41 @@
         </ScrollViewer>
 
         <!-- 底部工具栏 -->
-        <Border Grid.Row="1" Height="64" Background="{StaticResource SurfaceDark}">
+        <Border Grid.Row="1" Height="{StaticResource ToolbarHeight}"
+                Background="{StaticResource SurfaceDark}">
             <Border.Effect>
                 <DropShadowEffect Color="Black" BlurRadius="20" ShadowDepth="-4" Opacity="0.3"/>
             </Border.Effect>
-            <Grid Margin="24,0">
+            <Grid Margin="{StaticResource ToolbarHorizontalMargin}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- 左侧：文件夹统计信息 + 缩略图生成进度 -->
+                <!-- 左侧：文件夹统计信息 -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding FolderCountText}" Foreground="{StaticResource TextSecondary}" FontSize="13" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding ThumbnailProgressText}" Foreground="{StaticResource TextSecondary}" FontSize="12" VerticalAlignment="Center" Margin="16,0,0,0"
+                    <TextBlock Text="{Binding FolderCountText}"
+                               Foreground="{StaticResource TextSecondary}" FontSize="13"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding ThumbnailProgressText}"
+                               Foreground="{StaticResource TextSecondary}" FontSize="12"
+                               VerticalAlignment="Center" Margin="16,0,0,0"
                                Visibility="{Binding IsThumbnailProgressVisible, Converter={StaticResource BoolToVis}}"/>
                 </StackPanel>
 
-                <!-- 中间：快速操作提示（空状态时显示） -->
-                <TextBlock x:Name="EmptyHintText" Grid.Column="1" Text="添加文件夹开始浏览视频" Foreground="{StaticResource TextSecondary}" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.5"
+                <!-- 中间：空状态提示 -->
+                <TextBlock x:Name="EmptyHintText" Grid.Column="1"
+                           Text="添加文件夹开始浏览视频"
+                           Foreground="{StaticResource TextSecondary}" FontSize="13"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.5"
                            Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}"/>
 
-                <!-- 右侧：操作按钮组 -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
-                    <!-- 设置按钮 -->
-                    <Button x:Name="SettingsBtn" Width="36" Height="36" Margin="0,0,12,0"
+                <!-- 右侧：操作按钮 -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"
+                            Margin="16,0,0,0">
+                    <Button x:Name="SettingsBtn"
+                            Margin="0,0,12,0"
                             Style="{StaticResource IconButton}"
                             Command="{Binding SettingsCommand}" Opacity="0.7"
                             ToolTip="设置"
@@ -151,16 +165,17 @@
                         <TextBlock Text="&#x2699;" FontSize="18" Foreground="White"/>
                     </Button>
 
-                    <!-- 添加文件夹主按钮 -->
                     <Button x:Name="AddFolderBtn" Command="{Binding AddFolderCommand}" Cursor="Hand"
                             animations:ButtonScaleHover.IsEnabled="True"
                             animations:ButtonScaleHover.HoverScale="1.04"
                             animations:ButtonScaleHover.PressScale="0.96">
                         <Button.Style>
                             <Style TargetType="Button">
-                                <Setter Property="Height" Value="38"/>
+                                <Setter Property="Height"
+                                        Value="{StaticResource AddFolderButtonHeight}"/>
                                 <Setter Property="Padding" Value="16,0"/>
-                                <Setter Property="Background" Value="{StaticResource AccentBlue}"/>
+                                <Setter Property="Background"
+                                        Value="{StaticResource AccentBlue}"/>
                                 <Setter Property="Foreground" Value="White"/>
                                 <Setter Property="BorderThickness" Value="0"/>
                                 <Setter Property="FontSize" Value="13"/>
@@ -170,37 +185,50 @@
                                         <ControlTemplate TargetType="Button">
                                             <Border x:Name="BtnBorder"
                                                     Background="{TemplateBinding Background}"
-                                                    CornerRadius="10"
+                                                    CornerRadius="{StaticResource FolderCardCornerRadius}"
                                                     Height="{TemplateBinding Height}"
                                                     Padding="{TemplateBinding Padding}"
                                                     RenderTransformOrigin="0.5,0.5">
                                                 <Border.Effect>
-                                                    <DropShadowEffect Color="{StaticResource AccentBlueColor}" BlurRadius="0" ShadowDepth="0" Opacity="0"/>
+                                                    <DropShadowEffect Color="{StaticResource AccentBlueColor}"
+                                                                      BlurRadius="0" ShadowDepth="0" Opacity="0"/>
                                                 </Border.Effect>
                                                 <Border.RenderTransform>
                                                     <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
                                                 </Border.RenderTransform>
-                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                    <TextBlock Text="&#x2795;" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                <StackPanel Orientation="Horizontal"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Center">
+                                                    <TextBlock Text="&#x2795;" FontSize="14" Margin="0,0,6,0"
+                                                               VerticalAlignment="Center"/>
                                                     <TextBlock Text="添加文件夹" VerticalAlignment="Center"/>
                                                 </StackPanel>
                                             </Border>
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="BtnBorder" Property="Background" Value="{StaticResource AccentBlueHover}"/>
+                                                    <Setter TargetName="BtnBorder" Property="Background"
+                                                            Value="{StaticResource AccentBlueHover}"/>
                                                     <Trigger.EnterActions>
                                                         <BeginStoryboard>
                                                             <Storyboard>
-                                                                <DoubleAnimation Storyboard.TargetName="BtnBorder" Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)" To="16" Duration="0:0:0.15"/>
-                                                                <DoubleAnimation Storyboard.TargetName="BtnBorder" Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)" To="0.4" Duration="0:0:0.15"/>
+                                                                <DoubleAnimation Storyboard.TargetName="BtnBorder"
+                                                                    Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                                                                    To="16" Duration="0:0:0.15"/>
+                                                                <DoubleAnimation Storyboard.TargetName="BtnBorder"
+                                                                    Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
+                                                                    To="0.4" Duration="0:0:0.15"/>
                                                             </Storyboard>
                                                         </BeginStoryboard>
                                                     </Trigger.EnterActions>
                                                     <Trigger.ExitActions>
                                                         <BeginStoryboard>
                                                             <Storyboard>
-                                                                <DoubleAnimation Storyboard.TargetName="BtnBorder" Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)" To="0" Duration="0:0:0.2"/>
-                                                                <DoubleAnimation Storyboard.TargetName="BtnBorder" Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)" To="0" Duration="0:0:0.2"/>
+                                                                <DoubleAnimation Storyboard.TargetName="BtnBorder"
+                                                                    Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.BlurRadius)"
+                                                                    To="0" Duration="0:0:0.2"/>
+                                                                <DoubleAnimation Storyboard.TargetName="BtnBorder"
+                                                                    Storyboard.TargetProperty="(UIElement.Effect).(DropShadowEffect.Opacity)"
+                                                                    To="0" Duration="0:0:0.2"/>
                                                             </Storyboard>
                                                         </BeginStoryboard>
                                                     </Trigger.ExitActions>
