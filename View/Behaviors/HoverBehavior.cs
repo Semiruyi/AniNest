@@ -14,10 +14,16 @@ public static class HoverBehavior
         DependencyProperty.RegisterAttached("MouseLeaveCommand", typeof(ICommand), typeof(HoverBehavior),
             new PropertyMetadata(null, OnPropertyChanged));
 
+    public static readonly DependencyProperty IgnoreChildLeaveProperty =
+        DependencyProperty.RegisterAttached("IgnoreChildLeave", typeof(bool), typeof(HoverBehavior),
+            new PropertyMetadata(false));
+
     public static ICommand GetMouseEnterCommand(DependencyObject o) => (ICommand)o.GetValue(MouseEnterCommandProperty);
     public static void SetMouseEnterCommand(DependencyObject o, ICommand v) => o.SetValue(MouseEnterCommandProperty, v);
     public static ICommand GetMouseLeaveCommand(DependencyObject o) => (ICommand)o.GetValue(MouseLeaveCommandProperty);
     public static void SetMouseLeaveCommand(DependencyObject o, ICommand v) => o.SetValue(MouseLeaveCommandProperty, v);
+    public static bool GetIgnoreChildLeave(DependencyObject o) => (bool)o.GetValue(IgnoreChildLeaveProperty);
+    public static void SetIgnoreChildLeave(DependencyObject o, bool v) => o.SetValue(IgnoreChildLeaveProperty, v);
 
     private static readonly HashSet<UIElement> _subscribed = new();
 
@@ -32,6 +38,7 @@ public static class HoverBehavior
             };
             el.MouseLeave += (_, _) =>
             {
+                if (GetIgnoreChildLeave(el) && el.IsMouseOver) return;
                 var cmd = GetMouseLeaveCommand(el);
                 if (cmd?.CanExecute(null) == true) cmd.Execute(null);
             };

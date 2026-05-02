@@ -13,24 +13,32 @@ namespace LocalPlayer.View.Animations;
 public class PopupAnimator
 {
     private readonly UIElement _element;
+    private readonly Point _origin;
     private readonly ExitEffect _exitEffect;
 
     public PopupAnimator(UIElement element,
         double hideToScale = 0, int hideDurationMs = 180,
-        IEasingFunction? hideEase = null)
+        IEasingFunction? hideEase = null, Point? origin = null)
     {
         _element = element;
+        _origin = origin ?? EntranceEffect.Default.Origin;
         _exitEffect = new ExitEffect
         {
             Scale = new AnimationEffect { From = 1.0, To = hideToScale, DurationMs = hideDurationMs, Easing = hideEase ?? AnimationHelper.EaseIn },
             Opacity = new AnimationEffect { From = 1, To = 0, DurationMs = hideDurationMs, Easing = hideEase ?? AnimationHelper.EaseIn },
-            Origin = ExitEffect.Default.Origin,
+            Origin = _origin,
         };
     }
 
     public void Show()
     {
-        AnimationHelper.ApplyEntrance(_element, EntranceEffect.Default);
+        var entrance = new EntranceEffect
+        {
+            Scale = EntranceEffect.Default.Scale,
+            Opacity = EntranceEffect.Default.Opacity,
+            Origin = _origin,
+        };
+        AnimationHelper.ApplyEntrance(_element, entrance);
     }
 
     public void Hide(Action? onCompleted = null)
@@ -80,12 +88,20 @@ public class PopupAnimator
         DependencyProperty.RegisterAttached("BindOpen", typeof(bool), typeof(PopupAnimator),
             new PropertyMetadata(false, OnBindOpenChanged));
 
+    public static Point GetBindOpenOrigin(DependencyObject obj) => (Point)obj.GetValue(BindOpenOriginProperty);
+    public static void SetBindOpenOrigin(DependencyObject obj, Point value) => obj.SetValue(BindOpenOriginProperty, value);
+
+    public static readonly DependencyProperty BindOpenOriginProperty =
+        DependencyProperty.RegisterAttached("BindOpenOrigin", typeof(Point), typeof(PopupAnimator),
+            new PropertyMetadata(new Point(0.5, 0.5)));
+
     private static void OnBindOpenChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is not Popup popup) return;
         if (popup.Child is not UIElement child) return;
 
-        var animator = new PopupAnimator(child);
+        var origin = GetBindOpenOrigin(popup);
+        var animator = new PopupAnimator(child, origin: origin);
 
         if ((bool)e.NewValue)
         {

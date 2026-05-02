@@ -7,6 +7,7 @@
          ButtonScaleHover.IsEnabled 可附加 hover/press 缩放动画。 -->
     <Style x:Key="IconButton" TargetType="Button">
         <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Width" Value="36"/>
         <Setter Property="Height" Value="36"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Opacity" Value="0.8"/>

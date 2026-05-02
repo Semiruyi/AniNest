@@ -321,12 +321,14 @@
                            PlacementTarget="{Binding ElementName=SpeedBtn}"
                            StaysOpen="True"
                            VerticalOffset="-40"
-                           animations:PopupAnimator.BindOpen="{Binding IsSpeedPopupOpen}">
+                           animations:PopupAnimator.BindOpen="{Binding IsSpeedPopupOpen}"
+                           animations:PopupAnimator.BindOpenOrigin="0.5,1">
                         <Border Background="#E6282828" CornerRadius="12" Padding="4"
                                 RenderTransformOrigin="0.5,1"
                                 Opacity="0"
                                 behaviors:HoverBehavior.MouseEnterCommand="{Binding SpeedEnterCommand}"
-                                behaviors:HoverBehavior.MouseLeaveCommand="{Binding SpeedLeaveCommand}">
+                                behaviors:HoverBehavior.MouseLeaveCommand="{Binding SpeedLeaveCommand}"
+                                behaviors:HoverBehavior.IgnoreChildLeave="True">
                             <Border.RenderTransform>
                                 <ScaleTransform x:Name="SpeedPopupScale" ScaleX="0" ScaleY="0"/>
                             </Border.RenderTransform>
