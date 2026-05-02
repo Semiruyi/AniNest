@@ -61,7 +61,7 @@
                     <!-- 右侧：窗口控制按钮 -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal">
                         <!-- 最小化 -->
-                        <Button Style="{StaticResource TitleBarButton}"
+                        <Button Style="{StaticResource IconButton}"
                                 Click="MinimizeButton_Click" ToolTip="最小化"
                                 shell:WindowChrome.IsHitTestVisibleInChrome="True">
                             <Viewbox Width="10" Height="10">
@@ -105,7 +105,7 @@
                                 </Grid>
                             </Viewbox>
                             <Button.Style>
-                                <Style TargetType="Button" BasedOn="{StaticResource TitleBarButton}">
+                                <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
                                     <Setter Property="ToolTip" Value="最大化"/>
                                     <Style.Triggers>
                                         <DataTrigger Value="Maximized"
@@ -118,7 +118,7 @@
                         </Button>
 
                         <!-- 关闭 -->
-                        <Button Style="{StaticResource CloseButton}"
+                        <Button Style="{StaticResource CloseIconButton}"
                                 Click="CloseButton_Click" ToolTip="关闭"
                                 shell:WindowChrome.IsHitTestVisibleInChrome="True">
                             <Viewbox Width="10" Height="10">
