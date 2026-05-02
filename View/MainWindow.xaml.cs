@@ -21,10 +21,25 @@ public partial class MainWindow : Window
 
         WeakReferenceMessenger.Default.Register<ToggleFullscreenMessage>(this, (_, _) =>
         {
-            TitleBarRow.Height = TitleBarRow.Height.Value > 0
-                ? new GridLength(0)
-                : (GridLength)FindResource("TitleBarRowHeight");
+            if (TitleBarRow.Height.Value > 0)
+                EnterFullscreen();
+            else
+                ExitFullscreen();
         });
+    }
+
+    private void EnterFullscreen()
+    {
+        TitleBarRow.Height = new GridLength(0);
+        var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        ShowWindow(hwnd, SW_MAXIMIZE);
+    }
+
+    private void ExitFullscreen()
+    {
+        var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        ShowWindow(hwnd, SW_RESTORE);
+        TitleBarRow.Height = (GridLength)FindResource("TitleBarRowHeight");
     }
 
     protected override void OnSourceInitialized(EventArgs e)
