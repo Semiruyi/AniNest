@@ -319,17 +319,23 @@
             </Grid>
         </Border>
 
-        <!-- 控制栏 - 覆盖在视频底部 -->
+        <!-- 控制栏：非全屏时在视频下方（Row 1），全屏时覆盖在视频底部 -->
         <local:ControlBarView x:Name="ControlBar"
-                              Grid.Row="0" Grid.Column="0"
-                              VerticalAlignment="Bottom"
-                              Panel.ZIndex="1"
+                              Grid.Column="0"
                               DataContext="{Binding ControlBar}">
             <UserControl.Style>
                 <Style TargetType="local:ControlBarView">
+                    <Setter Property="Grid.Row" Value="1"/>
                     <Setter Property="Opacity" Value="1"/>
                     <Setter Property="IsHitTestVisible" Value="True"/>
                     <Style.Triggers>
+                        <!-- 全屏时叠加到视频底部 -->
+                        <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
+                            <Setter Property="Grid.Row" Value="0"/>
+                            <Setter Property="VerticalAlignment" Value="Bottom"/>
+                            <Setter Property="Panel.ZIndex" Value="1"/>
+                        </DataTrigger>
+                        <!-- 控制栏隐藏（全屏时鼠标离开） -->
                         <DataTrigger Binding="{Binding IsControlBarVisible}" Value="False">
                             <Setter Property="IsHitTestVisible" Value="False"/>
                             <DataTrigger.EnterActions>
