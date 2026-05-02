@@ -90,7 +90,7 @@ public static class ValueSmoother
 
         var anim = new DoubleAnimation(from, to, TimeSpan.FromMilliseconds(durationMs))
         {
-            EasingFunction = AnimationHelper.EaseInOut
+            EasingFunction = AnimationHelper.EaseOut
         };
         anim.Completed += (_, _) =>
         {
