@@ -336,6 +336,32 @@
                 <Button x:Name="PlaylistToggleBtn" Style="{StaticResource IconButton}" Command="{Binding TogglePlaylistCommand}" Margin="4,0,0,0" ToolTip="选集" Focusable="False">
                     <Image Source="/Resources/Icons/playlist.png" Width="16" Height="16"/>
                 </Button>
+                <Button x:Name="FullscreenBtn" Margin="4,0,0,0" Focusable="False"
+                        Command="{Binding ToggleFullscreenCommand}"
+                        animations:ButtonScaleHover.IsEnabled="True">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
+                            <Setter Property="ToolTip" Value="全屏"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
+                                    <Setter Property="ToolTip" Value="退出全屏"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                    <Image Width="16" Height="16">
+                        <Image.Style>
+                            <Style TargetType="Image">
+                                <Setter Property="Source" Value="/Resources/Icons/fullScreen.png"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
+                                        <Setter Property="Source" Value="/Resources/Icons/exitFullScreen.png"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Image.Style>
+                    </Image>
+                </Button>
             </StackPanel>
         </Grid>
     </Grid>

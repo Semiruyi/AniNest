@@ -159,8 +159,14 @@ public partial class ControlBarViewModel : ObservableObject
         Rate = speed;
     }
 
+    [ObservableProperty]
+    private bool _isFullscreen;
+
     [RelayCommand]
     private void TogglePlaylist() => TogglePlaylistRequested?.Invoke();
+
+    [RelayCommand]
+    private void ToggleFullscreen() => WeakReferenceMessenger.Default.Send(new ToggleFullscreenMessage());
 
     [RelayCommand]
     private void GoBack()

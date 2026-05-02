@@ -24,6 +24,7 @@ public partial class PlayerViewModel : ObservableObject
     private DispatcherTimer _saveTimer = null!;
     private bool _initialized;
     private float _savedRate = 1.0f;
+    private bool _savedPlaylistVisible;
 
     // ========== 子 ViewModel ==========
 
@@ -39,6 +40,9 @@ public partial class PlayerViewModel : ObservableObject
 
     [ObservableProperty]
     private string? _currentVideoPath;
+
+    [ObservableProperty]
+    private bool _isFullscreen;
 
     [ObservableProperty]
     private int _currentIndex = -1;
@@ -78,6 +82,22 @@ public partial class PlayerViewModel : ObservableObject
         ControlBar.PreviousRequested += () => PlayPrevious();
         ControlBar.GoBackRequested += () => GoBackInternal();
         ControlBar.TogglePlaylistRequested += () => Playlist.IsVisible = !Playlist.IsVisible;
+
+        // 全屏消息
+        WeakReferenceMessenger.Default.Register<ToggleFullscreenMessage>(this, (_, _) =>
+        {
+            IsFullscreen = !IsFullscreen;
+            ControlBar.IsFullscreen = IsFullscreen;
+            if (IsFullscreen)
+            {
+                _savedPlaylistVisible = Playlist.IsVisible;
+                Playlist.IsVisible = false;
+            }
+            else
+            {
+                Playlist.IsVisible = _savedPlaylistVisible;
+            }
+        });
 
         // 播放列表事件
         _playlistManager.VideoPlayed += filePath =>

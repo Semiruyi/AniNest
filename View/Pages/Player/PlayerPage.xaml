@@ -320,6 +320,16 @@
         <!-- 控制栏 -->
         <local:ControlBarView x:Name="ControlBar"
                               Grid.Row="1" Grid.Column="0"
-                              DataContext="{Binding ControlBar}"/>
+                              DataContext="{Binding ControlBar}">
+            <UserControl.Style>
+                <Style TargetType="local:ControlBarView">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </UserControl.Style>
+        </local:ControlBarView>
     </Grid>
 </UserControl>

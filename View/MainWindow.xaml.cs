@@ -1,6 +1,8 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using LocalPlayer.Messages;
 using LocalPlayer.View.Diagnostics;
 using LocalPlayer.ViewModel;
 
@@ -16,6 +18,13 @@ public partial class MainWindow : Window
         InitializeComponent();
         _fps = new FpsMonitor(this);
         _fps.Attach();
+
+        WeakReferenceMessenger.Default.Register<ToggleFullscreenMessage>(this, (_, _) =>
+        {
+            TitleBarRow.Height = TitleBarRow.Height.Value > 0
+                ? new System.Windows.GridLength(0)
+                : LayoutConstants.TitleBarRowHeight;
+        });
     }
 
     protected override void OnSourceInitialized(EventArgs e)
