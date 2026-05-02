@@ -224,7 +224,9 @@
             </Style>
         </ResourceDictionary>
     </UserControl.Resources>
-    <Grid x:Name="PageRoot" anim:LoadedAnimator.Enabled="True">
+    <Grid x:Name="PageRoot" anim:LoadedAnimator.Enabled="True"
+          behaviors:MouseTrackBehavior.MouseMoveCommand="{Binding ControlBar.HandleMouseMoveCommand}"
+          behaviors:MouseTrackBehavior.MouseLeaveCommand="{Binding ControlBar.HandleMouseLeaveCommand}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
@@ -317,15 +319,35 @@
             </Grid>
         </Border>
 
-        <!-- 控制栏 -->
+        <!-- 控制栏 - 覆盖在视频底部 -->
         <local:ControlBarView x:Name="ControlBar"
-                              Grid.Row="1" Grid.Column="0"
+                              Grid.Row="0" Grid.Column="0"
+                              VerticalAlignment="Bottom"
+                              Panel.ZIndex="1"
                               DataContext="{Binding ControlBar}">
             <UserControl.Style>
                 <Style TargetType="local:ControlBarView">
+                    <Setter Property="Opacity" Value="1"/>
+                    <Setter Property="IsHitTestVisible" Value="True"/>
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
-                            <Setter Property="Visibility" Value="Collapsed"/>
+                        <DataTrigger Binding="{Binding IsControlBarVisible}" Value="False">
+                            <Setter Property="IsHitTestVisible" Value="False"/>
+                            <DataTrigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                         To="0" Duration="0:0:0.25"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </DataTrigger.EnterActions>
+                            <DataTrigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                         To="1" Duration="0:0:0.12"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </DataTrigger.ExitActions>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>

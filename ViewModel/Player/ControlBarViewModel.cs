@@ -162,6 +162,72 @@ public partial class ControlBarViewModel : ObservableObject
     [ObservableProperty]
     private bool _isFullscreen;
 
+    [ObservableProperty]
+    private bool _isControlBarVisible = true;
+
+    partial void OnIsFullscreenChanged(bool value)
+    {
+        IsControlBarVisible = !value;
+        if (!value)
+        {
+            _hideTimer?.Stop();
+            _isMouseInShowZone = false;
+        }
+    }
+
+    // ========== 全屏时鼠标控制栏显隐 ==========
+
+    private const double ShowZoneHeight = 100;
+    private const int HideDelayMs = 350;
+
+    private DispatcherTimer? _hideTimer;
+    private bool _isMouseInShowZone;
+
+    [RelayCommand]
+    private void HandleMouseMove((double mouseY, double containerHeight) args)
+    {
+        if (!IsFullscreen) return;
+
+        if (args.containerHeight - args.mouseY <= ShowZoneHeight)
+        {
+            _isMouseInShowZone = true;
+            _hideTimer?.Stop();
+            IsControlBarVisible = true;
+        }
+        else if (_isMouseInShowZone)
+        {
+            _isMouseInShowZone = false;
+            StartHideTimer();
+        }
+    }
+
+    [RelayCommand]
+    private void HandleMouseLeave()
+    {
+        if (!IsFullscreen) return;
+        _isMouseInShowZone = false;
+        StartHideTimer();
+    }
+
+    private void StartHideTimer()
+    {
+        if (_hideTimer == null)
+        {
+            _hideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(HideDelayMs) };
+            _hideTimer.Tick += (_, _) =>
+            {
+                _hideTimer.Stop();
+                if (!_isMouseInShowZone)
+                    IsControlBarVisible = false;
+            };
+        }
+        else
+        {
+            _hideTimer.Stop();
+        }
+        _hideTimer.Start();
+    }
+
     [RelayCommand]
     private void TogglePlaylist() => TogglePlaylistRequested?.Invoke();
 
