@@ -215,7 +215,13 @@ public partial class PlayerViewModel : ObservableObject
     private void PlayPause() => _media.TogglePlayPause();
 
     [RelayCommand]
-    private void GoBack() => GoBackInternal();
+    private void GoBack()
+    {
+        if (IsFullscreen)
+            WeakReferenceMessenger.Default.Send(new ToggleFullscreenMessage());
+        else
+            GoBackInternal();
+    }
 
     [RelayCommand]
     private void EnterRightHold()

@@ -251,6 +251,7 @@
         <!-- 视频区 -->
         <Grid x:Name="VideoContainer" Grid.Row="0" Grid.Column="0" Background="Black"
               behaviors:MouseGestureBehavior.LeftClick="{Binding PlayPauseCommand}"
+              behaviors:MouseGestureBehavior.LeftDoubleClick="{Binding ControlBar.ToggleFullscreenCommand}"
               behaviors:MouseGestureBehavior.XButton1="{Binding GoBackCommand}"
               behaviors:MouseGestureBehavior.RightHold="{Binding EnterRightHoldCommand}"
               behaviors:MouseGestureBehavior.RightHoldRelease="{Binding ExitRightHoldCommand}">
