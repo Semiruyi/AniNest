@@ -146,7 +146,8 @@ public static class AnimationHelper
     {
         element.RenderTransformOrigin = effect.Origin;
         element.RenderTransform = new ScaleTransform(effect.Scale.From, effect.Scale.From);
-        element.Opacity = effect.Opacity.From;
+        element.Opacity = Math.Max(effect.Opacity.From, 0.01);
+        element.IsHitTestVisible = true;
 
         var scale = (ScaleTransform)element.RenderTransform;
         scale.BeginAnimation(ScaleTransform.ScaleXProperty, effect.Scale.ToDoubleAnimation(beginTimeMs));

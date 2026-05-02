@@ -110,7 +110,11 @@ public class PopupAnimator
         }
         else
         {
-            animator.Hide(() => popup.IsOpen = false);
+            animator.Hide(() =>
+            {
+                if (!GetBindOpen(popup))
+                    popup.IsOpen = false;
+            });
         }
     }
 }
