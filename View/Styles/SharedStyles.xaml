@@ -6,6 +6,9 @@
          使用方式：<Button Style="{StaticResource IconButton}" Width="36" Content="..." />
          ButtonScaleHover.IsEnabled 可附加 hover/press 缩放动画。 -->
     <Style x:Key="IconButton" TargetType="Button">
+        <Style.Resources>
+            <CornerRadius x:Key="ButtonCornerRadius">8</CornerRadius>
+        </Style.Resources>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Width" Value="36"/>
         <Setter Property="Height" Value="36"/>
@@ -20,7 +23,7 @@
                         <Grid.RenderTransform>
                             <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
                         </Grid.RenderTransform>
-                        <Border x:Name="HoverBg" CornerRadius="8"
+                        <Border x:Name="HoverBg" CornerRadius="{DynamicResource ButtonCornerRadius}"
                                 Background="{DynamicResource HoverBackground}" Opacity="0"/>
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Grid>
@@ -51,10 +54,18 @@
             </Setter.Value>
         </Setter>
     </Style>
-    <!-- 标题栏关闭按钮：基于 IconButton，hover 红色 -->
+    <!-- 标题栏图标按钮：基于 IconButton，覆盖圆角 -->
+    <Style x:Key="TitleBarIconButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
+        <Style.Resources>
+            <CornerRadius x:Key="ButtonCornerRadius">0</CornerRadius>
+        </Style.Resources>
+    </Style>
+
+    <!-- 标题栏关闭按钮：基于 IconButton，hover 红色，覆盖圆角 -->
     <Style x:Key="CloseIconButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
         <Style.Resources>
             <SolidColorBrush x:Key="HoverBackground" Color="#E81123"/>
+            <CornerRadius x:Key="ButtonCornerRadius">0</CornerRadius>
         </Style.Resources>
     </Style>
 

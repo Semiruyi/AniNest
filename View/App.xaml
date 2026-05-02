@@ -10,7 +10,7 @@
             </ResourceDictionary.MergedDictionaries>
 
             <!-- 核心颜色 -->
-            <SolidColorBrush x:Key="BackgroundDark" Color="#FF0A0A0A"/>
+            <SolidColorBrush x:Key="BackgroundDark" Color="#FF1E1E1E"/>
             <SolidColorBrush x:Key="SurfaceDark" Color="#FF141414"/>
             <SolidColorBrush x:Key="SurfaceLight" Color="#FF1E1E1E"/>
             <Color x:Key="AccentBlueColor">#FF007AFF</Color>

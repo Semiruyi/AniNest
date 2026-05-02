@@ -5,9 +5,12 @@
     <Geometry x:Key="AppIconGeometry">M1,0.5 L8.5,5 L1,9.5 Z</Geometry>
 
     <!-- Title bar window control icons -->
-    <Geometry x:Key="MinimizeIconGeometry">M2.5,7.5 L7.5,7.5</Geometry>
-    <Geometry x:Key="MaximizeIconGeometry">M2,2 L8,2 L8,8 L2,8 Z</Geometry>
-    <Geometry x:Key="RestoreIconGeometry">M4,2 L8,2 L8,6 L4,6 Z M2,4 L6,4 L6,8 L2,8 Z</Geometry>
+    <Geometry x:Key="MinimizeIconGeometry">M1,5 L9,5</Geometry>
+    <RectangleGeometry x:Key="MaximizeIconGeometry" Rect="2,2,6,6" RadiusX="1" RadiusY="1"/>
+    <GeometryGroup x:Key="RestoreIconGeometry">
+        <RectangleGeometry Rect="4,2,4,4" RadiusX="1" RadiusY="1"/>
+        <RectangleGeometry Rect="2,4,4,4" RadiusX="1" RadiusY="1"/>
+    </GeometryGroup>
     <Geometry x:Key="CloseIconGeometry">M2,2 L8,8 M8,2 L2,8</Geometry>
 
 </ResourceDictionary>
