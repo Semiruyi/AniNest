@@ -8,7 +8,7 @@
         <Setter Property="Height" Value="{StaticResource IconButtonDefault}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Cursor" Value="Hand"/>
-        <Setter Property="Opacity" Value="0.8"/>
+        <Setter Property="Opacity" Value="{StaticResource IconButtonOpacity}"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -65,12 +65,59 @@
         </Style.Resources>
     </Style>
 
+    <!-- ═══ 标题栏文字按钮 ═══ -->
+    <Style x:Key="TitleBarTextButton" TargetType="Button">
+        <Setter Property="Height" Value="{StaticResource TitleBarButtonHeight}"/>
+        <Setter Property="Padding" Value="{StaticResource TitleBarTextButtonPadding}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="Opacity" Value="{StaticResource TitleBarTextOpacity}"/>
+        <Setter Property="FontSize" Value="{StaticResource TitleBarTextFontSize}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid>
+                        <Border x:Name="HoverBg" CornerRadius="0"
+                                Background="{StaticResource PressedBackground}" Opacity="0"/>
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          Margin="{TemplateBinding Padding}"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Opacity" Value="1"/>
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="HoverBg"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="1" Duration="0:0:0.12"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="HoverBg"
+                                            Storyboard.TargetProperty="Opacity"
+                                            To="0" Duration="0:0:0.18"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ═══ 删除图标按钮 ═══ -->
     <Style x:Key="DeleteIconButton" TargetType="Button">
-        <Setter Property="Width" Value="26"/>
-        <Setter Property="Height" Value="26"/>
-        <Setter Property="Background" Value="#CCFF4444"/>
-        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Width" Value="{StaticResource DeleteButtonSize}"/>
+        <Setter Property="Height" Value="{StaticResource DeleteButtonSize}"/>
+        <Setter Property="Background" Value="{StaticResource DeleteButtonBackground}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">

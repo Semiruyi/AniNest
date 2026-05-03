@@ -15,12 +15,16 @@
     <system:Double x:Key="TitleBarAppIconSize">20</system:Double>
     <system:Double x:Key="TitleBarIconSize">13</system:Double>
     <system:Double x:Key="TitleBarIconStroke">1</system:Double>
+    <system:Double x:Key="TitleBarTextFontSize">13</system:Double>
+    <system:Double x:Key="TitleBarTextOpacity">0.7</system:Double>
 
     <!-- ═══ 图标 ═══ -->
     <system:Double x:Key="IconSizeSmall">14</system:Double>
     <system:Double x:Key="IconSizeNormal">16</system:Double>
     <system:Double x:Key="IconSizeLarge">20</system:Double>
     <system:Double x:Key="IconButtonDefault">36</system:Double>
+    <system:Double x:Key="IconButtonOpacity">0.8</system:Double>
+    <system:Double x:Key="DeleteButtonSize">26</system:Double>
 
     <!-- ═══ 控制栏 ═══ -->
     <system:Double x:Key="ControlBarHeight">63</system:Double>

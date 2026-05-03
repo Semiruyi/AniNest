@@ -12,6 +12,7 @@
 
     <!-- ═══ 标题栏 ═══ -->
     <Thickness x:Key="TitleBarLeftMargin">12,0,0,0</Thickness>
+    <Thickness x:Key="TitleBarTextButtonPadding">12,0</Thickness>
 
     <!-- ═══ 间距 ═══ -->
     <Thickness x:Key="ControlBarHorizontalMargin">10,0,10,0</Thickness>

@@ -47,7 +47,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- 左侧：App 图标 -->
+                    <!-- 左侧：App 图标 + 工具栏按钮 -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal"
                                 HorizontalAlignment="Center" VerticalAlignment="Center"
                                 Margin="{StaticResource TitleBarLeftMargin}">
@@ -57,6 +57,12 @@
                             <Path Data="{StaticResource AppIconGeometry}"
                                   Fill="{StaticResource AccentBlue}"/>
                         </Viewbox>
+                        <Button Style="{StaticResource TitleBarTextButton}"
+                                Content="File"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button Style="{StaticResource TitleBarTextButton}"
+                                Content="Settings"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
                     </StackPanel>
 
                     <!-- 中间拖拽区域 -->

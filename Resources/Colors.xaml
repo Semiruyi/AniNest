@@ -26,5 +26,6 @@
 
     <!-- ═══ 其他 ═══ -->
     <SolidColorBrush x:Key="CloseButtonHover" Color="#E81123"/>
+    <SolidColorBrush x:Key="DeleteButtonBackground" Color="#CCFF4444"/>
 
 </ResourceDictionary>
