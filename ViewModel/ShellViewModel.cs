@@ -86,14 +86,12 @@ public partial class ShellViewModel : ObservableObject
         var s = settings.Load();
         s.Language = code;
         settings.Save();
-
-        IsLanguageSubmenuOpen = false;
-        IsSettingsPopupOpen = false;
     }
 
     [RelayCommand]
     private void AddFolder()
     {
+        IsFilePopupOpen = false;
         var dialog = new Microsoft.Win32.OpenFolderDialog
         {
             Title = _loc["Dialog.SelectFolder"]

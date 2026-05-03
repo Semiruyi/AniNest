@@ -100,6 +100,9 @@ public class PopupAnimator
 
     private static readonly Dictionary<Popup, (Window window, MouseButtonEventHandler handler)> _outsideSubs = new();
 
+    /// <summary>映射 Popup.Child → Popup，用于检测嵌套 Popup 的点击归属。</summary>
+    private static readonly Dictionary<UIElement, Popup> _childToPopup = new();
+
     private static void OnBindOpenChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is not Popup popup) return;
@@ -145,6 +148,14 @@ public class PopupAnimator
 
         AppLog.Debug("PopupAnimator", $"订阅 {popup.Name} 外部点击");
 
+        // 将 PopupRoot 映射到 Popup，用于嵌套检测
+        if (popup.Child is UIElement child)
+        {
+            var rootVisual = PresentationSource.FromDependencyObject(child)?.RootVisual;
+            if (rootVisual is UIElement root)
+                _childToPopup[root] = popup;
+        }
+
         MouseButtonEventHandler handler = null!;
         handler = (_, args) =>
         {
@@ -154,10 +165,26 @@ public class PopupAnimator
             if (target is null) return;
 
             if (popup.Child is UIElement child && child.IsAncestorOf(target))
+            {
+                AppLog.Debug("PopupAnimator", $"  {popup.Name}: 点击在自身 Child 内，忽略");
                 return;
+            }
 
             if (popup.PlacementTarget is UIElement trigger && trigger.IsAncestorOf(target))
+            {
+                AppLog.Debug("PopupAnimator", $"  {popup.Name}: 点击在 PlacementTarget 内，忽略");
                 return;
+            }
+
+            // 检查点击是否在嵌套子 Popup 内部
+            var targetSource = PresentationSource.FromDependencyObject(target);
+            if (targetSource?.RootVisual is UIElement rootVisual &&
+                _childToPopup.TryGetValue(rootVisual, out var targetPopup) &&
+                targetPopup != popup &&
+                IsPopupNestedInside(popup, targetPopup))
+            {
+                return;
+            }
 
             AppLog.Debug("PopupAnimator", $"外部点击，关闭 {popup.Name}");
 
@@ -179,10 +206,28 @@ public class PopupAnimator
         window.PreviewMouseLeftButtonDown += handler;
     }
 
+    /// <summary>沿逻辑树向上查找，判断 child 是否是 parent 的后代 Popup。</summary>
+    private static bool IsPopupNestedInside(Popup parent, Popup child)
+    {
+        DependencyObject? current = child;
+        while (current != null)
+        {
+            if (current == parent)
+                return true;
+            current = LogicalTreeHelper.GetParent(current);
+        }
+        return false;
+    }
+
     private static void OnPopupClosed(object? sender, EventArgs e)
     {
         if (sender is Popup popup)
+        {
+            var stale = _childToPopup.Where(kv => kv.Value == popup).Select(kv => kv.Key).ToList();
+            foreach (var key in stale)
+                _childToPopup.Remove(key);
             RemoveOutsideHandler(popup);
+        }
     }
 
     private static void RemoveOutsideHandler(Popup popup)
