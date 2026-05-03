@@ -36,6 +36,10 @@
   "Settings.ThumbnailSetNever": "已设置：缩略图永不过期",
   "Settings.ThumbnailSetDays": "已设置：缩略图 {0} 天后过期",
   "Settings.Language": "语言",
+  "Settings.FullscreenAnimation": "全屏动画效果",
+  "Settings.FullscreenAnimation.NoAnimation": "无动画全屏",
+  "Settings.FullscreenAnimation.ContinuousAnimation": "连续动画全屏（beta）",
+  "Settings.FullscreenAnimation.Tooltip": "进入播放页面会自动隐藏任务栏，退出播放页面或退出程序修复，按需使用",
 
   "Key.Unbound": "(未绑定)",
   "Key.Space": "空格",

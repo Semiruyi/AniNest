@@ -32,7 +32,13 @@ public partial class ShellViewModel : ObservableObject
     private bool _isLanguageSubmenuOpen;
 
     [ObservableProperty]
+    private bool _isFullscreenAnimationSubmenuOpen;
+
+    [ObservableProperty]
     private string _currentLanguageCode = "zh-CN";
+
+    [ObservableProperty]
+    private string _currentAnimationCode = "continuous";
 
     public IReadOnlyList<LanguageInfo> AvailableLanguages => _loc.AvailableLanguages;
 
@@ -73,7 +79,10 @@ public partial class ShellViewModel : ObservableObject
         IsFilePopupOpen = false;
         IsSettingsPopupOpen = !IsSettingsPopupOpen;
         if (!IsSettingsPopupOpen)
+        {
             IsLanguageSubmenuOpen = false;
+            IsFullscreenAnimationSubmenuOpen = false;
+        }
     }
 
     [RelayCommand]
@@ -91,6 +100,18 @@ public partial class ShellViewModel : ObservableObject
         var s = settings.Load();
         s.Language = code;
         settings.Save();
+    }
+
+    [RelayCommand]
+    private void ToggleFullscreenAnimationSubmenu()
+    {
+        IsFullscreenAnimationSubmenuOpen = !IsFullscreenAnimationSubmenuOpen;
+    }
+
+    [RelayCommand]
+    private void SelectFullscreenAnimation(string code)
+    {
+        CurrentAnimationCode = code;
     }
 
     [RelayCommand]

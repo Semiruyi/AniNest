@@ -36,6 +36,10 @@
   "Settings.ThumbnailSetNever": "Set: thumbnails never expire",
   "Settings.ThumbnailSetDays": "Set: thumbnails expire after {0} day(s)",
   "Settings.Language": "Language",
+  "Settings.FullscreenAnimation": "Fullscreen Animation",
+  "Settings.FullscreenAnimation.NoAnimation": "No Animation",
+  "Settings.FullscreenAnimation.ContinuousAnimation": "Continuous Animation (beta)",
+  "Settings.FullscreenAnimation.Tooltip": "Auto-hides the taskbar when entering player page. Restored when exiting player page or the app. Use as needed.",
 
   "Key.Unbound": "(unbound)",
   "Key.Space": "Space",
