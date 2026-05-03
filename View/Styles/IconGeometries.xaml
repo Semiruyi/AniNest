@@ -13,4 +13,7 @@
     </GeometryGroup>
     <Geometry x:Key="CloseIconGeometry">M2,2 L8,8 M8,2 L2,8</Geometry>
 
+    <!-- Submenu right arrow: equilateral triangle pointing right -->
+    <Geometry x:Key="ChevronRightGeometry">M2,1 L8.5,5 L2,9 Z</Geometry>
+
 </ResourceDictionary>

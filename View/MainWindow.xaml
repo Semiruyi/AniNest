@@ -76,7 +76,7 @@
                                 <Border Background="{StaticResource PopupMenuBackground}"
                                         CornerRadius="{StaticResource SpeedPopupCornerRadius}"
                                         Padding="{StaticResource PopupMenuPadding}"
-                                        MinWidth="160">
+                                        MinWidth="{StaticResource PopupFileMenuMinWidth}">
                                     <Button Style="{StaticResource PopupMenuButton}"
                                             Command="{Binding AddFolderCommand}">
                                         <StackPanel Orientation="Horizontal">
@@ -109,18 +109,51 @@
                                 <Border Background="{StaticResource PopupMenuBackground}"
                                         CornerRadius="{StaticResource SpeedPopupCornerRadius}"
                                         Padding="{StaticResource PopupMenuPadding}"
-                                        MinWidth="120">
-                                    <ItemsControl ItemsSource="{Binding AvailableLanguages}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Button Style="{StaticResource PopupMenuButton}"
-                                                        Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                        CommandParameter="{Binding Code}">
-                                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                </Button>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                        MinWidth="{StaticResource PopupSettingsMenuMinWidth}">
+                                    <StackPanel>
+                                        <Grid>
+                                            <Button x:Name="LanguageMenuButton"
+                                                    Style="{StaticResource PopupMenuButton}"
+                                                    Command="{Binding ToggleLanguageSubmenuCommand}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding [Settings.Language], Source={x:Static loc:LocalizationService.Instance}}"
+                                                               VerticalAlignment="Center"/>
+                                                    <Path Data="{StaticResource ChevronRightGeometry}"
+                                                          Fill="{StaticResource IconSecondary}"
+                                                          Stretch="Uniform"
+                                                          VerticalAlignment="Center"
+                                                          Width="{StaticResource SubmenuChevronWidth}"
+                                                          Height="{StaticResource SubmenuChevronHeight}"
+                                                          Margin="{StaticResource SubmenuChevronLeftMargin}"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Popup x:Name="LanguageSubmenuPopup"
+                                                   StaysOpen="True"
+                                                   animations:PopupAnimator.BindOpen="{Binding IsLanguageSubmenuOpen}"
+                                                   animations:PopupAnimator.BindOpenOrigin="0,0"
+                                                   PlacementTarget="{Binding ElementName=LanguageMenuButton}"
+                                                   Placement="Right"
+                                                   HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
+                                                   AllowsTransparency="True">
+                                                <Border Background="{StaticResource PopupMenuBackground}"
+                                                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                                                        Padding="{StaticResource PopupMenuPadding}"
+                                                        MinWidth="{StaticResource PopupSubmenuMinWidth}">
+                                                    <ItemsControl ItemsSource="{Binding AvailableLanguages}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Button Style="{StaticResource PopupMenuButton}"
+                                                                        Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding Code}">
+                                                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                                </Button>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </Border>
+                                            </Popup>
+                                        </Grid>
+                                    </StackPanel>
                                 </Border>
                             </Popup>
                         </Grid>

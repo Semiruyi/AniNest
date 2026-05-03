@@ -28,6 +28,9 @@ public partial class ShellViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSettingsPopupOpen;
 
+    [ObservableProperty]
+    private bool _isLanguageSubmenuOpen;
+
     public IReadOnlyList<LanguageInfo> AvailableLanguages => _loc.AvailableLanguages;
 
     public ShellViewModel(IServiceProvider services, ILocalizationService loc)
@@ -65,6 +68,14 @@ public partial class ShellViewModel : ObservableObject
     {
         IsFilePopupOpen = false;
         IsSettingsPopupOpen = !IsSettingsPopupOpen;
+        if (!IsSettingsPopupOpen)
+            IsLanguageSubmenuOpen = false;
+    }
+
+    [RelayCommand]
+    private void ToggleLanguageSubmenu()
+    {
+        IsLanguageSubmenuOpen = !IsLanguageSubmenuOpen;
     }
 
     [RelayCommand]
@@ -75,6 +86,9 @@ public partial class ShellViewModel : ObservableObject
         var s = settings.Load();
         s.Language = code;
         settings.Save();
+
+        IsLanguageSubmenuOpen = false;
+        IsSettingsPopupOpen = false;
     }
 
     [RelayCommand]

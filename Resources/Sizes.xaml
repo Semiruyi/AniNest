@@ -62,4 +62,11 @@
     <!-- ═══ 标题栏 GridLength ═══ -->
     <GridLength x:Key="TitleBarRowHeight">40</GridLength>
 
+    <!-- ═══ Popup 菜单 ═══ -->
+    <system:Double x:Key="PopupFileMenuMinWidth">30</system:Double>
+    <system:Double x:Key="PopupSettingsMenuMinWidth">30</system:Double>
+    <system:Double x:Key="PopupSubmenuMinWidth">30</system:Double>
+    <system:Double x:Key="SubmenuChevronWidth">8</system:Double>
+    <system:Double x:Key="SubmenuChevronHeight">8</system:Double>
+
 </ResourceDictionary>
