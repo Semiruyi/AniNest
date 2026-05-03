@@ -112,6 +112,38 @@
         </Setter>
     </Style>
 
+    <!-- ═══ Popup 菜单按钮 ═══ -->
+    <Style x:Key="PopupMenuButton" TargetType="Button">
+        <Setter Property="Height" Value="{StaticResource SpeedOptionHeight}"/>
+        <Setter Property="Padding" Value="{StaticResource PopupMenuButtonPadding}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="FontSize" Value="{StaticResource TitleBarTextFontSize}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="BgBorder"
+                            CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
+                            Background="Transparent">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="Center"
+                                          Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="BgBorder"
+                                    Property="Background"
+                                    Value="{StaticResource PressedBackground}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ═══ 删除图标按钮 ═══ -->
     <Style x:Key="DeleteIconButton" TargetType="Button">
         <Setter Property="Width" Value="{StaticResource DeleteButtonSize}"/>

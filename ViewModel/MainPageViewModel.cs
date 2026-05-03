@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using LocalPlayer.Messages;
 using LocalPlayer.Model;
+using LocalPlayer.Localization;
 
 namespace LocalPlayer.ViewModel;
 
@@ -17,6 +18,7 @@ public partial class MainPageViewModel : ObservableObject
 {
     private readonly ISettingsService _settings;
     private readonly IThumbnailGenerator _thumbnailGenerator;
+    private readonly ILocalizationService _loc;
 
     public ObservableCollection<FolderListItem> FolderItems { get; } = new();
 
@@ -32,16 +34,19 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty]
     private bool _isThumbnailProgressVisible;
 
-    public MainPageViewModel(ISettingsService settings, IThumbnailGenerator thumbnailGenerator)
+    public MainPageViewModel(ISettingsService settings, IThumbnailGenerator thumbnailGenerator,
+                              ILocalizationService loc)
     {
         _settings = settings;
         _thumbnailGenerator = thumbnailGenerator;
+        _loc = loc;
 
         FolderItems.CollectionChanged += (_, _) => UpdateToolbarState();
 
         WeakReferenceMessenger.Default.Register<FolderAddedMessage>(this, (_, m) =>
         {
-            var item = new FolderListItem(m.Name, m.Path, m.VideoCount, m.CoverPath);
+            var item = new FolderListItem(m.Name, m.Path, m.VideoCount, m.CoverPath)
+                { VideoCountText = string.Format(_loc["Library.VideoCount"], m.VideoCount) };
             FolderItems.Add(item);
         });
 
@@ -72,7 +77,8 @@ public partial class MainPageViewModel : ObservableObject
             if (Directory.Exists(folder.Path))
             {
                 var (count, coverPath) = VideoScanner.ScanFolder(folder.Path);
-                items.Add(new FolderListItem(folder.Name, folder.Path, count, coverPath));
+                items.Add(new FolderListItem(folder.Name, folder.Path, count, coverPath)
+                    { VideoCountText = string.Format(_loc["Library.VideoCount"], count) });
             }
             else
             {
@@ -135,17 +141,17 @@ public partial class MainPageViewModel : ObservableObject
     {
         int currentDays = _settings.GetThumbnailExpiryDays();
         string input = Microsoft.VisualBasic.Interaction.InputBox(
-            "缩略图过期天数（0=永不过期）：",
-            "缩略图设置",
+            _loc["Settings.ThumbnailExpiryPrompt"],
+            _loc["Settings.ThumbnailSettings"],
             currentDays.ToString());
 
         if (int.TryParse(input, out int days) && days >= 0 && days <= 365)
         {
             _settings.SetThumbnailExpiryDays(days);
             if (days == 0)
-                MessageBox.Show("已设置：缩略图永不过期", "提示");
+                MessageBox.Show(_loc["Settings.ThumbnailSetNever"], _loc["Dialog.Info"]);
             else
-                MessageBox.Show($"已设置：缩略图 {days} 天后过期", "提示");
+                MessageBox.Show(string.Format(_loc["Settings.ThumbnailSetDays"], days), _loc["Dialog.Info"]);
         }
     }
 
@@ -155,7 +161,7 @@ public partial class MainPageViewModel : ObservableObject
         var videos = VideoScanner.GetVideoFiles(path);
         if (videos.Length == 0)
         {
-            MessageBox.Show("文件夹内没有视频文件", "提示");
+            MessageBox.Show(_loc["Dialog.NoVideosInFolder"], _loc["Dialog.Info"]);
             return false;
         }
         name = Path.GetFileName(path);
@@ -166,7 +172,7 @@ public partial class MainPageViewModel : ObservableObject
     private void UpdateToolbarState()
     {
         int count = FolderItems.Count;
-        FolderCountText = $"{count} 个文件夹";
+        FolderCountText = string.Format(_loc["Library.FolderCount"], count);
         IsEmpty = count == 0;
     }
 
@@ -174,7 +180,7 @@ public partial class MainPageViewModel : ObservableObject
     {
         if (total > 0 && ready < total)
         {
-            ThumbnailProgressText = $"缩略图 {ready}/{total}";
+            ThumbnailProgressText = string.Format(_loc["Library.ThumbnailProgress"], ready, total);
             IsThumbnailProgressVisible = true;
         }
         else

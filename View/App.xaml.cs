@@ -5,6 +5,7 @@ using LocalPlayer.Model;
 using LocalPlayer.View;
 using LocalPlayer.View.Pages.Library;
 using LocalPlayer.View.Pages.Player;
+using LocalPlayer.Localization;
 using LocalPlayer.ViewModel;
 using LocalPlayer.ViewModel.Player;
 
@@ -21,6 +22,9 @@ public partial class App : Application
         ConfigureServices(services);
         var provider = services.BuildServiceProvider();
 
+        var settings = provider.GetRequiredService<ISettingsService>().Load();
+        provider.GetRequiredService<ILocalizationService>().SetLanguage(settings.Language);
+
         ConfigureExceptionHandling();
 
         Exit += (_, _) => provider.Dispose();
@@ -31,6 +35,7 @@ public partial class App : Application
     private static void ConfigureServices(ServiceCollection services)
     {
         services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IThumbnailGenerator, ThumbnailGenerator>();
         services.AddTransient<IMediaPlayerController, MediaPlayerController>();
 

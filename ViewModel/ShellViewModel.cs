@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using LocalPlayer.Messages;
 using LocalPlayer.Model;
+using LocalPlayer.Localization;
 using LocalPlayer.View.Pages.Library;
 using LocalPlayer.View.Pages.Player;
 
@@ -15,6 +16,7 @@ namespace LocalPlayer.ViewModel;
 public partial class ShellViewModel : ObservableObject
 {
     private readonly IServiceProvider _services;
+    private readonly ILocalizationService _loc;
     private bool? _savedTaskbarAutoHide;
 
     [ObservableProperty]
@@ -23,9 +25,15 @@ public partial class ShellViewModel : ObservableObject
     [ObservableProperty]
     private bool _isFilePopupOpen;
 
-    public ShellViewModel(IServiceProvider services)
+    [ObservableProperty]
+    private bool _isSettingsPopupOpen;
+
+    public IReadOnlyList<LanguageInfo> AvailableLanguages => _loc.AvailableLanguages;
+
+    public ShellViewModel(IServiceProvider services, ILocalizationService loc)
     {
         _services = services;
+        _loc = loc;
 
         WeakReferenceMessenger.Default.Register<FolderSelectedMessage>(this, (_, m) =>
         {
@@ -50,11 +58,25 @@ public partial class ShellViewModel : ObservableObject
         => IsFilePopupOpen = true;
 
     [RelayCommand]
+    private void OpenSettingsPopup()
+        => IsSettingsPopupOpen = true;
+
+    [RelayCommand]
+    private void SwitchLanguage(string code)
+    {
+        _loc.SetLanguage(code);
+        var settings = _services.GetRequiredService<ISettingsService>();
+        var s = settings.Load();
+        s.Language = code;
+        settings.Save();
+    }
+
+    [RelayCommand]
     private void AddFolder()
     {
         var dialog = new Microsoft.Win32.OpenFolderDialog
         {
-            Title = "选择包含视频的文件夹"
+            Title = _loc["Dialog.SelectFolder"]
         };
 
         if (dialog.ShowDialog() != true) return;
@@ -65,21 +87,21 @@ public partial class ShellViewModel : ObservableObject
 
         if (settings.GetFolders().Any(f => f.Path == path))
         {
-            MessageBox.Show("该文件夹已添加", "提示");
+            MessageBox.Show(_loc["Dialog.FolderAlreadyAdded"], _loc["Dialog.Info"]);
             return;
         }
 
         var (count, coverPath) = VideoScanner.ScanFolder(path);
         if (count == 0)
         {
-            MessageBox.Show("该文件夹内没有视频文件", "提示");
+            MessageBox.Show(_loc["Dialog.NoVideosInFolder"], _loc["Dialog.Info"]);
             return;
         }
 
         var (success, error) = settings.AddFolder(path, name);
         if (!success)
         {
-            MessageBox.Show(error ?? "未知错误", "错误");
+            MessageBox.Show(error ?? _loc["Dialog.UnknownError"], _loc["Dialog.Error"]);
             return;
         }
         WeakReferenceMessenger.Default.Send(new FolderAddedMessage(name, path, count, coverPath));

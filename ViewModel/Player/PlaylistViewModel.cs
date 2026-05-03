@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using LocalPlayer.Localization;
 using LocalPlayer.Model;
 
 namespace LocalPlayer.ViewModel.Player;
@@ -9,6 +10,12 @@ namespace LocalPlayer.ViewModel.Player;
 public partial class PlaylistViewModel : ObservableObject
 {
     private PlaylistManager _playlistManager = null!;
+    private readonly ILocalizationService _loc;
+
+    public PlaylistViewModel(ILocalizationService loc)
+    {
+        _loc = loc;
+    }
 
     [ObservableProperty]
     private string _episodeCountText = "";
@@ -53,7 +60,7 @@ public partial class PlaylistViewModel : ObservableObject
         CurrentFolderName = folderName;
 
         var items = _playlistManager.Items;
-        EpisodeCountText = items.Count > 0 ? $"{items.Count} 集" : "";
+        EpisodeCountText = items.Count > 0 ? string.Format(_loc["Player.EpisodeCount"], items.Count) : "";
         CurrentIndex = _playlistManager.CurrentIndex;
 
         _playlistManager.PlayCurrentVideo();

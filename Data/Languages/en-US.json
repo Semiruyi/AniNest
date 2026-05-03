@@ -1,0 +1,48 @@
+{
+  "_languageName": "English",
+
+  "App.File": "File",
+  "App.Settings": "Settings",
+  "App.SelectFolder": "Select Folder",
+
+  "Window.Minimize": "Minimize",
+  "Window.Maximize": "Maximize",
+  "Window.Restore": "Restore",
+  "Window.Close": "Close",
+
+  "Player.Stop": "Stop",
+  "Player.Playlist": "Playlist",
+  "Player.Fullscreen": "Fullscreen",
+  "Player.ExitFullscreen": "Exit Fullscreen",
+  "Player.PlayPause": "Play / Pause",
+  "Player.Previous": "Previous",
+  "Player.Next": "Next",
+  "Player.EpisodeCount": "{0} episode(s)",
+
+  "Library.NoCover": "No Cover",
+  "Library.VideoCount": "{0} video(s)",
+  "Library.FolderCount": "{0} folder(s)",
+  "Library.ThumbnailProgress": "Thumbnails {0}/{1}",
+
+  "Dialog.SelectFolder": "Select a folder containing videos",
+  "Dialog.FolderAlreadyAdded": "This folder has already been added",
+  "Dialog.NoVideosInFolder": "No video files found in this folder",
+  "Dialog.UnknownError": "Unknown error",
+  "Dialog.Info": "Info",
+  "Dialog.Error": "Error",
+
+  "Settings.ThumbnailExpiryPrompt": "Thumbnail expiry in days (0=never):",
+  "Settings.ThumbnailSettings": "Thumbnail Settings",
+  "Settings.ThumbnailSetNever": "Set: thumbnails never expire",
+  "Settings.ThumbnailSetDays": "Set: thumbnails expire after {0} day(s)",
+  "Settings.Language": "Language",
+
+  "Key.Unbound": "(unbound)",
+  "Key.Space": "Space",
+
+  "KeyBinding.SeekBackward": "Seek Backward 5s",
+  "KeyBinding.SeekForward": "Seek Forward 5s",
+  "KeyBinding.SeekBackwardAlt": "Seek Backward 5s (Alt)",
+  "KeyBinding.SeekForwardAlt": "Seek Forward 5s (Alt)",
+  "KeyBinding.Back": "Back"
+}

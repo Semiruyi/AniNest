@@ -1,0 +1,48 @@
+{
+  "_languageName": "中文",
+
+  "App.File": "文件",
+  "App.Settings": "设置",
+  "App.SelectFolder": "选择文件夹",
+
+  "Window.Minimize": "最小化",
+  "Window.Maximize": "最大化",
+  "Window.Restore": "还原",
+  "Window.Close": "关闭",
+
+  "Player.Stop": "停止",
+  "Player.Playlist": "选集",
+  "Player.Fullscreen": "全屏",
+  "Player.ExitFullscreen": "退出全屏",
+  "Player.PlayPause": "播放/暂停",
+  "Player.Previous": "上一集",
+  "Player.Next": "下一集",
+  "Player.EpisodeCount": "{0} 集",
+
+  "Library.NoCover": "暂无封面",
+  "Library.VideoCount": "{0} 个视频",
+  "Library.FolderCount": "{0} 个文件夹",
+  "Library.ThumbnailProgress": "缩略图 {0}/{1}",
+
+  "Dialog.SelectFolder": "选择包含视频的文件夹",
+  "Dialog.FolderAlreadyAdded": "该文件夹已添加",
+  "Dialog.NoVideosInFolder": "该文件夹内没有视频文件",
+  "Dialog.UnknownError": "未知错误",
+  "Dialog.Info": "提示",
+  "Dialog.Error": "错误",
+
+  "Settings.ThumbnailExpiryPrompt": "缩略图过期天数（0=永不过期）：",
+  "Settings.ThumbnailSettings": "缩略图设置",
+  "Settings.ThumbnailSetNever": "已设置：缩略图永不过期",
+  "Settings.ThumbnailSetDays": "已设置：缩略图 {0} 天后过期",
+  "Settings.Language": "语言",
+
+  "Key.Unbound": "(未绑定)",
+  "Key.Space": "空格",
+
+  "KeyBinding.SeekBackward": "快退 5 秒",
+  "KeyBinding.SeekForward": "快进 5 秒",
+  "KeyBinding.SeekBackwardAlt": "快退 5 秒 (备用)",
+  "KeyBinding.SeekForwardAlt": "快进 5 秒 (备用)",
+  "KeyBinding.Back": "返回"
+}

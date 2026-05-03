@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:behaviors="clr-namespace:LocalPlayer.View.Behaviors"
              xmlns:animations="clr-namespace:LocalPlayer.View.Animations"
+             xmlns:loc="clr-namespace:LocalPlayer.Localization"
              behaviors:LoadedCommandBehavior.Command="{Binding LoadDataCommand}"
              Background="{StaticResource BackgroundDark}">
     <UserControl.Resources>
@@ -90,7 +91,7 @@
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                                         <TextBlock Text="&#x1F3AC;" FontSize="32" HorizontalAlignment="Center"
                                                    Margin="0,0,0,8"/>
-                                        <TextBlock Text="暂无封面" Foreground="#666666" FontSize="13"/>
+                                        <TextBlock Text="{Binding [Library.NoCover], Source={x:Static loc:LocalizationService.Instance}}" Foreground="#666666" FontSize="13"/>
                                     </StackPanel>
                                 </Grid>
 
@@ -108,7 +109,7 @@
                                         <TextBlock Text="{Binding Name}" Foreground="White"
                                                    FontSize="14" FontWeight="SemiBold"
                                                    TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="{Binding VideoCount, StringFormat='{}{0} 个视频'}"
+                                        <TextBlock Text="{Binding VideoCountText}"
                                                    Foreground="#BBBBBB" FontSize="11" Margin="0,4,0,0"/>
                                     </StackPanel>
                                 </Grid>

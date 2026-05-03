@@ -9,6 +9,7 @@ public class AppSettings
     public Dictionary<string, FolderProgress> FolderProgress { get; set; } = new();
     public int ThumbnailExpiryDays { get; set; } = 30; // 0 = 永不过期
     public Dictionary<string, int> KeyBindings { get; set; } = new();
+    public string Language { get; set; } = "zh-CN";
 }
 
 public class KeyBindingInfo

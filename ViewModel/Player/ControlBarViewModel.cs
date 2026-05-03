@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using LocalPlayer.Messages;
 using LocalPlayer.Model;
+using LocalPlayer.Localization;
 
 namespace LocalPlayer.ViewModel.Player;
 
@@ -15,6 +16,7 @@ public partial class ControlBarViewModel : ObservableObject
 {
     private readonly IMediaPlayerController _media;
     private readonly PlayerInputHandler _inputHandler;
+    private readonly ILocalizationService _loc;
 
     private float _savedRate = 1.0f;
     private long _lastNonZeroTime;
@@ -98,9 +100,9 @@ public partial class ControlBarViewModel : ObservableObject
 
     // ========== 提示 ==========
 
-    public string PlayPauseTooltip => FormatTooltip("播放/暂停", "TogglePlayPause");
-    public string PreviousTooltip => FormatTooltip("上一集", "PreviousEpisode");
-    public string NextTooltip => FormatTooltip("下一集", "NextEpisode");
+    public string PlayPauseTooltip => FormatTooltip(_loc["Player.PlayPause"], "TogglePlayPause");
+    public string PreviousTooltip => FormatTooltip(_loc["Player.Previous"], "PreviousEpisode");
+    public string NextTooltip => FormatTooltip(_loc["Player.Next"], "NextEpisode");
 
     private string FormatTooltip(string label, string actionName)
     {
@@ -119,10 +121,11 @@ public partial class ControlBarViewModel : ObservableObject
     // ========== 构造 ==========
 
     public ControlBarViewModel(IMediaPlayerController media, PlayerInputHandler inputHandler,
-                               IThumbnailGenerator thumbnailGenerator)
+                               IThumbnailGenerator thumbnailGenerator, ILocalizationService loc)
     {
         _media = media;
         _inputHandler = inputHandler;
+        _loc = loc;
 
         ThumbnailPreview = new ThumbnailPreviewController(
             thumbnailGenerator,

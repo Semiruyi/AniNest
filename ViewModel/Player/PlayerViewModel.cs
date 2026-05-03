@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using LocalPlayer.Messages;
 using LocalPlayer.Model;
+using LocalPlayer.Localization;
 
 namespace LocalPlayer.ViewModel.Player;
 
@@ -62,7 +63,7 @@ public partial class PlayerViewModel : ObservableObject
     // ========== 构造 ==========
 
     public PlayerViewModel(ISettingsService settings, IThumbnailGenerator thumbnailGenerator,
-                           IMediaPlayerController media)
+                           IMediaPlayerController media, ILocalizationService loc)
     {
         _settings = settings;
         _media = media;
@@ -73,8 +74,8 @@ public partial class PlayerViewModel : ObservableObject
         _playlistManager = new PlaylistManager(_settings, _media,
             path => thumbnailGenerator.GetState(path));
 
-        ControlBar = new ControlBarViewModel(_media, _inputHandler, thumbnailGenerator);
-        Playlist = new PlaylistViewModel();
+        ControlBar = new ControlBarViewModel(_media, _inputHandler, thumbnailGenerator, loc);
+        Playlist = new PlaylistViewModel(loc);
         Playlist.SetPlaylistManager(_playlistManager);
 
         // 跨组件连线

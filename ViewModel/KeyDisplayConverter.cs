@@ -2,14 +2,17 @@ using System;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Input;
+using LocalPlayer.Localization;
 
 namespace LocalPlayer.ViewModel;
 
 public class KeyDisplayConverter : IValueConverter
 {
+    private static readonly ILocalizationService? _loc = LocalizationService.Instance;
+
     public static string Format(Key key)
     {
-        if (key == Key.None) return "(未绑定)";
+        if (key == Key.None) return _loc?["Key.Unbound"] ?? "(未绑定)";
         return FormatKeyString(key.ToString());
     }
 
@@ -22,7 +25,7 @@ public class KeyDisplayConverter : IValueConverter
     private static string FormatKeyString(string s) => s
             .Replace("Left", "←").Replace("Right", "→")
             .Replace("Up", "↑").Replace("Down", "↓")
-            .Replace("Space", "空格").Replace("Escape", "Esc")
+            .Replace("Space", _loc?["Key.Space"] ?? "空格").Replace("Escape", "Esc")
             .Replace("Return", "Enter")
             .Replace("PageUp", "PgUp").Replace("PageDown", "PgDn")
             .Replace("OemComma", ",").Replace("OemPeriod", ".")

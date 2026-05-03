@@ -22,6 +22,12 @@
     <InternalsVisibleTo Include="LocalPlayer.Tests" />
   </ItemGroup>
 
+  <!-- 语言文件：单文件发布时排除，方便用户编辑 -->
+  <ItemGroup>
+    <Content Include="Data\Languages\*.json" CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
   <!-- ffmpeg：必须排除单文件打包，因为代码用 Process.Start 调用 -->
   <ItemGroup>
     <Content Include="tools\ffmpeg\ffmpeg.exe" CopyToOutputDirectory="PreserveNewest" Link="ffmpeg.exe" Visible="false"

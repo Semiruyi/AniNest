@@ -4,6 +4,7 @@
              xmlns:converters="clr-namespace:LocalPlayer.View.Converters"
              xmlns:animations="clr-namespace:LocalPlayer.View.Animations"
              xmlns:behaviors="clr-namespace:LocalPlayer.View.Behaviors"
+             xmlns:loc="clr-namespace:LocalPlayer.Localization"
              Focusable="True">
     <UserControl.Resources>
         <ResourceDictionary>
@@ -258,7 +259,7 @@
                 </Button>
                 <Button x:Name="StopBtn" Style="{StaticResource IconButton}"
                         Command="{Binding StopCommand}"
-                        Margin="{StaticResource ButtonGapLeft}" ToolTip="停止"
+                        Margin="{StaticResource ButtonGapLeft}" ToolTip="{Binding [Player.Stop], Source={x:Static loc:LocalizationService.Instance}}"
                         Focusable="False">
                     <Image Source="/Resources/Icons/stop.png"
                            Width="{StaticResource IconSizeSmall}"
@@ -390,7 +391,7 @@
 
                 <Button x:Name="PlaylistToggleBtn" Style="{StaticResource IconButton}"
                         Command="{Binding TogglePlaylistCommand}"
-                        Margin="{StaticResource ButtonGapLeft}" ToolTip="选集"
+                        Margin="{StaticResource ButtonGapLeft}" ToolTip="{Binding [Player.Playlist], Source={x:Static loc:LocalizationService.Instance}}"
                         Focusable="False">
                     <Image Source="/Resources/Icons/playlist.png"
                            Width="{StaticResource IconSizeNormal}"
@@ -402,10 +403,10 @@
                         animations:ButtonScaleHover.IsEnabled="True">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
-                            <Setter Property="ToolTip" Value="全屏"/>
+                            <Setter Property="ToolTip" Value="{Binding [Player.Fullscreen], Source={x:Static loc:LocalizationService.Instance}}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
-                                    <Setter Property="ToolTip" Value="退出全屏"/>
+                                    <Setter Property="ToolTip" Value="{Binding [Player.ExitFullscreen], Source={x:Static loc:LocalizationService.Instance}}"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
