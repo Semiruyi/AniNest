@@ -9,7 +9,7 @@ public interface ISettingsService
     AppSettings Load();
     void Save();
 
-    void AddFolder(string path, string name);
+    (bool Success, string? Error) AddFolder(string path, string name);
     void RemoveFolder(string path);
     List<FolderInfo> GetFolders();
     void ReorderFolders(List<string> orderedPaths);

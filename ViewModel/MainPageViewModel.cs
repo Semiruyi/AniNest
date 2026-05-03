@@ -39,6 +39,12 @@ public partial class MainPageViewModel : ObservableObject
 
         FolderItems.CollectionChanged += (_, _) => UpdateToolbarState();
 
+        WeakReferenceMessenger.Default.Register<FolderAddedMessage>(this, (_, m) =>
+        {
+            var item = new FolderListItem(m.Name, m.Path, m.VideoCount, m.CoverPath);
+            FolderItems.Add(item);
+        });
+
         _thumbnailGenerator.ProgressChanged += (_, args) =>
             Application.Current.Dispatcher.BeginInvoke(
                 () => UpdateThumbnailProgress(args.Ready, args.Total));
@@ -107,37 +113,6 @@ public partial class MainPageViewModel : ObservableObject
 
     public void ReorderFolders(List<string> orderedPaths)
         => _settings.ReorderFolders(orderedPaths);
-
-    [RelayCommand]
-    private void AddFolder()
-    {
-        var dialog = new Microsoft.Win32.OpenFolderDialog
-        {
-            Title = "选择包含视频的文件夹"
-        };
-
-        if (dialog.ShowDialog() != true) return;
-
-        string path = dialog.FolderName;
-        string name = Path.GetFileName(path);
-
-        if (FolderItems.Any(i => i.Path == path))
-        {
-            MessageBox.Show("该文件夹已添加", "提示");
-            return;
-        }
-
-        var (count, coverPath) = VideoScanner.ScanFolder(path);
-        if (count == 0)
-        {
-            MessageBox.Show("该文件夹内没有视频文件", "提示");
-            return;
-        }
-
-        _settings.AddFolder(path, name);
-        var newItem = new FolderListItem(name, path, count, coverPath);
-        FolderItems.Add(newItem);
-    }
 
     [RelayCommand]
     private void SelectFolder(FolderListItem? item)

@@ -16,6 +16,12 @@
     <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFFFF"/>
     <SolidColorBrush x:Key="TextSecondary" Color="#AAFFFFFF"/>
 
+    <!-- ═══ Popup 菜单 ═══ -->
+    <SolidColorBrush x:Key="PopupMenuBackground" Color="#E6282828"/>
+
+    <!-- ═══ 图标 ═══ -->
+    <SolidColorBrush x:Key="IconSecondary" Color="#AAAAAA"/>
+
     <!-- ═══ 控件通用 ═══ -->
     <SolidColorBrush x:Key="HoverBackground" Color="#22FFFFFF"/>
     <SolidColorBrush x:Key="PressedBackground" Color="#33FFFFFF"/>

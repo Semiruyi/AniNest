@@ -100,21 +100,32 @@ public class SettingsService : ISettingsService
         }
     }
 
-    public void AddFolder(string path, string name)
+    public (bool Success, string? Error) AddFolder(string path, string name)
     {
         var settings = Load();
 
-        if (!settings.Folders.Exists(f => f.Path == path))
+        if (settings.Folders.Exists(f => f.Path == path))
+            return (false, "该文件夹已添加");
+
+        int maxOrder = settings.Folders.Count > 0 ? settings.Folders.Max(f => f.OrderIndex) : -1;
+        settings.Folders.Add(new FolderInfo
         {
-            int maxOrder = settings.Folders.Count > 0 ? settings.Folders.Max(f => f.OrderIndex) : -1;
-            settings.Folders.Add(new FolderInfo
-            {
-                Path = path,
-                Name = name,
-                AddedTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                OrderIndex = maxOrder + 1
-            });
-            Save();
+            Path = path,
+            Name = name,
+            AddedTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            OrderIndex = maxOrder + 1
+        });
+
+        try
+        {
+            string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(settingsPath, json);
+            return (true, null);
+        }
+        catch (Exception ex)
+        {
+            Log.Error("AddFolder 保存失败", ex);
+            return (false, ex.Message);
         }
     }
 

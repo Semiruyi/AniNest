@@ -354,7 +354,7 @@
                            VerticalOffset="{StaticResource SpeedPopupOffset}"
                            animations:PopupAnimator.BindOpen="{Binding IsSpeedPopupOpen}"
                            animations:PopupAnimator.BindOpenOrigin="0.5,1">
-                        <Border Background="#E6282828"
+                        <Border Background="{StaticResource PopupMenuBackground}"
                                 CornerRadius="{StaticResource SpeedPopupCornerRadius}"
                                 Padding="4"
                                 RenderTransformOrigin="0.5,1"

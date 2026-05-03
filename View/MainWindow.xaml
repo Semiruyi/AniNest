@@ -57,9 +57,67 @@
                             <Path Data="{StaticResource AppIconGeometry}"
                                   Fill="{StaticResource AccentBlue}"/>
                         </Viewbox>
-                        <Button Style="{StaticResource TitleBarTextButton}"
-                                Content="File"
-                                shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Grid>
+                            <Button x:Name="FileButton"
+                                    Style="{StaticResource TitleBarTextButton}"
+                                    Content="File"
+                                    Command="{Binding OpenFilePopupCommand}"
+                                    shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+                            <Popup x:Name="FilePopup"
+                                   StaysOpen="False"
+                                   IsOpen="{Binding IsFilePopupOpen, Mode=TwoWay}"
+                                   PlacementTarget="{Binding ElementName=FileButton}"
+                                   Placement="Bottom"
+                                   HorizontalOffset="-4"
+                                   AllowsTransparency="True">
+                                <Border Background="{StaticResource PopupMenuBackground}"
+                                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                                        Padding="4"
+                                        MinWidth="160"
+                                        RenderTransformOrigin="0.5,0">
+                                    <Border.RenderTransform>
+                                        <ScaleTransform x:Name="FilePopupScale"
+                                                        ScaleX="0.95" ScaleY="0.95"/>
+                                    </Border.RenderTransform>
+                                    <Button Height="{StaticResource SpeedOptionHeight}"
+                                            Padding="12,0"
+                                            Foreground="{StaticResource TextPrimary}"
+                                            FontSize="{StaticResource TitleBarTextFontSize}"
+                                            BorderThickness="0"
+                                            Cursor="Hand"
+                                            HorizontalContentAlignment="Left"
+                                            Background="Transparent"
+                                            Command="{Binding AddFolderCommand}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="BgBorder" CornerRadius="6"
+                                                        Background="Transparent">
+                                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                                      VerticalAlignment="Center"
+                                                                      Margin="{TemplateBinding Padding}"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="BgBorder"
+                                                                Property="Background"
+                                                                Value="{StaticResource PressedBackground}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Path Data="M10 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6H12L10 4Z"
+                                                  Fill="{StaticResource IconSecondary}"
+                                                  Width="{StaticResource IconSizeNormal}"
+                                                  Height="{StaticResource IconSizeNormal}"
+                                                  Stretch="Uniform"
+                                                  Margin="0,0,8,0"/>
+                                            <TextBlock Text="选择文件夹" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </Border>
+                            </Popup>
+                        </Grid>
                         <Button Style="{StaticResource TitleBarTextButton}"
                                 Content="Settings"
                                 shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
