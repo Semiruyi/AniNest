@@ -128,17 +128,30 @@
                     <Border x:Name="BgBorder"
                             CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
                             Background="Transparent">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup Name="CommonStates">
+                                <VisualState Name="Normal">
+                                    <Storyboard>
+                                        <ColorAnimation Storyboard.TargetName="BgBorder"
+                                                        Storyboard.TargetProperty="Background.Color"
+                                                        To="Transparent"
+                                                        Duration="0:0:0.2"/>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState Name="MouseOver">
+                                    <Storyboard>
+                                        <ColorAnimation Storyboard.TargetName="BgBorder"
+                                                        Storyboard.TargetProperty="Background.Color"
+                                                        To="{StaticResource PressedBackgroundColor}"
+                                                        Duration="0:0:0.1"/>
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           VerticalAlignment="Center"
                                           Margin="{TemplateBinding Padding}"/>
                     </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="BgBorder"
-                                    Property="Background"
-                                    Value="{StaticResource PressedBackground}"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

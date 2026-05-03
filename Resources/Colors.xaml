@@ -25,6 +25,7 @@
     <!-- ═══ 控件通用 ═══ -->
     <SolidColorBrush x:Key="HoverBackground" Color="#22FFFFFF"/>
     <SolidColorBrush x:Key="PressedBackground" Color="#33FFFFFF"/>
+    <Color x:Key="PressedBackgroundColor">#33FFFFFF</Color>
 
     <!-- ═══ 控制栏专用 ═══ -->
     <SolidColorBrush x:Key="ControlBarBackground" Color="#CC0F0F0F"/>
