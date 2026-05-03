@@ -31,12 +31,16 @@ public partial class ShellViewModel : ObservableObject
     [ObservableProperty]
     private bool _isLanguageSubmenuOpen;
 
+    [ObservableProperty]
+    private string _currentLanguageCode = "zh-CN";
+
     public IReadOnlyList<LanguageInfo> AvailableLanguages => _loc.AvailableLanguages;
 
     public ShellViewModel(IServiceProvider services, ILocalizationService loc)
     {
         _services = services;
         _loc = loc;
+        _currentLanguageCode = _loc.CurrentLanguage;
 
         WeakReferenceMessenger.Default.Register<FolderSelectedMessage>(this, (_, m) =>
         {
@@ -82,6 +86,7 @@ public partial class ShellViewModel : ObservableObject
     private void SwitchLanguage(string code)
     {
         _loc.SetLanguage(code);
+        CurrentLanguageCode = _loc.CurrentLanguage;
         var settings = _services.GetRequiredService<ISettingsService>();
         var s = settings.Load();
         s.Language = code;

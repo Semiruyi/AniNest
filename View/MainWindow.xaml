@@ -5,6 +5,7 @@
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:loc="clr-namespace:LocalPlayer.Localization"
         xmlns:animations="clr-namespace:LocalPlayer.View.Animations"
+        xmlns:converters="clr-namespace:LocalPlayer.View.Converters"
         Title="LocalPlayer"
         Height="{StaticResource WindowDefaultHeight}"
         Width="{StaticResource WindowDefaultWidth}"
@@ -14,6 +15,23 @@
         WindowStartupLocation="CenterScreen"
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize">
+
+    <Window.Resources>
+        <converters:LanguageMatchConverter x:Key="LanguageMatchConverter"/>
+
+        <Storyboard x:Key="ActiveHighlightEnter">
+            <ColorAnimation Storyboard.TargetProperty="Background.Color"
+                            To="{StaticResource AccentBlueColor}"
+                            Duration="0:0:0.25">
+            </ColorAnimation>
+        </Storyboard>
+        <Storyboard x:Key="ActiveHighlightExit">
+            <ColorAnimation Storyboard.TargetProperty="Background.Color"
+                            To="Transparent"
+                            Duration="0:0:0.25">
+            </ColorAnimation>
+        </Storyboard>
+    </Window.Resources>
 
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="{StaticResource TitleBarHeight}"
@@ -142,11 +160,35 @@
                                                     <ItemsControl ItemsSource="{Binding AvailableLanguages}">
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate>
-                                                                <Button Style="{StaticResource PopupMenuButton}"
-                                                                        Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                        CommandParameter="{Binding Code}">
-                                                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                                </Button>
+                                                                <Border CornerRadius="{StaticResource PopupMenuButtonCornerRadius}">
+                                                                    <Border.Style>
+                                                                        <Style TargetType="Border">
+                                                                            <Setter Property="Background" Value="Transparent"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Value="True">
+                                                                                    <DataTrigger.Binding>
+                                                                                        <MultiBinding Converter="{StaticResource LanguageMatchConverter}">
+                                                                                            <Binding Path="Code"/>
+                                                                                            <Binding Path="DataContext.CurrentLanguageCode"
+                                                                                                     RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                                                                        </MultiBinding>
+                                                                                    </DataTrigger.Binding>
+                                                                                    <DataTrigger.EnterActions>
+                                                                                        <BeginStoryboard Storyboard="{StaticResource ActiveHighlightEnter}"/>
+                                                                                    </DataTrigger.EnterActions>
+                                                                                    <DataTrigger.ExitActions>
+                                                                                        <BeginStoryboard Storyboard="{StaticResource ActiveHighlightExit}"/>
+                                                                                    </DataTrigger.ExitActions>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </Border.Style>
+                                                                    <Button Style="{StaticResource PopupMenuButton}"
+                                                                            Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                            CommandParameter="{Binding Code}">
+                                                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                                    </Button>
+                                                                </Border>
                                                             </DataTemplate>
                                                         </ItemsControl.ItemTemplate>
                                                     </ItemsControl>
