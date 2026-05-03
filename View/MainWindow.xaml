@@ -4,6 +4,7 @@
         xmlns:primitives="clr-namespace:LocalPlayer.View.Primitives"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:loc="clr-namespace:LocalPlayer.Localization"
+        xmlns:animations="clr-namespace:LocalPlayer.View.Animations"
         Title="LocalPlayer"
         Height="{StaticResource WindowDefaultHeight}"
         Width="{StaticResource WindowDefaultWidth}"
@@ -65,8 +66,9 @@
                                     Command="{Binding OpenFilePopupCommand}"
                                     shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
                             <Popup x:Name="FilePopup"
-                                   StaysOpen="False"
-                                   IsOpen="{Binding IsFilePopupOpen, Mode=TwoWay}"
+                                   StaysOpen="True"
+                                   animations:PopupAnimator.BindOpen="{Binding IsFilePopupOpen}"
+                                   animations:PopupAnimator.BindOpenOrigin="0,0"
                                    PlacementTarget="{Binding ElementName=FileButton}"
                                    Placement="Bottom"
                                    HorizontalOffset="{StaticResource PopupMenuHorizontalOffset}"
@@ -74,12 +76,7 @@
                                 <Border Background="{StaticResource PopupMenuBackground}"
                                         CornerRadius="{StaticResource SpeedPopupCornerRadius}"
                                         Padding="{StaticResource PopupMenuPadding}"
-                                        MinWidth="160"
-                                        RenderTransformOrigin="0.5,0">
-                                    <Border.RenderTransform>
-                                        <ScaleTransform x:Name="FilePopupScale"
-                                                        ScaleX="0.95" ScaleY="0.95"/>
-                                    </Border.RenderTransform>
+                                        MinWidth="160">
                                     <Button Style="{StaticResource PopupMenuButton}"
                                             Command="{Binding AddFolderCommand}">
                                         <StackPanel Orientation="Horizontal">
@@ -102,8 +99,9 @@
                                     Command="{Binding OpenSettingsPopupCommand}"
                                     shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
                             <Popup x:Name="SettingsPopup"
-                                   StaysOpen="False"
-                                   IsOpen="{Binding IsSettingsPopupOpen, Mode=TwoWay}"
+                                   StaysOpen="True"
+                                   animations:PopupAnimator.BindOpen="{Binding IsSettingsPopupOpen}"
+                                   animations:PopupAnimator.BindOpenOrigin="0,0"
                                    PlacementTarget="{Binding ElementName=SettingsButton}"
                                    Placement="Bottom"
                                    HorizontalOffset="{StaticResource PopupMenuHorizontalOffset}"

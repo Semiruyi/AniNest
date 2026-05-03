@@ -55,11 +55,17 @@ public partial class ShellViewModel : ObservableObject
 
     [RelayCommand]
     private void OpenFilePopup()
-        => IsFilePopupOpen = true;
+    {
+        IsSettingsPopupOpen = false;
+        IsFilePopupOpen = !IsFilePopupOpen;
+    }
 
     [RelayCommand]
     private void OpenSettingsPopup()
-        => IsSettingsPopupOpen = true;
+    {
+        IsFilePopupOpen = false;
+        IsSettingsPopupOpen = !IsSettingsPopupOpen;
+    }
 
     [RelayCommand]
     private void SwitchLanguage(string code)

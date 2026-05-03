@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Threading;
+using LocalPlayer.Model;
 
 namespace LocalPlayer.View.Animations;
 
@@ -79,7 +82,7 @@ public class PopupAnimator
             animator.Hide();
     }
 
-    // ========== 附加属性：将 bool 绑定到 Popup 显隐（带动画） ==========
+    // ========== 附加属性：将 bool 绑定到 Popup 显隐（带动画 + 外部点击关闭） ==========
 
     public static bool GetBindOpen(DependencyObject obj) => (bool)obj.GetValue(BindOpenProperty);
     public static void SetBindOpen(DependencyObject obj, bool value) => obj.SetValue(BindOpenProperty, value);
@@ -95,6 +98,8 @@ public class PopupAnimator
         DependencyProperty.RegisterAttached("BindOpenOrigin", typeof(Point), typeof(PopupAnimator),
             new PropertyMetadata(new Point(0.5, 0.5)));
 
+    private static readonly Dictionary<Popup, (Window window, MouseButtonEventHandler handler)> _outsideSubs = new();
+
     private static void OnBindOpenChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is not Popup popup) return;
@@ -105,16 +110,87 @@ public class PopupAnimator
 
         if ((bool)e.NewValue)
         {
+            animator.Show();
+            popup.Opened -= OnPopupOpened;
+            popup.Opened += OnPopupOpened;
+            popup.Closed -= OnPopupClosed;
+            popup.Closed += OnPopupClosed;
             popup.IsOpen = true;
-            popup.Dispatcher.BeginInvoke(() => animator.Show(), DispatcherPriority.Loaded);
         }
         else
         {
+            popup.Opened -= OnPopupOpened;
+            popup.Closed -= OnPopupClosed;
+            RemoveOutsideHandler(popup);
             animator.Hide(() =>
             {
                 if (!GetBindOpen(popup))
                     popup.IsOpen = false;
             });
+        }
+    }
+
+    private static void OnPopupOpened(object? sender, EventArgs e)
+    {
+        if (sender is not Popup popup) return;
+        if (_outsideSubs.ContainsKey(popup)) return;
+
+        var window = Window.GetWindow(popup.PlacementTarget ?? popup.Child)
+                  ?? Application.Current?.MainWindow;
+        if (window is null)
+        {
+            AppLog.Debug("PopupAnimator", "OnPopupOpened: 无法获取 Window");
+            return;
+        }
+
+        AppLog.Debug("PopupAnimator", $"订阅 {popup.Name} 外部点击");
+
+        MouseButtonEventHandler handler = null!;
+        handler = (_, args) =>
+        {
+            if (!popup.IsOpen) return;
+
+            var target = args.OriginalSource as DependencyObject;
+            if (target is null) return;
+
+            if (popup.Child is UIElement child && child.IsAncestorOf(target))
+                return;
+
+            if (popup.PlacementTarget is UIElement trigger && trigger.IsAncestorOf(target))
+                return;
+
+            AppLog.Debug("PopupAnimator", $"外部点击，关闭 {popup.Name}");
+
+            var expr = popup.GetBindingExpression(BindOpenProperty);
+            if (expr?.DataItem is not null)
+            {
+                var path = expr.ParentBinding.Path.Path;
+                var prop = expr.DataItem.GetType().GetProperty(path);
+                if (prop is not null && prop.CanWrite)
+                    prop.SetValue(expr.DataItem, false);
+                else
+                    AppLog.Debug("PopupAnimator", $"反射失败: path={path}");
+            }
+            else
+                AppLog.Debug("PopupAnimator", "BindingExpression 不可用");
+        };
+
+        _outsideSubs[popup] = (window, handler);
+        window.PreviewMouseLeftButtonDown += handler;
+    }
+
+    private static void OnPopupClosed(object? sender, EventArgs e)
+    {
+        if (sender is Popup popup)
+            RemoveOutsideHandler(popup);
+    }
+
+    private static void RemoveOutsideHandler(Popup popup)
+    {
+        if (_outsideSubs.TryGetValue(popup, out var sub))
+        {
+            sub.window.PreviewMouseLeftButtonDown -= sub.handler;
+            _outsideSubs.Remove(popup);
         }
     }
 }
