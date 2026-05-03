@@ -5,7 +5,6 @@
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:loc="clr-namespace:LocalPlayer.Localization"
         xmlns:animations="clr-namespace:LocalPlayer.View.Animations"
-        xmlns:converters="clr-namespace:LocalPlayer.View.Converters"
         Title="LocalPlayer"
         Height="{StaticResource WindowDefaultHeight}"
         Width="{StaticResource WindowDefaultWidth}"
@@ -15,23 +14,6 @@
         WindowStartupLocation="CenterScreen"
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize">
-
-    <Window.Resources>
-        <converters:LanguageMatchConverter x:Key="LanguageMatchConverter"/>
-
-        <Storyboard x:Key="ActiveHighlightEnter">
-            <ColorAnimation Storyboard.TargetProperty="Background.Color"
-                            To="{StaticResource AccentBlueColor}"
-                            Duration="0:0:0.25">
-            </ColorAnimation>
-        </Storyboard>
-        <Storyboard x:Key="ActiveHighlightExit">
-            <ColorAnimation Storyboard.TargetProperty="Background.Color"
-                            To="Transparent"
-                            Duration="0:0:0.25">
-            </ColorAnimation>
-        </Storyboard>
-    </Window.Resources>
 
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="{StaticResource TitleBarHeight}"
@@ -157,41 +139,62 @@
                                                         CornerRadius="{StaticResource SpeedPopupCornerRadius}"
                                                         Padding="{StaticResource PopupMenuPadding}"
                                                         MinWidth="{StaticResource PopupSubmenuMinWidth}">
-                                                    <ItemsControl ItemsSource="{Binding AvailableLanguages}">
-                                                        <ItemsControl.ItemTemplate>
-                                                            <DataTemplate>
-                                                                <Border CornerRadius="{StaticResource PopupMenuButtonCornerRadius}">
-                                                                    <Border.Style>
-                                                                        <Style TargetType="Border">
-                                                                            <Setter Property="Background" Value="Transparent"/>
-                                                                            <Style.Triggers>
-                                                                                <DataTrigger Value="True">
-                                                                                    <DataTrigger.Binding>
-                                                                                        <MultiBinding Converter="{StaticResource LanguageMatchConverter}">
-                                                                                            <Binding Path="Code"/>
-                                                                                            <Binding Path="DataContext.CurrentLanguageCode"
-                                                                                                     RelativeSource="{RelativeSource AncestorType=Window}"/>
-                                                                                        </MultiBinding>
-                                                                                    </DataTrigger.Binding>
-                                                                                    <DataTrigger.EnterActions>
-                                                                                        <BeginStoryboard Storyboard="{StaticResource ActiveHighlightEnter}"/>
-                                                                                    </DataTrigger.EnterActions>
-                                                                                    <DataTrigger.ExitActions>
-                                                                                        <BeginStoryboard Storyboard="{StaticResource ActiveHighlightExit}"/>
-                                                                                    </DataTrigger.ExitActions>
-                                                                                </DataTrigger>
-                                                                            </Style.Triggers>
-                                                                        </Style>
-                                                                    </Border.Style>
-                                                                    <Button Style="{StaticResource PopupMenuButton}"
-                                                                            Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                            CommandParameter="{Binding Code}">
-                                                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                                    </Button>
-                                                                </Border>
-                                                            </DataTemplate>
-                                                        </ItemsControl.ItemTemplate>
-                                                    </ItemsControl>
+                                                    <Grid>
+                                                        <Border CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
+                                                                Background="{StaticResource AccentBlue}"
+                                                                Height="{StaticResource SpeedOptionHeight}"
+                                                                VerticalAlignment="Top">
+                                                            <Border.RenderTransform>
+                                                                <TranslateTransform Y="0"/>
+                                                            </Border.RenderTransform>
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding DataContext.CurrentLanguageCode, RelativeSource={RelativeSource AncestorType=Window}}" Value="en-US">
+                                                                            <DataTrigger.EnterActions>
+                                                                                <BeginStoryboard>
+                                                                                    <Storyboard>
+                                                                                        <DoubleAnimation
+                                                                                            Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                                            To="34" Duration="0:0:0.3">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <CubicEase EasingMode="EaseInOut"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
+                                                                                    </Storyboard>
+                                                                                </BeginStoryboard>
+                                                                            </DataTrigger.EnterActions>
+                                                                            <DataTrigger.ExitActions>
+                                                                                <BeginStoryboard>
+                                                                                    <Storyboard>
+                                                                                        <DoubleAnimation
+                                                                                            Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                                            To="0" Duration="0:0:0.3">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <CubicEase EasingMode="EaseInOut"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
+                                                                                    </Storyboard>
+                                                                                </BeginStoryboard>
+                                                                            </DataTrigger.ExitActions>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                        </Border>
+                                                        <StackPanel>
+                                                            <Button Style="{StaticResource PopupMenuButton}"
+                                                                    Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                    CommandParameter="zh-CN">
+                                                                <TextBlock Text="中文" VerticalAlignment="Center"/>
+                                                            </Button>
+                                                            <Button Style="{StaticResource PopupMenuButton}"
+                                                                    Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                    CommandParameter="en-US">
+                                                                <TextBlock Text="English" VerticalAlignment="Center"/>
+                                                            </Button>
+                                                        </StackPanel>
+                                                    </Grid>
                                                 </Border>
                                             </Popup>
                                         </Grid>
@@ -224,66 +227,62 @@
                                                         CornerRadius="{StaticResource SpeedPopupCornerRadius}"
                                                         Padding="{StaticResource PopupMenuPadding}"
                                                         MinWidth="{StaticResource PopupSubmenuMinWidth}">
-                                                    <StackPanel>
-                                                        <Border Tag="none" CornerRadius="{StaticResource PopupMenuButtonCornerRadius}">
+                                                    <Grid>
+                                                        <Border CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
+                                                                Background="{StaticResource AccentBlue}"
+                                                                Height="{StaticResource SpeedOptionHeight}"
+                                                                VerticalAlignment="Top">
+                                                            <Border.RenderTransform>
+                                                                <TranslateTransform Y="34"/>
+                                                            </Border.RenderTransform>
                                                             <Border.Style>
                                                                 <Style TargetType="Border">
-                                                                    <Setter Property="Background" Value="Transparent"/>
                                                                     <Style.Triggers>
-                                                                        <DataTrigger Value="True">
-                                                                            <DataTrigger.Binding>
-                                                                                <MultiBinding Converter="{StaticResource LanguageMatchConverter}">
-                                                                                    <Binding Path="Tag" RelativeSource="{RelativeSource Self}"/>
-                                                                                    <Binding Path="DataContext.CurrentAnimationCode" RelativeSource="{RelativeSource AncestorType=Window}"/>
-                                                                                </MultiBinding>
-                                                                            </DataTrigger.Binding>
-                                                                            <Setter Property="Background" Value="{StaticResource AccentBlue}"/>
+                                                                        <DataTrigger Binding="{Binding DataContext.CurrentAnimationCode, RelativeSource={RelativeSource AncestorType=Window}}" Value="continuous">
                                                                             <DataTrigger.EnterActions>
-                                                                                <BeginStoryboard Storyboard="{StaticResource ActiveHighlightEnter}"/>
+                                                                                <BeginStoryboard>
+                                                                                    <Storyboard>
+                                                                                        <DoubleAnimation
+                                                                                            Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                                            To="34" Duration="0:0:0.3">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <CubicEase EasingMode="EaseInOut"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
+                                                                                    </Storyboard>
+                                                                                </BeginStoryboard>
                                                                             </DataTrigger.EnterActions>
                                                                             <DataTrigger.ExitActions>
-                                                                                <BeginStoryboard Storyboard="{StaticResource ActiveHighlightExit}"/>
+                                                                                <BeginStoryboard>
+                                                                                    <Storyboard>
+                                                                                        <DoubleAnimation
+                                                                                            Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                                            To="0" Duration="0:0:0.3">
+                                                                                            <DoubleAnimation.EasingFunction>
+                                                                                                <CubicEase EasingMode="EaseInOut"/>
+                                                                                            </DoubleAnimation.EasingFunction>
+                                                                                        </DoubleAnimation>
+                                                                                    </Storyboard>
+                                                                                </BeginStoryboard>
                                                                             </DataTrigger.ExitActions>
                                                                         </DataTrigger>
                                                                     </Style.Triggers>
                                                                 </Style>
                                                             </Border.Style>
+                                                        </Border>
+                                                        <StackPanel>
                                                             <Button Style="{StaticResource PopupMenuButton}"
                                                                     Command="{Binding DataContext.SelectFullscreenAnimationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                     CommandParameter="none">
                                                                 <TextBlock Text="{Binding [Settings.FullscreenAnimation.NoAnimation], Source={x:Static loc:LocalizationService.Instance}}" VerticalAlignment="Center"/>
                                                             </Button>
-                                                        </Border>
-                                                        <Border Tag="continuous" CornerRadius="{StaticResource PopupMenuButtonCornerRadius}">
-                                                            <Border.Style>
-                                                                <Style TargetType="Border">
-                                                                    <Setter Property="Background" Value="Transparent"/>
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Value="True">
-                                                                            <DataTrigger.Binding>
-                                                                                <MultiBinding Converter="{StaticResource LanguageMatchConverter}">
-                                                                                    <Binding Path="Tag" RelativeSource="{RelativeSource Self}"/>
-                                                                                    <Binding Path="DataContext.CurrentAnimationCode" RelativeSource="{RelativeSource AncestorType=Window}"/>
-                                                                                </MultiBinding>
-                                                                            </DataTrigger.Binding>
-                                                                            <Setter Property="Background" Value="{StaticResource AccentBlue}"/>
-                                                                            <DataTrigger.EnterActions>
-                                                                                <BeginStoryboard Storyboard="{StaticResource ActiveHighlightEnter}"/>
-                                                                            </DataTrigger.EnterActions>
-                                                                            <DataTrigger.ExitActions>
-                                                                                <BeginStoryboard Storyboard="{StaticResource ActiveHighlightExit}"/>
-                                                                            </DataTrigger.ExitActions>
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </Border.Style>
                                                             <Button Style="{StaticResource PopupMenuButton}"
                                                                     Command="{Binding DataContext.SelectFullscreenAnimationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                     CommandParameter="continuous">
                                                                 <TextBlock Text="{Binding [Settings.FullscreenAnimation.ContinuousAnimation], Source={x:Static loc:LocalizationService.Instance}}" VerticalAlignment="Center"/>
                                                             </Button>
-                                                        </Border>
-                                                    </StackPanel>
+                                                        </StackPanel>
+                                                    </Grid>
                                                 </Border>
                                             </Popup>
                                         </Grid>
