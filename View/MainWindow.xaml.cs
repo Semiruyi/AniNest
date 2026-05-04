@@ -11,6 +11,11 @@ namespace LocalPlayer.View;
 public partial class MainWindow : Window
 {
     private readonly FpsMonitor _fps;
+    private bool _isTrueFullscreen;
+    private WindowStyle _savedWindowStyle;
+    private WindowState _savedWindowState;
+    private bool _savedTopmost;
+    private double _savedLeft, _savedTop, _savedWidth, _savedHeight;
 
     public MainWindow(ShellViewModel vm)
     {
@@ -21,7 +26,7 @@ public partial class MainWindow : Window
 
         WeakReferenceMessenger.Default.Register<ToggleFullscreenMessage>(this, (_, _) =>
         {
-            if (TitleBarRow.Height.Value > 0)
+            if (!_isTrueFullscreen && TitleBarRow.Height.Value > 0)
                 EnterFullscreen();
             else
                 ExitFullscreen();
@@ -30,16 +35,58 @@ public partial class MainWindow : Window
 
     private void EnterFullscreen()
     {
-        TitleBarRow.Height = new GridLength(0);
-        var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
-        ShowWindow(hwnd, SW_MAXIMIZE);
+        var vm = (ShellViewModel)DataContext;
+        if (vm.CurrentAnimationCode == "none")
+        {
+            _savedWindowStyle = WindowStyle;
+            _savedWindowState = WindowState;
+            _savedTopmost = Topmost;
+            _savedLeft = Left;
+            _savedTop = Top;
+            _savedWidth = Width;
+            _savedHeight = Height;
+            TitleBarRow.Height = new GridLength(0);
+            WindowStyle = WindowStyle.None;
+            Topmost = true;
+
+            var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            var monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+            var mi = new MONITORINFO { cbSize = (uint)Marshal.SizeOf<MONITORINFO>() };
+            GetMonitorInfo(monitor, ref mi);
+            SetWindowPos(hwnd, HWND_TOPMOST,
+                mi.rcMonitor.Left, mi.rcMonitor.Top,
+                mi.rcMonitor.Right - mi.rcMonitor.Left, mi.rcMonitor.Bottom - mi.rcMonitor.Top,
+                SWP_FRAMECHANGED);
+            _isTrueFullscreen = true;
+        }
+        else
+        {
+            TitleBarRow.Height = new GridLength(0);
+            var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            ShowWindow(hwnd, SW_MAXIMIZE);
+        }
     }
 
     private void ExitFullscreen()
     {
-        var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
-        ShowWindow(hwnd, SW_RESTORE);
-        TitleBarRow.Height = (GridLength)FindResource("TitleBarRowHeight");
+        if (_isTrueFullscreen)
+        {
+            Left = _savedLeft;
+            Top = _savedTop;
+            Width = _savedWidth;
+            Height = _savedHeight;
+            Topmost = _savedTopmost;
+            WindowStyle = _savedWindowStyle;
+            WindowState = _savedWindowState;
+            TitleBarRow.Height = (GridLength)FindResource("TitleBarRowHeight");
+            _isTrueFullscreen = false;
+        }
+        else
+        {
+            var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            ShowWindow(hwnd, SW_RESTORE);
+            TitleBarRow.Height = (GridLength)FindResource("TitleBarRowHeight");
+        }
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -76,8 +123,39 @@ public partial class MainWindow : Window
     private void CloseButton_Click(object sender, RoutedEventArgs e)
         => SystemCommands.CloseWindow(this);
 
+    // ========== Win32 ==========
+
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(nint hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetWindowPos(nint hWnd, nint hWndInsertAfter,
+        int X, int Y, int cx, int cy, uint uFlags);
+
+    [DllImport("user32.dll")]
+    private static extern nint MonitorFromWindow(nint hwnd, uint dwFlags);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetMonitorInfo(nint hMonitor, ref MONITORINFO lpmi);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MONITORINFO
+    {
+        public uint cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public uint dwFlags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left, Top, Right, Bottom;
+    }
+
+    private static readonly nint HWND_TOPMOST = new(-1);
+    private const uint MONITOR_DEFAULTTONEAREST = 2;
+    private const uint SWP_FRAMECHANGED = 0x0020;
 
     private const int SW_MAXIMIZE = 3;
     private const int SW_MINIMIZE = 6;

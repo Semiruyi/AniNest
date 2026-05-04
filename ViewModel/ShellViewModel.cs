@@ -158,6 +158,9 @@ public partial class ShellViewModel : ObservableObject
 
     private async void EnterPlayerPage()
     {
+        if (CurrentAnimationCode == "none")
+            return;
+
         if (TaskbarHelper.IsAutoHideEnabled)
             return;
 
