@@ -92,14 +92,57 @@
             </StackPanel>
 
             <!-- 中间：进度条 -->
-            <primitives:SeekBar Grid.Column="1"
+            <primitives:SeekBar x:Name="SeekBar" Grid.Column="1"
                                 Position="{Binding CurrentTime, Mode=TwoWay}"
                                 Duration="{Binding TotalTime}"
                                 BufferedPosition="{Binding BufferedPosition}"
                                 IsSeeking="{Binding IsSeeking, Mode=TwoWay}"
                                 SeekCommand="{Binding SeekCommand}"
+                                ThumbnailPreview="{Binding ThumbnailPreview}"
                                 VerticalAlignment="Center"
+                                ShowTooltip="False"
                                 Margin="{StaticResource ControlBarSliderMargin}"/>
+
+            <!-- 缩略图预览 Popup（独立于 SeekBar，方便复用到音量条等场景） -->
+            <Popup Grid.Column="1"
+                   PlacementTarget="{Binding ElementName=SeekBar}"
+                   Placement="Relative"
+                   AllowsTransparency="True"
+                   IsHitTestVisible="False"
+                   IsOpen="{Binding ThumbnailPreview.IsOpen}"
+                   HorizontalOffset="{Binding ThumbnailPreview.HOffset}"
+                   VerticalOffset="{StaticResource ThumbnailPopupOffset}">
+                <Border Background="{StaticResource PopupMenuBackground}"
+                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                        Padding="{StaticResource PopupMenuPadding}">
+                    <Grid>
+                        <Border x:Name="ThumbnailImageBorder"
+                                Width="{StaticResource ThumbnailPopupWidth}"
+                                Height="{StaticResource ThumbnailPopupHeight}">
+                            <Border.Clip>
+                                <RectangleGeometry RadiusX="{StaticResource ThumbnailPreviewImageClipRadius}"
+                                                   RadiusY="{StaticResource ThumbnailPreviewImageClipRadius}"
+                                                   Rect="0,0,160,90"/>
+                            </Border.Clip>
+                            <Image Source="{Binding ThumbnailPreview.ImageSource}"
+                                   Visibility="{Binding ThumbnailPreview.ImageVisibility}"
+                                   Width="{StaticResource ThumbnailPopupWidth}"
+                                   Height="{StaticResource ThumbnailPopupHeight}"
+                                   Stretch="UniformToFill"/>
+                        </Border>
+                        <Border Background="{StaticResource ThumbnailPreviewTimeBackground}"
+                                CornerRadius="{StaticResource ThumbnailPreviewTimeCornerRadius}"
+                                Padding="{StaticResource ThumbnailPreviewTimePadding}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Bottom">
+                            <TextBlock Text="{Binding ThumbnailPreview.TimeText}"
+                                       Foreground="{StaticResource TextPrimary}"
+                                       FontSize="{StaticResource ThumbnailPreviewFontSize}"
+                                       FontFamily="Segoe UI, Microsoft YaHei, sans-serif"/>
+                        </Border>
+                    </Grid>
+                </Border>
+            </Popup>
 
             <!-- 右侧：倍速 + 菜单 -->
             <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"

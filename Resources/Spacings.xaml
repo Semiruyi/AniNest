@@ -16,7 +16,7 @@
 
     <!-- ═══ 间距 ═══ -->
     <Thickness x:Key="ControlBarHorizontalMargin">10,0,10,0</Thickness>
-    <Thickness x:Key="ControlBarSliderMargin">10,0</Thickness>
+    <Thickness x:Key="ControlBarSliderMargin">20,0</Thickness>
     <Thickness x:Key="ButtonGapRight">0,0,4,0</Thickness>
     <Thickness x:Key="ButtonGapLeft">4,0,0,0</Thickness>
     <Thickness x:Key="ButtonGapBoth">4,0</Thickness>

@@ -41,6 +41,13 @@
     <system:Double x:Key="SpeedOptionHeight">34</system:Double>
     <system:Double x:Key="SpeedPopupMinWidth">70</system:Double>
 
+    <!-- ═══ 缩略图预览 ═══ -->
+    <system:Double x:Key="ThumbnailPreviewImageClipRadius">10</system:Double>
+    <CornerRadius x:Key="ThumbnailPreviewTimeCornerRadius">4</CornerRadius>
+    <system:Double x:Key="ThumbnailPreviewFontSize">11</system:Double>
+    <Thickness x:Key="ThumbnailPreviewTimePadding">6,2</Thickness>
+    <Thickness x:Key="ThumbnailPreviewTimeMargin">0,0,0,4</Thickness>
+
     <!-- ═══ 进度条 (SeekBar) ═══ -->
     <system:Double x:Key="SeekBarTrackHeight">4</system:Double>
     <system:Double x:Key="SeekBarThumbSize">14</system:Double>

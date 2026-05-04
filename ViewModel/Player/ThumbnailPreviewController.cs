@@ -110,7 +110,8 @@ public partial class ThumbnailPreviewController : ObservableObject
 
         TimeText = FormatTime(hoverTimeMs);
         double popupW = 160;
-        HOffset = Math.Max(0, Math.Min(pos.X - popupW / 2, sliderWidth - popupW));
+        // 水平中心不超过进度条边界，左右各可超出一半
+        HOffset = Math.Max(-popupW / 2, Math.Min(pos.X - popupW / 2, sliderWidth - popupW / 2));
 
         string? currentVideoPath = _getCurrentVideoPath();
         bool thumbReady = currentVideoPath != null &&

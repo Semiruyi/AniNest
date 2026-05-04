@@ -35,4 +35,7 @@
     <SolidColorBrush x:Key="CloseButtonHover" Color="#E81123"/>
     <SolidColorBrush x:Key="DeleteButtonBackground" Color="#CCFF4444"/>
 
+    <!-- ═══ 缩略图预览 ═══ -->
+    <SolidColorBrush x:Key="ThumbnailPreviewTimeBackground" Color="#99000000"/>
+
 </ResourceDictionary>

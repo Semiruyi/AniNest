@@ -6,6 +6,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using LocalPlayer.ViewModel.Player;
 
 namespace LocalPlayer.View.Primitives;
 
@@ -34,6 +35,13 @@ public class SeekBar : ContentControl
     public static readonly DependencyProperty SeekCommandProperty =
         DependencyProperty.Register(nameof(SeekCommand), typeof(ICommand), typeof(SeekBar));
 
+    public static readonly DependencyProperty ThumbnailPreviewProperty =
+        DependencyProperty.Register(nameof(ThumbnailPreview), typeof(ThumbnailPreviewController), typeof(SeekBar));
+
+    public static readonly DependencyProperty ShowTooltipProperty =
+        DependencyProperty.Register(nameof(ShowTooltip), typeof(bool), typeof(SeekBar),
+            new PropertyMetadata(true));
+
     public static readonly RoutedEvent SeekCompletedEvent =
         EventManager.RegisterRoutedEvent(nameof(SeekCompleted), RoutingStrategy.Bubble,
             typeof(RoutedEventHandler), typeof(SeekBar));
@@ -43,6 +51,8 @@ public class SeekBar : ContentControl
     public double BufferedPosition { get => (double)GetValue(BufferedPositionProperty); set => SetValue(BufferedPositionProperty, value); }
     public bool IsSeeking { get => (bool)GetValue(IsSeekingProperty); set => SetValue(IsSeekingProperty, value); }
     public ICommand SeekCommand { get => (ICommand)GetValue(SeekCommandProperty); set => SetValue(SeekCommandProperty, value); }
+    public ThumbnailPreviewController? ThumbnailPreview { get => (ThumbnailPreviewController?)GetValue(ThumbnailPreviewProperty); set => SetValue(ThumbnailPreviewProperty, value); }
+    public bool ShowTooltip { get => (bool)GetValue(ShowTooltipProperty); set => SetValue(ShowTooltipProperty, value); }
 
     public event RoutedEventHandler SeekCompleted
     {
@@ -68,8 +78,8 @@ public class SeekBar : ContentControl
     private bool _isDragging;
     private bool _isMouseOver;
     private Point _lastMousePos;
-    private long _seekTarget = -1; // non-negative when waiting for seek to land
-    private bool _restoringPosition; // guard against re-entrant Position restore
+    private long _seekTarget = -1;
+    private bool _restoringPosition;
 
     // ── Cached resources ──
 
@@ -168,6 +178,7 @@ public class SeekBar : ContentControl
         _thumbCanvas = new Canvas { ClipToBounds = false };
         _thumbCanvas.Children.Add(thumbGrid);
 
+        // --- Simple text tooltip (time / percentage) ---
         _tooltipText = new TextBlock
         {
             Foreground = Brushes.White,
@@ -219,7 +230,7 @@ public class SeekBar : ContentControl
         var pos = e.GetPosition(this);
         _isDragging = true;
         IsSeeking = true;
-        SetThumbScale(1.0); // 按下变小
+        SetThumbScale(1.0);
         HideTooltip();
 
         if (ActualWidth > 0)
@@ -248,6 +259,8 @@ public class SeekBar : ContentControl
         {
             UpdateTooltip();
         }
+
+        ThumbnailPreview?.OnMove(_lastMousePos, ActualWidth);
     }
 
     protected override void OnPreviewMouseUp(MouseButtonEventArgs e)
@@ -279,15 +292,17 @@ public class SeekBar : ContentControl
         base.OnMouseEnter(e);
         _isMouseOver = true;
         if (!_isDragging)
-            SetThumbScale(1.35); // hover 变大
+            SetThumbScale(1.35);
+        ThumbnailPreview?.OnEnter();
     }
 
     protected override void OnMouseLeave(MouseEventArgs e)
     {
         base.OnMouseLeave(e);
         _isMouseOver = false;
-        SetThumbScale(1.0); // 离开变小
+        SetThumbScale(1.0);
         HideTooltip();
+        ThumbnailPreview?.OnLeave();
     }
 
     protected override void OnLostMouseCapture(MouseEventArgs e)
@@ -305,7 +320,7 @@ public class SeekBar : ContentControl
         if (ActualWidth <= 0) return;
         double ratio = Math.Clamp(_lastMousePos.X / ActualWidth, 0, 1);
         Position = ratio * Duration;
-        UpdateVisuals(); // during drag, OnPositionChanged skips visuals, so update here
+        UpdateVisuals();
     }
 
     private void FinishSeek()
@@ -313,12 +328,8 @@ public class SeekBar : ContentControl
         Debug.WriteLine($"{LogTag} FinishSeek");
         _isDragging = false;
         IsSeeking = false;
-        // Track target to reject stale Position pushed back by binding
-        // before VLC finishes seeking (avoids 0→10min→0 bounce).
         _seekTarget = (long)Position;
-        // 松开后恢复 hover 大小（如果鼠标仍在进度条上）
         SetThumbScale(_isMouseOver ? 1.35 : 1.0);
-        HideTooltip();
         ExecuteSeek(_seekTarget);
     }
 
@@ -331,7 +342,7 @@ public class SeekBar : ContentControl
         RaiseEvent(new RoutedEventArgs(SeekCompletedEvent));
     }
 
-    // ── Hover / Tooltip ──
+    // ── Tooltip ──
 
     private void SetThumbScale(double s)
     {
@@ -342,6 +353,7 @@ public class SeekBar : ContentControl
 
     private void UpdateTooltip()
     {
+        if (!ShowTooltip) return;
         if (_tooltip == null || _tooltipText == null) return;
         if (ActualWidth <= 0) return;
 
@@ -349,7 +361,6 @@ public class SeekBar : ContentControl
         long hoverMs = (long)(ratio * Duration);
         _tooltipText.Text = FormatTime(hoverMs);
 
-        // Measure actual popup width to center on mouse
         _tooltip.Child.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         double popupW = _tooltip.Child.DesiredSize.Width;
 
@@ -373,11 +384,10 @@ public class SeekBar : ContentControl
         var sb = (SeekBar)d;
         if (sb._isDragging) return;
 
-        // Waiting for seek to land — check if incoming position matches target
         if (sb._seekTarget >= 0)
         {
             double dist = Math.Abs((double)e.NewValue - sb._seekTarget);
-            if (dist < 3000) // within 3 seconds → seek landed
+            if (dist < 3000)
             {
                 sb._seekTarget = -1;
                 sb.IsSeeking = false;
@@ -385,7 +395,6 @@ public class SeekBar : ContentControl
             }
             else if (!sb._restoringPosition)
             {
-                // Stale position from before seek — restore to target
                 sb._restoringPosition = true;
                 sb.Position = sb._seekTarget;
                 sb._restoringPosition = false;
