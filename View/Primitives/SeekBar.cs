@@ -8,6 +8,7 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using LocalPlayer.ViewModel.Player;
 using LocalPlayer.View.Animations;
+using LocalPlayer.View.Interop;
 
 namespace LocalPlayer.View.Primitives;
 
@@ -73,6 +74,8 @@ public class SeekBar : ContentControl
     private ScaleTransform? _thumbScale;
     private Popup? _tooltip;
     private TextBlock? _tooltipText;
+    private Window? _tooltipWindow;
+    private EventHandler? _tooltipMoveHandler;
 
     // ── State ──
 
@@ -108,6 +111,34 @@ public class SeekBar : ContentControl
         Debug.WriteLine($"{LogTag} Loaded, ActualWidth={ActualWidth:F0}, ActualHeight={ActualHeight:F0}");
         LoadResources();
         UpdateVisuals();
+
+        _tooltipWindow = Window.GetWindow(this);
+        if (_tooltipWindow != null)
+        {
+            _tooltipMoveHandler = (_, _) =>
+            {
+                if (_tooltip is { IsOpen: true })
+                {
+                    var mi = typeof(Popup).GetMethod("Reposition",
+                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                    mi?.Invoke(_tooltip, null);
+                }
+            };
+            _tooltipWindow.LocationChanged += _tooltipMoveHandler;
+
+            // Tooltip Popup 打开时修复 z-order
+            if (_tooltip != null)
+                _tooltip.Opened += (_, _) => PopupZOrderFix.Apply(_tooltip);
+
+            Unloaded += OnUnloadedCleanup;
+        }
+    }
+
+    private void OnUnloadedCleanup(object sender, RoutedEventArgs e)
+    {
+        Unloaded -= OnUnloadedCleanup;
+        if (_tooltipWindow != null && _tooltipMoveHandler != null)
+            _tooltipWindow.LocationChanged -= _tooltipMoveHandler;
     }
 
     private void LoadResources()

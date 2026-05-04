@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -8,6 +7,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using LocalPlayer.Model;
+using LocalPlayer.View.Interop;
 
 namespace LocalPlayer.View.Animations;
 
@@ -99,7 +99,7 @@ public class PopupAnimator
         DependencyProperty.RegisterAttached("BindOpenOrigin", typeof(Point), typeof(PopupAnimator),
             new PropertyMetadata(new Point(0.5, 0.5)));
 
-    private static readonly Dictionary<Popup, (Window window, MouseButtonEventHandler downHandler, MouseButtonEventHandler upHandler)> _outsideSubs = new();
+    private static readonly Dictionary<Popup, (Window window, MouseButtonEventHandler downHandler, MouseButtonEventHandler upHandler, EventHandler moveHandler)> _outsideSubs = new();
     private static readonly HashSet<Popup> _closedByOutsideClick = new();
 
     /// <summary>映射 Popup.Child → Popup，用于检测嵌套 Popup 的点击归属。</summary>
@@ -224,9 +224,25 @@ public class PopupAnimator
             }
         };
 
-        _outsideSubs[popup] = (window, downHandler, upHandler);
+        EventHandler moveHandler = (_, _) =>
+        {
+            if (popup.IsOpen)
+                RepositionPopup(popup);
+        };
+
+        _outsideSubs[popup] = (window, downHandler, upHandler, moveHandler);
         window.PreviewMouseLeftButtonDown += downHandler;
         window.PreviewMouseLeftButtonUp += upHandler;
+        window.LocationChanged += moveHandler;
+
+        PopupZOrderFix.Apply(popup);
+    }
+
+    /// <summary>窗口移动时强制 Popup 重新定位，解决 WPF Popup 不随窗口移动的问题。</summary>
+    private static void RepositionPopup(Popup popup)
+    {
+        var mi = typeof(Popup).GetMethod("Reposition", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        mi?.Invoke(popup, null);
     }
 
     /// <summary>沿逻辑树向上查找，判断 child 是否是 parent 的后代 Popup。</summary>
@@ -259,8 +275,10 @@ public class PopupAnimator
         {
             sub.window.PreviewMouseLeftButtonDown -= sub.downHandler;
             sub.window.PreviewMouseLeftButtonUp -= sub.upHandler;
+            sub.window.LocationChanged -= sub.moveHandler;
             _outsideSubs.Remove(popup);
         }
         _closedByOutsideClick.Remove(popup);
     }
+
 }
