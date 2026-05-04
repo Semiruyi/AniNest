@@ -233,20 +233,18 @@
                         Margin="{StaticResource ButtonGapBoth}"
                         ToolTip="{Binding PlayPauseTooltip}" Focusable="False"
                         animations:ButtonScaleHover.IsEnabled="True">
-                    <Image x:Name="PlayPauseIcon"
-                           Width="{StaticResource IconSizeLarge}"
-                           Height="{StaticResource IconSizeLarge}">
-                        <Image.Style>
-                            <Style TargetType="Image">
-                                <Setter Property="Source" Value="/Resources/Icons/play.png"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsPlaying}" Value="True">
-                                        <Setter Property="Source" Value="/Resources/Icons/pause.png"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Image.Style>
-                    </Image>
+                    <Grid animations:IconCrossfader.IsActive="{Binding IsPlaying}"
+                          animations:IconCrossfader.DurationMs="300"
+                          animations:IconCrossfader.ListenButton="{Binding ElementName=PlayPauseBtn}">
+                        <Image Source="/Resources/Icons/play.png"
+                               Width="{StaticResource IconSizeLarge}"
+                               Height="{StaticResource IconSizeLarge}"
+                               Opacity="1"/>
+                        <Image Source="/Resources/Icons/pause.png"
+                               Width="{StaticResource IconSizeLarge}"
+                               Height="{StaticResource IconSizeLarge}"
+                               Opacity="0"/>
+                    </Grid>
                 </Button>
                 <Button x:Name="NextBtn" Style="{StaticResource IconButton}"
                         Command="{Binding NextCommand}" ToolTip="{Binding NextTooltip}"
