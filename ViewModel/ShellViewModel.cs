@@ -77,16 +77,20 @@ public partial class ShellViewModel : ObservableObject
         IsFilePopupOpen = !IsFilePopupOpen;
     }
 
+    partial void OnIsSettingsPopupOpenChanged(bool value)
+    {
+        if (!value)
+        {
+            IsLanguageSubmenuOpen = false;
+            IsFullscreenAnimationSubmenuOpen = false;
+        }
+    }
+
     [RelayCommand]
     private void OpenSettingsPopup()
     {
         IsFilePopupOpen = false;
         IsSettingsPopupOpen = !IsSettingsPopupOpen;
-        if (!IsSettingsPopupOpen)
-        {
-            IsLanguageSubmenuOpen = false;
-            IsFullscreenAnimationSubmenuOpen = false;
-        }
     }
 
     [RelayCommand]
