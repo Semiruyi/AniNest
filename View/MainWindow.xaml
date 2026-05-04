@@ -228,7 +228,7 @@
                                                                 Height="{StaticResource SpeedOptionHeight}"
                                                                 VerticalAlignment="Top">
                                                             <Border.RenderTransform>
-                                                                <TranslateTransform Y="34"/>
+                                                                <TranslateTransform Y="0"/>
                                                             </Border.RenderTransform>
                                                             <Border.Style>
                                                                 <Style TargetType="Border">

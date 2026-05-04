@@ -47,6 +47,7 @@ public partial class ShellViewModel : ObservableObject
         _services = services;
         _loc = loc;
         _currentLanguageCode = _loc.CurrentLanguage;
+        _currentAnimationCode = _services.GetRequiredService<ISettingsService>().Load().FullscreenAnimation;
 
         WeakReferenceMessenger.Default.Register<FolderSelectedMessage>(this, (_, m) =>
         {
@@ -112,6 +113,10 @@ public partial class ShellViewModel : ObservableObject
     private void SelectFullscreenAnimation(string code)
     {
         CurrentAnimationCode = code;
+        var settings = _services.GetRequiredService<ISettingsService>();
+        var s = settings.Load();
+        s.FullscreenAnimation = code;
+        settings.Save();
     }
 
     [RelayCommand]

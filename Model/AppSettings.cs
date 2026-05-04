@@ -10,6 +10,7 @@ public class AppSettings
     public int ThumbnailExpiryDays { get; set; } = 30; // 0 = 永不过期
     public Dictionary<string, int> KeyBindings { get; set; } = new();
     public string Language { get; set; } = "zh-CN";
+    public string FullscreenAnimation { get; set; } = "none";
 }
 
 public class KeyBindingInfo
