@@ -180,7 +180,13 @@ public partial class PlayerViewModel : ObservableObject
         _inputHandler.SeekBackward += (_, _) => _media.SeekBackward(5000);
         _inputHandler.NextEpisode += (_, _) => PlayNext();
         _inputHandler.PreviousEpisode += (_, _) => PlayPrevious();
-        _inputHandler.Back += (_, _) => GoBackInternal();
+        _inputHandler.Back += (_, _) =>
+        {
+            if (IsFullscreen)
+                WeakReferenceMessenger.Default.Send(new ToggleFullscreenMessage());
+            else
+                GoBackInternal();
+        };
     }
 
     // ========== 文件夹加载 ==========

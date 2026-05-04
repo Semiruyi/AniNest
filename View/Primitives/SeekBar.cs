@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using LocalPlayer.ViewModel.Player;
+using LocalPlayer.View.Animations;
 
 namespace LocalPlayer.View.Primitives;
 
@@ -230,7 +231,6 @@ public class SeekBar : ContentControl
         var pos = e.GetPosition(this);
         _isDragging = true;
         IsSeeking = true;
-        SetThumbScale(1.0);
         HideTooltip();
 
         if (ActualWidth > 0)
@@ -292,7 +292,7 @@ public class SeekBar : ContentControl
         base.OnMouseEnter(e);
         _isMouseOver = true;
         if (!_isDragging)
-            SetThumbScale(1.35);
+            SetThumbScale(1.35, animate: true);
         ThumbnailPreview?.OnEnter();
     }
 
@@ -300,7 +300,7 @@ public class SeekBar : ContentControl
     {
         base.OnMouseLeave(e);
         _isMouseOver = false;
-        SetThumbScale(1.0);
+        SetThumbScale(1.0, animate: true);
         HideTooltip();
         ThumbnailPreview?.OnLeave();
     }
@@ -344,11 +344,20 @@ public class SeekBar : ContentControl
 
     // ── Tooltip ──
 
-    private void SetThumbScale(double s)
+    private void SetThumbScale(double s, bool animate = false, int durationMs = 200)
     {
         if (_thumbScale == null) return;
-        _thumbScale.ScaleX = s;
-        _thumbScale.ScaleY = s;
+        if (animate)
+        {
+            AnimationHelper.AnimateScaleTransform(_thumbScale, s, durationMs, AnimationHelper.EaseOut);
+        }
+        else
+        {
+            _thumbScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            _thumbScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            _thumbScale.ScaleX = s;
+            _thumbScale.ScaleY = s;
+        }
     }
 
     private void UpdateTooltip()
