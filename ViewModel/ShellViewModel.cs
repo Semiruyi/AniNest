@@ -132,7 +132,7 @@ public partial class ShellViewModel : ObservableObject
         IsFilePopupOpen = false;
         var dialog = new Microsoft.Win32.OpenFolderDialog
         {
-            Title = _loc["Dialog.SelectFolder"]
+            Title = _loc["Dialog.AddFolder"]
         };
 
         if (dialog.ShowDialog() != true) return;

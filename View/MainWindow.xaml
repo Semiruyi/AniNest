@@ -102,7 +102,7 @@
                                                   Height="{StaticResource IconSizeNormal}"
                                                   Stretch="Uniform"
                                                   Margin="0,0,8,0"/>
-                                            <TextBlock Text="{Binding [App.SelectFolder], Source={x:Static loc:LocalizationService.Instance}}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding [App.AddFolder], Source={x:Static loc:LocalizationService.Instance}}" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>
                                 </Border>

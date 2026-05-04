@@ -3,7 +3,7 @@
 
   "App.File": "File",
   "App.Settings": "Settings",
-  "App.SelectFolder": "Select Folder",
+  "App.AddFolder": "Add Folder",
 
   "Window.Minimize": "Minimize",
   "Window.Maximize": "Maximize",
@@ -24,7 +24,7 @@
   "Library.FolderCount": "{0} folder(s)",
   "Library.ThumbnailProgress": "Thumbnails {0}/{1}",
 
-  "Dialog.SelectFolder": "Select a folder containing videos",
+  "Dialog.AddFolder": "Add a folder containing videos",
   "Dialog.FolderAlreadyAdded": "This folder has already been added",
   "Dialog.NoVideosInFolder": "No video files found in this folder",
   "Dialog.UnknownError": "Unknown error",
