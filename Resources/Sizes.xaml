@@ -39,6 +39,7 @@
     <system:Double x:Key="ThumbnailPopupWidth">160</system:Double>
     <system:Double x:Key="ThumbnailPopupHeight">90</system:Double>
     <system:Double x:Key="SpeedOptionHeight">34</system:Double>
+    <system:Double x:Key="SpeedPopupMinWidth">70</system:Double>
 
     <!-- ═══ 选集面板 ═══ -->
     <system:Double x:Key="PlaylistPanelWidth">276</system:Double>

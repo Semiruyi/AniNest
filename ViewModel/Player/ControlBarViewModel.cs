@@ -48,6 +48,16 @@ public partial class ControlBarViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSeeking;
 
+    // ========== 倍速弹窗 ==========
+
+    public static float[] SpeedOptions { get; } = { 2.0f, 1.5f, 1.25f, 1.0f, 0.75f, 0.5f };
+
+    [ObservableProperty]
+    private bool _isSpeedPopupOpen;
+
+    [RelayCommand]
+    private void ToggleSpeedPopup() => IsSpeedPopupOpen = !IsSpeedPopupOpen;
+
     [ObservableProperty]
     private string? _currentVideoPath;
 

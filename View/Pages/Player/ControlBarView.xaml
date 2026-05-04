@@ -1,12 +1,15 @@
 <UserControl x:Class="LocalPlayer.View.Pages.Player.ControlBarView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:LocalPlayer.View.Converters"
              xmlns:animations="clr-namespace:LocalPlayer.View.Animations"
              xmlns:behaviors="clr-namespace:LocalPlayer.View.Behaviors"
              xmlns:loc="clr-namespace:LocalPlayer.Localization"
              Focusable="True">
     <UserControl.Resources>
         <ResourceDictionary>
+            <converters:RateToOffsetConverter x:Key="RateToOffsetConverter"/>
+
             <Style x:Key="SliderDecreaseButton" TargetType="RepeatButton">
                 <Setter Property="OverridesDefaultStyle" Value="true"/>
                 <Setter Property="IsTabStop" Value="false"/>
@@ -261,12 +264,53 @@
             <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"
                         VerticalAlignment="Center">
                 <!-- 倍速按钮 -->
-                <Button x:Name="SpeedBtn"
-                        Content="{Binding Rate, StringFormat={}{0:0.##}x}"
-                        Style="{StaticResource IconButton}"
-                        FontSize="11" FontWeight="SemiBold"
-                        Foreground="White" Focusable="False"
-                        Margin="{StaticResource ButtonGapRight}"/>
+                <Grid>
+                    <Button x:Name="SpeedBtn"
+                            Style="{StaticResource IconButton}"
+                            FontSize="11" FontWeight="SemiBold"
+                            Foreground="White" Focusable="False"
+                            Margin="{StaticResource ButtonGapRight}"
+                            Command="{Binding ToggleSpeedPopupCommand}">
+                        <TextBlock Text="{Binding Rate, StringFormat={}{0:0.0#}x}"/>
+                    </Button>
+                    <Popup x:Name="SpeedPopup"
+                           StaysOpen="True"
+                           animations:PopupAnimator.BindOpen="{Binding IsSpeedPopupOpen}"
+                           animations:PopupAnimator.BindOpenOrigin="0.5,1"
+                           PlacementTarget="{Binding ElementName=SpeedBtn}"
+                           Placement="Center"
+                           VerticalOffset="{StaticResource SpeedPopupOffset}"
+                           AllowsTransparency="True">
+                        <Border Background="{StaticResource PopupMenuBackground}"
+                                CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                                Padding="{StaticResource PopupMenuPadding}"
+                                MinWidth="{StaticResource SpeedPopupMinWidth}">
+                            <Grid>
+                                <Border CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
+                                        Background="{StaticResource AccentBlue}"
+                                        Height="{StaticResource SpeedOptionHeight}"
+                                        VerticalAlignment="Top"
+                                        animations:SlideAnimator.TargetY="{Binding Rate, Converter={StaticResource RateToOffsetConverter}}">
+                                    <Border.RenderTransform>
+                                        <TranslateTransform Y="0"/>
+                                    </Border.RenderTransform>
+                                </Border>
+                                <ItemsControl ItemsSource="{Binding SpeedOptions}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Style="{StaticResource PopupMenuButton}"
+                                                    HorizontalContentAlignment="Center"
+                                                    Command="{Binding DataContext.ChangeSpeedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}">
+                                                <TextBlock Text="{Binding StringFormat={}{0:0.0#}x}"/>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Grid>
+                        </Border>
+                    </Popup>
+                </Grid>
 
                 <Button x:Name="PlaylistToggleBtn" Style="{StaticResource IconButton}"
                         Command="{Binding TogglePlaylistCommand}"

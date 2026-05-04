@@ -34,6 +34,7 @@
 
     <!-- ═══ 弹窗偏移 ═══ -->
     <system:Double x:Key="ThumbnailPopupOffset">-120</system:Double>
+    <system:Double x:Key="SpeedPopupOffset">-25</system:Double>
 
     <!-- ═══ Popup 菜单 ═══ -->
     <CornerRadius x:Key="PopupMenuButtonCornerRadius">8</CornerRadius>
