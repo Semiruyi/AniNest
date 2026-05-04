@@ -103,13 +103,13 @@
                                 ShowTooltip="False"
                                 Margin="{StaticResource ControlBarSliderMargin}"/>
 
-            <Popup PlacementTarget="{Binding ElementName=SeekBar}"
+            <primitives:AnimatedPopup PlacementTarget="{Binding ElementName=SeekBar}"
                    Placement="Relative"
                    AllowsTransparency="True"
                    IsHitTestVisible="False"
                    StaysOpen="True"
-                   animations:PopupAnimator.BindOpen="{Binding ThumbnailPreview.IsOpen}"
-                   animations:PopupAnimator.BindOpenOrigin="0.5,1"
+                   IsOpenAnimated="{Binding ThumbnailPreview.IsOpen}"
+                   OpenAnimationOrigin="0.5,1"
                    HorizontalOffset="{Binding ThumbnailPreview.HOffset}"
                    VerticalOffset="{StaticResource ThumbnailPopupOffset}">
                 <Border Background="{StaticResource PopupMenuBackground}"
@@ -142,7 +142,7 @@
                         </Border>
                     </Grid>
                 </Border>
-            </Popup>
+            </primitives:AnimatedPopup>
 
             <!-- 右侧：倍速 + 菜单 -->
             <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"
@@ -171,10 +171,10 @@
                             </TextBlock>
                         </Grid>
                     </Button>
-                    <Popup x:Name="SpeedPopup"
+                    <primitives:AnimatedPopup x:Name="SpeedPopup"
                            StaysOpen="True"
-                           animations:PopupAnimator.BindOpen="{Binding IsSpeedPopupOpen}"
-                           animations:PopupAnimator.BindOpenOrigin="0.5,1"
+                           IsOpenAnimated="{Binding IsSpeedPopupOpen}"
+                           OpenAnimationOrigin="0.5,1"
                            PlacementTarget="{Binding ElementName=SpeedBtn}"
                            Placement="Center"
                            VerticalOffset="{StaticResource SpeedPopupOffset}"
@@ -207,7 +207,7 @@
                                 </ItemsControl>
                             </Grid>
                         </Border>
-                    </Popup>
+                    </primitives:AnimatedPopup>
                 </Grid>
 
                 <Button x:Name="PlaylistToggleBtn" Style="{StaticResource IconButton}"

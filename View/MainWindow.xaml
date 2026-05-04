@@ -81,10 +81,10 @@
                                     Content="{Binding [App.File], Source={x:Static loc:LocalizationService.Instance}}"
                                     Command="{Binding OpenFilePopupCommand}"
                                     shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
-                            <Popup x:Name="FilePopup"
+                            <primitives:AnimatedPopup x:Name="FilePopup"
                                    StaysOpen="True"
-                                   animations:PopupAnimator.BindOpen="{Binding IsFilePopupOpen}"
-                                   animations:PopupAnimator.BindOpenOrigin="0,0"
+                                   IsOpenAnimated="{Binding IsFilePopupOpen}"
+                                   OpenAnimationOrigin="0,0"
                                    PlacementTarget="{Binding ElementName=FileButton}"
                                    Placement="Bottom"
                                    HorizontalOffset="{StaticResource PopupMenuHorizontalOffset}"
@@ -106,7 +106,7 @@
                                         </StackPanel>
                                     </Button>
                                 </Border>
-                            </Popup>
+                            </primitives:AnimatedPopup>
                         </Grid>
                         <Grid>
                             <Button x:Name="SettingsButton"
@@ -114,10 +114,10 @@
                                     Content="{Binding [App.Settings], Source={x:Static loc:LocalizationService.Instance}}"
                                     Command="{Binding OpenSettingsPopupCommand}"
                                     shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
-                            <Popup x:Name="SettingsPopup"
+                            <primitives:AnimatedPopup x:Name="SettingsPopup"
                                    StaysOpen="True"
-                                   animations:PopupAnimator.BindOpen="{Binding IsSettingsPopupOpen}"
-                                   animations:PopupAnimator.BindOpenOrigin="0,0"
+                                   IsOpenAnimated="{Binding IsSettingsPopupOpen}"
+                                   OpenAnimationOrigin="0,0"
                                    PlacementTarget="{Binding ElementName=SettingsButton}"
                                    Placement="Bottom"
                                    HorizontalOffset="{StaticResource PopupMenuHorizontalOffset}"
@@ -143,10 +143,10 @@
                                                           Margin="{StaticResource SubmenuChevronLeftMargin}"/>
                                                 </StackPanel>
                                             </Button>
-                                            <Popup x:Name="LanguageSubmenuPopup"
+                                            <primitives:AnimatedPopup x:Name="LanguageSubmenuPopup"
                                                    StaysOpen="True"
-                                                   animations:PopupAnimator.BindOpen="{Binding IsLanguageSubmenuOpen}"
-                                                   animations:PopupAnimator.BindOpenOrigin="0,0"
+                                                   IsOpenAnimated="{Binding IsLanguageSubmenuOpen}"
+                                                   OpenAnimationOrigin="0,0"
                                                    PlacementTarget="{Binding ElementName=LanguageMenuButton}"
                                                    Placement="Right"
                                                    HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
@@ -192,7 +192,7 @@
                                                         </StackPanel>
                                                     </Grid>
                                                 </Border>
-                                            </Popup>
+                                            </primitives:AnimatedPopup>
                                         </Grid>
                                         <Grid>
                                             <Button x:Name="FullscreenAnimationMenuButton"
@@ -211,10 +211,10 @@
                                                           Margin="{StaticResource SubmenuChevronLeftMargin}"/>
                                                 </StackPanel>
                                             </Button>
-                                            <Popup x:Name="FullscreenAnimationSubmenuPopup"
+                                            <primitives:AnimatedPopup x:Name="FullscreenAnimationSubmenuPopup"
                                                    StaysOpen="True"
-                                                   animations:PopupAnimator.BindOpen="{Binding IsFullscreenAnimationSubmenuOpen}"
-                                                   animations:PopupAnimator.BindOpenOrigin="0,0"
+                                                   IsOpenAnimated="{Binding IsFullscreenAnimationSubmenuOpen}"
+                                                   OpenAnimationOrigin="0,0"
                                                    PlacementTarget="{Binding ElementName=FullscreenAnimationMenuButton}"
                                                    Placement="Right"
                                                    HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
@@ -260,11 +260,11 @@
                                                         </StackPanel>
                                                     </Grid>
                                                 </Border>
-                                            </Popup>
+                                            </primitives:AnimatedPopup>
                                         </Grid>
                                     </StackPanel>
                                 </Border>
-                            </Popup>
+                            </primitives:AnimatedPopup>
                         </Grid>
                     </StackPanel>
 

@@ -8,7 +8,6 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using LocalPlayer.ViewModel.Player;
 using LocalPlayer.View.Animations;
-using LocalPlayer.View.Interop;
 
 namespace LocalPlayer.View.Primitives;
 
@@ -72,10 +71,8 @@ public class SeekBar : ContentControl
     private Ellipse? _thumbShadow;
     private Ellipse? _thumbBg;
     private ScaleTransform? _thumbScale;
-    private Popup? _tooltip;
+    private AnimatedPopup? _tooltip;
     private TextBlock? _tooltipText;
-    private Window? _tooltipWindow;
-    private EventHandler? _tooltipMoveHandler;
 
     // ── State ──
 
@@ -111,34 +108,6 @@ public class SeekBar : ContentControl
         Debug.WriteLine($"{LogTag} Loaded, ActualWidth={ActualWidth:F0}, ActualHeight={ActualHeight:F0}");
         LoadResources();
         UpdateVisuals();
-
-        _tooltipWindow = Window.GetWindow(this);
-        if (_tooltipWindow != null)
-        {
-            _tooltipMoveHandler = (_, _) =>
-            {
-                if (_tooltip is { IsOpen: true })
-                {
-                    var mi = typeof(Popup).GetMethod("Reposition",
-                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-                    mi?.Invoke(_tooltip, null);
-                }
-            };
-            _tooltipWindow.LocationChanged += _tooltipMoveHandler;
-
-            // Tooltip Popup 打开时修复 z-order
-            if (_tooltip != null)
-                _tooltip.Opened += (_, _) => PopupZOrderFix.Apply(_tooltip);
-
-            Unloaded += OnUnloadedCleanup;
-        }
-    }
-
-    private void OnUnloadedCleanup(object sender, RoutedEventArgs e)
-    {
-        Unloaded -= OnUnloadedCleanup;
-        if (_tooltipWindow != null && _tooltipMoveHandler != null)
-            _tooltipWindow.LocationChanged -= _tooltipMoveHandler;
     }
 
     private void LoadResources()
@@ -218,12 +187,13 @@ public class SeekBar : ContentControl
             FontFamily = new FontFamily("Segoe UI, Microsoft YaHei, sans-serif")
         };
 
-        _tooltip = new Popup
+        _tooltip = new AnimatedPopup
         {
             PlacementTarget = this,
             Placement = PlacementMode.Relative,
             AllowsTransparency = true,
             IsHitTestVisible = false,
+            CloseOnOutsideClick = false,
             Child = new Border
             {
                 Background = new SolidColorBrush(Color.FromArgb(0xE6, 0x28, 0x28, 0x28)),
@@ -408,13 +378,13 @@ public class SeekBar : ContentControl
         x = Math.Clamp(x, 0, ActualWidth - popupW);
         _tooltip.HorizontalOffset = x;
         _tooltip.VerticalOffset = -28;
-        _tooltip.IsOpen = true;
+        _tooltip.IsOpenAnimated = true;
     }
 
     private void HideTooltip()
     {
         if (_tooltip != null)
-            _tooltip.IsOpen = false;
+            _tooltip.IsOpenAnimated = false;
     }
 
     // ── DP callbacks ──
