@@ -45,8 +45,6 @@ public partial class ControlBarViewModel : ObservableObject
     [ObservableProperty]
     private float _rate = 1.0f;
 
-    public static float[] SpeedOptions { get; } = { 0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f, 3f };
-
     [ObservableProperty]
     private bool _isSeeking;
 
@@ -54,49 +52,6 @@ public partial class ControlBarViewModel : ObservableObject
     private string? _currentVideoPath;
 
     public long MediaLength => _media.Length;
-
-    // ========== 倍速弹窗 ==========
-
-    [ObservableProperty]
-    private bool _isSpeedPopupOpen;
-
-    private DispatcherTimer? _speedCloseTimer;
-
-    public void OnSpeedEnter()
-    {
-        _speedCloseTimer?.Stop();
-        IsSpeedPopupOpen = true;
-    }
-
-    [RelayCommand]
-    private void SpeedEnter() => OnSpeedEnter();
-
-    [RelayCommand]
-    private void SpeedLeave() => OnSpeedLeave();
-
-    public void OnSpeedLeave()
-    {
-        if (_speedCloseTimer == null)
-        {
-            _speedCloseTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
-            _speedCloseTimer.Tick += (_, _) =>
-            {
-                _speedCloseTimer.Stop();
-                IsSpeedPopupOpen = false;
-            };
-        }
-        else
-        {
-            _speedCloseTimer.Stop();
-        }
-        _speedCloseTimer.Start();
-    }
-
-    public void CloseSpeedPopup()
-    {
-        _speedCloseTimer?.Stop();
-        IsSpeedPopupOpen = false;
-    }
 
     // ========== 提示 ==========
 

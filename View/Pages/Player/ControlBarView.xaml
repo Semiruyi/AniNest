@@ -1,88 +1,12 @@
 <UserControl x:Class="LocalPlayer.View.Pages.Player.ControlBarView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:converters="clr-namespace:LocalPlayer.View.Converters"
              xmlns:animations="clr-namespace:LocalPlayer.View.Animations"
              xmlns:behaviors="clr-namespace:LocalPlayer.View.Behaviors"
              xmlns:loc="clr-namespace:LocalPlayer.Localization"
              Focusable="True">
     <UserControl.Resources>
         <ResourceDictionary>
-            <converters:IsSpeedMatchConverter x:Key="IsSpeedMatchConverter"/>
-
-            <Style x:Key="SpeedOptionButtonStyle" TargetType="Button">
-                <Setter Property="Height" Value="{StaticResource SpeedOptionHeight}"/>
-                <Setter Property="Width" Value="{StaticResource SpeedOptionWidth}"/>
-                <Setter Property="Foreground" Value="White"/>
-                <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="FontSize" Value="13"/>
-                <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="Margin" Value="{StaticResource SpeedOptionMargin}"/>
-                <Setter Property="animations:ButtonScaleHover.IsEnabled" Value="True"/>
-                <Setter Property="animations:ButtonScaleHover.HoverScaleEnabled" Value="False"/>
-                <Setter Property="animations:ButtonScaleHover.PressScale" Value="0.95"/>
-                <Setter Property="animations:ButtonScaleHover.PressDurationMs" Value="60"/>
-                <Setter Property="animations:ButtonScaleHover.ReleaseDurationMs" Value="250"/>
-                <Setter Property="animations:ButtonScaleHover.Easing">
-                    <Setter.Value>
-                        <ElasticEase Oscillations="1" Springiness="8" EasingMode="EaseOut"/>
-                    </Setter.Value>
-                </Setter>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="Button">
-                            <Border x:Name="BgBorder" CornerRadius="8" RenderTransformOrigin="0.5,0.5">
-                                <Border.Background>
-                                    <SolidColorBrush x:Name="BgBrush" Color="Transparent"/>
-                                </Border.Background>
-                                <Border.RenderTransform>
-                                    <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
-                                </Border.RenderTransform>
-                                <Grid>
-                                    <Border x:Name="HoverOverlay" CornerRadius="8"
-                                            Background="#33FFFFFF" Opacity="0"/>
-                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Grid>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Trigger.EnterActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="HoverOverlay"
-                                                    Storyboard.TargetProperty="Opacity"
-                                                    To="1" Duration="0:0:0.25"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.EnterActions>
-                                    <Trigger.ExitActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="HoverOverlay"
-                                                    Storyboard.TargetProperty="Opacity"
-                                                    To="0" Duration="0:0:0.3"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.ExitActions>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-                <Style.Triggers>
-                    <DataTrigger Value="True">
-                        <DataTrigger.Binding>
-                            <MultiBinding Converter="{StaticResource IsSpeedMatchConverter}">
-                                <Binding Path="Tag" RelativeSource="{RelativeSource Self}"/>
-                                <Binding Path="PlacementTarget.DataContext.Rate" ElementName="SpeedPopup"/>
-                            </MultiBinding>
-                        </DataTrigger.Binding>
-                        <Setter Property="FontWeight" Value="SemiBold"/>
-                        <Setter Property="FontSize" Value="14"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
             <Style x:Key="SliderDecreaseButton" TargetType="RepeatButton">
                 <Setter Property="OverridesDefaultStyle" Value="true"/>
                 <Setter Property="IsTabStop" Value="false"/>
@@ -336,56 +260,13 @@
             <!-- 右侧：倍速 + 菜单 -->
             <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"
                         VerticalAlignment="Center">
-                <!-- 倍速按钮 + 弹出列表 -->
-                <Grid>
-                    <Button x:Name="SpeedBtn"
-                            Content="{Binding Rate, StringFormat={}{0:0.##}x}"
-                            Style="{StaticResource IconButton}"
-                            FontSize="11" FontWeight="SemiBold"
-                            Foreground="White" Focusable="False"
-                            Margin="{StaticResource ButtonGapRight}"
-                            behaviors:HoverBehavior.MouseEnterCommand="{Binding SpeedEnterCommand}"
-                            behaviors:HoverBehavior.MouseLeaveCommand="{Binding SpeedLeaveCommand}"/>
-                    <Popup x:Name="SpeedPopup" AllowsTransparency="True"
-                           Placement="Center"
-                           PlacementTarget="{Binding ElementName=SpeedBtn}"
-                           StaysOpen="True"
-                           VerticalOffset="{StaticResource SpeedPopupOffset}"
-                           animations:PopupAnimator.BindOpen="{Binding IsSpeedPopupOpen}"
-                           animations:PopupAnimator.BindOpenOrigin="0.5,1">
-                        <Border Background="{StaticResource PopupMenuBackground}"
-                                CornerRadius="{StaticResource SpeedPopupCornerRadius}"
-                                Padding="4"
-                                RenderTransformOrigin="0.5,1"
-                                Opacity="0"
-                                behaviors:HoverBehavior.MouseEnterCommand="{Binding SpeedEnterCommand}"
-                                behaviors:HoverBehavior.MouseLeaveCommand="{Binding SpeedLeaveCommand}"
-                                behaviors:HoverBehavior.IgnoreChildLeave="True">
-                            <Border.RenderTransform>
-                                <ScaleTransform x:Name="SpeedPopupScale" ScaleX="0" ScaleY="0"/>
-                            </Border.RenderTransform>
-                            <ItemsControl x:Name="SpeedOptionsPanel"
-                                          ItemsSource="{Binding SpeedOptions}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Button Style="{StaticResource SpeedOptionButtonStyle}"
-                                                Content="{Binding StringFormat={}{0:0.##}x}"
-                                                Tag="{Binding}"
-                                                Command="{Binding DataContext.ChangeSpeedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}">
-                                            <animations:HighlightBrush.IsActive>
-                                                <MultiBinding Converter="{StaticResource IsSpeedMatchConverter}">
-                                                    <Binding Path="Tag" RelativeSource="{RelativeSource Self}"/>
-                                                    <Binding Path="PlacementTarget.DataContext.Rate" ElementName="SpeedPopup"/>
-                                                </MultiBinding>
-                                            </animations:HighlightBrush.IsActive>
-                                        </Button>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </Border>
-                    </Popup>
-                </Grid>
+                <!-- 倍速按钮 -->
+                <Button x:Name="SpeedBtn"
+                        Content="{Binding Rate, StringFormat={}{0:0.##}x}"
+                        Style="{StaticResource IconButton}"
+                        FontSize="11" FontWeight="SemiBold"
+                        Foreground="White" Focusable="False"
+                        Margin="{StaticResource ButtonGapRight}"/>
 
                 <Button x:Name="PlaylistToggleBtn" Style="{StaticResource IconButton}"
                         Command="{Binding TogglePlaylistCommand}"

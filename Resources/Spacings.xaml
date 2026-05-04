@@ -25,7 +25,6 @@
     <Thickness x:Key="PlaylistHeaderMargin">20,18,20,10</Thickness>
     <Thickness x:Key="PlaylistItemsMargin">14,4,14,14</Thickness>
     <Thickness x:Key="PauseBigIconMargin">0,0,32,75</Thickness>
-    <Thickness x:Key="SpeedOptionMargin">2</Thickness>
 
     <!-- ═══ 库页面 ═══ -->
     <Thickness x:Key="LibraryPageMargin">24</Thickness>
@@ -35,7 +34,6 @@
 
     <!-- ═══ 弹窗偏移 ═══ -->
     <system:Double x:Key="ThumbnailPopupOffset">-120</system:Double>
-    <system:Double x:Key="SpeedPopupOffset">-40</system:Double>
 
     <!-- ═══ Popup 菜单 ═══ -->
     <CornerRadius x:Key="PopupMenuButtonCornerRadius">8</CornerRadius>

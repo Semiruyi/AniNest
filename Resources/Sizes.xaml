@@ -38,7 +38,6 @@
     <GridLength x:Key="SliderSideColumnWidth">7</GridLength>
     <system:Double x:Key="ThumbnailPopupWidth">160</system:Double>
     <system:Double x:Key="ThumbnailPopupHeight">90</system:Double>
-    <system:Double x:Key="SpeedOptionWidth">78</system:Double>
     <system:Double x:Key="SpeedOptionHeight">34</system:Double>
 
     <!-- ═══ 选集面板 ═══ -->
