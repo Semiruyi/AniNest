@@ -4,125 +4,12 @@
              xmlns:converters="clr-namespace:LocalPlayer.View.Converters"
              xmlns:animations="clr-namespace:LocalPlayer.View.Animations"
              xmlns:behaviors="clr-namespace:LocalPlayer.View.Behaviors"
+             xmlns:primitives="clr-namespace:LocalPlayer.View.Primitives"
              xmlns:loc="clr-namespace:LocalPlayer.Localization"
              Focusable="True">
     <UserControl.Resources>
         <ResourceDictionary>
             <converters:RateToOffsetConverter x:Key="RateToOffsetConverter"/>
-
-            <Style x:Key="SliderDecreaseButton" TargetType="RepeatButton">
-                <Setter Property="OverridesDefaultStyle" Value="true"/>
-                <Setter Property="IsTabStop" Value="false"/>
-                <Setter Property="Focusable" Value="false"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="RepeatButton">
-                            <Grid Background="Transparent" VerticalAlignment="Stretch">
-                                <Border Background="{StaticResource AccentBlue}"
-                                        Height="{StaticResource SliderTrackHeight}" CornerRadius="2"
-                                        VerticalAlignment="Center"/>
-                            </Grid>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-
-            <Style x:Key="SliderIncreaseButton" TargetType="RepeatButton">
-                <Setter Property="OverridesDefaultStyle" Value="true"/>
-                <Setter Property="IsTabStop" Value="false"/>
-                <Setter Property="Focusable" Value="false"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="RepeatButton">
-                            <Grid Background="Transparent" VerticalAlignment="Stretch">
-                                <Border Background="{StaticResource SliderTrackBackground}"
-                                        Height="{StaticResource SliderTrackHeight}" CornerRadius="2"
-                                        VerticalAlignment="Center"/>
-                            </Grid>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-
-            <Style x:Key="SliderThumb" TargetType="Thumb">
-                <Setter Property="Width" Value="{StaticResource SliderThumbSize}"/>
-                <Setter Property="Height" Value="{StaticResource SliderThumbSize}"/>
-                <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="Thumb">
-                            <Grid x:Name="ThumbGrid" RenderTransformOrigin="0.5,0.5">
-                                <Grid.RenderTransform>
-                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
-                                </Grid.RenderTransform>
-                                <Ellipse x:Name="ThumbShadow" Fill="{StaticResource AccentBlue}"
-                                         Width="{StaticResource SliderThumbShadowSize}"
-                                         Height="{StaticResource SliderThumbShadowSize}"
-                                         Opacity="0.25"/>
-                                <Ellipse x:Name="ThumbBg" Fill="White"
-                                         Width="{StaticResource SliderThumbInnerSize}"
-                                         Height="{StaticResource SliderThumbInnerSize}"/>
-                            </Grid>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="ThumbBg" Property="Width"
-                                            Value="{StaticResource SliderThumbHoverInnerSize}"/>
-                                    <Setter TargetName="ThumbBg" Property="Height"
-                                            Value="{StaticResource SliderThumbHoverInnerSize}"/>
-                                    <Setter TargetName="ThumbShadow" Property="Width"
-                                            Value="{StaticResource SliderThumbHoverShadowSize}"/>
-                                    <Setter TargetName="ThumbShadow" Property="Height"
-                                            Value="{StaticResource SliderThumbHoverShadowSize}"/>
-                                    <Setter TargetName="ThumbShadow" Property="Opacity" Value="0.4"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-
-            <Style x:Key="ModernSlider" TargetType="Slider">
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="Foreground" Value="{StaticResource AccentBlue}"/>
-                <Setter Property="Height" Value="22"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="Slider">
-                            <Grid x:Name="GridRoot" VerticalAlignment="Center" Height="22"
-                                  Background="{TemplateBinding Background}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="{StaticResource SliderSideColumnWidth}"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="{StaticResource SliderSideColumnWidth}"/>
-                                </Grid.ColumnDefinitions>
-                                <Border Grid.Column="1"
-                                        Background="{StaticResource SliderTrackBackground}"
-                                        Height="{StaticResource SliderTrackHeight}" CornerRadius="2"
-                                        VerticalAlignment="Center"/>
-                                <Track x:Name="PART_Track" Grid.Column="1" VerticalAlignment="Stretch">
-                                    <Track.DecreaseRepeatButton>
-                                        <RepeatButton Style="{StaticResource SliderDecreaseButton}"
-                                                      Command="Slider.DecreaseLarge"/>
-                                    </Track.DecreaseRepeatButton>
-                                    <Track.IncreaseRepeatButton>
-                                        <RepeatButton Style="{StaticResource SliderIncreaseButton}"
-                                                      Command="Slider.IncreaseLarge"/>
-                                    </Track.IncreaseRepeatButton>
-                                    <Track.Thumb>
-                                        <Thumb Style="{StaticResource SliderThumb}"/>
-                                    </Track.Thumb>
-                                </Track>
-                            </Grid>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="PART_Track" Property="Height" Value="22"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -205,60 +92,14 @@
             </StackPanel>
 
             <!-- 中间：进度条 -->
-            <Slider x:Name="ProgressSlider" Grid.Column="1"
-                    Style="{StaticResource ModernSlider}"
-                    Value="{Binding CurrentTime}"
-                    Maximum="{Binding TotalTime}"
-                    behaviors:SeekSliderBehavior.IsSeeking="{Binding IsSeeking, Mode=TwoWay}"
-                    behaviors:SeekSliderBehavior.SeekCommand="{Binding SeekCommand}"
-                    behaviors:HoverBehavior.MouseEnterCommand="{Binding ThumbnailPreview.EnterCommand}"
-                    behaviors:HoverBehavior.MouseLeaveCommand="{Binding ThumbnailPreview.LeaveCommand}"
-                    behaviors:MouseMoveBehavior.MouseMoveCommand="{Binding ThumbnailPreview.MoveCommand}"
-                    animations:ValueSmoother.Enabled="True"
-                    animations:ValueSmoother.IsSuppressed="{Binding IsSeeking, Mode=OneWay}"
-                    VerticalAlignment="Center"
-                    Margin="{StaticResource ControlBarSliderMargin}"/>
-
-            <!-- 进度条悬浮预览弹窗 -->
-            <Popup x:Name="ProgressPopup" AllowsTransparency="True"
-                   Placement="Relative" StaysOpen="True"
-                   PlacementTarget="{Binding ElementName=ProgressSlider}"
-                   HorizontalOffset="{Binding ThumbnailPreview.HOffset}"
-                   VerticalOffset="{StaticResource ThumbnailPopupOffset}"
-                   animations:PopupAnimator.BindOpen="{Binding ThumbnailPreview.IsOpen}"
-                   behaviors:HoverBehavior.MouseEnterCommand="{Binding ThumbnailPreview.PopupEnterCommand}"
-                   behaviors:HoverBehavior.MouseLeaveCommand="{Binding ThumbnailPreview.PopupLeaveCommand}">
-                <Border CornerRadius="{StaticResource ThumbnailCornerRadius}" ClipToBounds="True"
-                        Width="{StaticResource ThumbnailPopupWidth}"
-                        Height="{StaticResource ThumbnailPopupHeight}"
-                        Background="#1A1A1C"
-                        RenderTransformOrigin="0.5,1"
-                        Opacity="0">
-                    <Border.Clip>
-                        <RectangleGeometry RadiusX="10" RadiusY="10"
-                                          Rect="0,0,160,90"/>
-                    </Border.Clip>
-                    <Border.RenderTransform>
-                        <ScaleTransform ScaleX="0.9" ScaleY="0.9"/>
-                    </Border.RenderTransform>
-                    <Grid>
-                        <Image Stretch="UniformToFill"
-                               Width="{StaticResource ThumbnailPopupWidth}"
-                               Height="{StaticResource ThumbnailPopupHeight}"
-                               Source="{Binding ThumbnailPreview.ImageSource}"
-                               Visibility="{Binding ThumbnailPreview.ImageVisibility}"/>
-                        <Border Background="#CC000000" CornerRadius="4"
-                                Padding="6,3"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Bottom">
-                            <TextBlock Foreground="White"
-                                       FontSize="12"
-                                       FontFamily="Segoe UI, Microsoft YaHei, sans-serif"
-                                       Text="{Binding ThumbnailPreview.TimeText}"/>
-                        </Border>
-                    </Grid>
-                </Border>
-            </Popup>
+            <primitives:SeekBar Grid.Column="1"
+                                Position="{Binding CurrentTime, Mode=TwoWay}"
+                                Duration="{Binding TotalTime}"
+                                BufferedPosition="{Binding BufferedPosition}"
+                                IsSeeking="{Binding IsSeeking, Mode=TwoWay}"
+                                SeekCommand="{Binding SeekCommand}"
+                                VerticalAlignment="Center"
+                                Margin="{StaticResource ControlBarSliderMargin}"/>
 
             <!-- 右侧：倍速 + 菜单 -->
             <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"

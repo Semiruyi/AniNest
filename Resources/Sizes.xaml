@@ -41,6 +41,13 @@
     <system:Double x:Key="SpeedOptionHeight">34</system:Double>
     <system:Double x:Key="SpeedPopupMinWidth">70</system:Double>
 
+    <!-- ═══ 进度条 (SeekBar) ═══ -->
+    <system:Double x:Key="SeekBarTrackHeight">4</system:Double>
+    <system:Double x:Key="SeekBarThumbSize">14</system:Double>
+    <system:Double x:Key="SeekBarThumbShadowSize">16</system:Double>
+    <system:Double x:Key="SeekBarThumbHoverScale">1.35</system:Double>
+    <system:Double x:Key="SeekBarTooltipOffset">-28</system:Double>
+
     <!-- ═══ 选集面板 ═══ -->
     <system:Double x:Key="PlaylistPanelWidth">276</system:Double>
     <system:Double x:Key="EpisodeButtonSize">54</system:Double>

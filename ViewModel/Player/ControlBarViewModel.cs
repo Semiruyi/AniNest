@@ -46,6 +46,9 @@ public partial class ControlBarViewModel : ObservableObject
     private float _rate = 1.0f;
 
     [ObservableProperty]
+    private long _bufferedPosition;
+
+    [ObservableProperty]
     private bool _isSeeking;
 
     // ========== 倍速弹窗 ==========
@@ -129,6 +132,7 @@ public partial class ControlBarViewModel : ObservableObject
             _lastNonZeroTime = args.CurrentTime;
             CurrentTime = args.CurrentTime;
             TotalTime = args.TotalTime;
+            BufferedPosition = args.TotalTime; // local files are fully buffered
             CurrentTimeText = MediaPlayerController.FormatTime(args.CurrentTime);
             TotalTimeText = MediaPlayerController.FormatTime(args.TotalTime);
         };
