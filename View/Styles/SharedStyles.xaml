@@ -122,12 +122,21 @@
         <Setter Property="FontSize" Value="{StaticResource TitleBarTextFontSize}"/>
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
         <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="animations:ButtonScaleHover.IsEnabled" Value="True"/>
+        <Setter Property="animations:ButtonScaleHover.HoverScaleEnabled" Value="False"/>
+        <Setter Property="animations:ButtonScaleHover.PressScale" Value="0.96"/>
+        <Setter Property="animations:ButtonScaleHover.PressDurationMs" Value="80"/>
+        <Setter Property="animations:ButtonScaleHover.ReleaseDurationMs" Value="250"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="BgBorder"
                             CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
-                            Background="Transparent">
+                            Background="Transparent"
+                            RenderTransformOrigin="0.5,0.5">
+                        <Border.RenderTransform>
+                            <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
+                        </Border.RenderTransform>
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup Name="CommonStates">
                                 <VisualState Name="Normal">
