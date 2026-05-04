@@ -15,6 +15,21 @@
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize">
 
+    <Window.Resources>
+        <CubicEase x:Key="SubmenuSlideEase" EasingMode="EaseInOut"/>
+
+        <Storyboard x:Key="SlideToFirst">
+            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                             To="0" Duration="0:0:0.3"
+                             EasingFunction="{StaticResource SubmenuSlideEase}"/>
+        </Storyboard>
+        <Storyboard x:Key="SlideToSecond">
+            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                             To="34" Duration="0:0:0.3"
+                             EasingFunction="{StaticResource SubmenuSlideEase}"/>
+        </Storyboard>
+    </Window.Resources>
+
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="{StaticResource TitleBarHeight}"
                             ResizeBorderThickness="6"
@@ -152,30 +167,10 @@
                                                                     <Style.Triggers>
                                                                         <DataTrigger Binding="{Binding DataContext.CurrentLanguageCode, RelativeSource={RelativeSource AncestorType=Window}}" Value="en-US">
                                                                             <DataTrigger.EnterActions>
-                                                                                <BeginStoryboard>
-                                                                                    <Storyboard>
-                                                                                        <DoubleAnimation
-                                                                                            Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                                                                                            To="34" Duration="0:0:0.3">
-                                                                                            <DoubleAnimation.EasingFunction>
-                                                                                                <CubicEase EasingMode="EaseInOut"/>
-                                                                                            </DoubleAnimation.EasingFunction>
-                                                                                        </DoubleAnimation>
-                                                                                    </Storyboard>
-                                                                                </BeginStoryboard>
+                                                                                <BeginStoryboard Storyboard="{StaticResource SlideToSecond}"/>
                                                                             </DataTrigger.EnterActions>
                                                                             <DataTrigger.ExitActions>
-                                                                                <BeginStoryboard>
-                                                                                    <Storyboard>
-                                                                                        <DoubleAnimation
-                                                                                            Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                                                                                            To="0" Duration="0:0:0.3">
-                                                                                            <DoubleAnimation.EasingFunction>
-                                                                                                <CubicEase EasingMode="EaseInOut"/>
-                                                                                            </DoubleAnimation.EasingFunction>
-                                                                                        </DoubleAnimation>
-                                                                                    </Storyboard>
-                                                                                </BeginStoryboard>
+                                                                                <BeginStoryboard Storyboard="{StaticResource SlideToFirst}"/>
                                                                             </DataTrigger.ExitActions>
                                                                         </DataTrigger>
                                                                     </Style.Triggers>
@@ -240,30 +235,10 @@
                                                                     <Style.Triggers>
                                                                         <DataTrigger Binding="{Binding DataContext.CurrentAnimationCode, RelativeSource={RelativeSource AncestorType=Window}}" Value="continuous">
                                                                             <DataTrigger.EnterActions>
-                                                                                <BeginStoryboard>
-                                                                                    <Storyboard>
-                                                                                        <DoubleAnimation
-                                                                                            Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                                                                                            To="34" Duration="0:0:0.3">
-                                                                                            <DoubleAnimation.EasingFunction>
-                                                                                                <CubicEase EasingMode="EaseInOut"/>
-                                                                                            </DoubleAnimation.EasingFunction>
-                                                                                        </DoubleAnimation>
-                                                                                    </Storyboard>
-                                                                                </BeginStoryboard>
+                                                                                <BeginStoryboard Storyboard="{StaticResource SlideToSecond}"/>
                                                                             </DataTrigger.EnterActions>
                                                                             <DataTrigger.ExitActions>
-                                                                                <BeginStoryboard>
-                                                                                    <Storyboard>
-                                                                                        <DoubleAnimation
-                                                                                            Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                                                                                            To="0" Duration="0:0:0.3">
-                                                                                            <DoubleAnimation.EasingFunction>
-                                                                                                <CubicEase EasingMode="EaseInOut"/>
-                                                                                            </DoubleAnimation.EasingFunction>
-                                                                                        </DoubleAnimation>
-                                                                                    </Storyboard>
-                                                                                </BeginStoryboard>
+                                                                                <BeginStoryboard Storyboard="{StaticResource SlideToFirst}"/>
                                                                             </DataTrigger.ExitActions>
                                                                         </DataTrigger>
                                                                     </Style.Triggers>
