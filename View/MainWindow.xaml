@@ -57,7 +57,7 @@
             </Grid.RowDefinitions>
 
             <!-- 自定义标题栏 -->
-            <Border Grid.Row="0" Background="{StaticResource BackgroundDark}">
+            <Border x:Name="TitleBarRoot" Grid.Row="0" Background="{StaticResource BackgroundDark}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -269,12 +269,13 @@
                     </StackPanel>
 
                     <!-- 中间拖拽区域 -->
-                    <Grid Grid.Column="1"/>
+                    <Grid x:Name="TitleBarDragZone" Grid.Column="1"/>
 
                     <!-- 右侧：窗口控制按钮 -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal"
                                 VerticalAlignment="Center">
-                        <Button Style="{StaticResource TitleBarIconButton}"
+                        <Button x:Name="MinimizeButton"
+                                Style="{StaticResource TitleBarIconButton}"
                                 Width="{StaticResource TitleBarButtonWidth}"
                                 Height="{StaticResource TitleBarButtonHeight}"
                                 Click="MinimizeButton_Click" ToolTip="{Binding [Window.Minimize], Source={x:Static loc:LocalizationService.Instance}}"
@@ -287,7 +288,8 @@
                             </Viewbox>
                         </Button>
 
-                        <Button Click="MaximizeButton_Click"
+                        <Button x:Name="MaximizeButton"
+                                Click="MaximizeButton_Click"
                                 Width="{StaticResource TitleBarButtonWidth}"
                                 Height="{StaticResource TitleBarButtonHeight}"
                                 shell:WindowChrome.IsHitTestVisibleInChrome="True">
@@ -325,7 +327,8 @@
                             </Button.Style>
                         </Button>
 
-                        <Button Style="{StaticResource CloseIconButton}"
+                        <Button x:Name="CloseButton"
+                                Style="{StaticResource CloseIconButton}"
                                 Width="{StaticResource TitleBarButtonWidth}"
                                 Height="{StaticResource TitleBarButtonHeight}"
                                 Click="CloseButton_Click" ToolTip="{Binding [Window.Close], Source={x:Static loc:LocalizationService.Instance}}"

@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls.Primitives;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using LocalPlayer.View.Animations;
@@ -19,6 +17,8 @@ namespace LocalPlayer.View.Primitives;
 /// </summary>
 public class AnimatedPopup : Popup
 {
+    public AnimatedPopup? ParentPopup { get; internal set; }
+
     // ========== Dependency Properties ==========
 
     public static readonly DependencyProperty IsOpenAnimatedProperty =
@@ -37,17 +37,24 @@ public class AnimatedPopup : Popup
         DependencyProperty.Register(nameof(CloseOnOutsideClick), typeof(bool), typeof(AnimatedPopup),
             new PropertyMetadata(true));
 
+    public static readonly DependencyProperty OutsideClickPassthroughTargetsProperty =
+        DependencyProperty.Register(nameof(OutsideClickPassthroughTargets), typeof(PopupPassthroughTargets), typeof(AnimatedPopup),
+            new PropertyMetadata(PopupPassthroughTargets.None));
+
     public bool IsOpenAnimated { get => (bool)GetValue(IsOpenAnimatedProperty); set => SetValue(IsOpenAnimatedProperty, value); }
     public Point OpenAnimationOrigin { get => (Point)GetValue(OpenAnimationOriginProperty); set => SetValue(OpenAnimationOriginProperty, value); }
     public int CloseDurationMs { get => (int)GetValue(CloseDurationMsProperty); set => SetValue(CloseDurationMsProperty, value); }
     public bool CloseOnOutsideClick { get => (bool)GetValue(CloseOnOutsideClickProperty); set => SetValue(CloseOnOutsideClickProperty, value); }
+    public PopupPassthroughTargets OutsideClickPassthroughTargets
+    {
+        get => (PopupPassthroughTargets)GetValue(OutsideClickPassthroughTargetsProperty);
+        set => SetValue(OutsideClickPassthroughTargetsProperty, value);
+    }
 
     // ========== Static state ==========
 
-    private sealed record WindowSubs(Window Window, MouseButtonEventHandler? Down, MouseButtonEventHandler? Up, EventHandler Move);
+    private sealed record WindowSubs(Window Window, EventHandler Move);
     private static readonly Dictionary<AnimatedPopup, WindowSubs> _windowSubs = new();
-    private static readonly HashSet<AnimatedPopup> _closedByOutsideClick = new();
-    private static readonly Dictionary<UIElement, AnimatedPopup> _rootToPopup = new();
 
     // ========== Open / Close orchestration ==========
 
@@ -70,8 +77,6 @@ public class AnimatedPopup : Popup
         {
             popup.Opened -= OnOpened;
             popup.Closed -= OnClosed;
-            if (!_closedByOutsideClick.Contains(popup))
-                RemoveWindowSubs(popup);
             PlayExit(popup, child, () =>
             {
                 if (!popup.IsOpenAnimated)
@@ -118,88 +123,24 @@ public class AnimatedPopup : Popup
                   ?? Application.Current?.MainWindow;
         if (window is null) return;
 
-        if (popup.Child is UIElement child)
-        {
-            var root = PresentationSource.FromDependencyObject(child)?.RootVisual;
-            if (root is UIElement r)
-                _rootToPopup[r] = popup;
-        }
-
-        var downHandler = CreateDownHandler(popup);
-        var upHandler = downHandler != null ? CreateUpHandler(popup) : null;
+        PopupInputCoordinator.Instance.RegisterOpenedPopup(popup);
         var moveHandler = new EventHandler((_, _) =>
         {
             if (popup.IsOpen)
                 typeof(Popup).GetMethod("Reposition", BindingFlags.Instance | BindingFlags.NonPublic)?.Invoke(popup, null);
         });
 
-        _windowSubs[popup] = new WindowSubs(window, downHandler!, upHandler!, moveHandler);
-        if (downHandler != null)
-        {
-            window.PreviewMouseLeftButtonDown += downHandler;
-            window.PreviewMouseLeftButtonUp += upHandler!;
-        }
+        _windowSubs[popup] = new WindowSubs(window, moveHandler);
         window.LocationChanged += moveHandler;
 
         PopupZOrderFix.Apply(popup);
-    }
-
-    private static MouseButtonEventHandler? CreateDownHandler(AnimatedPopup popup)
-    {
-        if (!popup.CloseOnOutsideClick) return null;
-        return (_, args) =>
-        {
-            if (!popup.IsOpen) return;
-            if (!IsOutsideClick(popup, args)) return;
-
-            args.Handled = true;
-            _closedByOutsideClick.Add(popup);
-            popup.IsOpenAnimated = false;
-        };
-    }
-
-    private static MouseButtonEventHandler CreateUpHandler(AnimatedPopup popup) => (_, args) =>
-    {
-        if (_closedByOutsideClick.Remove(popup))
-        {
-            args.Handled = true;
-            RemoveWindowSubs(popup);
-        }
-    };
-
-    private static bool IsOutsideClick(AnimatedPopup popup, MouseButtonEventArgs args)
-    {
-        if (args.OriginalSource is not DependencyObject target) return false;
-        if (popup.Child is UIElement child && child.IsAncestorOf(target)) return false;
-        if (popup.PlacementTarget is UIElement trigger && trigger.IsAncestorOf(target)) return false;
-
-        var source = PresentationSource.FromDependencyObject(target);
-        if (source?.RootVisual is UIElement root &&
-            _rootToPopup.TryGetValue(root, out var targetPopup) &&
-            targetPopup != popup &&
-            IsNestedInside(popup, targetPopup))
-            return false;
-
-        return true;
-    }
-
-    private static bool IsNestedInside(Popup parent, Popup child)
-    {
-        DependencyObject? cur = child;
-        while (cur != null)
-        {
-            if (cur == parent) return true;
-            cur = LogicalTreeHelper.GetParent(cur);
-        }
-        return false;
     }
 
     private static void OnClosed(object? sender, EventArgs e)
     {
         if (sender is AnimatedPopup popup)
         {
-            var stale = _rootToPopup.Where(kv => kv.Value == popup).Select(kv => kv.Key).ToList();
-            foreach (var k in stale) _rootToPopup.Remove(k);
+            PopupInputCoordinator.Instance.RegisterClosedPopup(popup);
             RemoveWindowSubs(popup);
         }
     }
@@ -208,11 +149,24 @@ public class AnimatedPopup : Popup
     {
         if (_windowSubs.TryGetValue(popup, out var sub))
         {
-            if (sub.Down != null) sub.Window.PreviewMouseLeftButtonDown -= sub.Down;
-            if (sub.Up != null) sub.Window.PreviewMouseLeftButtonUp -= sub.Up;
             sub.Window.LocationChanged -= sub.Move;
             _windowSubs.Remove(popup);
         }
-        _closedByOutsideClick.Remove(popup);
     }
+
+    public void RequestClose(PopupCloseReason reason)
+    {
+        if (!IsOpenAnimated)
+            return;
+
+        IsOpenAnimated = false;
+    }
+
+    public bool AllowsPassthrough(PopupHitKind hitKind) => hitKind switch
+    {
+        PopupHitKind.VideoSurface => OutsideClickPassthroughTargets.HasFlag(PopupPassthroughTargets.VideoSurface),
+        PopupHitKind.ControlBarGesture => OutsideClickPassthroughTargets.HasFlag(PopupPassthroughTargets.ControlBarGesture),
+        PopupHitKind.DismissBackground => OutsideClickPassthroughTargets.HasFlag(PopupPassthroughTargets.DismissBackground),
+        _ => false,
+    };
 }

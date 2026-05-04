@@ -175,6 +175,7 @@
                            StaysOpen="True"
                            IsOpenAnimated="{Binding IsSpeedPopupOpen}"
                            OpenAnimationOrigin="0.5,1"
+                           OutsideClickPassthroughTargets="ControlBarGesture"
                            PlacementTarget="{Binding ElementName=SpeedBtn}"
                            Placement="Center"
                            VerticalOffset="{StaticResource SpeedPopupOffset}"

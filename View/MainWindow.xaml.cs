@@ -4,6 +4,7 @@ using System.Windows.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using LocalPlayer.Messages;
 using LocalPlayer.View.Diagnostics;
+using LocalPlayer.View.Primitives;
 using LocalPlayer.ViewModel;
 
 namespace LocalPlayer.View;
@@ -21,6 +22,8 @@ public partial class MainWindow : Window
     {
         DataContext = vm;
         InitializeComponent();
+        PopupInputCoordinator.Instance.Attach(this);
+        RegisterPopupRegions();
         _fps = new FpsMonitor(this);
         _fps.Attach();
 
@@ -31,6 +34,17 @@ public partial class MainWindow : Window
             else
                 ExitFullscreen();
         });
+    }
+
+    private void RegisterPopupRegions()
+    {
+        var coordinator = PopupInputCoordinator.Instance;
+        coordinator.RegisterRegion(FileButton, PopupHitKind.TitleBarInteractive);
+        coordinator.RegisterRegion(SettingsButton, PopupHitKind.TitleBarInteractive);
+        coordinator.RegisterRegion(MinimizeButton, PopupHitKind.TitleBarInteractive);
+        coordinator.RegisterRegion(MaximizeButton, PopupHitKind.TitleBarInteractive);
+        coordinator.RegisterRegion(CloseButton, PopupHitKind.TitleBarInteractive);
+        coordinator.RegisterRegion(TitleBarDragZone, PopupHitKind.TitleBarDragZone);
     }
 
     private void EnterFullscreen()
