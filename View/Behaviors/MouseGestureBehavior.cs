@@ -111,7 +111,6 @@ public static class MouseGestureBehavior
         if (sender is not UIElement el || PassThrough(el, e)) return;
         var s = GetState(el);
 
-        // 单击计时器运行中 → 200ms 内再次按下，判定为双击
         if (s.ClickTimer != null)
         {
             s.ClickTimer.Stop();

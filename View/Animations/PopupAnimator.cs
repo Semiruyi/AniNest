@@ -98,7 +98,8 @@ public class PopupAnimator
         DependencyProperty.RegisterAttached("BindOpenOrigin", typeof(Point), typeof(PopupAnimator),
             new PropertyMetadata(new Point(0.5, 0.5)));
 
-    private static readonly Dictionary<Popup, (Window window, MouseButtonEventHandler handler)> _outsideSubs = new();
+    private static readonly Dictionary<Popup, (Window window, MouseButtonEventHandler downHandler, MouseButtonEventHandler upHandler)> _outsideSubs = new();
+    private static readonly HashSet<Popup> _closedByOutsideClick = new();
 
     /// <summary>映射 Popup.Child → Popup，用于检测嵌套 Popup 的点击归属。</summary>
     private static readonly Dictionary<UIElement, Popup> _childToPopup = new();
@@ -124,7 +125,11 @@ public class PopupAnimator
         {
             popup.Opened -= OnPopupOpened;
             popup.Closed -= OnPopupClosed;
-            RemoveOutsideHandler(popup);
+
+            // 外部点击关闭时延迟取消订阅，让 upHandler 拦截 PreviewMouseLeftButtonUp
+            if (!_closedByOutsideClick.Contains(popup))
+                RemoveOutsideHandler(popup);
+
             animator.Hide(() =>
             {
                 if (!GetBindOpen(popup))
@@ -156,37 +161,35 @@ public class PopupAnimator
                 _childToPopup[root] = popup;
         }
 
-        MouseButtonEventHandler handler = null!;
-        handler = (_, args) =>
+        MouseButtonEventHandler downHandler = null!;
+        MouseButtonEventHandler upHandler = null!;
+
+        bool IsOutsideClick(MouseButtonEventArgs args)
         {
-            if (!popup.IsOpen) return;
-
             var target = args.OriginalSource as DependencyObject;
-            if (target is null) return;
+            if (target is null) return false;
 
-            if (popup.Child is UIElement child && child.IsAncestorOf(target))
-            {
-                AppLog.Debug("PopupAnimator", $"  {popup.Name}: 点击在自身 Child 内，忽略");
-                return;
-            }
+            if (popup.Child is UIElement child && child.IsAncestorOf(target)) return false;
+            if (popup.PlacementTarget is UIElement trigger && trigger.IsAncestorOf(target)) return false;
 
-            if (popup.PlacementTarget is UIElement trigger && trigger.IsAncestorOf(target))
-            {
-                AppLog.Debug("PopupAnimator", $"  {popup.Name}: 点击在 PlacementTarget 内，忽略");
-                return;
-            }
-
-            // 检查点击是否在嵌套子 Popup 内部
             var targetSource = PresentationSource.FromDependencyObject(target);
             if (targetSource?.RootVisual is UIElement rootVisual &&
                 _childToPopup.TryGetValue(rootVisual, out var targetPopup) &&
                 targetPopup != popup &&
                 IsPopupNestedInside(popup, targetPopup))
-            {
-                return;
-            }
+                return false;
 
-            AppLog.Debug("PopupAnimator", $"外部点击，关闭 {popup.Name}");
+            return true;
+        }
+
+        downHandler = (_, args) =>
+        {
+            if (!popup.IsOpen) return;
+            if (!IsOutsideClick(args)) return;
+
+            AppLog.Debug("PopupAnimator", $"外部点击▼ 关闭 {popup.Name}");
+            args.Handled = true;
+            _closedByOutsideClick.Add(popup);
 
             var expr = popup.GetBindingExpression(BindOpenProperty);
             if (expr?.DataItem is not null)
@@ -202,8 +205,18 @@ public class PopupAnimator
                 AppLog.Debug("PopupAnimator", "BindingExpression 不可用");
         };
 
-        _outsideSubs[popup] = (window, handler);
-        window.PreviewMouseLeftButtonDown += handler;
+        upHandler = (_, args) =>
+        {
+            if (_closedByOutsideClick.Remove(popup))
+            {
+                args.Handled = true;
+                RemoveOutsideHandler(popup);
+            }
+        };
+
+        _outsideSubs[popup] = (window, downHandler, upHandler);
+        window.PreviewMouseLeftButtonDown += downHandler;
+        window.PreviewMouseLeftButtonUp += upHandler;
     }
 
     /// <summary>沿逻辑树向上查找，判断 child 是否是 parent 的后代 Popup。</summary>
@@ -234,8 +247,10 @@ public class PopupAnimator
     {
         if (_outsideSubs.TryGetValue(popup, out var sub))
         {
-            sub.window.PreviewMouseLeftButtonDown -= sub.handler;
+            sub.window.PreviewMouseLeftButtonDown -= sub.downHandler;
+            sub.window.PreviewMouseLeftButtonUp -= sub.upHandler;
             _outsideSubs.Remove(popup);
         }
+        _closedByOutsideClick.Remove(popup);
     }
 }
