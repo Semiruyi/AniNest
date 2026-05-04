@@ -6,6 +6,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using LocalPlayer.Model;
 
 namespace LocalPlayer.View.Animations;
@@ -114,12 +115,17 @@ public class PopupAnimator
 
         if ((bool)e.NewValue)
         {
-            animator.Show();
+            // 仅设 Opacity=0 防闪烁，不碰 RenderTransform，避免干扰首次 Popup 定位
+            child.Opacity = 0;
+
             popup.Opened -= OnPopupOpened;
             popup.Opened += OnPopupOpened;
             popup.Closed -= OnPopupClosed;
             popup.Closed += OnPopupClosed;
             popup.IsOpen = true;
+
+            // 延迟到 Popup 完成布局后再启动动画，避免 ScaleTransform(0,0) 干扰首次窗口尺寸计算
+            child.Dispatcher.BeginInvoke(new Action(() => animator.Show()), DispatcherPriority.Loaded);
         }
         else
         {
@@ -133,7 +139,11 @@ public class PopupAnimator
             animator.Hide(() =>
             {
                 if (!GetBindOpen(popup))
+                {
                     popup.IsOpen = false;
+                    // 仅在确认关闭时才重置，避免覆盖正在进行的入场动画
+                    child.RenderTransform = Transform.Identity;
+                }
             });
         }
     }

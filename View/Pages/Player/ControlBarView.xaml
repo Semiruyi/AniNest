@@ -103,13 +103,13 @@
                                 ShowTooltip="False"
                                 Margin="{StaticResource ControlBarSliderMargin}"/>
 
-            <!-- 缩略图预览 Popup（独立于 SeekBar，方便复用到音量条等场景） -->
-            <Popup Grid.Column="1"
-                   PlacementTarget="{Binding ElementName=SeekBar}"
+            <Popup PlacementTarget="{Binding ElementName=SeekBar}"
                    Placement="Relative"
                    AllowsTransparency="True"
                    IsHitTestVisible="False"
-                   IsOpen="{Binding ThumbnailPreview.IsOpen}"
+                   StaysOpen="True"
+                   animations:PopupAnimator.BindOpen="{Binding ThumbnailPreview.IsOpen}"
+                   animations:PopupAnimator.BindOpenOrigin="0.5,1"
                    HorizontalOffset="{Binding ThumbnailPreview.HOffset}"
                    VerticalOffset="{StaticResource ThumbnailPopupOffset}">
                 <Border Background="{StaticResource PopupMenuBackground}"
