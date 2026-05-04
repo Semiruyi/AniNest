@@ -38,7 +38,7 @@
     <system:Double x:Key="SpeedPopupOffset">-40</system:Double>
 
     <!-- ═══ Popup 菜单 ═══ -->
-    <CornerRadius x:Key="PopupMenuButtonCornerRadius">6</CornerRadius>
+    <CornerRadius x:Key="PopupMenuButtonCornerRadius">8</CornerRadius>
     <Thickness x:Key="PopupMenuPadding">4</Thickness>
     <Thickness x:Key="PopupMenuButtonPadding">12,0</Thickness>
     <system:Double x:Key="PopupMenuHorizontalOffset">-4</system:Double>
