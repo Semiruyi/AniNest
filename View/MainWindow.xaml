@@ -16,6 +16,7 @@
         ResizeMode="CanResize">
 
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <CubicEase x:Key="SubmenuSlideEase" EasingMode="EaseInOut"/>
 
         <Storyboard x:Key="SlideToFirst">
@@ -74,7 +75,7 @@
                             <Path Data="{StaticResource AppIconGeometry}"
                                   Fill="{StaticResource AccentBlue}"/>
                         </Viewbox>
-                        <Grid>
+                        <Grid animations:VisibilityAnimator.BindVisible="{Binding IsOnMainPage}">
                             <Button x:Name="FileButton"
                                     Style="{StaticResource TitleBarTextButton}"
                                     Content="{Binding [App.File], Source={x:Static loc:LocalizationService.Instance}}"

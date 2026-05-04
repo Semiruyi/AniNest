@@ -20,7 +20,10 @@ public partial class ShellViewModel : ObservableObject
     private bool? _savedTaskbarAutoHide;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOnMainPage))]
     private object? _currentPage;
+
+    public bool IsOnMainPage => CurrentPage is MainPage;
 
     [ObservableProperty]
     private bool _isFilePopupOpen;
