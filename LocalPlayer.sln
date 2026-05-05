@@ -2,7 +2,7 @@
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalPlayer", "LocalPlayer.csproj", "{40ED5747-9250-AB7C-A687-1CEC17A23B05}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalPlayer", "src\LocalPlayer\LocalPlayer.csproj", "{40ED5747-9250-AB7C-A687-1CEC17A23B05}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalPlayer.Launcher", "Launcher\LocalPlayer.Launcher.csproj", "{7A6FD6C6-0B8E-4E42-93FE-72A3D7F1D8F1}"
 EndProject

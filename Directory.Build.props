@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'LocalPlayer'">
+    <BaseOutputPath>$(MSBuildThisFileDirectory)artifacts\LocalPlayer\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)artifacts\LocalPlayer\obj\</BaseIntermediateOutputPath>
+    <PublishDir Condition="'$(Configuration)' == 'Release'">$(MSBuildThisFileDirectory)artifacts\LocalPlayer\publish\</PublishDir>
+  </PropertyGroup>
+</Project>

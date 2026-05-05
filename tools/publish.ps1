@@ -42,7 +42,7 @@ Remove-PathIfExists $appPublishRoot
 New-Item -ItemType Directory -Force -Path $publishRoot | Out-Null
 New-Item -ItemType Directory -Force -Path $appPublishRoot | Out-Null
 
-dotnet publish (Join-Path $root "LocalPlayer.csproj") -c $Configuration -r $Runtime -o $appPublishRoot
+dotnet publish (Join-Path $root "src\LocalPlayer\LocalPlayer.csproj") -c $Configuration -r $Runtime -o $appPublishRoot
 dotnet publish (Join-Path $root "Launcher\LocalPlayer.Launcher.csproj") -c $Configuration -r $Runtime -o (Join-Path $artifactsRoot "publish\launcher")
 
 Copy-Folder $appPublishRoot $appOut
