@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFramework>net9.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
-    <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
     <IsPackable>false</IsPackable>
@@ -22,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\LocalPlayer\LocalPlayer.csproj" />
+    <ProjectReference Include="..\LocalPlayer\LocalPlayer.csproj" />
     <ProjectReference Include="..\Launcher\LocalPlayer.Launcher.csproj" />
   </ItemGroup>
 
