@@ -20,6 +20,8 @@ public partial class MainPageViewModel : ObservableObject
     private readonly IThumbnailGenerator _thumbnailGenerator;
     private readonly ILocalizationService _loc;
 
+    public event EventHandler? LoadDataCompleted;
+
     public ObservableCollection<FolderListItem> FolderItems { get; } = new();
 
     [ObservableProperty]
@@ -65,6 +67,7 @@ public partial class MainPageViewModel : ObservableObject
             FolderItems.Add(item);
 
         EnqueueAllFolders(loadedItems);
+        LoadDataCompleted?.Invoke(this, EventArgs.Empty);
     }
 
     public List<FolderListItem> LoadFoldersData()

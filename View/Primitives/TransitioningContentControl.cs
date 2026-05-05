@@ -2,13 +2,12 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using LocalPlayer.View.Animations;
+using LocalPlayer.View.Diagnostics;
 
 namespace LocalPlayer.View.Primitives;
 
 /// <summary>
-/// 支持 opacity 过渡动画的 ContentControl。
-/// Content 变化时：旧内容留在原 presenter 不动（避免 re-parent 触发 Unloaded），
-/// 新内容放入另一个 presenter，通过 ZIndex 层叠，同时播放淡入淡出。
+/// Supports opacity transition between content changes without re-parenting.
 /// </summary>
 public class TransitioningContentControl : ContentControl
 {
@@ -17,8 +16,7 @@ public class TransitioningContentControl : ContentControl
     private readonly ContentPresenter _presenterB = new();
     private ContentPresenter _activePresenter = null!;
     private bool _isTransitioning;
-
-    #region DependencyProperty
+    private PerfSceneSession? _transitionScene;
 
     public static readonly DependencyProperty TransitionDurationProperty =
         DependencyProperty.Register(nameof(TransitionDuration), typeof(int), typeof(TransitioningContentControl),
@@ -42,19 +40,12 @@ public class TransitioningContentControl : ContentControl
         private set => SetValue(IsTransitioningPropertyKey, value);
     }
 
-    #endregion
-
     public TransitioningContentControl()
     {
-        _presenterA = new ContentPresenter();
-        _presenterB = new ContentPresenter();
-
         _rootPanel = new Grid();
         _rootPanel.Children.Add(_presenterA);
         _rootPanel.Children.Add(_presenterB);
-
         _activePresenter = _presenterA;
-
         AddVisualChild(_rootPanel);
     }
 
@@ -93,58 +84,53 @@ public class TransitioningContentControl : ContentControl
     {
         _isTransitioning = true;
         IsTransitioning = true;
+        _transitionScene?.Dispose();
+        _transitionScene = PerfScenes.Begin("PageTransition");
 
         var exitPresenter = _activePresenter;
         var enterPresenter = Other(exitPresenter);
-
         int duration = TransitionDuration;
         var ease = AnimationHelper.EaseInOut;
 
-        // 退出 presenter 在上层，遮住进入 presenter
         Panel.SetZIndex(exitPresenter, 1);
         Panel.SetZIndex(enterPresenter, 0);
 
-        // 进入 presenter：新内容，初始不可见
         enterPresenter.Content = newContent;
         enterPresenter.Visibility = Visibility.Visible;
         enterPresenter.Opacity = 0;
 
-        // 退出动画（旧内容留在 exitPresenter 不动，不会触发 Unloaded）
-        AnimationHelper.Animate(exitPresenter, UIElement.OpacityProperty, 1, 0, duration, ease,
-            () =>
-            {
-                // 动画结束后才清除旧内容，此时画面已经是新内容了
-                exitPresenter.Content = null;
-                exitPresenter.Visibility = Visibility.Collapsed;
-                exitPresenter.Opacity = 1;
-                Panel.SetZIndex(exitPresenter, 0);
-                _isTransitioning = false;
-                IsTransitioning = false;
-            });
+        AnimationHelper.Animate(exitPresenter, UIElement.OpacityProperty, 1, 0, duration, ease, () =>
+        {
+            exitPresenter.Content = null;
+            exitPresenter.Visibility = Visibility.Collapsed;
+            exitPresenter.Opacity = 1;
+            Panel.SetZIndex(exitPresenter, 0);
+            _isTransitioning = false;
+            IsTransitioning = false;
+            _transitionScene?.Stop();
+            _transitionScene = null;
+        });
 
-        // 进入动画
         AnimationHelper.Animate(enterPresenter, UIElement.OpacityProperty, 0, 1, duration, ease);
-
         _activePresenter = enterPresenter;
     }
 
     private void AbortTransition()
     {
+        _transitionScene?.Stop();
+        _transitionScene = null;
+
         var inactive = Other(_activePresenter);
 
-        // 停止所有动画
         foreach (var p in new ContentPresenter[] { _presenterA, _presenterB })
             p.BeginAnimation(UIElement.OpacityProperty, null);
 
-        // 清除非活跃 presenter
         inactive.Content = null;
         inactive.Visibility = Visibility.Collapsed;
         inactive.Opacity = 1;
         Panel.SetZIndex(inactive, 0);
 
-        // 活跃 presenter 立即可见
         _activePresenter.Opacity = 1;
-
         _isTransitioning = false;
         IsTransitioning = false;
     }
