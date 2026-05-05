@@ -54,7 +54,7 @@ public sealed class PerfSceneSession : IDisposable
 
         long endedTimestamp = Stopwatch.GetTimestamp();
         var endedAtUtc = DateTimeOffset.UtcNow;
-        var statistics = FrameStatistics.FromSamples(snapshot.FrameTimesMs, snapshot.DroppedSamples);
+        var statistics = FrameStatistics.FromSamples(snapshot.FrameTimesMs, snapshot.DroppedSamples, snapshot.JankFrames);
 
         _report = new PerfSceneReport
         {

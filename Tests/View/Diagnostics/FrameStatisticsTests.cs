@@ -37,4 +37,39 @@ public class FrameStatisticsTests
         stats.AverageFps.Should().Be(0);
         stats.DroppedSamples.Should().Be(2);
     }
+
+    [Fact]
+    public void FromSamples_PassesJankFramesThrough()
+    {
+        double[] samples = [5, 8, 12, 40];
+        JankFrame[] jankFrames =
+        [
+            new(0, 8),
+            new(8, 12),
+            new(20, 40)
+        ];
+
+        var stats = FrameStatistics.FromSamples(samples, droppedSamples: 0, jankFrames: jankFrames);
+
+        stats.JankFrames.Should().BeEquivalentTo(jankFrames);
+    }
+
+    [Fact]
+    public void FromSamples_WhenJankFramesNull_ReturnsEmptyJankFramesList()
+    {
+        var stats = FrameStatistics.FromSamples([5, 8], droppedSamples: 0);
+
+        stats.JankFrames.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void FromSamples_WhenEmptyAndJankFramesProvided_ReturnsJankFrames()
+    {
+        JankFrame[] jankFrames = [new(10, 50)];
+
+        var stats = FrameStatistics.FromSamples([], droppedSamples: 0, jankFrames: jankFrames);
+
+        stats.FrameCount.Should().Be(0);
+        stats.JankFrames.Should().BeEquivalentTo(jankFrames);
+    }
 }

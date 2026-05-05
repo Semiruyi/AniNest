@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace LocalPlayer.View.Diagnostics;
@@ -21,13 +22,19 @@ public sealed record FrameStatistics
     public int JankOver16_67MsCount { get; init; }
     public int JankOver33_33MsCount { get; init; }
     public long DroppedSamples { get; init; }
+    public IReadOnlyList<JankFrame> JankFrames { get; init; } = Array.Empty<JankFrame>();
 
-    public static FrameStatistics FromSamples(double[] frameTimesMs, long droppedSamples = 0)
+    public static FrameStatistics FromSamples(
+        double[] frameTimesMs,
+        long droppedSamples = 0,
+        IReadOnlyList<JankFrame>? jankFrames = null)
     {
         ArgumentNullException.ThrowIfNull(frameTimesMs);
 
+        var jankFramesOrEmpty = jankFrames ?? Array.Empty<JankFrame>();
+
         if (frameTimesMs.Length == 0)
-            return Empty with { DroppedSamples = droppedSamples };
+            return Empty with { DroppedSamples = droppedSamples, JankFrames = jankFramesOrEmpty };
 
         var ordered = frameTimesMs.ToArray();
         Array.Sort(ordered);
@@ -49,7 +56,8 @@ public sealed record FrameStatistics
             JankOver8_33MsCount = CountOver(frameTimesMs, 8.33),
             JankOver16_67MsCount = CountOver(frameTimesMs, 16.67),
             JankOver33_33MsCount = CountOver(frameTimesMs, 33.33),
-            DroppedSamples = droppedSamples
+            DroppedSamples = droppedSamples,
+            JankFrames = jankFramesOrEmpty
         };
     }
 

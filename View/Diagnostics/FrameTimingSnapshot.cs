@@ -1,6 +1,9 @@
+using System.Collections.Generic;
+
 namespace LocalPlayer.View.Diagnostics;
 
 public sealed record FrameTimingSnapshot(
     double[] FrameTimesMs,
     long DroppedSamples,
-    int RenderTier);
+    int RenderTier,
+    IReadOnlyList<JankFrame> JankFrames);
