@@ -20,7 +20,7 @@ public class TransitioningContentControl : ContentControl
 
     public static readonly DependencyProperty TransitionDurationProperty =
         DependencyProperty.Register(nameof(TransitionDuration), typeof(int), typeof(TransitioningContentControl),
-            new PropertyMetadata(160));
+            new PropertyMetadata(500));
 
     public int TransitionDuration
     {
@@ -111,15 +111,19 @@ public class TransitioningContentControl : ContentControl
         _inactivePresenter.Content = newContent;
         _inactivePresenter.IsHitTestVisible = true;
 
-        const int FadeDurationMs = 500;
+        // 强制一次性完成新页面的 Measure/Arrange，防止首帧布局
+        // 溢出到动画帧里造成尖刺帧
+        _inactivePresenter.UpdateLayout();
+
+        int fadeMs = TransitionDuration > 0 ? TransitionDuration : 160;
         var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
 
-        var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(FadeDurationMs))
+        var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(fadeMs))
         {
             EasingFunction = ease
         };
 
-        var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(FadeDurationMs))
+        var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(fadeMs))
         {
             EasingFunction = ease
         };

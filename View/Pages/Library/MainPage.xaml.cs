@@ -15,12 +15,16 @@ public partial class MainPage : System.Windows.Controls.UserControl
     public MainPage(MainPageViewModel vm)
     {
         DataContext = vm;
+        _viewModel = vm;
+        // 必须在 Loaded 之前订阅，因为 LoadedCommandBehavior 触发
+        // LoadDataCommand 时 LoadDataCompleted 可能立即同步发出
+        _viewModel.LoadDataCompleted += OnLoadDataCompleted;
         InitializeComponent();
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
+    private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         if (_initialLoadScene != null)
             return;
@@ -28,22 +32,16 @@ public partial class MainPage : System.Windows.Controls.UserControl
         _initialLoadCompleted = false;
         _renderFramesAfterLoadCompleted = 0;
         _initialLoadScene = PerfScenes.Begin("Library.InitialLoad");
-        _viewModel = DataContext as MainPageViewModel;
-        if (_viewModel != null)
-            _viewModel.LoadDataCompleted += OnLoadDataCompleted;
 
         CompositionTarget.Rendering += OnRendering;
+
+        // 直接触发加载，不依赖 LoadedCommandBehavior（事件时序问题）
+        if (_viewModel != null)
+            await _viewModel.LoadDataCommand.ExecuteAsync(null);
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
-        if (_viewModel != null)
-        {
-            _viewModel.LoadDataCompleted -= OnLoadDataCompleted;
-            _viewModel.Cleanup();
-            _viewModel = null;
-        }
-
         CompositionTarget.Rendering -= OnRendering;
         CompleteInitialLoadScene();
     }

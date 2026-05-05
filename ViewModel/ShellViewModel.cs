@@ -151,8 +151,8 @@ public partial class ShellViewModel : ObservableObject
             return;
         }
 
-        var (count, coverPath) = VideoScanner.ScanFolder(path);
-        if (count == 0)
+        var scanResult = VideoScanner.ScanFolder(path);
+        if (scanResult.VideoCount == 0)
         {
             MessageBox.Show(_loc["Dialog.NoVideosInFolder"], _loc["Dialog.Info"]);
             return;
@@ -164,7 +164,7 @@ public partial class ShellViewModel : ObservableObject
             MessageBox.Show(error ?? _loc["Dialog.UnknownError"], _loc["Dialog.Error"]);
             return;
         }
-        WeakReferenceMessenger.Default.Send(new FolderAddedMessage(name, path, count, coverPath));
+        WeakReferenceMessenger.Default.Send(new FolderAddedMessage(name, path, scanResult.VideoCount, scanResult.CoverPath));
     }
 
     private async void EnterPlayerPage()

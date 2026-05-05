@@ -20,6 +20,7 @@ public partial class MainPageViewModel : ObservableObject
     private readonly IThumbnailGenerator _thumbnailGenerator;
     private readonly ILocalizationService _loc;
     private readonly EventHandler<ThumbnailProgressEventArgs> _thumbnailProgressChangedHandler;
+    private bool _dataLoaded;
     private bool _isCleanedUp;
 
     public event EventHandler? LoadDataCompleted;
@@ -65,30 +66,38 @@ public partial class MainPageViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadDataAsync()
     {
+        if (_dataLoaded)
+        {
+            LoadDataCompleted?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+
         var loadedItems = await Task.Run(LoadFoldersData);
 
         FolderItems.Clear();
         foreach (var item in loadedItems)
-            FolderItems.Add(item);
+            FolderItems.Add(item.Item);
 
         EnqueueAllFolders(loadedItems);
+        _dataLoaded = true;
         LoadDataCompleted?.Invoke(this, EventArgs.Empty);
     }
 
-    public List<FolderListItem> LoadFoldersData()
+    public List<(FolderListItem Item, string[] VideoFiles)> LoadFoldersData()
     {
-        var items = new List<FolderListItem>();
+        var items = new List<(FolderListItem Item, string[] VideoFiles)>();
         var folders = _settings.GetFolders();
 
         foreach (var folder in folders)
         {
             if (Directory.Exists(folder.Path))
             {
-                var (count, coverPath) = VideoScanner.ScanFolder(folder.Path);
-                items.Add(new FolderListItem(folder.Name, folder.Path, count, coverPath)
+                var result = VideoScanner.ScanFolder(folder.Path);
+                var item = new FolderListItem(folder.Name, folder.Path, result.VideoCount, result.CoverPath)
                 {
-                    VideoCountText = string.Format(_loc["Library.VideoCount"], count)
-                });
+                    VideoCountText = string.Format(_loc["Library.VideoCount"], result.VideoCount)
+                };
+                items.Add((item, result.VideoFiles));
             }
             else
             {
@@ -100,13 +109,13 @@ public partial class MainPageViewModel : ObservableObject
         return items;
     }
 
-    public void EnqueueAllFolders(List<FolderListItem> items)
+    public void EnqueueAllFolders(List<(FolderListItem Item, string[] VideoFiles)> items)
     {
-        foreach (var item in items)
-            EnqueueFolderForThumbnails(item);
+        foreach (var (item, videoFiles) in items)
+            EnqueueFolderForThumbnails(item, videoFiles);
     }
 
-    public void EnqueueFolderForThumbnails(FolderListItem item)
+    public void EnqueueFolderForThumbnails(FolderListItem item, string[] videoFiles)
     {
         int cardOrder = 0;
         var folders = _settings.GetFolders();
@@ -118,7 +127,6 @@ public partial class MainPageViewModel : ObservableObject
         string? lastPlayed = folderProgress?.LastVideoPath;
 
         var playedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var videoFiles = VideoScanner.GetVideoFiles(item.Path);
         foreach (var vf in videoFiles)
         {
             if (_settings.IsVideoPlayed(vf))

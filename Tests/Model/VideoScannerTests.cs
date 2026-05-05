@@ -23,9 +23,9 @@ public class VideoScannerTests : IDisposable
     [Fact]
     public void ScanFolder_NonExistent_ReturnsZero()
     {
-        var (count, cover) = VideoScanner.ScanFolder(Path.Combine(_tempDir, "nope"));
-        count.Should().Be(0);
-        cover.Should().BeNull();
+        var result = VideoScanner.ScanFolder(Path.Combine(_tempDir, "nope"));
+        result.VideoCount.Should().Be(0);
+        result.CoverPath.Should().BeNull();
     }
 
     [Fact]
@@ -35,9 +35,9 @@ public class VideoScannerTests : IDisposable
         CreateFile("show.mkv");
         CreateFile("notes.txt");
 
-        var (count, _) = VideoScanner.ScanFolder(_tempDir);
+        var result = VideoScanner.ScanFolder(_tempDir);
 
-        count.Should().Be(2);
+        result.VideoCount.Should().Be(2);
     }
 
     [Fact]
@@ -47,9 +47,9 @@ public class VideoScannerTests : IDisposable
         foreach (var ext in exts)
             CreateFile($"video.{ext}");
 
-        var (count, _) = VideoScanner.ScanFolder(_tempDir);
+        var result = VideoScanner.ScanFolder(_tempDir);
 
-        count.Should().Be(13);
+        result.VideoCount.Should().Be(13);
     }
 
     [Fact]
@@ -58,9 +58,9 @@ public class VideoScannerTests : IDisposable
         CreateFile("video.mp4");
         CreateFile("folder.jpg");
 
-        var (_, cover) = VideoScanner.ScanFolder(_tempDir);
+        var result = VideoScanner.ScanFolder(_tempDir);
 
-        cover.Should().EndWith("folder.jpg");
+        result.CoverPath.Should().EndWith("folder.jpg");
     }
 
     [Fact]
@@ -69,9 +69,9 @@ public class VideoScannerTests : IDisposable
         CreateFile("video.mp4");
         CreateFile("cover.png");
 
-        var (_, cover) = VideoScanner.ScanFolder(_tempDir);
+        var result = VideoScanner.ScanFolder(_tempDir);
 
-        cover.Should().EndWith("cover.png");
+        result.CoverPath.Should().EndWith("cover.png");
     }
 
     [Fact]
@@ -81,9 +81,9 @@ public class VideoScannerTests : IDisposable
         CreateFile("thumb.jpg");
         CreateFile("folder.jpg");
 
-        var (_, cover) = VideoScanner.ScanFolder(_tempDir);
+        var result = VideoScanner.ScanFolder(_tempDir);
 
-        cover.Should().EndWith("folder.jpg");
+        result.CoverPath.Should().EndWith("folder.jpg");
     }
 
     [Fact]
@@ -91,9 +91,9 @@ public class VideoScannerTests : IDisposable
     {
         CreateFile("video.mp4");
 
-        var (_, cover) = VideoScanner.ScanFolder(_tempDir);
+        var result = VideoScanner.ScanFolder(_tempDir);
 
-        cover.Should().BeNull();
+        result.CoverPath.Should().BeNull();
     }
 
     [Fact]
@@ -102,9 +102,9 @@ public class VideoScannerTests : IDisposable
         CreateFile("video.mp4");
         CreateFile("screenshot.bmp");
 
-        var (_, cover) = VideoScanner.ScanFolder(_tempDir);
+        var result = VideoScanner.ScanFolder(_tempDir);
 
-        cover.Should().EndWith("screenshot.bmp");
+        result.CoverPath.Should().EndWith("screenshot.bmp");
     }
 
     [Fact]

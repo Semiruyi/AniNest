@@ -159,24 +159,11 @@ public static class CardAnimation
         var border = (Border)sender;
         border.Loaded -= OnLoaded;
 
-        // DataTemplate 中的 Effect 可能被 WPF 冻结，动画无法修改属性，需要替换为未冻结副本
-        if (border.Effect is DropShadowEffect frozenShadow && frozenShadow.IsFrozen)
-        {
-            border.Effect = new DropShadowEffect
-            {
-                Color = frozenShadow.Color,
-                BlurRadius = frozenShadow.BlurRadius,
-                ShadowDepth = frozenShadow.ShadowDepth,
-                Opacity = frozenShadow.Opacity,
-                Direction = frozenShadow.Direction
-            };
-        }
-
         border.RenderTransformOrigin = new Point(0.5, 0.5);
         border.RenderTransform = new ScaleTransform(1, 1);
 
         var image = FindChild<Image>(border);
-        Log.Debug($"OnLoaded: Image found={image != null}, Visible={image?.Visibility}, Effect frozen={border.Effect is DropShadowEffect s && s.IsFrozen}");
+        
         if (image != null)
         {
             var group = new TransformGroup();
@@ -254,12 +241,6 @@ public static class CardAnimation
         AnimationHelper.AnimateScaleTransform(
             (ScaleTransform)border.RenderTransform, hoverScale, hoverMs, ease);
 
-        if (border.Effect is DropShadowEffect shadow)
-        {
-            AnimationHelper.AnimateFromCurrent(shadow, DropShadowEffect.BlurRadiusProperty, blurHover, hoverMs, ease);
-            AnimationHelper.AnimateFromCurrent(shadow, DropShadowEffect.OpacityProperty, opHover, hoverMs, ease);
-        }
-
         var g = EnsureImageTransform(border);
         Log.Debug($"MouseEnter: ImageTransform={g != null}, CoverScale={coverScale}, CoverShiftY={coverShiftY}, CoverMs={coverMs}");
         if (g != null)
@@ -292,12 +273,6 @@ public static class CardAnimation
 
         AnimationHelper.AnimateScaleTransform(
             (ScaleTransform)border.RenderTransform, 1.0, leaveMs, ease);
-
-        if (border.Effect is DropShadowEffect shadow)
-        {
-            AnimationHelper.AnimateFromCurrent(shadow, DropShadowEffect.BlurRadiusProperty, blurNormal, leaveMs, ease);
-            AnimationHelper.AnimateFromCurrent(shadow, DropShadowEffect.OpacityProperty, opNormal, leaveMs, ease);
-        }
 
         var g = EnsureImageTransform(border);
         if (g != null)

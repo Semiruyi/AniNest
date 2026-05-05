@@ -4,7 +4,6 @@
              xmlns:behaviors="clr-namespace:LocalPlayer.View.Behaviors"
              xmlns:animations="clr-namespace:LocalPlayer.View.Animations"
              xmlns:loc="clr-namespace:LocalPlayer.Localization"
-             behaviors:LoadedCommandBehavior.Command="{Binding LoadDataCommand}"
              Background="{StaticResource BackgroundDark}">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>

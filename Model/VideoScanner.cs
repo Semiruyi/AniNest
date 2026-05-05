@@ -24,21 +24,15 @@ public class VideoScanner
 
     private static readonly Logger Log = AppLog.For<VideoScanner>();
 
-    /// <summary>
-    /// 一次 Directory.GetFiles 同时返回视频数量和封面路径，避免重复 IO
-    /// </summary>
-    public static (int VideoCount, string? CoverPath) ScanFolder(string folderPath)
+    public static FolderScanResult ScanFolder(string folderPath)
     {
         if (!Directory.Exists(folderPath))
-            return (0, null);
+            return new FolderScanResult(0, null, Array.Empty<string>());
 
         try
         {
-            var sw = System.Diagnostics.Stopwatch.StartNew();
             var files = Directory.GetFiles(folderPath);
-            Log.Info($"ScanFolder({Path.GetFileName(folderPath)}) GetFiles 耗时 {sw.ElapsedMilliseconds}ms，共 {files.Length} 个文件");
-
-            int videoCount = 0;
+            var videoFiles = new System.Collections.Generic.List<string>();
             string? coverPath = null;
 
             string specificCover = Path.Combine(folderPath, "cover.jpg");
@@ -50,7 +44,7 @@ public class VideoScanner
                 string ext = Path.GetExtension(file).ToLower();
 
                 if (IsVideoFileExt(ext))
-                    videoCount++;
+                    videoFiles.Add(file);
 
                 if (coverPath == null && IsCoverExt(ext))
                 {
@@ -72,11 +66,12 @@ public class VideoScanner
                 }
             }
 
-            return (videoCount, coverPath);
+            var ordered = videoFiles.OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToArray();
+            return new FolderScanResult(ordered.Length, coverPath, ordered);
         }
         catch
         {
-            return (0, null);
+            return new FolderScanResult(0, null, Array.Empty<string>());
         }
     }
 
@@ -170,3 +165,8 @@ public class VideoScanner
         return CoverExtensions.Contains(ext);
     }
 }
+
+public sealed record FolderScanResult(
+    int VideoCount,
+    string? CoverPath,
+    string[] VideoFiles);
