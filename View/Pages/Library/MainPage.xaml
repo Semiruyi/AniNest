@@ -7,11 +7,12 @@
              Background="{StaticResource BackgroundDark}">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <loc:NullToVisibilityConverter x:Key="NullToVis" NullValue="Collapsed" NotNullValue="Visible"/>
+        <loc:NullToVisibilityConverter x:Key="NullToHidden"  NullValue="Visible"    NotNullValue="Collapsed"/>
     </UserControl.Resources>
 
     <Grid>
-
-        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
             <ItemsControl Margin="{StaticResource LibraryPageMargin}"
                           ItemsSource="{Binding FolderItems}"
                           animations:StaggeredItemsAnimation.Enabled="True"
@@ -45,59 +46,25 @@
                                                       Rect="0,0,190,253"/>
                                 </Grid.Clip>
 
-                                <!-- 删除按钮 -->
-                                <Button Style="{StaticResource DeleteIconButton}"
-                                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="6"
-                                        Command="{Binding DataContext.DeleteFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        CommandParameter="{Binding}"
-                                        Panel.ZIndex="10">
-                                    <TextBlock Text="&#x2715;" FontSize="12" Margin="0,-1,0,0"/>
-                                </Button>
-
                                 <!-- 封面图 -->
-                                <Image Stretch="UniformToFill" Source="{Binding CoverPath}">
-                                    <Image.Style>
-                                        <Style TargetType="Image">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding CoverPath}" Value="{x:Null}">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Image.Style>
-                                </Image>
+                                <Image Stretch="UniformToFill" Source="{Binding CoverPath}"
+                                       Visibility="{Binding CoverPath, Converter={StaticResource NullToVis}}"/>
 
                                 <!-- 无封面占位 -->
-                                <Grid>
-                                    <Grid.Style>
-                                        <Style TargetType="Grid">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding CoverPath}" Value="{x:Null}">
-                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Grid.Style>
-                                    <Rectangle Fill="#252525"/>
-                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Text="&#x1F3AC;" FontSize="32" HorizontalAlignment="Center"
-                                                   Margin="0,0,0,8"/>
-                                        <TextBlock Text="{Binding [Library.NoCover], Source={x:Static loc:LocalizationService.Instance}}" Foreground="#666666" FontSize="13"/>
-                                    </StackPanel>
-                                </Grid>
+                                <Rectangle Fill="#252525"
+                                           Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
+                                <TextBlock Text="&#x1F3AC;" FontSize="32"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
 
                                 <!-- 底部渐变遮罩 + 信息 -->
-                                <Grid VerticalAlignment="Bottom">
-                                    <Rectangle Height="{StaticResource FolderCardGradientHeight}">
-                                        <Rectangle.Fill>
-                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                                <GradientStop Color="Transparent" Offset="0"/>
-                                                <GradientStop Color="#E6000000" Offset="1"/>
-                                            </LinearGradientBrush>
-                                        </Rectangle.Fill>
-                                    </Rectangle>
+                                <Border VerticalAlignment="Bottom" Height="{StaticResource FolderCardGradientHeight}">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="Transparent" Offset="0"/>
+                                            <GradientStop Color="#E6000000" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
                                     <StackPanel Margin="{StaticResource CardInfoMargin}">
                                         <TextBlock Text="{Binding Name}" Foreground="White"
                                                    FontSize="14" FontWeight="SemiBold"
@@ -105,13 +72,20 @@
                                         <TextBlock Text="{Binding VideoCountText}"
                                                    Foreground="#BBBBBB" FontSize="11" Margin="0,4,0,0"/>
                                     </StackPanel>
-                                </Grid>
+                                </Border>
+
+                                <!-- 删除按钮 -->
+                                <Button Content="&#x2715;" FontSize="12"
+                                        Style="{StaticResource DeleteIconButton}"
+                                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="6"
+                                        Command="{Binding DataContext.DeleteFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}"
+                                        Panel.ZIndex="10"/>
                             </Grid>
                         </Border>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
-
     </Grid>
 </UserControl>
