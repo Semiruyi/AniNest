@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using LocalPlayer.View.Diagnostics;
 
 namespace LocalPlayer.Model;
@@ -13,6 +14,7 @@ public class PlaylistManager
     private readonly ISettingsService _settings;
     private readonly IMediaPlayerController _media;
     private readonly Func<string, ThumbnailState> _getThumbnailState;
+    private Task<(bool[] Played, bool[] Thumb)>? _preloadTask;
 
     public string CurrentFolderPath { get; private set; } = "";
     public string CurrentFolderName { get; private set; } = "";
@@ -37,7 +39,13 @@ public class PlaylistManager
 
     public void LoadFolder(string folderPath, string folderName)
     {
-        using var loadSpan = PerfSpan.Begin("Playlist.LoadFolder", new Dictionary<string, string>
+        LoadFolderSkeleton(folderPath, folderName);
+        LoadFolderData();
+    }
+
+    public void LoadFolderSkeleton(string folderPath, string folderName)
+    {
+        using var loadSpan = PerfSpan.Begin("Playlist.LoadFolderSkeleton", new Dictionary<string, string>
         {
             ["folder"] = folderName
         });
@@ -55,7 +63,7 @@ public class PlaylistManager
 
         Log.Info($"扫描到 {VideoFiles.Length} 个视频文件");
 
-        using (PerfSpan.Begin("Playlist.BuildItems", new Dictionary<string, string>
+        using (PerfSpan.Begin("Playlist.BuildSkeletonItems", new Dictionary<string, string>
         {
             ["folder"] = folderName,
             ["count"] = VideoFiles.Length.ToString()
@@ -65,25 +73,84 @@ public class PlaylistManager
             for (int i = 0; i < VideoFiles.Length; i++)
             {
                 var filePath = VideoFiles[i];
-                bool isPlayed = _settings.IsVideoPlayed(filePath);
-                bool isThumbnailReady = _getThumbnailState(filePath) == ThumbnailState.Ready;
                 Items.Add(new PlaylistItem
                 {
                     Number = i + 1,
                     Title = Path.GetFileName(filePath),
-                    FilePath = filePath,
-                    IsPlayed = isPlayed,
-                    IsThumbnailReady = isThumbnailReady
+                    FilePath = filePath
                 });
             }
         }
 
+        CurrentIndex = -1;
+        PreloadFolderData();
+    }
+
+    public void PreloadFolderData()
+    {
+        if (VideoFiles.Length == 0)
+        {
+            _preloadTask = null;
+            return;
+        }
+
+        _preloadTask = Task.Run(() =>
+        {
+            var playedStates = new bool[VideoFiles.Length];
+            var thumbStates = new bool[VideoFiles.Length];
+            for (int i = 0; i < VideoFiles.Length; i++)
+            {
+                playedStates[i] = _settings.IsVideoPlayed(VideoFiles[i]);
+                thumbStates[i] = _getThumbnailState(VideoFiles[i]) == ThumbnailState.Ready;
+            }
+            return (playedStates, thumbStates);
+        });
+    }
+
+    public async Task LoadFolderDataAsync()
+    {
+        if (VideoFiles.Length == 0)
+        {
+            LoadFolderData();
+            return;
+        }
+
+        bool[] playedStates;
+        bool[] thumbStates;
+
+        if (_preloadTask != null)
+        {
+            (playedStates, thumbStates) = await _preloadTask;
+            _preloadTask = null;
+        }
+        else
+        {
+            playedStates = new bool[VideoFiles.Length];
+            thumbStates = new bool[VideoFiles.Length];
+            for (int i = 0; i < VideoFiles.Length; i++)
+            {
+                playedStates[i] = _settings.IsVideoPlayed(VideoFiles[i]);
+                thumbStates[i] = _getThumbnailState(VideoFiles[i]) == ThumbnailState.Ready;
+            }
+        }
+
+        for (int i = 0; i < VideoFiles.Length; i++)
+        {
+            Items[i].IsPlayed = playedStates[i];
+            Items[i].IsThumbnailReady = thumbStates[i];
+        }
+
+        LoadFolderData();
+    }
+
+    private void LoadFolderData()
+    {
         using (PerfSpan.Begin("Playlist.ResolveStartVideo", new Dictionary<string, string>
         {
-            ["folder"] = folderName
+            ["folder"] = CurrentFolderName
         }))
         {
-            var folderProgress = _settings.GetFolderProgress(folderPath);
+            var folderProgress = _settings.GetFolderProgress(CurrentFolderPath);
             string? targetVideo = folderProgress?.LastVideoPath;
 
             if (string.IsNullOrEmpty(targetVideo) || !File.Exists(targetVideo))

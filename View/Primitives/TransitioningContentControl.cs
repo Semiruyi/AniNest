@@ -16,6 +16,8 @@ public class TransitioningContentControl : ContentControl
     private bool _isTransitioning;
     private PerfSceneSession? _transitionScene;
 
+    public event EventHandler? TransitionCompleted;
+
     public static readonly DependencyProperty TransitionDurationProperty =
         DependencyProperty.Register(nameof(TransitionDuration), typeof(int), typeof(TransitioningContentControl),
             new PropertyMetadata(160));
@@ -147,6 +149,7 @@ public class TransitioningContentControl : ContentControl
         IsTransitioning = false;
         _transitionScene?.Stop();
         _transitionScene = null;
+        TransitionCompleted?.Invoke(this, EventArgs.Empty);
     }
 
     private void AbortTransition()

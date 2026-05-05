@@ -57,6 +57,22 @@ public partial class PlaylistViewModel : ObservableObject
         SetCurrentIndex(_playlistManager.CurrentIndex, force: true);
     }
 
+    public void LoadFolderSkeleton(string folderPath, string folderName)
+    {
+        _playlistManager.LoadFolderSkeleton(folderPath, folderName);
+        CurrentFolderName = folderName;
+
+        var items = _playlistManager.Items;
+        EpisodeCountText = items.Count > 0 ? string.Format(_loc["Player.EpisodeCount"], items.Count) : "";
+        SetCurrentIndex(-1, force: true);
+    }
+
+    public async System.Threading.Tasks.Task LoadFolderDataAsync()
+    {
+        await _playlistManager.LoadFolderDataAsync();
+        SetCurrentIndex(_playlistManager.CurrentIndex, force: true);
+    }
+
     public void ActivateCurrentVideo()
     {
         _playlistManager.PlayCurrentVideo();

@@ -60,7 +60,7 @@ public partial class ShellViewModel : ObservableObject
         {
             EnterPlayerPage();
             CurrentPage = _playerPage;
-            WeakReferenceMessenger.Default.Send(new LoadPlayerFolderMessage(m.Path, m.Name));
+            WeakReferenceMessenger.Default.Send(new LoadPlayerFolderSkeletonMessage(m.Path, m.Name));
         });
 
         WeakReferenceMessenger.Default.Register<BackRequestedMessage>(this, (_, _) =>

@@ -119,8 +119,11 @@ public partial class PlayerViewModel : ObservableObject
         WireInputEvents();
         _inputHandler.ReloadBindings();
 
-        WeakReferenceMessenger.Default.Register<LoadPlayerFolderMessage>(this, (_, m) =>
-            LoadFolder(m.Path, m.Name));
+        WeakReferenceMessenger.Default.Register<LoadPlayerFolderSkeletonMessage>(this, (_, m) =>
+            LoadFolderSkeleton(m.Path, m.Name));
+
+        WeakReferenceMessenger.Default.Register<LoadPlayerFolderDataMessage>(this, async (_, _) =>
+            await LoadFolderDataAsync());
 
         _media.Initialize();
     }
@@ -170,38 +173,46 @@ public partial class PlayerViewModel : ObservableObject
         };
     }
 
-    public void LoadFolder(string folderPath, string folderName)
+    public void LoadFolderSkeleton(string folderPath, string folderName)
     {
         if (_isCleanedUp)
             return;
 
         var generation = ++_loadGeneration;
         _loadFolderSpan?.Dispose();
-        _loadFolderSpan = PerfSpan.Begin("Player.LoadFolder", new Dictionary<string, string>
+        _loadFolderSpan = PerfSpan.Begin("Player.LoadFolderSkeleton", new Dictionary<string, string>
         {
             ["folder"] = folderName
         });
 
-        using var playlistSpan = PerfSpan.Begin("Player.Playlist.LoadFolder", new Dictionary<string, string>
+        using var playlistSpan = PerfSpan.Begin("Player.Playlist.LoadFolderSkeleton", new Dictionary<string, string>
         {
             ["folder"] = folderName
         });
-        Playlist.LoadFolder(folderPath, folderName);
+        Playlist.LoadFolderSkeleton(folderPath, folderName);
+
+        _loadFolderSpan?.Dispose();
+        _loadFolderSpan = null;
+    }
+
+    public async Task LoadFolderDataAsync()
+    {
+        if (_isCleanedUp)
+            return;
+
+        var generation = _loadGeneration;
+
+        using var dataSpan = PerfSpan.Begin("Player.LoadFolderData");
+        await Playlist.LoadFolderDataAsync();
 
         using var currentIndexSpan = PerfSpan.Begin("Player.CurrentIndexSync");
         CurrentIndex = Playlist.CurrentIndex;
 
-        Application.Current.Dispatcher.BeginInvoke(new Action(() =>
-        {
-            if (_isCleanedUp || generation != _loadGeneration)
-                return;
+        if (_isCleanedUp || generation != _loadGeneration)
+            return;
 
-            Playlist.ActivateCurrentVideo();
-            Playlist.RefreshCurrentIndex();
-        }), DispatcherPriority.Background);
-
-        _loadFolderSpan?.Dispose();
-        _loadFolderSpan = null;
+        Playlist.ActivateCurrentVideo();
+        Playlist.RefreshCurrentIndex();
     }
 
     private void PlayNext()

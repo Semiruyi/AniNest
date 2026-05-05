@@ -345,8 +345,8 @@
             </Border>
 
             <!-- 页面内容 -->
-            <primitives:TransitioningContentControl Grid.Row="1"
-                Content="{Binding CurrentPage}"/>
+            <primitives:TransitioningContentControl x:Name="PageTransition"
+                Grid.Row="1" Content="{Binding CurrentPage}"/>
         </Grid>
     </Border>
 </Window>

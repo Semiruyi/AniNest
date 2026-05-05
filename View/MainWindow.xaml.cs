@@ -27,6 +27,12 @@ public partial class MainWindow : Window
         _fps = new FpsMonitor(this);
         _fps.Attach();
 
+        PageTransition.TransitionCompleted += (_, _) =>
+        {
+            if (DataContext is ShellViewModel vm && vm.CurrentPage is View.Pages.Player.PlayerPage)
+                WeakReferenceMessenger.Default.Send(new Messages.LoadPlayerFolderDataMessage());
+        };
+
         WeakReferenceMessenger.Default.Register<ToggleFullscreenMessage>(this, (_, _) =>
         {
             if (!_isTrueFullscreen && TitleBarRow.Height.Value > 0)
