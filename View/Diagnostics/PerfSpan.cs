@@ -7,6 +7,8 @@ namespace LocalPlayer.View.Diagnostics;
 
 public sealed class PerfSpan : IDisposable
 {
+    private static readonly PerfSpan Noop = new();
+
     private readonly long _allocatedBytesStart;
     private readonly int _gen0Start;
     private readonly int _gen1Start;
@@ -14,6 +16,12 @@ public sealed class PerfSpan : IDisposable
     private readonly long _startedTimestamp;
     private readonly DateTimeOffset _startedAtUtc;
     private PerfSpanReport? _report;
+
+    private PerfSpan()
+    {
+        SpanName = string.Empty;
+        Tags = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(0));
+    }
 
     private PerfSpan(string spanName, IReadOnlyDictionary<string, string>? tags = null)
     {
@@ -37,7 +45,11 @@ public sealed class PerfSpan : IDisposable
     public IReadOnlyDictionary<string, string> Tags { get; }
 
     public static PerfSpan Begin(string spanName, IReadOnlyDictionary<string, string>? tags = null)
-        => new(spanName, tags);
+    {
+        if (!PerfLogger.Enabled)
+            return Noop;
+        return new PerfSpan(spanName, tags);
+    }
 
     public PerfSpanReport Stop()
     {
@@ -65,5 +77,9 @@ public sealed class PerfSpan : IDisposable
     }
 
     public void Dispose()
-        => Stop();
+    {
+        if (ReferenceEquals(this, Noop))
+            return;
+        Stop();
+    }
 }

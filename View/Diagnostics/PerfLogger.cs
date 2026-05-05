@@ -12,12 +12,15 @@ public static class PerfLogger
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
+    public static bool Enabled { get; set; }
+
     public static string LogPath { get; set; } =
         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "perf.log");
 
     static PerfLogger()
     {
 #if DEBUG
+        Enabled = true;
         try
         {
             if (File.Exists(LogPath))
@@ -31,6 +34,7 @@ public static class PerfLogger
 
     public static void Write(PerfSceneReport report)
     {
+        if (!Enabled) return;
         ArgumentNullException.ThrowIfNull(report);
 
         string line = JsonSerializer.Serialize(report, JsonOptions) + Environment.NewLine;
@@ -47,6 +51,7 @@ public static class PerfLogger
 
     public static void Write(PerfSpanReport report)
     {
+        if (!Enabled) return;
         ArgumentNullException.ThrowIfNull(report);
 
         string line = JsonSerializer.Serialize(report, JsonOptions) + Environment.NewLine;

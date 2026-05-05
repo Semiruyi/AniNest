@@ -7,7 +7,9 @@ namespace LocalPlayer.View.Diagnostics;
 
 public sealed class PerfSceneSession : IDisposable
 {
-    private readonly FrameTimingCollector _collector;
+    internal static readonly PerfSceneSession Noop = new();
+
+    private readonly FrameTimingCollector? _collector;
     private readonly long _allocatedBytesStart;
     private readonly int _gen0Start;
     private readonly int _gen1Start;
@@ -15,6 +17,26 @@ public sealed class PerfSceneSession : IDisposable
     private readonly long _startedTimestamp;
     private readonly DateTimeOffset _startedAtUtc;
     private PerfSceneReport? _report;
+
+    private PerfSceneSession()
+    {
+        SceneName = string.Empty;
+        Tags = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(0));
+        _report = new PerfSceneReport
+        {
+            SceneName = string.Empty,
+            StartedAtUtc = default,
+            EndedAtUtc = default,
+            DurationMs = 0,
+            RenderTier = 0,
+            AllocatedBytes = 0,
+            Gen0Collections = 0,
+            Gen1Collections = 0,
+            Gen2Collections = 0,
+            Statistics = FrameStatistics.Empty,
+            Tags = Tags
+        };
+    }
 
     public PerfSceneSession(
         string sceneName,
@@ -49,7 +71,7 @@ public sealed class PerfSceneSession : IDisposable
         if (_report != null)
             return _report;
 
-        FrameTimingSnapshot snapshot = _collector.Stop();
+        FrameTimingSnapshot snapshot = _collector!.Stop();
         _collector.Dispose();
 
         long endedTimestamp = Stopwatch.GetTimestamp();
@@ -77,6 +99,8 @@ public sealed class PerfSceneSession : IDisposable
 
     public void Dispose()
     {
+        if (ReferenceEquals(this, Noop))
+            return;
         Stop();
     }
 }

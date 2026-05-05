@@ -8,5 +8,9 @@ public static class PerfScenes
         string sceneName,
         IReadOnlyDictionary<string, string>? tags = null,
         int sampleCapacity = 32_768)
-        => new(sceneName, tags, sampleCapacity);
+    {
+        if (!PerfLogger.Enabled)
+            return PerfSceneSession.Noop;
+        return new PerfSceneSession(sceneName, tags, sampleCapacity);
+    }
 }
