@@ -11,8 +11,8 @@ namespace LocalPlayer.View.Primitives;
 public class TransitioningContentControl : ContentControl
 {
     private readonly Grid _root = new();
-    private readonly ContentPresenter _presenter = new();
-    private readonly Border _veil = new();
+    private ContentPresenter _activePresenter = new();
+    private ContentPresenter _inactivePresenter = new();
     private bool _isTransitioning;
     private PerfSceneSession? _transitionScene;
 
@@ -42,13 +42,11 @@ public class TransitioningContentControl : ContentControl
 
     public TransitioningContentControl()
     {
-        _veil.Visibility = Visibility.Collapsed;
-        _veil.Opacity = 0;
-        _veil.IsHitTestVisible = false;
-        _veil.Background = BuildVeilBrush();
+        _inactivePresenter.Opacity = 0;
+        _inactivePresenter.IsHitTestVisible = false;
 
-        _root.Children.Add(_presenter);
-        _root.Children.Add(_veil);
+        _root.Children.Add(_activePresenter);
+        _root.Children.Add(_inactivePresenter);
         AddVisualChild(_root);
     }
 
@@ -73,13 +71,14 @@ public class TransitioningContentControl : ContentControl
 
         if (newContent == null)
         {
-            _presenter.Content = null;
+            _activePresenter.Content = null;
+            _inactivePresenter.Content = null;
             return;
         }
 
         if (oldContent == null)
         {
-            _presenter.Content = newContent;
+            _activePresenter.Content = newContent;
             return;
         }
 
@@ -94,7 +93,7 @@ public class TransitioningContentControl : ContentControl
         _isTransitioning = true;
         IsTransitioning = true;
 
-        string fromName = GetContentName(_presenter.Content);
+        string fromName = GetContentName(_activePresenter.Content);
         string toName = GetContentName(newContent);
         var tags = new Dictionary<string, string>
         {
@@ -106,45 +105,46 @@ public class TransitioningContentControl : ContentControl
         _transitionScene?.Dispose();
         _transitionScene = PerfScenes.Begin($"PageTransition.Render.{fromName}->{toName}", tags);
 
-        _veil.BeginAnimation(OpacityProperty, null);
-        _presenter.BeginAnimation(OpacityProperty, null);
+        _activePresenter.BeginAnimation(OpacityProperty, null);
+        _inactivePresenter.BeginAnimation(OpacityProperty, null);
 
-        _veil.Visibility = Visibility.Visible;
-        _veil.Opacity = 0;
-        _presenter.Opacity = 1;
+        _inactivePresenter.Content = newContent;
+        _inactivePresenter.IsHitTestVisible = true;
 
-        int coverMs = Math.Max(50, TransitionDuration / 2);
-        int revealMs = Math.Max(70, TransitionDuration - coverMs);
-        var coverEase = new CubicEase { EasingMode = EasingMode.EaseIn };
-        var revealEase = new CubicEase { EasingMode = EasingMode.EaseOut };
+        const int FadeDurationMs = 500;
+        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
 
-        var coverAnim = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(coverMs))
+        var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(FadeDurationMs))
         {
-            EasingFunction = coverEase
+            EasingFunction = ease
         };
 
-        coverAnim.Completed += (_, _) =>
+        var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(FadeDurationMs))
         {
-            _presenter.Content = newContent;
-            _presenter.Opacity = 1;
-
-            var revealVeil = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(revealMs))
-            {
-                EasingFunction = revealEase
-            };
-            revealVeil.Completed += (_, _) => FinishTransition();
-
-            _veil.BeginAnimation(OpacityProperty, revealVeil);
+            EasingFunction = ease
         };
 
-        _veil.BeginAnimation(OpacityProperty, coverAnim);
+        fadeIn.Completed += (_, _) => FinishTransition();
+
+        _activePresenter.BeginAnimation(OpacityProperty, fadeOut);
+        _inactivePresenter.BeginAnimation(OpacityProperty, fadeIn);
     }
 
     private void FinishTransition()
     {
-        _veil.Visibility = Visibility.Collapsed;
-        _veil.Opacity = 0;
-        _presenter.Opacity = 1;
+        // Swap so _activePresenter always holds the visible content.
+        var temp = _activePresenter;
+        _activePresenter = _inactivePresenter;
+        _inactivePresenter = temp;
+
+        _inactivePresenter.Content = null;
+        _inactivePresenter.Opacity = 0;
+        _inactivePresenter.IsHitTestVisible = false;
+        _inactivePresenter.BeginAnimation(OpacityProperty, null);
+
+        _activePresenter.Opacity = 1;
+        _activePresenter.BeginAnimation(OpacityProperty, null);
+
         _isTransitioning = false;
         IsTransitioning = false;
         _transitionScene?.Stop();
@@ -154,28 +154,20 @@ public class TransitioningContentControl : ContentControl
 
     private void AbortTransition()
     {
-        _veil.BeginAnimation(OpacityProperty, null);
-        _presenter.BeginAnimation(OpacityProperty, null);
-        _veil.Visibility = Visibility.Collapsed;
-        _veil.Opacity = 0;
-        _presenter.Opacity = 1;
+        _activePresenter.BeginAnimation(OpacityProperty, null);
+        _inactivePresenter.BeginAnimation(OpacityProperty, null);
+
+        _inactivePresenter.Content = null;
+        _inactivePresenter.Opacity = 0;
+        _inactivePresenter.IsHitTestVisible = false;
+
+        _activePresenter.Opacity = 1;
+        _activePresenter.IsHitTestVisible = true;
+
         _isTransitioning = false;
         IsTransitioning = false;
         _transitionScene?.Stop();
         _transitionScene = null;
-    }
-
-    private static Brush BuildVeilBrush()
-    {
-        var brush = new LinearGradientBrush
-        {
-            StartPoint = new Point(0, 0),
-            EndPoint = new Point(0, 1)
-        };
-        brush.GradientStops.Add(new GradientStop(Color.FromArgb(0xF4, 8, 10, 12), 0));
-        brush.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 10, 12, 15), 1));
-        brush.Freeze();
-        return brush;
     }
 
     private static string GetContentName(object? content)
