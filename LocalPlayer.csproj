@@ -5,10 +5,12 @@
     <TargetFramework>net9.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
 
     <ImplicitUsings>enable</ImplicitUsings>
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
-    <DefaultItemExcludes>$(DefaultItemExcludes);Tests\**\*;artifacts\**\*</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Tests\**\*;Launcher\**\*;artifacts\**\*</DefaultItemExcludes>
 
     <!-- Release 发布：自包含单文件 exe，输出到 dist/ -->
     <PublishDir Condition="'$(Configuration)' == 'Release'">$(MSBuildProjectDirectory)\bin\Release\LocalPlayer\</PublishDir>

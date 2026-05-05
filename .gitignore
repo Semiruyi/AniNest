@@ -52,5 +52,6 @@ Desktop.ini
 # 发布相关
 release/
 dist/
+artifacts
 
 .claude/

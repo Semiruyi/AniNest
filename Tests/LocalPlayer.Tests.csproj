@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LocalPlayer.csproj" />
+    <ProjectReference Include="..\Launcher\LocalPlayer.Launcher.csproj" />
   </ItemGroup>
 
 </Project>

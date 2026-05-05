@@ -152,3 +152,11 @@ dotnet publish -c Release --self-contained true -r win-x64 -o ./publish
 ## License
 
 MIT
+
+## 发布
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\publish.ps1 -Runtime win-x64 -Configuration Release -Zip
+```
+
+也可以直接双击 `tools\publish.bat`。
