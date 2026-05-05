@@ -1,5 +1,5 @@
-﻿using System.Windows.Media;
-using LocalPlayer.Presentation.Diagnostics;
+using System.Windows.Media;
+using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Presentation.Primitives;
 using LocalPlayer.Features.Player.Models;
 using LocalPlayer.Infrastructure.Logging;
@@ -57,6 +57,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
         _loadToFirstRenderSpan = null;
     }
 }
+
 
 
 

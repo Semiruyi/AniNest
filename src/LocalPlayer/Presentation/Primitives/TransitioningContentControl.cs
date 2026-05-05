@@ -4,7 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using LocalPlayer.Presentation.Diagnostics;
+using LocalPlayer.Infrastructure.Diagnostics;
 using Size = System.Windows.Size;
 
 namespace LocalPlayer.Presentation.Primitives;

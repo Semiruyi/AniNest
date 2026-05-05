@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -182,5 +182,6 @@ public partial class MainWindow : Window
     private const int SW_MINIMIZE = 6;
     private const int SW_RESTORE = 9;
 }
+
 
 

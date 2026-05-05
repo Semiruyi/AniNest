@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
-namespace LocalPlayer.Presentation.Diagnostics;
+namespace LocalPlayer.Infrastructure.Diagnostics;
 
 public static class PerfScenes
 {
@@ -14,4 +14,3 @@ public static class PerfScenes
         return new PerfSceneSession(sceneName, tags, sampleCapacity);
     }
 }
-

@@ -1,7 +1,7 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Media;
 using LocalPlayer.Features.Library;
-using LocalPlayer.Presentation.Diagnostics;
+using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Paths;
 using LocalPlayer.Infrastructure.Persistence;
@@ -102,6 +102,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
         _renderFramesAfterLoadCompleted = 0;
     }
 }
+
 
 
 

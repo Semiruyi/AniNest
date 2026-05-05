@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using LocalPlayer.Presentation.Diagnostics;
+using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Paths;
 using LocalPlayer.Infrastructure.Persistence;
@@ -185,7 +185,7 @@ public class PlaylistManager
         });
 
         string filePath = VideoFiles[CurrentIndex];
-        Log.Info($"[PlayVideo] 寮€濮?{Path.GetFileName(filePath)}");
+        Log.Info($"[PlayVideo] 开�?{Path.GetFileName(filePath)}");
 
         long startTime = 0;
         var progress = _settings.GetVideoProgress(filePath);
@@ -250,12 +250,12 @@ public class PlaylistManager
         {
             if (string.Equals(item.FilePath, videoPath, StringComparison.OrdinalIgnoreCase))
             {
-                Log.Info($"缂╃暐鍥惧氨缁?{Path.GetFileName(videoPath)}");
+                Log.Info($"缩略图就�?{Path.GetFileName(videoPath)}");
                 item.IsThumbnailReady = true;
                 return;
             }
         }
-        Log.Warning($"缂╃暐鍥惧氨缁簨浠舵湭鍖归厤鍒伴€夐泦: {Path.GetFileName(videoPath)} (Items.Count={Items.Count})");
+        Log.Warning($"缩略图就绪事件未匹配到选集: {Path.GetFileName(videoPath)} (Items.Count={Items.Count})");
     }
 
     public void UpdateThumbnailProgress(string videoPath, int percent)
@@ -264,14 +264,15 @@ public class PlaylistManager
         {
             if (string.Equals(item.FilePath, videoPath, StringComparison.OrdinalIgnoreCase))
             {
-                Log.Debug($"缂╃暐鍥捐繘搴?{Path.GetFileName(videoPath)}={percent}% (Items.Count={Items.Count})");
+                Log.Debug($"缩略图进�?{Path.GetFileName(videoPath)}={percent}% (Items.Count={Items.Count})");
                 item.ThumbnailProgress = percent;
                 return;
             }
         }
-        Log.Warning($"缂╃暐鍥捐繘搴︿簨浠舵湭鍖归厤鍒伴€夐泦: {Path.GetFileName(videoPath)}={percent}% (Items.Count={Items.Count})");
+        Log.Warning($"缩略图进度事件未匹配到选集: {Path.GetFileName(videoPath)}={percent}% (Items.Count={Items.Count})");
     }
 }
+
 
 
 

@@ -1,4 +1,4 @@
-﻿using LocalPlayer.Presentation.Diagnostics;
+using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Presentation.Primitives;
 using LocalPlayer.Features.Player.Models;
 using LocalPlayer.Infrastructure.Logging;
@@ -56,6 +56,7 @@ public partial class ControlBarView : System.Windows.Controls.UserControl
         coordinator.UnregisterRegion(RootGrid, PopupHitKind.DismissBackground);
     }
 }
+
 
 
 

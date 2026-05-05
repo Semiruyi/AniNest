@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-namespace LocalPlayer.Presentation.Diagnostics;
+namespace LocalPlayer.Infrastructure.Diagnostics;
 
 public sealed class FrameSampleBuffer
 {
@@ -55,4 +55,3 @@ public sealed class FrameSampleBuffer
         DroppedSamples = 0;
     }
 }
-

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows;
@@ -16,7 +16,7 @@ using LocalPlayer.Infrastructure.Persistence;
 using LocalPlayer.Infrastructure.Media;
 using LocalPlayer.Infrastructure.Thumbnails;
 using LocalPlayer.Infrastructure.Interop;
-using LocalPlayer.Presentation.Diagnostics;
+using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Features.Player.Models;
 
 namespace LocalPlayer.Features.Player;
@@ -344,6 +344,7 @@ public partial class PlayerViewModel : ObservableObject
         });
     }
 }
+
 
 
 

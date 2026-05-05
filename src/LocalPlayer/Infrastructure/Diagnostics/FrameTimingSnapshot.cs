@@ -1,10 +1,9 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
-namespace LocalPlayer.Presentation.Diagnostics;
+namespace LocalPlayer.Infrastructure.Diagnostics;
 
 public sealed record FrameTimingSnapshot(
     double[] FrameTimesMs,
     long DroppedSamples,
     int RenderTier,
     IReadOnlyList<JankFrame> JankFrames);
-

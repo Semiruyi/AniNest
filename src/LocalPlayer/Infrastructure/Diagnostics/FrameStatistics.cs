@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LocalPlayer.Presentation.Diagnostics;
+namespace LocalPlayer.Infrastructure.Diagnostics;
 
 public sealed record FrameStatistics
 {
@@ -107,4 +107,3 @@ public sealed record FrameStatistics
     private static double ToFps(double frameTimeMs)
         => frameTimeMs <= 0 ? 0 : 1000.0 / frameTimeMs;
 }
-

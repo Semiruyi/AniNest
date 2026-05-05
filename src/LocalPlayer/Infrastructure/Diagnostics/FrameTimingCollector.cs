@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows.Media;
 
-namespace LocalPlayer.Presentation.Diagnostics;
+namespace LocalPlayer.Infrastructure.Diagnostics;
 
 public sealed class FrameTimingCollector : IDisposable
 {
@@ -105,4 +105,3 @@ public sealed class FrameTimingCollector : IDisposable
     private FrameTimingSnapshot CreateSnapshot()
         => new(_buffer.SnapshotOrdered(), _buffer.DroppedSamples, RenderCapability.Tier >> 16, _jankFrames.ToArray());
 }
-
