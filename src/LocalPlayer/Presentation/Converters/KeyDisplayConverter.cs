@@ -7,14 +7,15 @@ namespace LocalPlayer.Presentation.Converters;
 
 public class KeyDisplayConverter : IValueConverter
 {
-    private static readonly ILocalizationService? _loc = LocalizationService.Instance;
-
     public static string Format(Key key)
+        => Format(key, null);
+
+    public static string Format(Key key, ILocalizationService? loc)
     {
         if (key == Key.None)
-            return _loc?["Key.Unbound"] ?? "(未绑定)";
+            return loc?["Key.Unbound"] ?? "(未绑定)";
 
-        return FormatKeyString(key.ToString());
+        return FormatKeyString(key.ToString(), loc);
     }
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -25,12 +26,12 @@ public class KeyDisplayConverter : IValueConverter
         return Format(key);
     }
 
-    private static string FormatKeyString(string s) => s
+    private static string FormatKeyString(string s, ILocalizationService? loc) => s
         .Replace("Left", "\u2190")
         .Replace("Right", "\u2192")
         .Replace("Up", "\u2191")
         .Replace("Down", "\u2193")
-        .Replace("Space", _loc?["Key.Space"] ?? "空格")
+        .Replace("Space", loc?["Key.Space"] ?? "空格")
         .Replace("Escape", "Esc")
         .Replace("Return", "Enter")
         .Replace("PageUp", "PgUp")

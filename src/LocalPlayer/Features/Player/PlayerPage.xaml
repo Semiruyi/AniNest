@@ -7,7 +7,6 @@
              xmlns:behaviors="clr-namespace:LocalPlayer.Presentation.Behaviors"
              xmlns:primitives="clr-namespace:LocalPlayer.Presentation.Primitives"
              xmlns:converters="clr-namespace:LocalPlayer.Presentation.Converters"
-             xmlns:loc="clr-namespace:LocalPlayer.Infrastructure.Localization"
              Background="{StaticResource BackgroundDark}"
              Focusable="True"
              behaviors:LoadedCommandBehavior.FocusOnLoaded="True"
@@ -283,7 +282,7 @@
 
                 <!-- Header -->
                 <Grid Margin="{StaticResource PlaylistHeaderMargin}">
-                    <TextBlock Text="{Binding [Player.Playlist], Source={x:Static loc:LocalizationService.Instance}}" Foreground="White" FontSize="15"
+                    <TextBlock Text="{Binding DataContext.Localization[Player.Playlist], RelativeSource={RelativeSource AncestorType=UserControl}}" Foreground="White" FontSize="15"
                                FontWeight="SemiBold" VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding EpisodeCountText, FallbackValue=''}"
                                Foreground="#8E8E93" FontSize="12"

@@ -49,6 +49,7 @@ public partial class ShellViewModel : ObservableObject
     [ObservableProperty]
     private string _currentAnimationCode = "continuous";
 
+    public ILocalizationService Localization => _loc;
     public IReadOnlyList<LanguageInfo> AvailableLanguages => _loc.AvailableLanguages;
 
     public ShellViewModel(

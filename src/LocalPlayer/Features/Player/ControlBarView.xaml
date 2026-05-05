@@ -5,7 +5,6 @@
              xmlns:animations="clr-namespace:LocalPlayer.Presentation.Animations"
              xmlns:behaviors="clr-namespace:LocalPlayer.Presentation.Behaviors"
              xmlns:primitives="clr-namespace:LocalPlayer.Presentation.Primitives"
-             xmlns:loc="clr-namespace:LocalPlayer.Infrastructure.Localization"
              Focusable="True">
     <UserControl.Resources>
         <ResourceDictionary>
@@ -71,7 +70,7 @@
                 </Button>
                 <Button x:Name="StopBtn" Style="{StaticResource IconButton}"
                         Command="{Binding StopCommand}"
-                        Margin="{StaticResource ButtonGapLeft}" ToolTip="{Binding [Player.Stop], Source={x:Static loc:LocalizationService.Instance}}"
+                        Margin="{StaticResource ButtonGapLeft}" ToolTip="{Binding DataContext.Localization[Player.Stop], RelativeSource={RelativeSource AncestorType=UserControl}}"
                         Focusable="False">
                     <Image Source="/Resources/Icons/stop.png"
                            Width="{StaticResource IconSizeSmall}"
@@ -213,7 +212,7 @@
 
                 <Button x:Name="PlaylistToggleBtn" Style="{StaticResource IconButton}"
                         Command="{Binding TogglePlaylistCommand}"
-                        Margin="{StaticResource ButtonGapLeft}" ToolTip="{Binding [Player.Playlist], Source={x:Static loc:LocalizationService.Instance}}"
+                        Margin="{StaticResource ButtonGapLeft}" ToolTip="{Binding DataContext.Localization[Player.Playlist], RelativeSource={RelativeSource AncestorType=UserControl}}"
                         Focusable="False">
                     <Image Source="/Resources/Icons/playlist.png"
                            Width="{StaticResource IconSizeNormal}"
@@ -225,10 +224,10 @@
                         animations:ButtonScaleHover.IsEnabled="True">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
-                            <Setter Property="ToolTip" Value="{Binding [Player.Fullscreen], Source={x:Static loc:LocalizationService.Instance}}"/>
+                            <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Player.Fullscreen], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
-                                    <Setter Property="ToolTip" Value="{Binding [Player.ExitFullscreen], Source={x:Static loc:LocalizationService.Instance}}"/>
+                                    <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Player.ExitFullscreen], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>

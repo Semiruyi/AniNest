@@ -7,7 +7,6 @@
         xmlns:featuresPlayer="clr-namespace:LocalPlayer.Features.Player"
         xmlns:pagesLibrary="clr-namespace:LocalPlayer.Features.Library"
         xmlns:pagesPlayer="clr-namespace:LocalPlayer.Features.Player"
-        xmlns:loc="clr-namespace:LocalPlayer.Infrastructure.Localization"
         xmlns:animations="clr-namespace:LocalPlayer.Presentation.Animations"
         Title="LocalPlayer"
         Height="{StaticResource WindowDefaultHeight}"
@@ -89,7 +88,7 @@
                         <Grid animations:VisibilityAnimator.BindVisible="{Binding IsOnMainPage}">
                             <Button x:Name="FileButton"
                                     Style="{StaticResource TitleBarTextButton}"
-                                    Content="{Binding [App.File], Source={x:Static loc:LocalizationService.Instance}}"
+                                    Content="{Binding DataContext.Localization[App.File], RelativeSource={RelativeSource AncestorType=Window}}"
                                     Command="{Binding OpenFilePopupCommand}"
                                     shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
                             <primitives:AnimatedPopup x:Name="FilePopup"
@@ -113,7 +112,7 @@
                                                   Height="{StaticResource IconSizeNormal}"
                                                   Stretch="Uniform"
                                                   Margin="0,0,8,0"/>
-                                            <TextBlock Text="{Binding [App.AddFolder], Source={x:Static loc:LocalizationService.Instance}}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding DataContext.Localization[App.AddFolder], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>
                                 </Border>
@@ -122,7 +121,7 @@
                         <Grid>
                             <Button x:Name="SettingsButton"
                                     Style="{StaticResource TitleBarTextButton}"
-                                    Content="{Binding [App.Settings], Source={x:Static loc:LocalizationService.Instance}}"
+                                    Content="{Binding DataContext.Localization[App.Settings], RelativeSource={RelativeSource AncestorType=Window}}"
                                     Command="{Binding OpenSettingsPopupCommand}"
                                     shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
                             <primitives:AnimatedPopup x:Name="SettingsPopup"
@@ -143,7 +142,7 @@
                                                     Style="{StaticResource PopupMenuButton}"
                                                     Command="{Binding ToggleLanguageSubmenuCommand}">
                                                 <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding [Settings.Language], Source={x:Static loc:LocalizationService.Instance}}"
+                                                    <TextBlock Text="{Binding DataContext.Localization[Settings.Language], RelativeSource={RelativeSource AncestorType=Window}}"
                                                                VerticalAlignment="Center"/>
                                                     <Path Data="{StaticResource ChevronRightGeometry}"
                                                           Fill="{StaticResource IconSecondary}"
@@ -209,9 +208,9 @@
                                             <Button x:Name="FullscreenAnimationMenuButton"
                                                     Style="{StaticResource PopupMenuButton}"
                                                     Command="{Binding ToggleFullscreenAnimationSubmenuCommand}"
-                                                    ToolTip="{Binding [Settings.FullscreenAnimation.Tooltip], Source={x:Static loc:LocalizationService.Instance}}">
+                                                    ToolTip="{Binding DataContext.Localization[Settings.FullscreenAnimation.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}">
                                                 <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding [Settings.FullscreenAnimation], Source={x:Static loc:LocalizationService.Instance}}"
+                                                    <TextBlock Text="{Binding DataContext.Localization[Settings.FullscreenAnimation], RelativeSource={RelativeSource AncestorType=Window}}"
                                                                VerticalAlignment="Center"/>
                                                     <Path Data="{StaticResource ChevronRightGeometry}"
                                                           Fill="{StaticResource IconSecondary}"
@@ -261,12 +260,12 @@
                                                             <Button Style="{StaticResource PopupMenuButton}"
                                                                     Command="{Binding DataContext.SelectFullscreenAnimationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                     CommandParameter="none">
-                                                                <TextBlock Text="{Binding [Settings.FullscreenAnimation.NoAnimation], Source={x:Static loc:LocalizationService.Instance}}" VerticalAlignment="Center"/>
+                                                                <TextBlock Text="{Binding DataContext.Localization[Settings.FullscreenAnimation.NoAnimation], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
                                                             </Button>
                                                             <Button Style="{StaticResource PopupMenuButton}"
                                                                     Command="{Binding DataContext.SelectFullscreenAnimationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                     CommandParameter="continuous">
-                                                                <TextBlock Text="{Binding [Settings.FullscreenAnimation.ContinuousAnimation], Source={x:Static loc:LocalizationService.Instance}}" VerticalAlignment="Center"/>
+                                                                <TextBlock Text="{Binding DataContext.Localization[Settings.FullscreenAnimation.ContinuousAnimation], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
                                                             </Button>
                                                         </StackPanel>
                                                     </Grid>
@@ -289,7 +288,7 @@
                                 Style="{StaticResource TitleBarIconButton}"
                                 Width="{StaticResource TitleBarButtonWidth}"
                                 Height="{StaticResource TitleBarButtonHeight}"
-                                Click="MinimizeButton_Click" ToolTip="{Binding [Window.Minimize], Source={x:Static loc:LocalizationService.Instance}}"
+                                Click="MinimizeButton_Click" ToolTip="{Binding DataContext.Localization[Window.Minimize], RelativeSource={RelativeSource AncestorType=Window}}"
                                 shell:WindowChrome.IsHitTestVisibleInChrome="True">
                             <Viewbox Width="{StaticResource TitleBarIconSize}"
                                      Height="{StaticResource TitleBarIconSize}">
@@ -327,11 +326,11 @@
                             <Button.Style>
                                 <Style TargetType="Button"
                                        BasedOn="{StaticResource TitleBarIconButton}">
-                                    <Setter Property="ToolTip" Value="{Binding [Window.Maximize], Source={x:Static loc:LocalizationService.Instance}}"/>
+                                    <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Window.Maximize], RelativeSource={RelativeSource AncestorType=Window}}"/>
                                     <Style.Triggers>
                                         <DataTrigger Value="Maximized"
                                             Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}">
-                                            <Setter Property="ToolTip" Value="{Binding [Window.Restore], Source={x:Static loc:LocalizationService.Instance}}"/>
+                                            <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Window.Restore], RelativeSource={RelativeSource AncestorType=Window}}"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -342,7 +341,7 @@
                                 Style="{StaticResource CloseIconButton}"
                                 Width="{StaticResource TitleBarButtonWidth}"
                                 Height="{StaticResource TitleBarButtonHeight}"
-                                Click="CloseButton_Click" ToolTip="{Binding [Window.Close], Source={x:Static loc:LocalizationService.Instance}}"
+                                Click="CloseButton_Click" ToolTip="{Binding DataContext.Localization[Window.Close], RelativeSource={RelativeSource AncestorType=Window}}"
                                 shell:WindowChrome.IsHitTestVisibleInChrome="True">
                             <Viewbox Width="{StaticResource TitleBarIconSize}"
                                      Height="{StaticResource TitleBarIconSize}">

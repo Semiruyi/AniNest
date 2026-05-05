@@ -293,6 +293,7 @@ public partial class PlayerViewModel : ObservableObject
         _cleanupSpan = PerfSpan.Begin("Player.Cleanup");
 
         WeakReferenceMessenger.Default.UnregisterAll(this);
+        ControlBar.Cleanup();
         _thumbnailGenerator.VideoReady -= _videoReadyHandler;
         _thumbnailGenerator.VideoProgress -= _videoProgressHandler;
 

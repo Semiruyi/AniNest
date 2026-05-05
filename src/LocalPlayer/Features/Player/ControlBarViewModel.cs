@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
@@ -8,12 +9,8 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using LocalPlayer.Core.Messaging;
 using LocalPlayer.Infrastructure.Localization;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Paths;
-using LocalPlayer.Infrastructure.Persistence;
 using LocalPlayer.Infrastructure.Media;
 using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Infrastructure.Interop;
 using LocalPlayer.Presentation.Converters;
 using LocalPlayer.Presentation.Interop;
 using LocalPlayer.Features.Player.Models;
@@ -25,15 +22,12 @@ public partial class ControlBarViewModel : ObservableObject
     private readonly IMediaPlayerController _media;
     private readonly PlayerInputHandler _inputHandler;
     private readonly ILocalizationService _loc;
+    private readonly PropertyChangedEventHandler _locPropertyChangedHandler;
 
     private float _savedRate = 1.0f;
     private long _lastNonZeroTime;
 
-    // ========== 缂╃暐鍥鹃瑙堬紙缁勫悎锛?==========
-
     public ThumbnailPreviewController ThumbnailPreview { get; }
-
-    // ========== 鎾斁鐘舵€?==========
 
     [ObservableProperty]
     private bool _isPlaying;
@@ -59,8 +53,6 @@ public partial class ControlBarViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSeeking;
 
-    // ========== 鍊嶉€熷脊绐?==========
-
     public static float[] SpeedOptions { get; } = { 2.0f, 1.5f, 1.25f, 1.0f, 0.75f, 0.5f };
 
     [ObservableProperty]
@@ -74,8 +66,6 @@ public partial class ControlBarViewModel : ObservableObject
 
     public long MediaLength => _media.Length;
 
-    // ========== 鎻愮ず ==========
-
     public string PlayPauseTooltip => FormatTooltip(_loc["Player.PlayPause"], "TogglePlayPause");
     public string PreviousTooltip => FormatTooltip(_loc["Player.Previous"], "PreviousEpisode");
     public string NextTooltip => FormatTooltip(_loc["Player.Next"], "NextEpisode");
@@ -84,17 +74,13 @@ public partial class ControlBarViewModel : ObservableObject
     {
         var bindings = _inputHandler.GetCurrentBindings();
         var key = bindings.TryGetValue(actionName, out var k) ? k : Key.None;
-        return key == Key.None ? label : $"{label} ({KeyDisplayConverter.Format(key)})";
+        return key == Key.None ? label : $"{label} ({KeyDisplayConverter.Format(key, _loc)})";
     }
-
-    // ========== 璺ㄧ粍浠朵簨浠?==========
 
     public event Action? NextRequested;
     public event Action? PreviousRequested;
     public event Action? GoBackRequested;
     public event Action? TogglePlaylistRequested;
-
-    // ========== 鏋勯€?==========
 
     public ControlBarViewModel(IMediaPlayerController media, PlayerInputHandler inputHandler,
                                IThumbnailGenerator thumbnailGenerator, ILocalizationService loc)
@@ -102,6 +88,15 @@ public partial class ControlBarViewModel : ObservableObject
         _media = media;
         _inputHandler = inputHandler;
         _loc = loc;
+        _locPropertyChangedHandler = (_, args) =>
+        {
+            if (args.PropertyName is null || args.PropertyName == nameof(ILocalizationService.CurrentLanguage) || args.PropertyName == "Item[]")
+            {
+                OnPropertyChanged(nameof(PlayPauseTooltip));
+                OnPropertyChanged(nameof(PreviousTooltip));
+                OnPropertyChanged(nameof(NextTooltip));
+            }
+        };
 
         ThumbnailPreview = new ThumbnailPreviewController(
             thumbnailGenerator,
@@ -114,6 +109,7 @@ public partial class ControlBarViewModel : ObservableObject
             OnPropertyChanged(nameof(PreviousTooltip));
             OnPropertyChanged(nameof(NextTooltip));
         };
+        _loc.PropertyChanged += _locPropertyChangedHandler;
 
         _media.Playing += (_, _) =>
             Application.Current.Dispatcher.Invoke(() => IsPlaying = true);
@@ -128,7 +124,6 @@ public partial class ControlBarViewModel : ObservableObject
         {
             if (IsSeeking) return;
 
-            // 鏂拌棰戝姞杞戒腑鎴?VLC 閲?seek 鏈熼棿锛欳urrentTime=0 涓轰腑闂存€侊紝鎶戝埗閬垮厤闂儊
             if (args.CurrentTime == 0 && IsPlaying)
             {
                 if (_lastNonZeroTime > 0)
@@ -140,13 +135,11 @@ public partial class ControlBarViewModel : ObservableObject
             _lastNonZeroTime = args.CurrentTime;
             CurrentTime = args.CurrentTime;
             TotalTime = args.TotalTime;
-            BufferedPosition = args.TotalTime; // local files are fully buffered
+            BufferedPosition = args.TotalTime;
             CurrentTimeText = MediaPlayerController.FormatTime(args.CurrentTime);
             TotalTimeText = MediaPlayerController.FormatTime(args.TotalTime);
         };
     }
-
-    // ========== 鎾斁鍛戒护 ==========
 
     [RelayCommand]
     private void PlayPause() => _media.TogglePlayPause();
@@ -185,8 +178,6 @@ public partial class ControlBarViewModel : ObservableObject
             _isMouseInShowZone = false;
         }
     }
-
-    // ========== 鍏ㄥ睆鏃堕紶鏍囨帶鍒舵爮鏄鹃殣 ==========
 
     private const double ShowZoneHeight = 100;
     private const int HideDelayMs = 350;
@@ -251,8 +242,6 @@ public partial class ControlBarViewModel : ObservableObject
         GoBackRequested?.Invoke();
     }
 
-    // ========== 鍙抽敭鎸変綇 ==========
-
     [RelayCommand]
     private void EnterRightHold()
     {
@@ -268,16 +257,13 @@ public partial class ControlBarViewModel : ObservableObject
         _media.Rate = _savedRate;
     }
 
-    // ========== 閿洏 ==========
-
     public bool HandleKeyDown(KeyEventArgs e) => _inputHandler.HandleKeyDown(e);
 
     [RelayCommand]
     private void KeyDown(KeyEventArgs e) => HandleKeyDown(e);
 
+    public void Cleanup()
+    {
+        _loc.PropertyChanged -= _locPropertyChangedHandler;
+    }
 }
-
-
-
-
-

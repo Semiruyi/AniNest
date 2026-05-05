@@ -10,9 +10,6 @@ namespace LocalPlayer.Infrastructure.Localization;
 
 public class LocalizationService : ILocalizationService
 {
-    private static LocalizationService? _instance;
-    public static LocalizationService Instance => _instance!;
-
     private readonly string _languagesDir;
     private Dictionary<string, string> _entries = new();
     private string _currentLanguage = "zh-CN";
@@ -35,7 +32,6 @@ public class LocalizationService : ILocalizationService
 
     public LocalizationService()
     {
-        _instance = this;
         _languagesDir = AppPaths.LanguagesDirectory;
         ScanLanguages();
     }
@@ -50,6 +46,7 @@ public class LocalizationService : ILocalizationService
         _entries = JsonSerializer.Deserialize<Dictionary<string, string>>(json) ?? new();
         _currentLanguage = code;
 
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CurrentLanguage)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
     }
 
