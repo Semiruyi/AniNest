@@ -6,6 +6,8 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using LocalPlayer.View.Animations;
+using Point = System.Windows.Point;
+using Size = System.Windows.Size;
 
 namespace LocalPlayer.View.Primitives;
 

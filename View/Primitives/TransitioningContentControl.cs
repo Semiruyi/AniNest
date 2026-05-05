@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using LocalPlayer.View.Diagnostics;
+using Size = System.Windows.Size;
 
 namespace LocalPlayer.View.Primitives;
 

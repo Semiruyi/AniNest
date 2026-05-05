@@ -8,6 +8,9 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using LocalPlayer.ViewModel.Player;
 using LocalPlayer.View.Animations;
+using Point = System.Windows.Point;
+using Rectangle = System.Windows.Shapes.Rectangle;
+using Size = System.Windows.Size;
 
 namespace LocalPlayer.View.Primitives;
 

@@ -72,9 +72,9 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     public ThumbnailGenerator(ISettingsService settings)
     {
         _settings = settings;
-        _thumbBaseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "thumbnails");
+        _thumbBaseDir = AppPaths.ThumbnailDirectory;
         _indexPath = Path.Combine(_thumbBaseDir, "index.json");
-        _ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe");
+        _ffmpegPath = AppPaths.FfmpegPath;
         _renderer = new ThumbnailRenderer(_ffmpegPath, _thumbBaseDir, GetVideoDuration);
 
         Directory.CreateDirectory(_thumbBaseDir);
@@ -614,7 +614,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     {
         try
         {
-            string ffmpeg = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe");
+            string ffmpeg = AppPaths.FfmpegPath;
             if (!File.Exists(ffmpeg)) return 0;
             var psi = new ProcessStartInfo
             {

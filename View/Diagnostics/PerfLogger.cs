@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using LocalPlayer.Model;
 
 namespace LocalPlayer.View.Diagnostics;
 
@@ -15,7 +16,7 @@ public static class PerfLogger
     public static bool Enabled { get; set; }
 
     public static string LogPath { get; set; } =
-        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "perf.log");
+        AppPaths.PerfLogPath;
 
     static PerfLogger()
     {

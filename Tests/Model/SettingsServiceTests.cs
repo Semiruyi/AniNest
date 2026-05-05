@@ -1,5 +1,4 @@
 using System.IO;
-using System.Reflection;
 using FluentAssertions;
 using LocalPlayer.Model;
 using Moq;
@@ -15,11 +14,10 @@ public class SettingsServiceTests : IDisposable
     public SettingsServiceTests()
     {
         _tempDir = Path.Combine(Path.GetTempPath(), $"LocalPlayerTests_{Guid.NewGuid():N}");
-        var dataDir = Path.Combine(_tempDir, "Data");
+        var dataDir = Path.Combine(_tempDir, "data", "config");
         Directory.CreateDirectory(dataDir);
 
-        _service = new SettingsService();
-        SetSettingsPath(_service, Path.Combine(dataDir, "settings.json"));
+        _service = new SettingsService(Path.Combine(dataDir, "settings.json"));
     }
 
     public void Dispose()
@@ -206,12 +204,5 @@ public class SettingsServiceTests : IDisposable
         // Empty settings file (just created)
         var folders = _service.GetFolders();
         folders.Should().BeEmpty();
-    }
-
-    private static void SetSettingsPath(SettingsService service, string path)
-    {
-        typeof(SettingsService)
-            .GetField("settingsPath", BindingFlags.NonPublic | BindingFlags.Instance)!
-            .SetValue(service, path);
     }
 }

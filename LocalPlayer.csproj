@@ -34,6 +34,17 @@
              CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Condition="Exists('tools\ffmpeg\ffmpeg.exe')" />
   </ItemGroup>
 
+  <!-- LibVLC 原生库：排除单文件打包。NuGet 包在构建时将其拷贝到输出目录，
+       但 PublishSingleFile 会将其打包进 exe，导致 LibVLC 运行时找不到文件 -->
+  <Target Name="PublishLibVlc" AfterTargets="Publish">
+    <ItemGroup>
+      <LibVlcSourceFiles Include="$(OutDir)libvlc\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(LibVlcSourceFiles)"
+          DestinationFolder="$(PublishDir)libvlc\%(RecursiveDir)"
+          SkipUnchangedFiles="true" />
+  </Target>
+
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="LibVLCSharp.WPF" Version="3.9.7.1" />

@@ -7,6 +7,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using LocalPlayer.View.Animations;
 using LocalPlayer.View.Interop;
+using Point = System.Windows.Point;
 
 namespace LocalPlayer.View.Primitives;
 

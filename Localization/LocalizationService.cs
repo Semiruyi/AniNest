@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using LocalPlayer.Model;
 
 namespace LocalPlayer.Localization;
 
@@ -35,7 +36,7 @@ public class LocalizationService : ILocalizationService
     public LocalizationService()
     {
         _instance = this;
-        _languagesDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Languages");
+        _languagesDir = AppPaths.LanguagesDirectory;
         ScanLanguages();
     }
 

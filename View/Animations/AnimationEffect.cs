@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.Windows.Media.Animation;
+using Point = System.Windows.Point;
 
 namespace LocalPlayer.View.Animations;
 

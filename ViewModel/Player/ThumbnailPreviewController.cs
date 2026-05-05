@@ -9,6 +9,7 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalPlayer.Model;
+using Point = System.Windows.Point;
 
 namespace LocalPlayer.ViewModel.Player;
 

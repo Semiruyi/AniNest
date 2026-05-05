@@ -13,7 +13,6 @@ public enum LogLevel
 
 public static class AppLog
 {
-    private static readonly string BaseDir = AppDomain.CurrentDomain.BaseDirectory;
     private static readonly object Lock = new();
 
     public static LogLevel MinimumLevel { get; set; } = LogLevel.Debug;
@@ -21,7 +20,7 @@ public static class AppLog
     static AppLog()
     {
 #if DEBUG
-        try { File.Delete(Path.Combine(BaseDir, "player.log")); } catch { }
+        try { File.Delete(AppPaths.PlayerLogPath); } catch { }
 #else
         MinimumLevel = LogLevel.Info;
 #endif
@@ -33,7 +32,10 @@ public static class AppLog
 
         try
         {
-            string path = Path.Combine(BaseDir, fileName);
+            string path = AppPaths.ResolveInLogs(fileName);
+            string? directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrWhiteSpace(directory))
+                Directory.CreateDirectory(directory);
             string line = $"[{DateTime.Now:HH:mm:ss.fff}] [{level.ToString().ToUpperInvariant(),-5}] [{category}] {message}{Environment.NewLine}";
             lock (Lock)
             {
