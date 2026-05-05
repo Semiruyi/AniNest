@@ -165,7 +165,7 @@ public sealed class PopupInputCoordinator
         var hit = AnalyzeHit(e.OriginalSource as DependencyObject);
         var keepSet = ComputeKeepSet(hit);
         var closeSet = _openPopups
-            .Where(popup => popup.CloseOnOutsideClick && !keepSet.Contains(popup))
+            .Where(popup => popup.CloseOnOutsideClick && popup.IsOpenAnimated && !keepSet.Contains(popup))
             .ToArray();
 
         if (closeSet.Length == 0)
