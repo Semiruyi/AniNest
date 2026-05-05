@@ -1,7 +1,7 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
-using LocalPlayer.View.Diagnostics;
-using LocalPlayer.ViewModel;
+using LocalPlayer.Features.Library;
+using LocalPlayer.Presentation.Diagnostics;
 
 namespace LocalPlayer.View.Pages.Library;
 
@@ -12,20 +12,23 @@ public partial class MainPage : System.Windows.Controls.UserControl
     private bool _initialLoadCompleted;
     private int _renderFramesAfterLoadCompleted;
 
-    public MainPage(MainPageViewModel vm)
+    public MainPage()
     {
-        DataContext = vm;
-        _viewModel = vm;
-        // 必须在 Loaded 之前订阅，因为 LoadedCommandBehavior 触发
-        // LoadDataCommand 时 LoadDataCompleted 可能立即同步发出
-        _viewModel.LoadDataCompleted += OnLoadDataCompleted;
         InitializeComponent();
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
+        DataContextChanged += OnDataContextChanged;
+    }
+
+    private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        SyncViewModel();
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
+        SyncViewModel();
+
         if (_initialLoadScene != null)
             return;
 
@@ -35,7 +38,6 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
         CompositionTarget.Rendering += OnRendering;
 
-        // 直接触发加载，不依赖 LoadedCommandBehavior（事件时序问题）
         if (_viewModel != null)
             await _viewModel.LoadDataCommand.ExecuteAsync(null);
     }
@@ -43,7 +45,29 @@ public partial class MainPage : System.Windows.Controls.UserControl
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
         CompositionTarget.Rendering -= OnRendering;
+
+        if (_viewModel != null)
+        {
+            _viewModel.LoadDataCompleted -= OnLoadDataCompleted;
+            _viewModel = null;
+        }
+
         CompleteInitialLoadScene();
+    }
+
+    private void SyncViewModel()
+    {
+        var vm = DataContext as MainPageViewModel;
+        if (ReferenceEquals(_viewModel, vm))
+            return;
+
+        if (_viewModel != null)
+            _viewModel.LoadDataCompleted -= OnLoadDataCompleted;
+
+        _viewModel = vm;
+
+        if (_viewModel != null)
+            _viewModel.LoadDataCompleted += OnLoadDataCompleted;
     }
 
     private void OnLoadDataCompleted(object? sender, EventArgs e)
@@ -73,3 +97,4 @@ public partial class MainPage : System.Windows.Controls.UserControl
         _renderFramesAfterLoadCompleted = 0;
     }
 }
+

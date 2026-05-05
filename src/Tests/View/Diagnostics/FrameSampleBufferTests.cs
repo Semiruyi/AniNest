@@ -1,4 +1,4 @@
-using LocalPlayer.View.Diagnostics;
+using LocalPlayer.Presentation.Diagnostics;
 
 namespace LocalPlayer.Tests.View.Diagnostics;
 

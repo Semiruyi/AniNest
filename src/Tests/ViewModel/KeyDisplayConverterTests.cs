@@ -1,6 +1,6 @@
 using System.Windows.Input;
 using FluentAssertions;
-using LocalPlayer.ViewModel;
+using LocalPlayer.Presentation.Converters;
 using Xunit;
 
 namespace LocalPlayer.Tests.ViewModel;
@@ -8,11 +8,11 @@ namespace LocalPlayer.Tests.ViewModel;
 public class KeyDisplayConverterTests
 {
     [Theory]
-    [InlineData(Key.Space, "空格")]
-    [InlineData(Key.Left, "←")]
-    [InlineData(Key.Right, "→")]
-    [InlineData(Key.Up, "↑")]
-    [InlineData(Key.Down, "↓")]
+    [InlineData(Key.Space, "\u7a7a\u683c")]
+    [InlineData(Key.Left, "\u2190")]
+    [InlineData(Key.Right, "\u2192")]
+    [InlineData(Key.Up, "\u2191")]
+    [InlineData(Key.Down, "\u2193")]
     [InlineData(Key.Escape, "Esc")]
     [InlineData(Key.Enter, "Enter")]
     [InlineData(Key.A, "A")]
@@ -20,7 +20,7 @@ public class KeyDisplayConverterTests
     [InlineData(Key.D9, "9")]
     [InlineData(Key.OemComma, ",")]
     [InlineData(Key.OemPeriod, ".")]
-    [InlineData(Key.None, "(未绑定)")]
+    [InlineData(Key.None, "(\u672a\u7ed1\u5b9a)")]
     [InlineData(Key.NumPad0, "Num0")]
     [InlineData(Key.NumPad9, "Num9")]
     [InlineData(Key.Add, "+")]
@@ -34,7 +34,7 @@ public class KeyDisplayConverterTests
     public void Convert_Key_DelegatesToFormat()
     {
         var converter = new KeyDisplayConverter();
-        converter.Convert(Key.Space, null!, null!, null!).Should().Be("空格");
+        converter.Convert(Key.Space, null!, null!, null!).Should().Be("\u7a7a\u683c");
     }
 
     [Fact]

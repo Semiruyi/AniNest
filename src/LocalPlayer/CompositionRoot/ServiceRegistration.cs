@@ -1,0 +1,26 @@
+﻿using Microsoft.Extensions.DependencyInjection;
+using LocalPlayer.Features.Library;
+using LocalPlayer.Features.Player;
+using LocalPlayer.Features.Shell;
+using LocalPlayer.Core.Localization;
+using LocalPlayer.Infrastructure.Model;
+using LocalPlayer.View;
+
+namespace LocalPlayer.CompositionRoot;
+
+public static class ServiceRegistration
+{
+    public static void AddLocalPlayerServices(IServiceCollection services)
+    {
+        services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<ILocalizationService, LocalizationService>();
+        services.AddSingleton<IThumbnailGenerator, ThumbnailGenerator>();
+        services.AddTransient<IMediaPlayerController, MediaPlayerController>();
+
+        services.AddSingleton<MainPageViewModel>();
+        services.AddSingleton<PlayerViewModel>();
+        services.AddSingleton<ShellViewModel>();
+        services.AddSingleton<MainWindow>();
+    }
+}
+

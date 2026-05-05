@@ -1,11 +1,12 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using LocalPlayer.Messages;
-using LocalPlayer.View.Diagnostics;
-using LocalPlayer.View.Primitives;
-using LocalPlayer.ViewModel;
+using LocalPlayer.Features.Player;
+using LocalPlayer.Features.Shell;
+using LocalPlayer.Core.Messaging;
+using LocalPlayer.Presentation.Diagnostics;
+using LocalPlayer.Presentation.Primitives;
 
 namespace LocalPlayer.View;
 
@@ -29,8 +30,8 @@ public partial class MainWindow : Window
 
         PageTransition.TransitionCompleted += (_, _) =>
         {
-            if (DataContext is ShellViewModel vm && vm.CurrentPage is View.Pages.Player.PlayerPage)
-                WeakReferenceMessenger.Default.Send(new Messages.LoadPlayerFolderDataMessage());
+            if (DataContext is ShellViewModel vm && vm.CurrentPage is PlayerViewModel)
+                WeakReferenceMessenger.Default.Send(new LoadPlayerFolderDataMessage());
         };
 
         WeakReferenceMessenger.Default.Register<ToggleFullscreenMessage>(this, (_, _) =>
@@ -181,3 +182,5 @@ public partial class MainWindow : Window
     private const int SW_MINIMIZE = 6;
     private const int SW_RESTORE = 9;
 }
+
+

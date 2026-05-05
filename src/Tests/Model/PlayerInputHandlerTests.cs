@@ -1,6 +1,6 @@
-using System.Windows.Input;
+﻿using System.Windows.Input;
 using FluentAssertions;
-using LocalPlayer.Model;
+using LocalPlayer.Infrastructure.Model;
 using Moq;
 using Xunit;
 
@@ -177,3 +177,4 @@ public class PlayerInputHandlerTests
         return args;
     }
 }
+

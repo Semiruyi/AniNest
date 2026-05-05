@@ -1,5 +1,5 @@
 using FluentAssertions;
-using LocalPlayer.View.Converters;
+using LocalPlayer.Presentation.Converters;
 using Xunit;
 
 namespace LocalPlayer.Tests.Converters;

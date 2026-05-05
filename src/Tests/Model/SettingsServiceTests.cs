@@ -1,6 +1,6 @@
-using System.IO;
+﻿using System.IO;
 using FluentAssertions;
-using LocalPlayer.Model;
+using LocalPlayer.Infrastructure.Model;
 using Moq;
 using Xunit;
 
@@ -73,7 +73,7 @@ public class SettingsServiceTests : IDisposable
     [Fact]
     public void ReorderFolders_UpdatesOrder()
     {
-        // NOTE: GetFolders has "兼容旧数据" logic that auto-fixes items at
+        // NOTE: GetFolders has "鍏煎鏃ф暟鎹? logic that auto-fixes items at
         // index > 0 with OrderIndex==0. This means the first item in insertion
         // order must stay first in the reorder to avoid the compat code
         // corrupting the order. This is a known bug.
@@ -81,7 +81,7 @@ public class SettingsServiceTests : IDisposable
         _service.AddFolder("/b", "B");
         _service.AddFolder("/c", "C");
 
-        // a was inserted first → must stay first in reorder
+        // a was inserted first 鈫?must stay first in reorder
         _service.ReorderFolders(new List<string> { "/a", "/c", "/b" });
 
         var ordered = _service.GetFolders();
@@ -206,3 +206,4 @@ public class SettingsServiceTests : IDisposable
         folders.Should().BeEmpty();
     }
 }
+

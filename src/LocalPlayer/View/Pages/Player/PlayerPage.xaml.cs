@@ -1,7 +1,6 @@
-using LocalPlayer.View.Diagnostics;
-using LocalPlayer.View.Primitives;
-using LocalPlayer.ViewModel.Player;
-using System.Windows.Media;
+﻿using System.Windows.Media;
+using LocalPlayer.Presentation.Diagnostics;
+using LocalPlayer.Presentation.Primitives;
 
 namespace LocalPlayer.View.Pages.Player;
 
@@ -10,9 +9,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
     private PerfSpan? _loadToFirstRenderSpan;
     private bool _renderedOnce;
 
-    public PlayerPage(PlayerViewModel vm)
+    public PlayerPage()
     {
-        DataContext = vm;
         InitializeComponent();
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
@@ -53,3 +51,4 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
         _loadToFirstRenderSpan = null;
     }
 }
+

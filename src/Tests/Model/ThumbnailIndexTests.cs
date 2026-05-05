@@ -1,5 +1,5 @@
-using FluentAssertions;
-using LocalPlayer.Model;
+﻿using FluentAssertions;
+using LocalPlayer.Infrastructure.Model;
 using Xunit;
 using System.IO;
 
@@ -133,3 +133,4 @@ public class ThumbnailIndexTests : IDisposable
         loaded.Should().ContainSingle().Which.State.Should().Be(ThumbnailState.Pending);
     }
 }
+

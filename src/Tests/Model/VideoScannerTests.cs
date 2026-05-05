@@ -1,5 +1,5 @@
-using FluentAssertions;
-using LocalPlayer.Model;
+﻿using FluentAssertions;
+using LocalPlayer.Infrastructure.Model;
 using Xunit;
 using System.IO;
 
@@ -165,3 +165,4 @@ public class VideoScannerTests : IDisposable
         File.WriteAllText(Path.Combine(_tempDir, name), "");
     }
 }
+
