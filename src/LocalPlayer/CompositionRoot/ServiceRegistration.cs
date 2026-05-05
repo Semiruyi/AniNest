@@ -21,6 +21,7 @@ public static class ServiceRegistration
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<ITaskbarAutoHideCoordinator, TaskbarAutoHideCoordinator>();
         services.AddSingleton<IThumbnailGenerator, ThumbnailGenerator>();
+        services.AddSingleton<ILibraryPageCoordinator, LibraryPageCoordinator>();
         services.AddTransient<IMediaPlayerController, MediaPlayerController>();
 
         services.AddSingleton<MainPageViewModel>();

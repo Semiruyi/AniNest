@@ -1,29 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Core.Messaging;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Paths;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Infrastructure.Interop;
 using LocalPlayer.Features.Library.Models;
+using LocalPlayer.Infrastructure.Localization;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Thumbnails;
 
 namespace LocalPlayer.Features.Library;
 
 public partial class MainPageViewModel : ObservableObject
 {
+    private readonly ILibraryPageCoordinator _coordinator;
     private readonly ISettingsService _settings;
-    private readonly IThumbnailGenerator _thumbnailGenerator;
     private readonly ILocalizationService _loc;
     private readonly EventHandler<ThumbnailProgressEventArgs> _thumbnailProgressChangedHandler;
     private bool _dataLoaded;
@@ -34,7 +27,7 @@ public partial class MainPageViewModel : ObservableObject
     public ObservableCollection<FolderListItem> FolderItems { get; } = new();
 
     [ObservableProperty]
-    private string _folderCountText = "0 涓枃浠跺す";
+    private string _folderCountText = "0 个文件夹";
 
     [ObservableProperty]
     private bool _isEmpty = true;
@@ -46,12 +39,13 @@ public partial class MainPageViewModel : ObservableObject
     private bool _isThumbnailProgressVisible;
 
     public MainPageViewModel(
+        ILibraryPageCoordinator coordinator,
         ISettingsService settings,
-        IThumbnailGenerator thumbnailGenerator,
-        ILocalizationService loc)
+        ILocalizationService loc,
+        IThumbnailGenerator thumbnailGenerator)
     {
+        _coordinator = coordinator;
         _settings = settings;
-        _thumbnailGenerator = thumbnailGenerator;
         _loc = loc;
         _thumbnailProgressChangedHandler = OnThumbnailProgressChanged;
 
@@ -59,14 +53,10 @@ public partial class MainPageViewModel : ObservableObject
 
         WeakReferenceMessenger.Default.Register<FolderAddedMessage>(this, (_, m) =>
         {
-            var item = new FolderListItem(m.Name, m.Path, m.VideoCount, m.CoverPath)
-            {
-                VideoCountText = string.Format(_loc["Library.VideoCount"], m.VideoCount)
-            };
-            FolderItems.Add(item);
+            FolderItems.Add(_coordinator.CreateFolderItem(m.Name, m.Path, m.VideoCount, m.CoverPath));
         });
 
-        _thumbnailGenerator.ProgressChanged += _thumbnailProgressChangedHandler;
+        thumbnailGenerator.ProgressChanged += _thumbnailProgressChangedHandler;
     }
 
     [RelayCommand]
@@ -78,72 +68,16 @@ public partial class MainPageViewModel : ObservableObject
             return;
         }
 
-        var loadedItems = await Task.Run(LoadFoldersData);
+        var loadedItems = await Task.Run(_coordinator.LoadFoldersData);
 
         FolderItems.Clear();
         foreach (var item in loadedItems)
             FolderItems.Add(item.Item);
 
-        EnqueueAllFolders(loadedItems);
+        _coordinator.EnqueueAllFolders(loadedItems);
         _dataLoaded = true;
         LoadDataCompleted?.Invoke(this, EventArgs.Empty);
     }
-
-    public List<(FolderListItem Item, string[] VideoFiles)> LoadFoldersData()
-    {
-        var items = new List<(FolderListItem Item, string[] VideoFiles)>();
-        var folders = _settings.GetFolders();
-
-        foreach (var folder in folders)
-        {
-            if (Directory.Exists(folder.Path))
-            {
-                var result = VideoScanner.ScanFolder(folder.Path);
-                var item = new FolderListItem(folder.Name, folder.Path, result.VideoCount, result.CoverPath)
-                {
-                    VideoCountText = string.Format(_loc["Library.VideoCount"], result.VideoCount)
-                };
-                items.Add((item, result.VideoFiles));
-            }
-            else
-            {
-                _settings.RemoveFolder(folder.Path);
-                _thumbnailGenerator.DeleteForFolder(folder.Path);
-            }
-        }
-
-        return items;
-    }
-
-    public void EnqueueAllFolders(List<(FolderListItem Item, string[] VideoFiles)> items)
-    {
-        foreach (var (item, videoFiles) in items)
-            EnqueueFolderForThumbnails(item, videoFiles);
-    }
-
-    public void EnqueueFolderForThumbnails(FolderListItem item, string[] videoFiles)
-    {
-        int cardOrder = 0;
-        var folders = _settings.GetFolders();
-        var folderInfo = folders.FirstOrDefault(f => f.Path == item.Path);
-        if (folderInfo != null)
-            cardOrder = folderInfo.OrderIndex;
-
-        var folderProgress = _settings.GetFolderProgress(item.Path);
-        string? lastPlayed = folderProgress?.LastVideoPath;
-
-        var playedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var vf in videoFiles)
-        {
-            if (_settings.IsVideoPlayed(vf))
-                playedPaths.Add(vf);
-        }
-
-        _thumbnailGenerator.EnqueueFolder(item.Path, cardOrder, lastPlayed, playedPaths);
-    }
-
-    public void ReorderFolders(List<string> orderedPaths)
-        => _settings.ReorderFolders(orderedPaths);
 
     [RelayCommand]
     private void SelectFolder(FolderListItem? item)
@@ -158,8 +92,7 @@ public partial class MainPageViewModel : ObservableObject
         if (item == null)
             return;
 
-        _settings.RemoveFolder(item.Path);
-        _thumbnailGenerator.DeleteForFolder(item.Path);
+        _coordinator.DeleteFolder(item);
         FolderItems.Remove(item);
     }
 
@@ -176,13 +109,9 @@ public partial class MainPageViewModel : ObservableObject
         {
             _settings.SetThumbnailExpiryDays(days);
             if (days == 0)
-            {
                 MessageBox.Show(_loc["Settings.ThumbnailSetNever"], _loc["Dialog.Info"]);
-            }
             else
-            {
                 MessageBox.Show(string.Format(_loc["Settings.ThumbnailSetDays"], days), _loc["Dialog.Info"]);
-            }
         }
     }
 
@@ -196,7 +125,7 @@ public partial class MainPageViewModel : ObservableObject
             return false;
         }
 
-        name = Path.GetFileName(path);
+        name = System.IO.Path.GetFileName(path);
         WeakReferenceMessenger.Default.Send(new FolderSelectedMessage(path, name));
         return true;
     }
@@ -208,7 +137,6 @@ public partial class MainPageViewModel : ObservableObject
 
         _isCleanedUp = true;
         WeakReferenceMessenger.Default.UnregisterAll(this);
-        _thumbnailGenerator.ProgressChanged -= _thumbnailProgressChangedHandler;
     }
 
     private void UpdateToolbarState()
@@ -233,11 +161,6 @@ public partial class MainPageViewModel : ObservableObject
 
     private void OnThumbnailProgressChanged(object? sender, ThumbnailProgressEventArgs args)
     {
-        Application.Current.Dispatcher.BeginInvoke(
-            () => UpdateThumbnailProgress(args.Ready, args.Total));
+        Application.Current.Dispatcher.BeginInvoke(() => UpdateThumbnailProgress(args.Ready, args.Total));
     }
 }
-
-
-
-
