@@ -7,9 +7,15 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using LocalPlayer.Core.Messaging;
-using LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
 using LocalPlayer.Core.Localization;
 using LocalPlayer.Presentation.Converters;
+using LocalPlayer.Features.Player.Models;
 
 namespace LocalPlayer.Features.Player;
 
@@ -269,5 +275,8 @@ public partial class ControlBarViewModel : ObservableObject
     private void KeyDown(KeyEventArgs e) => HandleKeyDown(e);
 
 }
+
+
+
 
 

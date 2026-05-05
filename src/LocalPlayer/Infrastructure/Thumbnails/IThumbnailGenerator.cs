@@ -1,7 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-
-namespace LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
+namespace LocalPlayer.Infrastructure.Thumbnails;
 
 public interface IThumbnailGenerator
 {
@@ -20,4 +25,6 @@ public interface IThumbnailGenerator
     event Action<string, int>? VideoProgress;
     event Action<string>? VideoReady;
 }
+
+
 

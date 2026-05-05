@@ -5,7 +5,12 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
-using LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
 
 namespace LocalPlayer.Presentation.Animations;
 
@@ -488,5 +493,7 @@ public static class CardAnimation
         return false;
     }
 }
+
+
 
 

@@ -8,7 +8,12 @@ using LocalPlayer.Features.Library;
 using LocalPlayer.Features.Player;
 using LocalPlayer.Core.Localization;
 using LocalPlayer.Core.Messaging;
-using LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
 
 namespace LocalPlayer.Features.Shell;
 
@@ -199,4 +204,6 @@ public partial class ShellViewModel : ObservableObject
         _savedTaskbarAutoHide = null;
     }
 }
+
+
 

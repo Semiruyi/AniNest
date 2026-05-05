@@ -5,8 +5,8 @@
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:featuresLibrary="clr-namespace:LocalPlayer.Features.Library"
         xmlns:featuresPlayer="clr-namespace:LocalPlayer.Features.Player"
-        xmlns:pagesLibrary="clr-namespace:LocalPlayer.View.Pages.Library"
-        xmlns:pagesPlayer="clr-namespace:LocalPlayer.View.Pages.Player"
+        xmlns:pagesLibrary="clr-namespace:LocalPlayer.Features.Library"
+        xmlns:pagesPlayer="clr-namespace:LocalPlayer.Features.Player"
         xmlns:loc="clr-namespace:LocalPlayer.Core.Localization"
         xmlns:animations="clr-namespace:LocalPlayer.Presentation.Animations"
         Title="LocalPlayer"
@@ -361,5 +361,6 @@
         </Grid>
     </Border>
 </Window>
+
 
 

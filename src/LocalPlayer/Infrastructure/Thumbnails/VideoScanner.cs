@@ -1,8 +1,13 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-
-namespace LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
+namespace LocalPlayer.Infrastructure.Thumbnails;
 
 public class VideoScanner
 {
@@ -170,4 +175,6 @@ public sealed record FolderScanResult(
     int VideoCount,
     string? CoverPath,
     string[] VideoFiles);
+
+
 

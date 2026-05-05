@@ -3,7 +3,13 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalPlayer.Core.Localization;
-using LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
+using LocalPlayer.Features.Player.Models;
 
 namespace LocalPlayer.Features.Player;
 
@@ -142,4 +148,7 @@ public partial class PlaylistViewModel : ObservableObject
         OnPropertyChanged(nameof(CurrentItem));
     }
 }
+
+
+
 

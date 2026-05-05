@@ -8,8 +8,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
 using Point = System.Windows.Point;
+using LocalPlayer.Features.Player.Models;
 
 namespace LocalPlayer.Features.Player;
 
@@ -229,4 +235,7 @@ public partial class ThumbnailPreviewController : ObservableObject
         return time.TotalHours >= 1 ? time.ToString(@"hh\:mm\:ss") : time.ToString(@"mm\:ss");
     }
 }
+
+
+
 

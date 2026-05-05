@@ -1,7 +1,13 @@
 ﻿using LocalPlayer.Presentation.Diagnostics;
 using LocalPlayer.Presentation.Primitives;
-
-namespace LocalPlayer.View.Pages.Player;
+using LocalPlayer.Features.Player.Models;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
+namespace LocalPlayer.Features.Player;
 
 public partial class ControlBarView : System.Windows.Controls.UserControl
 {
@@ -50,4 +56,6 @@ public partial class ControlBarView : System.Windows.Controls.UserControl
         coordinator.UnregisterRegion(RootGrid, PopupHitKind.DismissBackground);
     }
 }
+
+
 

@@ -4,8 +4,13 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Windows.Input;
-
-namespace LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
+namespace LocalPlayer.Infrastructure.Persistence;
 
 public class SettingsService : ISettingsService
 {
@@ -293,4 +298,6 @@ public class SettingsService : ISettingsService
         return result;
     }
 }
+
+
 

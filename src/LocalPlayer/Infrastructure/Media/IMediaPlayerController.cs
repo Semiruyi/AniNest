@@ -1,7 +1,12 @@
 ﻿using System;
 using System.Windows.Media.Imaging;
-
-namespace LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
+namespace LocalPlayer.Infrastructure.Media;
 
 public interface IMediaPlayerController : IDisposable
 {
@@ -25,4 +30,6 @@ public interface IMediaPlayerController : IDisposable
     event EventHandler? Stopped;
     event EventHandler<ProgressUpdatedEventArgs>? ProgressUpdated;
 }
+
+
 

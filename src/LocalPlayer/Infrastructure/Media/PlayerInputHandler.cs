@@ -3,8 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using WinKey = System.Windows.Input.Key;
 using WinKeyEventArgs = System.Windows.Input.KeyEventArgs;
-
-namespace LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
+namespace LocalPlayer.Infrastructure.Media;
 
 public class PlayerInputHandler
 {
@@ -101,4 +106,6 @@ public class PlayerInputHandler
         }
     }
 }
+
+
 

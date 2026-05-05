@@ -1,6 +1,10 @@
 ﻿using System.IO;
 using FluentAssertions;
-using LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
 using Moq;
 using Xunit;
 
@@ -222,4 +226,6 @@ public class PlaylistManagerTests : IDisposable
             File.WriteAllText(Path.Combine(_tempDir, $"ep{i:D2}.mp4"), "");
     }
 }
+
+
 

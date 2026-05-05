@@ -1,6 +1,11 @@
 ﻿using System.IO;
-
-namespace LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
+namespace LocalPlayer.Infrastructure.Paths;
 
 public static class AppPaths
 {
@@ -37,4 +42,6 @@ public static class AppPaths
     public static string ResolveInLogs(string fileName)
         => Path.IsPathRooted(fileName) ? fileName : Path.Combine(LogsDirectory, fileName);
 }
+
+
 

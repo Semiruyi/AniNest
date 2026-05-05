@@ -1,6 +1,10 @@
 ﻿using System.IO;
 using FluentAssertions;
-using LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
 using Moq;
 using Xunit;
 
@@ -206,4 +210,6 @@ public class SettingsServiceTests : IDisposable
         folders.Should().BeEmpty();
     }
 }
+
+
 

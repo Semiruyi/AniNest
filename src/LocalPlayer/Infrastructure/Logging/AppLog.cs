@@ -1,7 +1,12 @@
 ﻿using System;
 using System.IO;
-
-namespace LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
+namespace LocalPlayer.Infrastructure.Logging;
 
 public enum LogLevel
 {
@@ -82,4 +87,6 @@ public readonly struct Logger
     public void Error(string message) => AppLog.Error(_category, message);
     public void Error(string message, Exception? ex) => AppLog.Error(_category, message, ex);
 }
+
+
 

@@ -2,8 +2,13 @@
 using System.Windows.Media;
 using LocalPlayer.Features.Library;
 using LocalPlayer.Presentation.Diagnostics;
-
-namespace LocalPlayer.View.Pages.Library;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
+namespace LocalPlayer.Features.Library;
 
 public partial class MainPage : System.Windows.Controls.UserControl
 {
@@ -97,4 +102,6 @@ public partial class MainPage : System.Windows.Controls.UserControl
         _renderFramesAfterLoadCompleted = 0;
     }
 }
+
+
 

@@ -4,10 +4,14 @@ using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LibVLCSharp.Shared;
-
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
 using LibVlcMedia = LibVLCSharp.Shared.Media;
-
-namespace LocalPlayer.Infrastructure.Model;
+namespace LocalPlayer.Infrastructure.Media;
 
 public class MediaPlayerController : IMediaPlayerController
 {
@@ -205,4 +209,6 @@ public class ProgressUpdatedEventArgs : EventArgs
         TotalTime = totalTime;
     }
 }
+
+
 

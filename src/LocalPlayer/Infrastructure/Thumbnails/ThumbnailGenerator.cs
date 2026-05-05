@@ -8,8 +8,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using LocalPlayer.Presentation.Diagnostics;
-
-namespace LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
+namespace LocalPlayer.Infrastructure.Thumbnails;
 
 public enum ThumbnailState
 {
@@ -667,5 +672,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         _loopCts?.Dispose();
     }
 }
+
+
 
 

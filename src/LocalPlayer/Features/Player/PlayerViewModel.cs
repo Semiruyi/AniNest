@@ -10,8 +10,14 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using LocalPlayer.Core.Localization;
 using LocalPlayer.Core.Messaging;
-using LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
 using LocalPlayer.Presentation.Diagnostics;
+using LocalPlayer.Features.Player.Models;
 
 namespace LocalPlayer.Features.Player;
 
@@ -338,5 +344,8 @@ public partial class PlayerViewModel : ObservableObject
         });
     }
 }
+
+
+
 
 

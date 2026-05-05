@@ -4,13 +4,15 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
 
 namespace LocalPlayer.Presentation.Diagnostics;
 
-/// <summary>
-/// FPS / 甯ф椂闂?/ 娓叉煋妯″紡 鐩戞帶鍙犲姞灞傦紝榛樿 Ctrl+Shift+F 寮€鍏炽€?
-/// </summary>
 public class FpsMonitor
 {
     private static readonly Logger Log = AppLog.For(nameof(FpsMonitor));
@@ -202,5 +204,7 @@ public class FpsMonitor
             Toggle();
     }
 }
+
+
 
 

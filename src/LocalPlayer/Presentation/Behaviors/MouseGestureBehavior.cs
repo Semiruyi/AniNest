@@ -3,16 +3,17 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
-using LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
 
 namespace LocalPlayer.Presentation.Behaviors;
 
 public static class MouseGestureBehavior
 {
-    // ================================================================
-    //  闄勫姞灞炴€?
-    // ================================================================
-
     public static readonly DependencyProperty LeftClickProperty =
         RegisterCommand("LeftClick");
     public static readonly DependencyProperty LeftDoubleClickProperty =
@@ -48,10 +49,6 @@ public static class MouseGestureBehavior
 
     public static object? GetCommandParameter(DependencyObject o) => o.GetValue(CommandParameterProperty);
     public static void SetCommandParameter(DependencyObject o, object? v) => o.SetValue(CommandParameterProperty, v);
-
-    // ================================================================
-    //  璁㈤槄
-    // ================================================================
 
     private static readonly HashSet<FrameworkElement> Subscribed = new();
 
@@ -188,10 +185,6 @@ public static class MouseGestureBehavior
         }
     }
 
-    // ================================================================
-    //  XButton1锛堥紶鏍囦晶閿墠杩涳級
-    // ================================================================
-
     private static void OnXButton(object sender, MouseButtonEventArgs e)
     {
         if (sender is not UIElement el || e.ChangedButton != MouseButton.XButton1) return;
@@ -236,5 +229,7 @@ public static class MouseGestureBehavior
         return t;
     }
 }
+
+
 
 

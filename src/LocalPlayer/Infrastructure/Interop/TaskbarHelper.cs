@@ -1,6 +1,9 @@
-﻿using System.Runtime.InteropServices;
+using System;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+using LocalPlayer.Infrastructure.Logging;
 
-namespace LocalPlayer.Infrastructure.Model;
+namespace LocalPlayer.Infrastructure.Interop;
 
 public static class TaskbarHelper
 {
@@ -107,4 +110,3 @@ public static class TaskbarHelper
             EnableAutoHide();
     }
 }
-

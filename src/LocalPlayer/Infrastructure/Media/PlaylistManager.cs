@@ -4,8 +4,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using LocalPlayer.Presentation.Diagnostics;
-
-namespace LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
+using LocalPlayer.Features.Player.Models;
+namespace LocalPlayer.Infrastructure.Media;
 
 public class PlaylistManager
 {
@@ -266,5 +272,7 @@ public class PlaylistManager
         Log.Warning($"缂╃暐鍥捐繘搴︿簨浠舵湭鍖归厤鍒伴€夐泦: {Path.GetFileName(videoPath)}={percent}% (Items.Count={Items.Count})");
     }
 }
+
+
 
 

@@ -1,6 +1,6 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 
-namespace LocalPlayer.Infrastructure.Model;
+namespace LocalPlayer.Features.Player.Models;
 
 public class PlaylistItem : INotifyPropertyChanged
 {
@@ -52,4 +52,3 @@ public class PlaylistItem : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 }
-

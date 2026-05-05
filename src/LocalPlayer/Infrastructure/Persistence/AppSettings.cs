@@ -1,6 +1,11 @@
 ﻿using System.Collections.Generic;
-
-namespace LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
+namespace LocalPlayer.Infrastructure.Persistence;
 
 public class AppSettings
 {
@@ -43,4 +48,6 @@ public class FolderProgress
     public string LastVideoPath { get; set; } = "";
     public long LastPlayed { get; set; }
 }
+
+
 

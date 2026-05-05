@@ -1,7 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Windows.Input;
-
-namespace LocalPlayer.Infrastructure.Model;
+using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Infrastructure.Media;
+using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Infrastructure.Interop;
+namespace LocalPlayer.Infrastructure.Persistence;
 
 public interface ISettingsService
 {
@@ -29,4 +34,6 @@ public interface ISettingsService
     void SetKeyBinding(string actionName, Key key);
     Dictionary<string, Key> GetAllKeyBindings();
 }
+
+
 
