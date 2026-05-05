@@ -7,7 +7,7 @@
              xmlns:behaviors="clr-namespace:LocalPlayer.Presentation.Behaviors"
              xmlns:primitives="clr-namespace:LocalPlayer.Presentation.Primitives"
              xmlns:converters="clr-namespace:LocalPlayer.Presentation.Converters"
-             xmlns:loc="clr-namespace:LocalPlayer.Core.Localization"
+             xmlns:loc="clr-namespace:LocalPlayer.Infrastructure.Localization"
              Background="{StaticResource BackgroundDark}"
              Focusable="True"
              behaviors:LoadedCommandBehavior.FocusOnLoaded="True"

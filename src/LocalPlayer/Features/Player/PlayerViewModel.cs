@@ -8,7 +8,7 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using LocalPlayer.Core.Localization;
+using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Core.Messaging;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Paths;
@@ -17,6 +17,7 @@ using LocalPlayer.Infrastructure.Media;
 using LocalPlayer.Infrastructure.Thumbnails;
 using LocalPlayer.Infrastructure.Interop;
 using LocalPlayer.Infrastructure.Diagnostics;
+using LocalPlayer.Presentation.Interop;
 using LocalPlayer.Features.Player.Models;
 
 namespace LocalPlayer.Features.Player;

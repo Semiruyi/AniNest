@@ -3,8 +3,8 @@ using FluentAssertions;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Paths;
 using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Media;
 using LocalPlayer.Infrastructure.Thumbnails;
+using LocalPlayer.Presentation.Interop;
 using Moq;
 using Xunit;
 

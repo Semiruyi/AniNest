@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace LocalPlayer.Core.Localization;
+namespace LocalPlayer.Infrastructure.Localization;
 
 public interface ILocalizationService : INotifyPropertyChanged
 {
@@ -10,4 +10,3 @@ public interface ILocalizationService : INotifyPropertyChanged
     void SetLanguage(string code);
     IReadOnlyList<LanguageInfo> AvailableLanguages { get; }
 }
-

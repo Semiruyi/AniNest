@@ -8,7 +8,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using LocalPlayer.Core.Localization;
+using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Core.Messaging;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Paths;

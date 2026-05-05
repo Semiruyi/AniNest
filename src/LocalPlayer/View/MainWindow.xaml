@@ -7,7 +7,7 @@
         xmlns:featuresPlayer="clr-namespace:LocalPlayer.Features.Player"
         xmlns:pagesLibrary="clr-namespace:LocalPlayer.Features.Library"
         xmlns:pagesPlayer="clr-namespace:LocalPlayer.Features.Player"
-        xmlns:loc="clr-namespace:LocalPlayer.Core.Localization"
+        xmlns:loc="clr-namespace:LocalPlayer.Infrastructure.Localization"
         xmlns:animations="clr-namespace:LocalPlayer.Presentation.Animations"
         Title="LocalPlayer"
         Height="{StaticResource WindowDefaultHeight}"

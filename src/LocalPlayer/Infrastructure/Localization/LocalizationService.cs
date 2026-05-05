@@ -1,17 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Paths;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Infrastructure.Interop;
 
-namespace LocalPlayer.Core.Localization;
+namespace LocalPlayer.Infrastructure.Localization;
 
 public class LocalizationService : ILocalizationService
 {
@@ -89,6 +84,3 @@ public class LocalizationService : ILocalizationService
         AvailableLanguages = list;
     }
 }
-
-
-

@@ -2,7 +2,7 @@
 using LocalPlayer.Features.Library;
 using LocalPlayer.Features.Player;
 using LocalPlayer.Features.Shell;
-using LocalPlayer.Core.Localization;
+using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Paths;
 using LocalPlayer.Infrastructure.Persistence;

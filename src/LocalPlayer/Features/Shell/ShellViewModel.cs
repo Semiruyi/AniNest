@@ -6,7 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using LocalPlayer.Features.Library;
 using LocalPlayer.Features.Player;
-using LocalPlayer.Core.Localization;
+using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Core.Messaging;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Paths;

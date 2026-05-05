@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Input;
-using LocalPlayer.Core.Localization;
+using LocalPlayer.Infrastructure.Localization;
 
 namespace LocalPlayer.Presentation.Converters;
 

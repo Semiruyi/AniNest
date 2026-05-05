@@ -5,7 +5,7 @@
              xmlns:animations="clr-namespace:LocalPlayer.Presentation.Animations"
              xmlns:behaviors="clr-namespace:LocalPlayer.Presentation.Behaviors"
              xmlns:primitives="clr-namespace:LocalPlayer.Presentation.Primitives"
-             xmlns:loc="clr-namespace:LocalPlayer.Core.Localization"
+             xmlns:loc="clr-namespace:LocalPlayer.Infrastructure.Localization"
              Focusable="True">
     <UserControl.Resources>
         <ResourceDictionary>

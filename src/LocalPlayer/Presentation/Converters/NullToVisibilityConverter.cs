@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace LocalPlayer.Core.Localization;
+namespace LocalPlayer.Presentation.Converters;
 
 public sealed class NullToVisibilityConverter : IValueConverter
 {
@@ -16,4 +16,3 @@ public sealed class NullToVisibilityConverter : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }
-
