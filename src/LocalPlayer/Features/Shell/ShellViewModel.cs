@@ -21,9 +21,9 @@ public partial class ShellViewModel : ObservableObject
 {
     private readonly ISettingsService _settings;
     private readonly ILocalizationService _loc;
+    private readonly ITaskbarAutoHideCoordinator _taskbarAutoHide;
     private readonly MainPageViewModel _mainPage;
     private readonly PlayerViewModel _playerPage;
-    private bool? _savedTaskbarAutoHide;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsOnMainPage))]
@@ -55,11 +55,13 @@ public partial class ShellViewModel : ObservableObject
     public ShellViewModel(
         ISettingsService settings,
         ILocalizationService loc,
+        ITaskbarAutoHideCoordinator taskbarAutoHide,
         MainPageViewModel mainPage,
         PlayerViewModel playerPage)
     {
         _settings = settings;
         _loc = loc;
+        _taskbarAutoHide = taskbarAutoHide;
         _currentLanguageCode = _loc.CurrentLanguage;
         _currentAnimationCode = _settings.Load().FullscreenAnimation;
         _mainPage = mainPage;
@@ -67,18 +69,18 @@ public partial class ShellViewModel : ObservableObject
 
         WeakReferenceMessenger.Default.Register<FolderSelectedMessage>(this, (_, m) =>
         {
-            EnterPlayerPage();
+            _ = _taskbarAutoHide.EnterPlayerPageAsync(CurrentAnimationCode);
             CurrentPage = _playerPage;
             WeakReferenceMessenger.Default.Send(new LoadPlayerFolderSkeletonMessage(m.Path, m.Name));
         });
 
         WeakReferenceMessenger.Default.Register<BackRequestedMessage>(this, (_, _) =>
         {
-            LeavePlayerPage();
+            _ = _taskbarAutoHide.LeavePlayerPageAsync();
             CurrentPage = _mainPage;
         });
 
-        Application.Current.Exit += (_, _) => RestoreTaskbarIfNeeded();
+        Application.Current.Exit += (_, _) => _taskbarAutoHide.RestoreIfNeeded();
 
         CurrentPage = _mainPage;
     }
@@ -173,37 +175,6 @@ public partial class ShellViewModel : ObservableObject
         WeakReferenceMessenger.Default.Send(new FolderAddedMessage(name, path, scanResult.VideoCount, scanResult.CoverPath));
     }
 
-    private async void EnterPlayerPage()
-    {
-        if (CurrentAnimationCode == "none")
-            return;
-
-        if (TaskbarHelper.IsAutoHideEnabled)
-            return;
-
-        _savedTaskbarAutoHide = false;
-        await TaskbarHelper.EnableAutoHideAsync();
-    }
-
-    private async void LeavePlayerPage()
-    {
-        if (_savedTaskbarAutoHide is null)
-            return;
-
-        if (_savedTaskbarAutoHide == false)
-            await TaskbarHelper.DisableAutoHideAsync();
-
-        _savedTaskbarAutoHide = null;
-    }
-
-    private void RestoreTaskbarIfNeeded()
-    {
-        if (_savedTaskbarAutoHide is not false)
-            return;
-
-        TaskbarHelper.DisableAutoHide();
-        _savedTaskbarAutoHide = null;
-    }
 }
 
 

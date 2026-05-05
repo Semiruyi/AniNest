@@ -7,11 +7,7 @@ using LocalPlayer.Features.Player;
 using LocalPlayer.Features.Shell;
 using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Paths;
 using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Infrastructure.Interop;
 using LocalPlayer.View;
 
 namespace LocalPlayer;
@@ -30,7 +26,7 @@ public partial class App : Application
         var settings = provider.GetRequiredService<ISettingsService>().Load();
         provider.GetRequiredService<ILocalizationService>().SetLanguage(settings.Language);
 
-        ConfigureExceptionHandling();
+        ApplicationExceptionHandler.Configure(this);
 
         Exit += (_, _) =>
         {
@@ -40,27 +36,6 @@ public partial class App : Application
         };
 
         provider.GetRequiredService<MainWindow>().Show();
-    }
-
-    private void ConfigureExceptionHandling()
-    {
-        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
-        {
-            Log.Error("Unhandled exception", args.ExceptionObject as Exception);
-        };
-
-        DispatcherUnhandledException += (_, args) =>
-        {
-            Log.Error("Dispatcher unhandled exception", args.Exception);
-            args.Handled = true;
-        };
-
-        TaskScheduler.UnobservedTaskException += (_, args) =>
-        {
-            if (args.Exception != null)
-                Log.Error("Unobserved task exception", args.Exception);
-            args.SetObserved();
-        };
     }
 }
 

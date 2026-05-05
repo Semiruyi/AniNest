@@ -19,6 +19,7 @@ public static class ServiceRegistration
     {
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
+        services.AddSingleton<ITaskbarAutoHideCoordinator, TaskbarAutoHideCoordinator>();
         services.AddSingleton<IThumbnailGenerator, ThumbnailGenerator>();
         services.AddTransient<IMediaPlayerController, MediaPlayerController>();
 
