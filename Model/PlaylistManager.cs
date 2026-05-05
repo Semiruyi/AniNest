@@ -92,14 +92,11 @@ public class PlaylistManager
             if (!string.IsNullOrEmpty(targetVideo))
             {
                 int index = Array.IndexOf(VideoFiles, targetVideo);
-                if (index >= 0)
-                    CurrentIndex = index;
-                else
-                    PlayCurrentVideo();
+                CurrentIndex = index >= 0 ? index : 0;
             }
             else
             {
-                CurrentIndex = -1;
+                CurrentIndex = VideoFiles.Length > 0 ? 0 : -1;
             }
         }
     }

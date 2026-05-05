@@ -8,9 +8,9 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using LocalPlayer.Localization;
 using LocalPlayer.Messages;
 using LocalPlayer.Model;
-using LocalPlayer.Localization;
 using LocalPlayer.View.Diagnostics;
 
 namespace LocalPlayer.ViewModel.Player;
@@ -20,22 +20,23 @@ public partial class PlayerViewModel : ObservableObject
     private static readonly Logger Log = AppLog.For<PlayerViewModel>();
     private readonly ISettingsService _settings;
     private readonly IMediaPlayerController _media;
+    private readonly IThumbnailGenerator _thumbnailGenerator;
     private readonly PlayerInputHandler _inputHandler;
+    private readonly Action<string> _videoReadyHandler;
+    private readonly Action<string, int> _videoProgressHandler;
 
     private PlaylistManager _playlistManager = null!;
     private DispatcherTimer _saveTimer = null!;
     private bool _initialized;
+    private bool _isCleanedUp;
+    private long _loadGeneration;
     private float _savedRate = 1.0f;
     private bool _savedPlaylistVisible;
     private PerfSpan? _loadFolderSpan;
     private PerfSpan? _cleanupSpan;
 
-    // ========== 子 ViewModel ==========
-
     public ControlBarViewModel ControlBar { get; }
     public PlaylistViewModel Playlist { get; }
-
-    // ========== 视频区绑定 ==========
 
     public ImageSource? VideoSource => _media.VideoBitmap;
 
@@ -55,39 +56,37 @@ public partial class PlayerViewModel : ObservableObject
 
     public System.Collections.ObjectModel.ObservableCollection<PlaylistItem> PlaylistItems => _playlistManager.Items;
 
-    // ========== 格式化 ==========
-
     public static string FormatTime(long ms) => MediaPlayerController.FormatTime(ms);
 
     public Dictionary<string, Key> GetCurrentBindings() => _inputHandler.GetCurrentBindings();
     public void ReloadBindings() => _inputHandler.ReloadBindings();
     public bool HandleKeyDown(KeyEventArgs e) => _inputHandler.HandleKeyDown(e);
 
-    // ========== 构造 ==========
-
-    public PlayerViewModel(ISettingsService settings, IThumbnailGenerator thumbnailGenerator,
-                           IMediaPlayerController media, ILocalizationService loc)
+    public PlayerViewModel(
+        ISettingsService settings,
+        IThumbnailGenerator thumbnailGenerator,
+        IMediaPlayerController media,
+        ILocalizationService loc)
     {
         _settings = settings;
         _media = media;
+        _thumbnailGenerator = thumbnailGenerator;
         _initialized = true;
+        _videoReadyHandler = OnVideoReady;
+        _videoProgressHandler = OnVideoProgress;
 
-        // 子 ViewModel
         _inputHandler = new PlayerInputHandler(_settings);
-        _playlistManager = new PlaylistManager(_settings, _media,
-            path => thumbnailGenerator.GetState(path));
+        _playlistManager = new PlaylistManager(_settings, _media, path => thumbnailGenerator.GetState(path));
 
         ControlBar = new ControlBarViewModel(_media, _inputHandler, thumbnailGenerator, loc);
         Playlist = new PlaylistViewModel(loc);
         Playlist.SetPlaylistManager(_playlistManager);
 
-        // 跨组件连线
-        ControlBar.NextRequested += () => PlayNext();
-        ControlBar.PreviousRequested += () => PlayPrevious();
-        ControlBar.GoBackRequested += () => GoBackInternal();
+        ControlBar.NextRequested += PlayNext;
+        ControlBar.PreviousRequested += PlayPrevious;
+        ControlBar.GoBackRequested += GoBackInternal;
         ControlBar.TogglePlaylistRequested += () => Playlist.IsVisible = !Playlist.IsVisible;
 
-        // 全屏消息
         WeakReferenceMessenger.Default.Register<ToggleFullscreenMessage>(this, (_, _) =>
         {
             IsFullscreen = !IsFullscreen;
@@ -103,7 +102,6 @@ public partial class PlayerViewModel : ObservableObject
             }
         });
 
-        // 播放列表事件
         _playlistManager.VideoPlayed += filePath =>
         {
             CurrentVideoPath = filePath;
@@ -111,31 +109,9 @@ public partial class PlayerViewModel : ObservableObject
             ControlBar.ThumbnailPreview.OnCurrentVideoPathChanged();
         };
 
-        // 缩略图事件
-        thumbnailGenerator.VideoReady += path =>
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                if (_initialized)
-                {
-                    Log.Debug($"VideoReady → UpdateThumbnailReady: {Path.GetFileName(path)}");
-                    _playlistManager.UpdateThumbnailReady(path);
-                }
-                else
-                    Log.Debug($"VideoReady 跳过 (_initialized=false): {Path.GetFileName(path)}");
-            });
-        thumbnailGenerator.VideoProgress += (path, percent) =>
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                if (_initialized)
-                {
-                    Log.Debug($"VideoProgress → UpdateThumbnailProgress: {Path.GetFileName(path)}={percent}%");
-                    _playlistManager.UpdateThumbnailProgress(path, percent);
-                }
-                else
-                    Log.Debug($"VideoProgress 跳过 (_initialized=false): {Path.GetFileName(path)}={percent}%");
-            });
+        _thumbnailGenerator.VideoReady += _videoReadyHandler;
+        _thumbnailGenerator.VideoProgress += _videoProgressHandler;
 
-        // 定时保存
         _saveTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         _saveTimer.Tick += (_, _) => SaveProgress();
 
@@ -148,8 +124,6 @@ public partial class PlayerViewModel : ObservableObject
 
         _media.Initialize();
     }
-
-    // ========== 媒体事件 → 状态同步 ==========
 
     private void WireMediaEvents()
     {
@@ -186,16 +160,22 @@ public partial class PlayerViewModel : ObservableObject
         _inputHandler.Back += (_, _) =>
         {
             if (IsFullscreen)
+            {
                 WeakReferenceMessenger.Default.Send(new ToggleFullscreenMessage());
+            }
             else
+            {
                 GoBackInternal();
+            }
         };
     }
 
-    // ========== 文件夹加载 ==========
-
     public void LoadFolder(string folderPath, string folderName)
     {
+        if (_isCleanedUp)
+            return;
+
+        var generation = ++_loadGeneration;
         _loadFolderSpan?.Dispose();
         _loadFolderSpan = PerfSpan.Begin("Player.LoadFolder", new Dictionary<string, string>
         {
@@ -211,11 +191,18 @@ public partial class PlayerViewModel : ObservableObject
         using var currentIndexSpan = PerfSpan.Begin("Player.CurrentIndexSync");
         CurrentIndex = Playlist.CurrentIndex;
 
+        Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (_isCleanedUp || generation != _loadGeneration)
+                return;
+
+            Playlist.ActivateCurrentVideo();
+            Playlist.RefreshCurrentIndex();
+        }), DispatcherPriority.Background);
+
         _loadFolderSpan?.Dispose();
         _loadFolderSpan = null;
     }
-
-    // ========== 选集导航 ==========
 
     private void PlayNext()
     {
@@ -234,8 +221,6 @@ public partial class PlayerViewModel : ObservableObject
         Playlist.SaveProgress();
     }
 
-    // ========== 视频区手势命令 ==========
-
     [RelayCommand]
     private void PlayPause() => _media.TogglePlayPause();
 
@@ -243,9 +228,13 @@ public partial class PlayerViewModel : ObservableObject
     private void GoBack()
     {
         if (IsFullscreen)
+        {
             WeakReferenceMessenger.Default.Send(new ToggleFullscreenMessage());
+        }
         else
+        {
             GoBackInternal();
+        }
     }
 
     [RelayCommand]
@@ -269,12 +258,8 @@ public partial class PlayerViewModel : ObservableObject
         WeakReferenceMessenger.Default.Send(new BackRequestedMessage());
     }
 
-    // ========== 键盘 ==========
-
     [RelayCommand]
     private void KeyDown(KeyEventArgs e) => HandleKeyDown(e);
-
-    // ========== 生命周期 ==========
 
     [RelayCommand]
     private void Initialize() => _media.Initialize();
@@ -282,17 +267,63 @@ public partial class PlayerViewModel : ObservableObject
     [RelayCommand]
     private void Cleanup()
     {
+        if (_isCleanedUp)
+            return;
+
+        _isCleanedUp = true;
         _cleanupSpan?.Dispose();
         _cleanupSpan = PerfSpan.Begin("Player.Cleanup");
+
+        WeakReferenceMessenger.Default.UnregisterAll(this);
+        _thumbnailGenerator.VideoReady -= _videoReadyHandler;
+        _thumbnailGenerator.VideoProgress -= _videoProgressHandler;
+
         _initialized = false;
         _saveTimer.Stop();
         SaveProgress();
         _media.Dispose();
+
         _cleanupSpan?.Dispose();
         _cleanupSpan = null;
     }
 
-    public void SetRate(float rate) { _media.Rate = rate; ControlBar.Rate = rate; }
+    public void SetRate(float rate)
+    {
+        _media.Rate = rate;
+        ControlBar.Rate = rate;
+    }
 
     public long MediaLength => _media.Length;
+
+    private void OnVideoReady(string path)
+    {
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            if (_initialized)
+            {
+                Log.Debug($"VideoReady -> UpdateThumbnailReady: {Path.GetFileName(path)}");
+                _playlistManager.UpdateThumbnailReady(path);
+            }
+            else
+            {
+                Log.Debug($"VideoReady skipped (_initialized=false): {Path.GetFileName(path)}");
+            }
+        });
+    }
+
+    private void OnVideoProgress(string path, int percent)
+    {
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            if (_initialized)
+            {
+                Log.Debug($"VideoProgress -> UpdateThumbnailProgress: {Path.GetFileName(path)}={percent}%");
+                _playlistManager.UpdateThumbnailProgress(path, percent);
+            }
+            else
+            {
+                Log.Debug($"VideoProgress skipped (_initialized=false): {Path.GetFileName(path)}={percent}%");
+            }
+        });
+    }
 }

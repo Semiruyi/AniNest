@@ -11,7 +11,6 @@
              Background="{StaticResource BackgroundDark}"
              Focusable="True"
              behaviors:LoadedCommandBehavior.FocusOnLoaded="True"
-             behaviors:LoadedCommandBehavior.UnloadedCommand="{Binding CleanupCommand}"
              behaviors:KeyboardBehavior.KeyDownCommand="{Binding KeyDownCommand}">
     <UserControl.Resources>
         <ResourceDictionary>

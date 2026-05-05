@@ -30,14 +30,7 @@ public partial class PlaylistViewModel : ObservableObject
     public int CurrentIndex
     {
         get => _currentIndex;
-        set
-        {
-            if (_currentIndex != value)
-            {
-                _currentIndex = value;
-                OnPropertyChanged();
-            }
-        }
+        set => SetCurrentIndex(value);
     }
 
     public PlaylistItem? CurrentItem => _playlistManager?.CurrentItem;
@@ -61,8 +54,11 @@ public partial class PlaylistViewModel : ObservableObject
 
         var items = _playlistManager.Items;
         EpisodeCountText = items.Count > 0 ? string.Format(_loc["Player.EpisodeCount"], items.Count) : "";
-        CurrentIndex = _playlistManager.CurrentIndex;
+        SetCurrentIndex(_playlistManager.CurrentIndex, force: true);
+    }
 
+    public void ActivateCurrentVideo()
+    {
         _playlistManager.PlayCurrentVideo();
     }
 
@@ -75,7 +71,7 @@ public partial class PlaylistViewModel : ObservableObject
     {
         if (_playlistManager.PlayNext())
         {
-            CurrentIndex = _playlistManager.CurrentIndex;
+            SetCurrentIndex(_playlistManager.CurrentIndex, force: true);
             return true;
         }
         return false;
@@ -85,7 +81,7 @@ public partial class PlaylistViewModel : ObservableObject
     {
         if (_playlistManager.PlayPrevious())
         {
-            CurrentIndex = _playlistManager.CurrentIndex;
+            SetCurrentIndex(_playlistManager.CurrentIndex, force: true);
             return true;
         }
         return false;
@@ -102,7 +98,7 @@ public partial class PlaylistViewModel : ObservableObject
             _playlistManager.Items[CurrentIndex].IsPlayed = true;
 
         _playlistManager.PlayEpisode(index);
-        CurrentIndex = _playlistManager.CurrentIndex;
+        SetCurrentIndex(_playlistManager.CurrentIndex, force: true);
     }
 
     public void UpdateThumbnailReady(string videoPath)
@@ -113,5 +109,20 @@ public partial class PlaylistViewModel : ObservableObject
     public void UpdateThumbnailProgress(string videoPath, int percent)
     {
         _playlistManager.UpdateThumbnailProgress(videoPath, percent);
+    }
+
+    public void RefreshCurrentIndex()
+    {
+        SetCurrentIndex(_playlistManager.CurrentIndex, force: true);
+    }
+
+    private void SetCurrentIndex(int value, bool force = false)
+    {
+        if (!force && _currentIndex == value)
+            return;
+
+        _currentIndex = value;
+        OnPropertyChanged(nameof(CurrentIndex));
+        OnPropertyChanged(nameof(CurrentItem));
     }
 }

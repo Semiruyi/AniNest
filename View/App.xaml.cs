@@ -27,7 +27,12 @@ public partial class App : Application
 
         ConfigureExceptionHandling();
 
-        Exit += (_, _) => provider.Dispose();
+        Exit += (_, _) =>
+        {
+            provider.GetRequiredService<PlayerViewModel>().CleanupCommand.Execute(null);
+            provider.GetRequiredService<MainPageViewModel>().Cleanup();
+            provider.Dispose();
+        };
 
         provider.GetRequiredService<MainWindow>().Show();
     }
@@ -39,11 +44,11 @@ public partial class App : Application
         services.AddSingleton<IThumbnailGenerator, ThumbnailGenerator>();
         services.AddTransient<IMediaPlayerController, MediaPlayerController>();
 
-        services.AddTransient<MainPageViewModel>();
-        services.AddTransient<PlayerViewModel>();
+        services.AddSingleton<MainPageViewModel>();
+        services.AddSingleton<PlayerViewModel>();
 
-        services.AddTransient<MainPage>();
-        services.AddTransient<PlayerPage>();
+        services.AddSingleton<MainPage>();
+        services.AddSingleton<PlayerPage>();
 
         services.AddSingleton<ShellViewModel>();
         services.AddSingleton<MainWindow>();

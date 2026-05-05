@@ -38,7 +38,11 @@ public partial class MainPage : System.Windows.Controls.UserControl
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
         if (_viewModel != null)
+        {
             _viewModel.LoadDataCompleted -= OnLoadDataCompleted;
+            _viewModel.Cleanup();
+            _viewModel = null;
+        }
 
         CompositionTarget.Rendering -= OnRendering;
         CompleteInitialLoadScene();

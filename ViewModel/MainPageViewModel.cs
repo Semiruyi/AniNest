@@ -8,9 +8,9 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using LocalPlayer.Localization;
 using LocalPlayer.Messages;
 using LocalPlayer.Model;
-using LocalPlayer.Localization;
 
 namespace LocalPlayer.ViewModel;
 
@@ -19,6 +19,8 @@ public partial class MainPageViewModel : ObservableObject
     private readonly ISettingsService _settings;
     private readonly IThumbnailGenerator _thumbnailGenerator;
     private readonly ILocalizationService _loc;
+    private readonly EventHandler<ThumbnailProgressEventArgs> _thumbnailProgressChangedHandler;
+    private bool _isCleanedUp;
 
     public event EventHandler? LoadDataCompleted;
 
@@ -36,31 +38,34 @@ public partial class MainPageViewModel : ObservableObject
     [ObservableProperty]
     private bool _isThumbnailProgressVisible;
 
-    public MainPageViewModel(ISettingsService settings, IThumbnailGenerator thumbnailGenerator,
-                              ILocalizationService loc)
+    public MainPageViewModel(
+        ISettingsService settings,
+        IThumbnailGenerator thumbnailGenerator,
+        ILocalizationService loc)
     {
         _settings = settings;
         _thumbnailGenerator = thumbnailGenerator;
         _loc = loc;
+        _thumbnailProgressChangedHandler = OnThumbnailProgressChanged;
 
         FolderItems.CollectionChanged += (_, _) => UpdateToolbarState();
 
         WeakReferenceMessenger.Default.Register<FolderAddedMessage>(this, (_, m) =>
         {
             var item = new FolderListItem(m.Name, m.Path, m.VideoCount, m.CoverPath)
-                { VideoCountText = string.Format(_loc["Library.VideoCount"], m.VideoCount) };
+            {
+                VideoCountText = string.Format(_loc["Library.VideoCount"], m.VideoCount)
+            };
             FolderItems.Add(item);
         });
 
-        _thumbnailGenerator.ProgressChanged += (_, args) =>
-            Application.Current.Dispatcher.BeginInvoke(
-                () => UpdateThumbnailProgress(args.Ready, args.Total));
+        _thumbnailGenerator.ProgressChanged += _thumbnailProgressChangedHandler;
     }
 
     [RelayCommand]
     private async Task LoadDataAsync()
     {
-        var loadedItems = await Task.Run(() => LoadFoldersData());
+        var loadedItems = await Task.Run(LoadFoldersData);
 
         FolderItems.Clear();
         foreach (var item in loadedItems)
@@ -81,7 +86,9 @@ public partial class MainPageViewModel : ObservableObject
             {
                 var (count, coverPath) = VideoScanner.ScanFolder(folder.Path);
                 items.Add(new FolderListItem(folder.Name, folder.Path, count, coverPath)
-                    { VideoCountText = string.Format(_loc["Library.VideoCount"], count) });
+                {
+                    VideoCountText = string.Format(_loc["Library.VideoCount"], count)
+                });
             }
             else
             {
@@ -89,6 +96,7 @@ public partial class MainPageViewModel : ObservableObject
                 _thumbnailGenerator.DeleteForFolder(folder.Path);
             }
         }
+
         return items;
     }
 
@@ -133,7 +141,9 @@ public partial class MainPageViewModel : ObservableObject
     [RelayCommand]
     private void DeleteFolder(FolderListItem? item)
     {
-        if (item == null) return;
+        if (item == null)
+            return;
+
         _settings.RemoveFolder(item.Path);
         _thumbnailGenerator.DeleteForFolder(item.Path);
         FolderItems.Remove(item);
@@ -152,9 +162,13 @@ public partial class MainPageViewModel : ObservableObject
         {
             _settings.SetThumbnailExpiryDays(days);
             if (days == 0)
+            {
                 MessageBox.Show(_loc["Settings.ThumbnailSetNever"], _loc["Dialog.Info"]);
+            }
             else
+            {
                 MessageBox.Show(string.Format(_loc["Settings.ThumbnailSetDays"], days), _loc["Dialog.Info"]);
+            }
         }
     }
 
@@ -167,9 +181,20 @@ public partial class MainPageViewModel : ObservableObject
             MessageBox.Show(_loc["Dialog.NoVideosInFolder"], _loc["Dialog.Info"]);
             return false;
         }
+
         name = Path.GetFileName(path);
         WeakReferenceMessenger.Default.Send(new FolderSelectedMessage(path, name));
         return true;
+    }
+
+    public void Cleanup()
+    {
+        if (_isCleanedUp)
+            return;
+
+        _isCleanedUp = true;
+        WeakReferenceMessenger.Default.UnregisterAll(this);
+        _thumbnailGenerator.ProgressChanged -= _thumbnailProgressChangedHandler;
     }
 
     private void UpdateToolbarState()
@@ -190,5 +215,11 @@ public partial class MainPageViewModel : ObservableObject
         {
             IsThumbnailProgressVisible = false;
         }
+    }
+
+    private void OnThumbnailProgressChanged(object? sender, ThumbnailProgressEventArgs args)
+    {
+        Application.Current.Dispatcher.BeginInvoke(
+            () => UpdateThumbnailProgress(args.Ready, args.Total));
     }
 }

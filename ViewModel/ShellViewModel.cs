@@ -17,6 +17,8 @@ public partial class ShellViewModel : ObservableObject
 {
     private readonly IServiceProvider _services;
     private readonly ILocalizationService _loc;
+    private readonly MainPage _mainPage;
+    private readonly PlayerPage _playerPage;
     private bool? _savedTaskbarAutoHide;
 
     [ObservableProperty]
@@ -51,23 +53,25 @@ public partial class ShellViewModel : ObservableObject
         _loc = loc;
         _currentLanguageCode = _loc.CurrentLanguage;
         _currentAnimationCode = _services.GetRequiredService<ISettingsService>().Load().FullscreenAnimation;
+        _mainPage = _services.GetRequiredService<MainPage>();
+        _playerPage = _services.GetRequiredService<PlayerPage>();
 
         WeakReferenceMessenger.Default.Register<FolderSelectedMessage>(this, (_, m) =>
         {
             EnterPlayerPage();
-            CurrentPage = _services.GetRequiredService<PlayerPage>();
+            CurrentPage = _playerPage;
             WeakReferenceMessenger.Default.Send(new LoadPlayerFolderMessage(m.Path, m.Name));
         });
 
         WeakReferenceMessenger.Default.Register<BackRequestedMessage>(this, (_, _) =>
         {
             LeavePlayerPage();
-            CurrentPage = _services.GetRequiredService<MainPage>();
+            CurrentPage = _mainPage;
         });
 
         Application.Current.Exit += (_, _) => RestoreTaskbarIfNeeded();
 
-        CurrentPage = _services.GetRequiredService<MainPage>();
+        CurrentPage = _mainPage;
     }
 
     [RelayCommand]
