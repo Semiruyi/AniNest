@@ -157,13 +157,20 @@ public static class CardAnimation
     private static void OnLoaded(object sender, RoutedEventArgs e)
     {
         var border = (Border)sender;
-        border.Loaded -= OnLoaded;
+        bool alreadySetUp = border.RenderTransform is ScaleTransform;
+
+        if (alreadySetUp)
+        {
+            // 页面切回时重设滞留的 hover/press 状态
+            ResetVisualState(border);
+            return;
+        }
 
         border.RenderTransformOrigin = new Point(0.5, 0.5);
         border.RenderTransform = new ScaleTransform(1, 1);
 
         var image = FindChild<Image>(border);
-        
+
         if (image != null)
         {
             var group = new TransformGroup();
@@ -218,6 +225,53 @@ public static class CardAnimation
                         savedCmd.Execute(savedParam);
                 }
             };
+        }
+    }
+
+    /// <summary>切页返回时重置滞留的 hover/press/删除按钮状态</summary>
+    private static void ResetVisualState(Border border)
+    {
+        if (border.RenderTransform is ScaleTransform scale)
+        {
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            scale.ScaleX = 1;
+            scale.ScaleY = 1;
+        }
+
+        var image = FindChild<Image>(border);
+        if (image?.RenderTransform is TransformGroup g)
+        {
+            if (g.Children.Count >= 2)
+            {
+                if (g.Children[0] is ScaleTransform imgScale)
+                {
+                    imgScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+                    imgScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+                    imgScale.ScaleX = 1;
+                    imgScale.ScaleY = 1;
+                }
+                if (g.Children[1] is TranslateTransform imgTrans)
+                {
+                    imgTrans.BeginAnimation(TranslateTransform.YProperty, null);
+                    imgTrans.Y = 0;
+                }
+            }
+        }
+
+        var deleteBtn = FindChild<Button>(border);
+        if (deleteBtn != null)
+        {
+            deleteBtn.BeginAnimation(UIElement.OpacityProperty, null);
+            deleteBtn.Opacity = 0;
+            deleteBtn.IsHitTestVisible = false;
+            if (deleteBtn.RenderTransform is ScaleTransform btnScale)
+            {
+                btnScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+                btnScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+                btnScale.ScaleX = 0;
+                btnScale.ScaleY = 0;
+            }
         }
     }
 
