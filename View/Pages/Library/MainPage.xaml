@@ -40,9 +40,6 @@
                                 animations:CardAnimation.CoverScale="1.12"
                                 animations:CardAnimation.CoverShiftY="-8"
                                 animations:CardAnimation.CoverDurationMs="400">
-                            <Border.Effect>
-                                <DropShadowEffect Color="Black" BlurRadius="10" ShadowDepth="3" Opacity="0.35"/>
-                            </Border.Effect>
                             <Grid>
                                 <Grid.Clip>
                                     <RectangleGeometry RadiusX="10" RadiusY="10"

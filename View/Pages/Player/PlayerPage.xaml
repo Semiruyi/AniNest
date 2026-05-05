@@ -44,10 +44,6 @@
                                     <Border.Background>
                                         <SolidColorBrush x:Name="BgBrush" Color="#2C2C2E"/>
                                     </Border.Background>
-                                    <Border.Effect>
-                                        <DropShadowEffect Color="#000000" BlurRadius="4"
-                                                          ShadowDepth="1" Direction="270" Opacity="0.12"/>
-                                    </Border.Effect>
                                 </Border>
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 <!-- 已看对勾 -->
