@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using LocalPlayer.View.Diagnostics;
 
 namespace LocalPlayer.Model;
 
@@ -268,6 +269,10 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     public ThumbnailState GetState(string videoPath)
     {
+        using var span = PerfSpan.Begin("Thumbnail.GetState", new Dictionary<string, string>
+        {
+            ["file"] = Path.GetFileName(videoPath)
+        });
         lock (_taskLock)
         {
             if (_videoToTask.TryGetValue(videoPath, out var task))

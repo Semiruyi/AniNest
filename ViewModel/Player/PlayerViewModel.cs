@@ -11,6 +11,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using LocalPlayer.Messages;
 using LocalPlayer.Model;
 using LocalPlayer.Localization;
+using LocalPlayer.View.Diagnostics;
 
 namespace LocalPlayer.ViewModel.Player;
 
@@ -26,6 +27,8 @@ public partial class PlayerViewModel : ObservableObject
     private bool _initialized;
     private float _savedRate = 1.0f;
     private bool _savedPlaylistVisible;
+    private PerfSpan? _loadFolderSpan;
+    private PerfSpan? _cleanupSpan;
 
     // ========== 子 ViewModel ==========
 
@@ -193,8 +196,23 @@ public partial class PlayerViewModel : ObservableObject
 
     public void LoadFolder(string folderPath, string folderName)
     {
+        _loadFolderSpan?.Dispose();
+        _loadFolderSpan = PerfSpan.Begin("Player.LoadFolder", new Dictionary<string, string>
+        {
+            ["folder"] = folderName
+        });
+
+        using var playlistSpan = PerfSpan.Begin("Player.Playlist.LoadFolder", new Dictionary<string, string>
+        {
+            ["folder"] = folderName
+        });
         Playlist.LoadFolder(folderPath, folderName);
+
+        using var currentIndexSpan = PerfSpan.Begin("Player.CurrentIndexSync");
         CurrentIndex = Playlist.CurrentIndex;
+
+        _loadFolderSpan?.Dispose();
+        _loadFolderSpan = null;
     }
 
     // ========== 选集导航 ==========
@@ -264,10 +282,14 @@ public partial class PlayerViewModel : ObservableObject
     [RelayCommand]
     private void Cleanup()
     {
+        _cleanupSpan?.Dispose();
+        _cleanupSpan = PerfSpan.Begin("Player.Cleanup");
         _initialized = false;
         _saveTimer.Stop();
         SaveProgress();
         _media.Dispose();
+        _cleanupSpan?.Dispose();
+        _cleanupSpan = null;
     }
 
     public void SetRate(float rate) { _media.Rate = rate; ControlBar.Rate = rate; }

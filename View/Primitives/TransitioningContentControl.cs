@@ -84,8 +84,17 @@ public class TransitioningContentControl : ContentControl
     {
         _isTransitioning = true;
         IsTransitioning = true;
+        var fromName = GetContentName(_activePresenter.Content);
+        var toName = GetContentName(newContent);
+        var tags = new Dictionary<string, string>
+        {
+            ["from"] = fromName,
+            ["to"] = toName
+        };
+
+        using var setupSpan = PerfSpan.Begin($"PageTransition.Setup.{fromName}->{toName}", tags);
         _transitionScene?.Dispose();
-        _transitionScene = PerfScenes.Begin("PageTransition");
+        _transitionScene = PerfScenes.Begin($"PageTransition.Render.{fromName}->{toName}", tags);
 
         var exitPresenter = _activePresenter;
         var enterPresenter = Other(exitPresenter);
@@ -136,4 +145,10 @@ public class TransitioningContentControl : ContentControl
     }
 
     private ContentPresenter Other(ContentPresenter p) => ReferenceEquals(p, _presenterA) ? _presenterB : _presenterA;
+
+    private static string GetContentName(object? content)
+    {
+        var typeName = content?.GetType().Name;
+        return string.IsNullOrWhiteSpace(typeName) ? "Null" : typeName;
+    }
 }

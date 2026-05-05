@@ -1,9 +1,12 @@
+using LocalPlayer.View.Diagnostics;
 using LocalPlayer.View.Primitives;
 
 namespace LocalPlayer.View.Pages.Player;
 
 public partial class ControlBarView : System.Windows.Controls.UserControl
 {
+    private PerfSpan? _loadedSpan;
+
     public ControlBarView()
     {
         InitializeComponent();
@@ -13,6 +16,9 @@ public partial class ControlBarView : System.Windows.Controls.UserControl
 
     private void OnLoaded(object sender, System.Windows.RoutedEventArgs e)
     {
+        _loadedSpan?.Dispose();
+        _loadedSpan = PerfSpan.Begin("ControlBar.Loaded");
+
         var coordinator = PopupInputCoordinator.Instance;
         coordinator.RegisterRegion(PreviousBtn, PopupHitKind.ControlBarInteractive);
         coordinator.RegisterRegion(PlayPauseBtn, PopupHitKind.ControlBarInteractive);
@@ -23,10 +29,15 @@ public partial class ControlBarView : System.Windows.Controls.UserControl
         coordinator.RegisterRegion(FullscreenBtn, PopupHitKind.ControlBarInteractive);
         coordinator.RegisterRegion(SeekBar, PopupHitKind.ControlBarGesture);
         coordinator.RegisterRegion(RootGrid, PopupHitKind.DismissBackground);
+        _loadedSpan?.Dispose();
+        _loadedSpan = null;
     }
 
     private void OnUnloaded(object sender, System.Windows.RoutedEventArgs e)
     {
+        _loadedSpan?.Dispose();
+        _loadedSpan = null;
+
         var coordinator = PopupInputCoordinator.Instance;
         coordinator.UnregisterRegion(PreviousBtn, PopupHitKind.ControlBarInteractive);
         coordinator.UnregisterRegion(PlayPauseBtn, PopupHitKind.ControlBarInteractive);

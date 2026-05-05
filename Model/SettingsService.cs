@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Windows.Input;
 using LocalPlayer.Model;
+using LocalPlayer.View.Diagnostics;
 
 namespace LocalPlayer.Model;
 
@@ -208,6 +209,11 @@ public class SettingsService : ISettingsService
 
     public bool IsVideoPlayed(string filePath)
     {
+        using var span = PerfSpan.Begin("Settings.IsVideoPlayed", new Dictionary<string, string>
+        {
+            ["file"] = Path.GetFileName(filePath)
+        });
+
         var settings = Load();
         return settings.VideoProgress.TryGetValue(filePath, out var progress) && progress.IsPlayed;
     }
