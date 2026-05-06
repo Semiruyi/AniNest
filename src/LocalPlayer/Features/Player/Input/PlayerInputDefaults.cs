@@ -16,6 +16,11 @@ public static class PlayerInputDefaults
         });
         bindings.Add(new PlayerInputBinding
         {
+            Action = PlayerInputAction.PlayPause,
+            MouseTrigger = new PlayerMouseTrigger { Button = MouseButton.Left, Kind = PlayerInputTriggerKind.MouseClick }
+        });
+        bindings.Add(new PlayerInputBinding
+        {
             Action = PlayerInputAction.Stop,
             KeyTrigger = new PlayerKeyTrigger { Key = Key.S, AllowRepeat = false }
         });

@@ -243,9 +243,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Grid x:Name="VideoContainer" Grid.Row="0" Grid.Column="0" Background="Black"
-              behaviors:MouseGestureBehavior.LeftClick="{Binding PlayPauseCommand}"
-              >
+        <Grid x:Name="VideoContainer" Grid.Row="0" Grid.Column="0" Background="Black">
             <Image x:Name="VideoImage" Stretch="Uniform" Source="{Binding VideoSource}"/>
             <Image x:Name="PauseBigIcon"
                    Source="/Resources/Icons/pause-big.png"

@@ -1,14 +1,25 @@
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace LocalPlayer.Features.Player.Input;
 
 public sealed class PlayerInputService : IPlayerInputService
 {
+    private const int ClickDelayMs = 200;
+    private const int HoldDurationMs = 500;
+
     private readonly PlayerInputProfile _profile = PlayerInputDefaults.Create();
+    private DispatcherTimer? _leftClickTimer;
+    private IPlayerInputHost? _pendingLeftClickHost;
+    private bool _skipNextLeftUp;
+    private DispatcherTimer? _rightHoldTimer;
+    private IPlayerInputHost? _rightHoldHost;
+    private bool _rightDown;
     private bool _rightHoldTriggered;
 
     public bool TryHandlePreviewKeyDown(IPlayerInputHost host, KeyEventArgs args)
@@ -45,21 +56,41 @@ public sealed class PlayerInputService : IPlayerInputService
         if (args.Handled || ShouldSkipMouse(args.OriginalSource as DependencyObject))
             return false;
 
-        if (args.ChangedButton == MouseButton.Right)
-            _rightHoldTriggered = false;
-
-        var kind = args.ClickCount > 1 ? PlayerInputTriggerKind.MouseDoubleClick : PlayerInputTriggerKind.MouseClick;
-        if (TryExecuteMouseBinding(host, args.ChangedButton, kind, args))
-            return true;
-
-        if (args.ChangedButton == MouseButton.Right &&
-            TryExecuteMouseBinding(host, MouseButton.Right, PlayerInputTriggerKind.MouseHold, args))
+        if (args.ChangedButton == MouseButton.Left)
         {
-            _rightHoldTriggered = true;
-            return true;
+            if (args.ClickCount > 1 || _leftClickTimer != null)
+            {
+                CancelPendingLeftClick();
+                _skipNextLeftUp = true;
+                return TryExecuteMouseBinding(host, MouseButton.Left, PlayerInputTriggerKind.MouseDoubleClick, args);
+            }
+
+            return false;
         }
 
-        return false;
+        if (args.ChangedButton == MouseButton.Right)
+        {
+            _rightDown = true;
+            _rightHoldTriggered = false;
+            _rightHoldHost = host;
+            _rightHoldTimer?.Stop();
+
+            if (HasMouseBinding(MouseButton.Right, PlayerInputTriggerKind.MouseHold))
+            {
+                _rightHoldTimer = NewTimer(HoldDurationMs, () =>
+                {
+                    if (!_rightDown || _rightHoldHost is null)
+                        return;
+
+                    _rightHoldTriggered = TryExecuteMouseBinding(_rightHoldHost, MouseButton.Right, PlayerInputTriggerKind.MouseHold);
+                });
+                _rightHoldTimer.Start();
+            }
+
+            return false;
+        }
+
+        return TryExecuteMouseBinding(host, args.ChangedButton, PlayerInputTriggerKind.MouseClick, args);
     }
 
     public bool TryHandlePreviewMouseUp(IPlayerInputHost host, MouseButtonEventArgs args)
@@ -67,10 +98,45 @@ public sealed class PlayerInputService : IPlayerInputService
         if (args.Handled || ShouldSkipMouse(args.OriginalSource as DependencyObject))
             return false;
 
+        if (args.ChangedButton == MouseButton.Left)
+        {
+            if (_skipNextLeftUp)
+            {
+                _skipNextLeftUp = false;
+                return false;
+            }
+
+            if (HasMouseBinding(MouseButton.Left, PlayerInputTriggerKind.MouseClick))
+            {
+                CancelPendingLeftClick();
+                _pendingLeftClickHost = host;
+                _leftClickTimer = NewTimer(ClickDelayMs, () =>
+                {
+                    if (_pendingLeftClickHost is null)
+                        return;
+
+                    TryExecuteMouseBinding(_pendingLeftClickHost, MouseButton.Left, PlayerInputTriggerKind.MouseClick);
+                    CancelPendingLeftClick();
+                });
+                _leftClickTimer.Start();
+            }
+
+            return false;
+        }
+
         if (args.ChangedButton == MouseButton.Right && _rightHoldTriggered)
         {
+            _rightDown = false;
+            _rightHoldTimer?.Stop();
             _rightHoldTriggered = false;
             return TryExecuteMouseBinding(host, MouseButton.Right, PlayerInputTriggerKind.MouseRelease, args);
+        }
+
+        if (args.ChangedButton == MouseButton.Right)
+        {
+            _rightDown = false;
+            _rightHoldTimer?.Stop();
+            _rightHoldHost = null;
         }
 
         return false;
@@ -103,7 +169,7 @@ public sealed class PlayerInputService : IPlayerInputService
         return false;
     }
 
-    private bool TryExecuteMouseBinding(IPlayerInputHost host, MouseButton button, PlayerInputTriggerKind kind, MouseButtonEventArgs args)
+    private bool TryExecuteMouseBinding(IPlayerInputHost host, MouseButton button, PlayerInputTriggerKind kind)
     {
         foreach (var binding in _profile.Bindings)
         {
@@ -117,13 +183,18 @@ public sealed class PlayerInputService : IPlayerInputService
                 continue;
 
             if (host.TryHandleInput(binding.Action))
-            {
-                args.Handled = true;
                 return true;
-            }
         }
 
         return false;
+    }
+
+    private bool TryExecuteMouseBinding(IPlayerInputHost host, MouseButton button, PlayerInputTriggerKind kind, MouseButtonEventArgs args)
+    {
+        var handled = TryExecuteMouseBinding(host, button, kind);
+        if (handled)
+            args.Handled = true;
+        return handled;
     }
 
     private static bool ShouldSkipKeyboard(DependencyObject? source)
@@ -139,6 +210,38 @@ public sealed class PlayerInputService : IPlayerInputService
             || HasAncestor<PasswordBox>(source)
             || HasAncestor<ComboBox>(source)
             || HasAncestor<ListBoxItem>(source);
+
+    private bool HasMouseBinding(MouseButton button, PlayerInputTriggerKind kind)
+    {
+        foreach (var binding in _profile.Bindings)
+        {
+            if (!binding.IsEnabled || binding.MouseTrigger is null)
+                continue;
+
+            if (binding.MouseTrigger.Button == button && binding.MouseTrigger.Kind == kind)
+                return true;
+        }
+
+        return false;
+    }
+
+    private void CancelPendingLeftClick()
+    {
+        _leftClickTimer?.Stop();
+        _leftClickTimer = null;
+        _pendingLeftClickHost = null;
+    }
+
+    private static DispatcherTimer NewTimer(int ms, Action action)
+    {
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(ms) };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            action();
+        };
+        return timer;
+    }
 
     private static bool HasAncestor<T>(DependencyObject? source) where T : DependencyObject
     {
