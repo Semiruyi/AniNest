@@ -5,6 +5,7 @@
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:featuresLibrary="clr-namespace:LocalPlayer.Features.Library"
         xmlns:featuresPlayer="clr-namespace:LocalPlayer.Features.Player"
+        xmlns:playerSettings="clr-namespace:LocalPlayer.Features.Player.Settings"
         xmlns:pagesLibrary="clr-namespace:LocalPlayer.Features.Library"
         xmlns:pagesPlayer="clr-namespace:LocalPlayer.Features.Player"
         xmlns:animations="clr-namespace:LocalPlayer.Presentation.Animations"
@@ -14,6 +15,7 @@
         MinWidth="{StaticResource WindowMinWidth}"
         MinHeight="{StaticResource WindowMinHeight}"
         Background="Transparent"
+        InputMethod.IsInputMethodEnabled="False"
         WindowStartupLocation="CenterScreen"
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize">
@@ -266,6 +268,123 @@
                                                                 <TextBlock Text="{Binding DataContext.Localization[Settings.FullscreenAnimation.ContinuousAnimation], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
                                                             </Button>
                                                         </StackPanel>
+                                                    </Grid>
+                                                </Border>
+                                            </primitives:AnimatedPopup>
+                                        </Grid>
+                                        <Grid>
+                                            <Button x:Name="PlayerInputMenuButton"
+                                                    Style="{StaticResource PopupMenuButton}"
+                                                    Command="{Binding TogglePlayerInputSubmenuCommand}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding PlayerInputSettings.Title}"
+                                                               VerticalAlignment="Center"/>
+                                                    <Path Data="{StaticResource ChevronRightGeometry}"
+                                                          Fill="{StaticResource IconSecondary}"
+                                                          Stretch="Uniform"
+                                                          VerticalAlignment="Center"
+                                                          Width="{StaticResource SubmenuChevronWidth}"
+                                                          Height="{StaticResource SubmenuChevronHeight}"
+                                                          Margin="{StaticResource SubmenuChevronLeftMargin}"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <primitives:AnimatedPopup x:Name="PlayerInputSubmenuPopup"
+                                                   StaysOpen="True"
+                                                   IsOpenAnimated="{Binding IsPlayerInputSubmenuOpen}"
+                                                   OpenAnimationOrigin="0,0"
+                                                   PlacementTarget="{Binding ElementName=PlayerInputMenuButton}"
+                                                   Placement="Right"
+                                                   HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
+                                                   AllowsTransparency="True">
+                                                <Border Background="{StaticResource PopupMenuBackground}"
+                                                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                                                        Padding="{StaticResource PopupMenuPadding}"
+                                                        MinWidth="420">
+                                                    <Grid DataContext="{Binding PlayerInputSettings}">
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto"/>
+                                                            <RowDefinition Height="*"/>
+                                                            <RowDefinition Height="Auto"/>
+                                                        </Grid.RowDefinitions>
+                                                        <TextBlock Text="{Binding HintText}"
+                                                                   Foreground="{StaticResource TextSecondary}"
+                                                                   FontSize="12"
+                                                                   Margin="12,8,12,10"
+                                                                   TextWrapping="Wrap"/>
+                                                        <ScrollViewer Grid.Row="1"
+                                                                      VerticalScrollBarVisibility="Auto"
+                                                                      HorizontalScrollBarVisibility="Disabled"
+                                                                      MaxHeight="380">
+                                                            <ItemsControl ItemsSource="{Binding Items}">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate DataType="{x:Type playerSettings:PlayerInputBindingItemViewModel}">
+                                                                        <Grid Margin="6,4">
+                                                                            <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="150"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="Auto"/>
+                                                                                <ColumnDefinition Width="Auto"/>
+                                                                            </Grid.ColumnDefinitions>
+                                                                            <TextBlock Text="{Binding ActionDisplayName}"
+                                                                                       VerticalAlignment="Center"
+                                                                                       Margin="8,0,10,0"
+                                                                                       TextTrimming="CharacterEllipsis"/>
+                                                                            <Button Grid.Column="1"
+                                                                                    Style="{StaticResource PopupMenuButton}"
+                                                                                    HorizontalContentAlignment="Left"
+                                                                                    MinWidth="140"
+                                                                                    Command="{Binding DataContext.BeginCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                                    CommandParameter="{Binding Index}">
+                                                                                <TextBlock Text="{Binding BindingDisplay}">
+                                                                                    <TextBlock.Style>
+                                                                                        <Style TargetType="TextBlock">
+                                                                                            <Setter Property="Text" Value="{Binding BindingDisplay}"/>
+                                                                                            <Style.Triggers>
+                                                                                                <DataTrigger Binding="{Binding IsCapturing}" Value="True">
+                                                                                                    <Setter Property="Text" Value="{Binding DataContext.CapturingButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                                                                                                </DataTrigger>
+                                                                                            </Style.Triggers>
+                                                                                        </Style>
+                                                                                    </TextBlock.Style>
+                                                                                </TextBlock>
+                                                                            </Button>
+                                                                            <Button Grid.Column="2"
+                                                                                    Style="{StaticResource PopupMenuButton}"
+                                                                                    Margin="6,0,0,0"
+                                                                                    Command="{Binding DataContext.BeginCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                                    CommandParameter="{Binding Index}">
+                                                                                <TextBlock>
+                                                                                    <TextBlock.Style>
+                                                                                        <Style TargetType="TextBlock">
+                                                                                            <Setter Property="Text" Value="{Binding DataContext.CaptureButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                                                                                            <Style.Triggers>
+                                                                                                <DataTrigger Binding="{Binding IsCapturing}" Value="True">
+                                                                                                    <Setter Property="Text" Value="{Binding DataContext.CapturingButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                                                                                                </DataTrigger>
+                                                                                            </Style.Triggers>
+                                                                                        </Style>
+                                                                                    </TextBlock.Style>
+                                                                                </TextBlock>
+                                                                            </Button>
+                                                                            <Button Grid.Column="3"
+                                                                                    Style="{StaticResource PopupMenuButton}"
+                                                                                    Margin="6,0,0,0"
+                                                                                    Command="{Binding DataContext.ClearBindingCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                                    CommandParameter="{Binding Index}">
+                                                                                <TextBlock Text="{Binding DataContext.ClearButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                                                                            </Button>
+                                                                        </Grid>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </ScrollViewer>
+                                                        <Button Grid.Row="2"
+                                                                Style="{StaticResource PopupMenuButton}"
+                                                                HorizontalContentAlignment="Center"
+                                                                Margin="6,10,6,6"
+                                                                Command="{Binding ResetCommand}">
+                                                            <TextBlock Text="{Binding ResetButtonText}"/>
+                                                        </Button>
                                                     </Grid>
                                                 </Border>
                                             </primitives:AnimatedPopup>

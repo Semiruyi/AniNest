@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using LocalPlayer.Features.Shell;
+using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Presentation.Diagnostics;
 using LocalPlayer.Presentation.Primitives;
 
@@ -31,6 +32,9 @@ public partial class MainWindow : Window
         };
 
         vm.ToggleFullscreenRequested += OnToggleFullscreenRequested;
+        PreviewKeyDown += OnPreviewKeyDown;
+        PreviewMouseDown += OnPreviewMouseDown;
+        PreviewMouseWheel += OnPreviewMouseWheel;
     }
 
     private void OnToggleFullscreenRequested()
@@ -147,6 +151,35 @@ public partial class MainWindow : Window
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
         => SystemCommands.CloseWindow(this);
+
+    private static readonly Logger MainWindowLog = AppLog.For("MainWindow");
+
+    private void OnPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        MainWindowLog.Debug($"PreviewKeyDown: Key={e.Key} SystemKey={e.SystemKey} IsRepeat={e.IsRepeat} Handled={e.Handled}");
+        var shell = (ShellViewModel)DataContext;
+
+        if (shell.TryCaptureSettingsKey(e))
+        {
+            MainWindowLog.Info($"PreviewKeyDown captured by settings: Key={e.Key}");
+            e.Handled = true;
+            return;
+        }
+
+        shell.TryHandlePlayerKeyDown(e);
+    }
+
+    private void OnPreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (((ShellViewModel)DataContext).TryCaptureSettingsMouseDown(e))
+            e.Handled = true;
+    }
+
+    private void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (((ShellViewModel)DataContext).TryCaptureSettingsMouseWheel(e))
+            e.Handled = true;
+    }
 
     // ========== Win32 ==========
 

@@ -5,12 +5,15 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Persistence;
 
 namespace LocalPlayer.Features.Player.Input;
 
 public sealed class PlayerInputService : IPlayerInputService
 {
+    private static readonly Logger Log = AppLog.For<PlayerInputService>();
+
     private const int ClickDelayMs = 200;
     private const int HoldDurationMs = 500;
 
@@ -28,31 +31,54 @@ public sealed class PlayerInputService : IPlayerInputService
     {
         _settings = settings;
         _profile = LoadProfile(settings.Load());
+        Log.Info($"Initialized with {_profile.Bindings.Count} bindings");
+        foreach (var b in _profile.Bindings)
+        {
+            if (b.IsEnabled)
+                Log.Debug($"  Binding: Action={b.Action} Key={b.KeyTrigger?.Key} Mouse={b.MouseTrigger?.Kind}:{b.MouseTrigger?.Button}");
+        }
     }
 
     public PlayerInputProfile CurrentProfile => _profile.Clone();
 
     public void ReloadProfile()
     {
+        Log.Info("ReloadProfile called");
         ResetTransientState();
         _settings.Reload();
         _profile = LoadProfile(_settings.Load());
+        Log.Info($"ReloadProfile done, {_profile.Bindings.Count} bindings loaded");
     }
 
     public void SaveProfile(PlayerInputProfile profile)
     {
+        Log.Info($"SaveProfile called with {profile.Bindings.Count} bindings");
+        foreach (var b in profile.Bindings)
+            Log.Debug($"  Save input: Action={b.Action} Enabled={b.IsEnabled} Key={b.KeyTrigger?.Key} Mod={b.KeyTrigger?.Modifiers} Mouse={b.MouseTrigger?.Kind}:{b.MouseTrigger?.Button}");
+
         var normalized = NormalizeProfile(profile);
+        Log.Info($"Normalized to {normalized.Bindings.Count} bindings");
+
         var settings = _settings.Load();
         settings.PlayerInput = normalized.Clone();
         _settings.Save();
         _profile = normalized;
         ResetTransientState();
+        Log.Info("SaveProfile completed, _profile updated");
     }
 
     public bool TryHandlePreviewKeyDown(IPlayerInputHost host, KeyEventArgs args)
     {
-        if (args.Handled || ShouldSkipKeyboard(args.OriginalSource as DependencyObject))
+        if (args.Handled)
             return false;
+
+        if (ShouldSkipKeyboard(args.OriginalSource as DependencyObject))
+        {
+            Log.Debug($"KeyDown skipped (editable focus): Key={args.Key} Source={args.OriginalSource?.GetType().Name}");
+            return false;
+        }
+
+        Log.Debug($"KeyDown: Key={args.Key} SystemKey={args.SystemKey} IsRepeat={args.IsRepeat} Modifiers={Keyboard.Modifiers} Source={args.OriginalSource?.GetType().Name}");
 
         foreach (var binding in _profile.Bindings)
         {
@@ -66,8 +92,12 @@ public sealed class PlayerInputService : IPlayerInputService
                 continue;
 
             if (binding.KeyTrigger.Modifiers != Keyboard.Modifiers)
+            {
+                Log.Debug($"  Modifier mismatch for {binding.Action}: binding={binding.KeyTrigger.Modifiers} actual={Keyboard.Modifiers}");
                 continue;
+            }
 
+            Log.Info($"  Key matched: Action={binding.Action} Key={args.Key}");
             if (host.TryHandleInput(binding.Action))
             {
                 args.Handled = true;
@@ -75,6 +105,7 @@ public sealed class PlayerInputService : IPlayerInputService
             }
         }
 
+        Log.Debug("  No binding matched");
         return false;
     }
 

@@ -11,6 +11,9 @@ public static class PlayerInputFormatter
 
     public static string FormatBinding(ILocalizationService localization, PlayerInputBinding binding)
     {
+        if (!binding.IsEnabled)
+            return localization["Player.Input.Unassigned"];
+
         if (binding.KeyTrigger is not null)
             return FormatKeyTrigger(binding.KeyTrigger);
 

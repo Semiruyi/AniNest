@@ -10,6 +10,7 @@
              xmlns:converters="clr-namespace:LocalPlayer.Presentation.Converters"
              Background="{StaticResource BackgroundDark}"
              Focusable="True"
+             InputMethod.IsInputMethodEnabled="False"
              behaviors:LoadedCommandBehavior.FocusOnLoaded="True"
              input:PlayerInputBehavior.IsEnabled="True"
              >

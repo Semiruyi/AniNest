@@ -1,10 +1,12 @@
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalPlayer.Features.Library;
 using LocalPlayer.Features.Player;
+using LocalPlayer.Features.Player.Settings;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Infrastructure.Persistence;
@@ -43,6 +45,9 @@ public partial class ShellViewModel : ObservableObject
     private bool _isFullscreenAnimationSubmenuOpen;
 
     [ObservableProperty]
+    private bool _isPlayerInputSubmenuOpen;
+
+    [ObservableProperty]
     private string _currentLanguageCode = "zh-CN";
 
     [ObservableProperty]
@@ -52,6 +57,7 @@ public partial class ShellViewModel : ObservableObject
 
     public ILocalizationService Localization => _loc;
     public IReadOnlyList<LanguageInfo> AvailableLanguages => _loc.AvailableLanguages;
+    public PlayerInputSettingsViewModel PlayerInputSettings { get; }
 
     public ShellViewModel(
         ISettingsService settings,
@@ -59,7 +65,8 @@ public partial class ShellViewModel : ObservableObject
         ITaskbarAutoHideCoordinator taskbarAutoHide,
         IPlayerViewCoordinator playerCoordinator,
         MainPageViewModel mainPage,
-        PlayerViewModel playerPage)
+        PlayerViewModel playerPage,
+        PlayerInputSettingsViewModel playerInputSettings)
     {
         _settings = settings;
         _loc = loc;
@@ -69,6 +76,7 @@ public partial class ShellViewModel : ObservableObject
         _currentAnimationCode = _settings.Load().FullscreenAnimation;
         _mainPage = mainPage;
         _playerPage = playerPage;
+        PlayerInputSettings = playerInputSettings;
         _mainPage.FolderSelected += OnMainPageFolderSelected;
         _playerPage.ToggleFullscreenRequested += OnPlayerToggleFullscreenRequested;
         _playerPage.GoBackRequested += OnPlayerGoBackRequested;
@@ -123,6 +131,8 @@ public partial class ShellViewModel : ObservableObject
         {
             IsLanguageSubmenuOpen = false;
             IsFullscreenAnimationSubmenuOpen = false;
+            IsPlayerInputSubmenuOpen = false;
+            PlayerInputSettings.CancelCapture();
         }
     }
 
@@ -153,6 +163,16 @@ public partial class ShellViewModel : ObservableObject
     private void ToggleFullscreenAnimationSubmenu()
     {
         IsFullscreenAnimationSubmenuOpen = !IsFullscreenAnimationSubmenuOpen;
+    }
+
+    [RelayCommand]
+    private void TogglePlayerInputSubmenu()
+    {
+        IsPlayerInputSubmenuOpen = !IsPlayerInputSubmenuOpen;
+        if (IsPlayerInputSubmenuOpen)
+            PlayerInputSettings.RefreshFromService();
+        else
+            PlayerInputSettings.CancelCapture();
     }
 
     [RelayCommand]
@@ -198,6 +218,16 @@ public partial class ShellViewModel : ObservableObject
             return;
         }
         _mainPage.AddFolderItem(name, path, scanResult.VideoCount, scanResult.CoverPath);
+    }
+
+    public bool TryCaptureSettingsKey(KeyEventArgs args) => PlayerInputSettings.TryCaptureKey(args);
+    public bool TryCaptureSettingsMouseDown(MouseButtonEventArgs args) => PlayerInputSettings.TryCaptureMouseDown(args);
+    public bool TryCaptureSettingsMouseWheel(MouseWheelEventArgs args) => PlayerInputSettings.TryCaptureMouseWheel(args);
+
+    public void TryHandlePlayerKeyDown(KeyEventArgs args)
+    {
+        if (CurrentPage is PlayerViewModel player)
+            player.InputService.TryHandlePreviewKeyDown(player, args);
     }
 
 }

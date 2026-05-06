@@ -26,7 +26,6 @@ public static class PlayerInputBehavior
             if (!Subscribed.Add(element))
                 return;
 
-            element.PreviewKeyDown += OnPreviewKeyDown;
             element.PreviewMouseDown += OnPreviewMouseDown;
             element.PreviewMouseUp += OnPreviewMouseUp;
             element.PreviewMouseWheel += OnPreviewMouseWheel;
@@ -43,12 +42,6 @@ public static class PlayerInputBehavior
     {
         if (sender is UIElement element)
             Unsubscribe(element);
-    }
-
-    private static void OnPreviewKeyDown(object sender, KeyEventArgs e)
-    {
-        if (sender is FrameworkElement element && element.DataContext is IPlayerInputHost host)
-            host.InputService.TryHandlePreviewKeyDown(host, e);
     }
 
     private static void OnPreviewMouseDown(object sender, MouseButtonEventArgs e)
@@ -74,7 +67,6 @@ public static class PlayerInputBehavior
         if (!Subscribed.Remove(element))
             return;
 
-        element.PreviewKeyDown -= OnPreviewKeyDown;
         element.PreviewMouseDown -= OnPreviewMouseDown;
         element.PreviewMouseUp -= OnPreviewMouseUp;
         element.PreviewMouseWheel -= OnPreviewMouseWheel;

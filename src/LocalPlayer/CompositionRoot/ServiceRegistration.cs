@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using LocalPlayer.Features.Library;
 using LocalPlayer.Features.Player;
 using LocalPlayer.Features.Player.Input;
+using LocalPlayer.Features.Player.Settings;
 using LocalPlayer.Features.Shell;
 using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Infrastructure.Logging;
@@ -31,6 +32,7 @@ public static class ServiceRegistration
 
         services.AddSingleton<MainPageViewModel>();
         services.AddSingleton<PlayerViewModel>();
+        services.AddSingleton<PlayerInputSettingsViewModel>();
         services.AddSingleton<ShellViewModel>();
         services.AddSingleton<MainWindow>();
     }
