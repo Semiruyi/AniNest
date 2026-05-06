@@ -8,7 +8,6 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Paths;
 using LocalPlayer.Infrastructure.Persistence;
 using LocalPlayer.Infrastructure.Media;
@@ -21,8 +20,6 @@ namespace LocalPlayer.Features.Player;
 
 public partial class ThumbnailPreviewController : ObservableObject
 {
-    private static readonly Logger Log = AppLog.For<ThumbnailPreviewController>();
-
     private readonly IThumbnailGenerator _thumbnailGenerator;
     private readonly Func<string?> _getCurrentVideoPath;
     private readonly Func<long> _getMediaLength;
@@ -134,7 +131,6 @@ public partial class ThumbnailPreviewController : ObservableObject
 
         if (hoverSecond == _lastRequestedSecond) return;
         _lastRequestedSecond = hoverSecond;
-        Log.Debug($"PreviewLayout second={hoverSecond} ready={thumbReady} x={pos.X:F1}/{sliderWidth:F1} width={PopupWidth:F1} hOffset={HOffset:F1} vOffset={PopupVerticalOffset:F1}");
 
         if (thumbReady && currentVideoPath != null)
         {

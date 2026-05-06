@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -56,13 +57,15 @@ public class AnimatedPopup : Popup
 
     private sealed record WindowSubs(Window Window, EventHandler Move);
     private static readonly Dictionary<AnimatedPopup, WindowSubs> _windowSubs = new();
+    private sealed class AnimationHost : Border;
 
     // ========== Open / Close orchestration ==========
 
     private static void OnIsOpenAnimatedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var popup = (AnimatedPopup)d;
-        if (popup.Child is not UIElement child) return;
+        var child = GetAnimatedChild(popup);
+        if (child is null) return;
 
         if ((bool)e.NewValue)
         {
@@ -99,7 +102,7 @@ public class AnimatedPopup : Popup
             Opacity = EntranceEffect.Default.Opacity,
             Origin = popup.OpenAnimationOrigin,
         };
-        AnimationHelper.ApplyEntrance(child, entrance);
+        AnimationHelper.ApplyEntrance(child, entrance, onCompleted: () => ForceReposition(popup));
     }
 
     private static void PlayExit(AnimatedPopup popup, UIElement child, Action onCompleted)
@@ -128,7 +131,7 @@ public class AnimatedPopup : Popup
         var moveHandler = new EventHandler((_, _) =>
         {
             if (popup.IsOpen)
-                typeof(Popup).GetMethod("Reposition", BindingFlags.Instance | BindingFlags.NonPublic)?.Invoke(popup, null);
+                ForceReposition(popup);
         });
 
         _windowSubs[popup] = new WindowSubs(window, moveHandler);
@@ -170,5 +173,33 @@ public class AnimatedPopup : Popup
         PopupHitKind.DismissBackground => OutsideClickPassthroughTargets.HasFlag(PopupPassthroughTargets.DismissBackground),
         _ => false,
     };
+
+    private static void ForceReposition(AnimatedPopup popup)
+    {
+        typeof(Popup).GetMethod("Reposition", BindingFlags.Instance | BindingFlags.NonPublic)?.Invoke(popup, null);
+    }
+
+    private static UIElement? GetAnimatedChild(AnimatedPopup popup)
+    {
+        if (popup.Child is null)
+            return null;
+
+        if (popup.Child is AnimationHost existingHost)
+            return existingHost.Child as UIElement;
+
+        if (popup.Child is not UIElement currentChild)
+            return null;
+
+        popup.Child = null;
+
+        var host = new AnimationHost
+        {
+            Background = Brushes.Transparent,
+            Child = currentChild
+        };
+
+        popup.Child = host;
+        return currentChild;
+    }
 }
 

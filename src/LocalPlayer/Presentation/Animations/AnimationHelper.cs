@@ -140,7 +140,7 @@ public static class AnimationHelper
         transform.BeginAnimation(TranslateTransform.YProperty, animY);
     }
 
-    public static void ApplyEntrance(UIElement element, EntranceEffect effect, int beginTimeMs = 0)
+    public static void ApplyEntrance(UIElement element, EntranceEffect effect, int beginTimeMs = 0, Action? onCompleted = null)
     {
         element.RenderTransformOrigin = effect.Origin;
         element.RenderTransform = new ScaleTransform(effect.Scale.From, effect.Scale.From);
@@ -152,7 +152,11 @@ public static class AnimationHelper
         scale.BeginAnimation(ScaleTransform.ScaleYProperty, effect.Scale.ToDoubleAnimation(beginTimeMs));
 
         var opacityAnim = effect.Opacity.ToDoubleAnimation(beginTimeMs);
-        opacityAnim.Completed += (_, _) => element.Opacity = effect.Opacity.To;
+        opacityAnim.Completed += (_, _) =>
+        {
+            element.Opacity = effect.Opacity.To;
+            onCompleted?.Invoke();
+        };
         element.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
     }
 
