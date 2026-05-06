@@ -4,6 +4,7 @@
   "App.File": "文件",
   "App.Settings": "设置",
   "App.AddFolder": "添加文件夹",
+  "App.AddFolderBatch": "扫描文件夹",
 
   "Window.Minimize": "最小化",
   "Window.Maximize": "最大化",
@@ -44,8 +45,11 @@
   "Library.ThumbnailProgress": "缩略图 {0}/{1}",
 
   "Dialog.AddFolder": "选择包含视频的文件夹",
+  "Dialog.AddFolderBatch": "选择要扫描的文件夹",
   "Dialog.FolderAlreadyAdded": "该文件夹已添加",
   "Dialog.NoVideosInFolder": "该文件夹内没有视频文件",
+  "Dialog.NoVideoFoldersFound": "所选目录及其子目录中未找到包含视频的文件夹",
+  "Dialog.BatchResult": "成功添加 {0} 个文件夹，跳过 {1} 个重复文件夹",
   "Dialog.UnknownError": "未知错误",
   "Dialog.Info": "提示",
   "Dialog.Error": "错误",

@@ -4,6 +4,7 @@
   "App.File": "File",
   "App.Settings": "Settings",
   "App.AddFolder": "Add Folder",
+  "App.AddFolderBatch": "Scan Folders",
 
   "Window.Minimize": "Minimize",
   "Window.Maximize": "Maximize",
@@ -44,8 +45,11 @@
   "Library.ThumbnailProgress": "Thumbnails {0}/{1}",
 
   "Dialog.AddFolder": "Add a folder containing videos",
+  "Dialog.AddFolderBatch": "Select a folder to scan",
   "Dialog.FolderAlreadyAdded": "This folder has already been added",
   "Dialog.NoVideosInFolder": "No video files found in this folder",
+  "Dialog.NoVideoFoldersFound": "No folders containing videos were found in the selected directory",
+  "Dialog.BatchResult": "Added {0} folder(s), skipped {1} duplicate(s)",
   "Dialog.UnknownError": "Unknown error",
   "Dialog.Info": "Info",
   "Dialog.Error": "Error",

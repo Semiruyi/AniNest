@@ -166,6 +166,77 @@ public class SettingsServiceTests : IDisposable
         var folders = _service.GetFolders();
         folders.Should().BeEmpty();
     }
+
+    // ── AddFoldersBatch ──────────────────────────────────────────
+
+    [Fact]
+    public void AddFoldersBatch_AllNew_Added()
+    {
+        var (added, skipped) = _service.AddFoldersBatch(new()
+        {
+            ("/a", "A"),
+            ("/b", "B"),
+            ("/c", "C"),
+        });
+
+        added.Should().BeEquivalentTo(new[] { "/a", "/b", "/c" });
+        skipped.Should().Be(0);
+        _service.GetFolders().Should().HaveCount(3);
+    }
+
+    [Fact]
+    public void AddFoldersBatch_PartialDuplicate_SkipsOnlyDuplicates()
+    {
+        _service.AddFolder("/a", "A");
+
+        var (added, skipped) = _service.AddFoldersBatch(new()
+        {
+            ("/a", "A"),
+            ("/b", "B"),
+        });
+
+        added.Should().BeEquivalentTo(new[] { "/b" });
+        skipped.Should().Be(1);
+        _service.GetFolders().Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void AddFoldersBatch_AllDuplicate_AddsNone()
+    {
+        _service.AddFolder("/a", "A");
+        _service.AddFolder("/b", "B");
+
+        var (added, skipped) = _service.AddFoldersBatch(new()
+        {
+            ("/a", "A"),
+            ("/b", "B"),
+        });
+
+        added.Should().BeEmpty();
+        skipped.Should().Be(2);
+        _service.GetFolders().Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void AddFoldersBatch_EmptyList_ReturnsZeroes()
+    {
+        var (added, skipped) = _service.AddFoldersBatch(new());
+
+        added.Should().BeEmpty();
+        skipped.Should().Be(0);
+    }
+
+    [Fact]
+    public void AddFoldersBatch_MixedWithExisting_OrderIndexContinues()
+    {
+        _service.AddFolder("/a", "A");
+        _service.AddFolder("/b", "B");
+
+        _service.AddFoldersBatch(new() { ("/c", "C") });
+
+        var folders = _service.GetFolders();
+        folders.Select(f => f.OrderIndex).Should().BeInAscendingOrder();
+    }
 }
 
 

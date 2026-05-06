@@ -220,6 +220,53 @@ public partial class ShellViewModel : ObservableObject
         _mainPage.AddFolderItem(name, path, scanResult.VideoCount, scanResult.CoverPath);
     }
 
+    [RelayCommand]
+    private async Task AddFolderBatch()
+    {
+        IsFilePopupOpen = false;
+        var dialog = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = _loc["Dialog.AddFolderBatch"]
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        string rootPath = dialog.FolderName;
+        Log.Info($"AddFolderBatch: user selected {rootPath}");
+
+        var foundFolders = await Task.Run(() => VideoScanner.FindVideoFolders(rootPath));
+
+        if (foundFolders.Count == 0)
+        {
+            Log.Info("AddFolderBatch: no video folders found");
+            MessageBox.Show(_loc["Dialog.NoVideoFoldersFound"], _loc["Dialog.Info"]);
+            return;
+        }
+
+        var toAdd = foundFolders
+            .Select(p => (Path: p, Name: Path.GetFileName(p)))
+            .ToList();
+
+        var (addedPaths, skipped) = _settings.AddFoldersBatch(toAdd);
+
+        foreach (var path in addedPaths)
+        {
+            try
+            {
+                var scan = VideoScanner.ScanFolder(path);
+                _mainPage.AddFolderItem(Path.GetFileName(path), path, scan.VideoCount, scan.CoverPath);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"AddFolderBatch: failed to add folder item to UI: {path}", ex);
+            }
+        }
+
+        Log.Info($"AddFolderBatch: done, added {addedPaths.Count} items, skipped {skipped}");
+        string msg = string.Format(_loc["Dialog.BatchResult"], addedPaths.Count, skipped);
+        MessageBox.Show(msg, _loc["Dialog.Info"]);
+    }
+
     public bool TryCaptureSettingsKey(KeyEventArgs args) => PlayerInputSettings.TryCaptureKey(args);
     public bool TryCaptureSettingsMouseDown(MouseButtonEventArgs args) => PlayerInputSettings.TryCaptureMouseDown(args);
     public bool TryCaptureSettingsMouseWheel(MouseWheelEventArgs args) => PlayerInputSettings.TryCaptureMouseWheel(args);

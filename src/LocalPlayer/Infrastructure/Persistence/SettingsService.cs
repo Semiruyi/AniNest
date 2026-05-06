@@ -118,6 +118,36 @@ public class SettingsService : ISettingsService
         }
     }
 
+    public (List<string> AddedPaths, int Skipped) AddFoldersBatch(List<(string Path, string Name)> folders)
+    {
+        Log.Info($"AddFoldersBatch: received {folders.Count} candidates");
+        var current = Load();
+        var addedPaths = new List<string>();
+        int skipped = 0;
+        int maxOrder = current.Folders.Count > 0 ? current.Folders.Max(f => f.OrderIndex) : -1;
+
+        foreach (var (path, name) in folders)
+        {
+            if (current.Folders.Exists(f => f.Path == path))
+            {
+                skipped++;
+                continue;
+            }
+            current.Folders.Add(new FolderInfo
+            {
+                Path = path,
+                Name = name,
+                AddedTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                OrderIndex = ++maxOrder
+            });
+            addedPaths.Add(path);
+        }
+
+        Save();
+        Log.Info($"AddFoldersBatch: added {addedPaths.Count}, skipped {skipped} duplicates");
+        return (addedPaths, skipped);
+    }
+
     public void RemoveFolder(string path)
     {
         var current = Load();

@@ -74,8 +74,9 @@ public class VideoScanner
             var ordered = videoFiles.OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToArray();
             return new FolderScanResult(ordered.Length, coverPath, ordered);
         }
-        catch
+        catch (Exception ex)
         {
+            Log.Error($"ScanFolder failed: {folderPath}", ex);
             return new FolderScanResult(0, null, Array.Empty<string>());
         }
     }
@@ -93,8 +94,9 @@ public class VideoScanner
             int count = files.Count(f => IsVideoFile(f));
             return count;
         }
-        catch
+        catch (Exception ex)
         {
+            Log.Error($"CountVideosInFolder failed: {folderPath}", ex);
             return 0;
         }
     }
@@ -111,8 +113,9 @@ public class VideoScanner
                 .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
         }
-        catch
+        catch (Exception ex)
         {
+            Log.Error($"GetVideoFiles failed: {folderPath}", ex);
             return Array.Empty<string>();
         }
     }
@@ -148,7 +151,10 @@ public class VideoScanner
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Log.Error($"FindCoverImage failed: {folderPath}", ex);
+        }
 
         return null;
     }
@@ -161,6 +167,49 @@ public class VideoScanner
     private static bool IsVideoFileExt(string ext)
     {
         return VideoExtensions.Contains(ext);
+    }
+
+    public static List<string> FindVideoFolders(string rootPath)
+    {
+        var result = new List<string>();
+        if (!Directory.Exists(rootPath))
+        {
+            Log.Error($"FindVideoFolders: rootPath does not exist: {rootPath}");
+            return result;
+        }
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        Log.Info($"FindVideoFolders start: {rootPath}");
+
+        if (CountVideosInFolder(rootPath) > 0)
+            result.Add(rootPath);
+
+        FindVideoFoldersRecursive(rootPath, result);
+
+        Log.Info($"FindVideoFolders done: found {result.Count} folders, elapsed {sw.ElapsedMilliseconds}ms");
+        return result;
+    }
+
+    private static void FindVideoFoldersRecursive(string folderPath, List<string> result)
+    {
+        string[] subDirs;
+        try
+        {
+            subDirs = Directory.GetDirectories(folderPath);
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"FindVideoFoldersRecursive: failed to enumerate subdirectories of {folderPath}", ex);
+            return;
+        }
+
+        foreach (var subDir in subDirs)
+        {
+            if (CountVideosInFolder(subDir) > 0)
+                result.Add(subDir);
+            else
+                FindVideoFoldersRecursive(subDir, result);
+        }
     }
 
     private static bool IsCoverExt(string ext)

@@ -164,9 +164,115 @@ public class VideoScannerTests : IDisposable
         cover.Should().EndWith("poster.jpg");
     }
 
+    // ── FindVideoFolders ──────────────────────────────────────────
+
+    [Fact]
+    public void FindVideoFolders_RootHasVideos_AddsRoot()
+    {
+        CreateFile("movie.mp4");
+
+        var result = VideoScanner.FindVideoFolders(_tempDir);
+
+        result.Should().ContainSingle().Which.Should().Be(_tempDir);
+    }
+
+    [Fact]
+    public void FindVideoFolders_OneLevel_AllAdded()
+    {
+        var subA = CreateSubDir("ShowA");
+        var subB = CreateSubDir("ShowB");
+        CreateFileIn(subA, "01.mp4");
+        CreateFileIn(subB, "01.mkv");
+
+        var result = VideoScanner.FindVideoFolders(_tempDir);
+
+        result.Should().BeEquivalentTo(new[] { subA, subB });
+    }
+
+    [Fact]
+    public void FindVideoFolders_MultiLevel_DeepestWins()
+    {
+        var level1 = CreateSubDir("Level1");
+        var level2 = CreateSubDir("Level2", level1);
+        var level3 = CreateSubDir("Level3", level2);
+        CreateFileIn(level3, "video.mp4");
+
+        var result = VideoScanner.FindVideoFolders(_tempDir);
+
+        result.Should().ContainSingle().Which.Should().Be(level3);
+    }
+
+    [Fact]
+    public void FindVideoFolders_Mixed_DifferentDepths()
+    {
+        var hasVideo = CreateSubDir("HasVideo");
+        CreateFileIn(hasVideo, "01.mp4");
+
+        var noVideo = CreateSubDir("NoVideo");
+        var deep = CreateSubDir("Deep", noVideo);
+        CreateFileIn(deep, "01.mkv");
+
+        var result = VideoScanner.FindVideoFolders(_tempDir);
+
+        result.Should().BeEquivalentTo(new[] { hasVideo, deep });
+    }
+
+    [Fact]
+    public void FindVideoFolders_EmptyDir_ReturnsEmpty()
+    {
+        var result = VideoScanner.FindVideoFolders(_tempDir);
+
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void FindVideoFolders_NonExistent_ReturnsEmpty()
+    {
+        var result = VideoScanner.FindVideoFolders(Path.Combine(_tempDir, "nope"));
+
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void FindVideoFolders_SkipsNonVideoSubfolders()
+    {
+        var onlyImages = CreateSubDir("Images");
+        CreateFileIn(onlyImages, "photo.jpg");
+        var hasVideo = CreateSubDir("Videos");
+        CreateFileIn(hasVideo, "movie.mp4");
+
+        var result = VideoScanner.FindVideoFolders(_tempDir);
+
+        result.Should().ContainSingle().Which.Should().Be(hasVideo);
+    }
+
+    [Fact]
+    public void FindVideoFolders_RootAndSubfoldersBothHaveVideos_AllAdded()
+    {
+        CreateFile("root-video.mp4");
+        var sub = CreateSubDir("Sub");
+        CreateFileIn(sub, "sub-video.mkv");
+
+        var result = VideoScanner.FindVideoFolders(_tempDir);
+
+        result.Should().BeEquivalentTo(new[] { _tempDir, sub });
+    }
+
     private void CreateFile(string name)
     {
         File.WriteAllText(Path.Combine(_tempDir, name), "");
+    }
+
+    private static void CreateFileIn(string dir, string name)
+    {
+        File.WriteAllText(Path.Combine(dir, name), "");
+    }
+
+    private string CreateSubDir(string name, string? parent = null)
+    {
+        var path = Path.Combine(parent ?? _tempDir, name);
+        Directory.CreateDirectory(path);
+        return path;
     }
 }
 

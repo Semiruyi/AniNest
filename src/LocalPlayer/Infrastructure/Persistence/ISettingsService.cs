@@ -13,6 +13,7 @@ public interface ISettingsService
     void Save();
 
     (bool Success, string? Error) AddFolder(string path, string name);
+    (List<string> AddedPaths, int Skipped) AddFoldersBatch(List<(string Path, string Name)> folders);
     void RemoveFolder(string path);
     List<FolderInfo> GetFolders();
     void ReorderFolders(List<string> orderedPaths);

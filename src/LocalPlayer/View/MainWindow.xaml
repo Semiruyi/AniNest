@@ -103,18 +103,32 @@
                                         CornerRadius="{StaticResource SpeedPopupCornerRadius}"
                                         Padding="{StaticResource PopupMenuPadding}"
                                         MinWidth="{StaticResource PopupFileMenuMinWidth}">
-                                    <Button Style="{StaticResource PopupMenuButton}"
-                                            Command="{Binding AddFolderCommand}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <Path Data="M10 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6H12L10 4Z"
-                                                  Fill="{StaticResource IconSecondary}"
-                                                  Width="{StaticResource IconSizeNormal}"
-                                                  Height="{StaticResource IconSizeNormal}"
-                                                  Stretch="Uniform"
-                                                  Margin="0,0,8,0"/>
-                                            <TextBlock Text="{Binding DataContext.Localization[App.AddFolder], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Button>
+                                    <StackPanel>
+                                        <Button Style="{StaticResource PopupMenuButton}"
+                                                Command="{Binding AddFolderCommand}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Path Data="M10 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6H12L10 4Z"
+                                                      Fill="{StaticResource IconSecondary}"
+                                                      Width="{StaticResource IconSizeNormal}"
+                                                      Height="{StaticResource IconSizeNormal}"
+                                                      Stretch="Uniform"
+                                                      Margin="0,0,8,0"/>
+                                                <TextBlock Text="{Binding DataContext.Localization[App.AddFolder], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Style="{StaticResource PopupMenuButton}"
+                                                Command="{Binding AddFolderBatchCommand}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Path Data="M10 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6H12L10 4Z M17 13H13V17H11V13H7V11H11V7H13V11H17V13Z"
+                                                      Fill="{StaticResource IconSecondary}"
+                                                      Width="{StaticResource IconSizeNormal}"
+                                                      Height="{StaticResource IconSizeNormal}"
+                                                      Stretch="Uniform"
+                                                      Margin="0,0,8,0"/>
+                                                <TextBlock Text="{Binding DataContext.Localization[App.AddFolderBatch], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
                                 </Border>
                             </primitives:AnimatedPopup>
                         </Grid>
