@@ -58,10 +58,8 @@ public class MediaPlayerController : IMediaPlayerController
 
             _preinitTask = Task.Run(() =>
             {
-                Log.Info("[Preinitialize] 寮€濮嬪垱寤哄叏灞€ LibVLC...");
                 var vlc = new LibVLC();
                 _sharedLibVLC = vlc;
-                Log.Info("[Preinitialize] 鍏ㄥ眬 LibVLC 鍒涘缓鎴愬姛");
                 return vlc;
             });
             return _preinitTask;
@@ -72,17 +70,14 @@ public class MediaPlayerController : IMediaPlayerController
     {
         try
         {
-            Log.Info("寮€濮嬪垵濮嬪寲 LibVLC...");
             var vlc = _sharedLibVLC;
             if (vlc == null)
             {
                 vlc = GetOrStartPreinitializationTask().GetAwaiter().GetResult();
-                Log.Info("绛夊緟棰勭儹 LibVLC 瀹屾垚");
             }
             libVLC = vlc;
 
             mediaPlayer = new MediaPlayer(libVLC);
-            Log.Info("MediaPlayer 鍒涘缓鎴愬姛");
 
             frameProvider = new VideoFrameProvider();
             frameProvider.AttachToPlayer(mediaPlayer);
@@ -207,19 +202,12 @@ public class MediaPlayerController : IMediaPlayerController
         Log.Info("Dispose started");
         updateTimer?.Stop();
         updateTimer = null;
-        Log.Info($"updateTimer.Stop 鑰楁椂 {sw.ElapsedMilliseconds}ms");
 
         frameProvider?.Dispose();
-        Log.Info($"frameProvider.Dispose 鑰楁椂 {sw.ElapsedMilliseconds}ms");
         mediaPlayer?.Stop();
-        Log.Info($"mediaPlayer.Stop 鑰楁椂 {sw.ElapsedMilliseconds}ms");
         mediaPlayer?.Dispose();
-        Log.Info($"mediaPlayer.Dispose 鑰楁椂 {sw.ElapsedMilliseconds}ms");
         mediaPlayer = null;
 
-        // libVLC 鏀逛负鍏ㄥ眬鍗曚緥锛屼笉鍦ㄦ澶勯噴鏀撅紝閬垮厤涓嬫杩涘叆鎾斁椤甸噸澶嶅垵濮嬪寲
-        // libVLC?.Dispose();
-        // Log.Info($"libVLC.Dispose 鑰楁椂 {sw.ElapsedMilliseconds}ms");
         libVLC = null;
     }
 }

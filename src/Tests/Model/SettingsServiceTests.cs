@@ -72,15 +72,10 @@ public class SettingsServiceTests : IDisposable
     [Fact]
     public void ReorderFolders_UpdatesOrder()
     {
-        // NOTE: GetFolders has "鍏煎鏃ф暟鎹? logic that auto-fixes items at
-        // index > 0 with OrderIndex==0. This means the first item in insertion
-        // order must stay first in the reorder to avoid the compat code
-        // corrupting the order. This is a known bug.
         _service.AddFolder("/a", "A");
         _service.AddFolder("/b", "B");
         _service.AddFolder("/c", "C");
 
-        // a was inserted first 鈫?must stay first in reorder
         _service.ReorderFolders(new List<string> { "/a", "/c", "/b" });
 
         var ordered = _service.GetFolders();

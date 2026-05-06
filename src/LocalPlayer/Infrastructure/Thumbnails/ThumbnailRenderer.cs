@@ -22,11 +22,6 @@ internal readonly struct RenderResult
     }
 }
 
-/// <summary>
-/// ffmpeg 杩涚▼鎵ц鍣細涓哄崟涓棰戠敓鎴愰€愮缂╃暐鍥俱€?
-/// 瀹屽叏鎷ユ湁 Process 鐢熷懡鍛ㄦ湡 鈥?鍒涘缓銆佸惎鍔ㄣ€佸彇娑堟椂 Kill + 娓呯悊 tmp銆?
-/// 鍙 task锛圴ideoPath / Md5Dir锛夛紝缁濅笉鍐欏叆 task.State銆?
-/// </summary>
 internal class ThumbnailRenderer
 {
     private static readonly Logger Log = AppLog.For<ThumbnailRenderer>();
@@ -49,7 +44,6 @@ internal class ThumbnailRenderer
         string tmpDir = Path.Combine(_thumbBaseDir, $".tmp_{task.Md5Dir}");
         string finalDir = Path.Combine(_thumbBaseDir, task.Md5Dir);
 
-        // 娓呯悊娈嬬暀 tmp 鐩綍
         try { if (Directory.Exists(tmpDir)) Directory.Delete(tmpDir, true); } catch { }
 
         if (!File.Exists(task.VideoPath))
@@ -85,7 +79,6 @@ internal class ThumbnailRenderer
         {
             ct.ThrowIfCancellationRequested();
             process.Start();
-            Log.Info( $"ffmpeg 杩涚▼宸插惎鍔? PID={process.Id}");
 
             int lastPercent = -1;
             var stderrTask = Task.Run(() =>
@@ -109,7 +102,6 @@ internal class ThumbnailRenderer
                         if (percent > lastPercent && percent <= 100)
                         {
                             lastPercent = percent;
-                            Log.Debug($"杩涘害鍥炶皟: {Path.GetFileName(task.VideoPath)}={percent}%");
                             onProgress?.Invoke(task.VideoPath, percent);
                         }
                     }
@@ -151,7 +143,6 @@ internal class ThumbnailRenderer
         }
         catch (OperationCanceledException)
         {
-            // 鍙栨秷锛氭潃杩涚▼銆佹竻 tmp銆侀噸鎶涚粰 Generator 璁?State = Pending
             Log.Info(
                 $"Canceled: HasExited={process.HasExited}, PID={process.Id}");
             var killSw = Stopwatch.StartNew();
@@ -163,7 +154,6 @@ internal class ThumbnailRenderer
         }
         finally
         {
-            Log.Info( $"杩涘叆 finally, PID={process.Id}");
             var cleanSw = Stopwatch.StartNew();
             try { if (Directory.Exists(tmpDir)) Directory.Delete(tmpDir, true); } catch { }
             cleanSw.Stop();
@@ -178,12 +168,11 @@ internal class ThumbnailRenderer
         {
             double sec = _getDuration(videoPath);
             if (sec <= 0)
-                Log.Warning($"GetVideoDuration=0, 瑙嗛={Path.GetFileName(videoPath)}, 杩涘害鍥炶皟灏嗕笉瑙﹀彂");
+                return 0;
             return sec;
         }
         catch (Exception ex)
         {
-            Log.Warning($"鑾峰彇瑙嗛鏃堕暱寮傚父: {Path.GetFileName(videoPath)}, {ex.GetType().Name}: {ex.Message}");
             return 0;
         }
     }

@@ -66,7 +66,6 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- 鑷畾涔夋爣棰樻爮 -->
             <Border x:Name="TitleBarRoot" Grid.Row="0" Background="{StaticResource BackgroundDark}">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -75,7 +74,6 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- 宸︿晶锛欰pp 鍥炬爣 + 宸ュ叿鏍忔寜閽?-->
                     <StackPanel Grid.Column="0" Orientation="Horizontal"
                                 HorizontalAlignment="Center" VerticalAlignment="Center"
                                 Margin="{StaticResource TitleBarLeftMargin}">
@@ -278,10 +276,8 @@
                         </Grid>
                     </StackPanel>
 
-                    <!-- 涓棿鎷栨嫿鍖哄煙 -->
                     <Grid x:Name="TitleBarDragZone" Grid.Column="1"/>
 
-                    <!-- 鍙充晶锛氱獥鍙ｆ帶鍒舵寜閽?-->
                     <StackPanel Grid.Column="2" Orientation="Horizontal"
                                 VerticalAlignment="Center">
                         <Button x:Name="MinimizeButton"
@@ -354,7 +350,6 @@
                 </Grid>
             </Border>
 
-            <!-- 椤甸潰鍐呭 -->
             <primitives:TransitioningContentControl x:Name="PageTransition"
                 Grid.Row="1" Content="{Binding CurrentPage}"/>
         </Grid>

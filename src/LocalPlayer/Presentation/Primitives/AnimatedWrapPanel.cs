@@ -11,10 +11,6 @@ using Size = System.Windows.Size;
 
 namespace LocalPlayer.Presentation.Primitives;
 
-/// <summary>
-/// 甯﹀竷灞€鍔ㄧ敾鐨?WrapPanel銆傚綋瀛愬厓绱犱綅缃洜澧炲垹鏀规垨绐楀彛澶у皬鍙樺寲鑰屾敼鍙樻椂锛?
-/// 浼氬钩婊戣繃娓″埌鏂颁綅缃紝鑰屼笉鏄灛闂磋烦鍔ㄣ€傛柊瀛愬厓绱犺嚜鍔ㄦ墽琛屼氦閿欏叆鍦哄姩鐢汇€?
-/// </summary>
 public class AnimatedWrapPanel : WrapPanel
 {
     public Duration AnimationDuration { get; set; } = new Duration(TimeSpan.FromMilliseconds(250));

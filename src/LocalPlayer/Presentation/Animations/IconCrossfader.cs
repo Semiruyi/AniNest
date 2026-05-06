@@ -6,19 +6,12 @@ using System.Windows.Media;
 
 namespace LocalPlayer.Presentation.Animations;
 
-/// <summary>
-/// 涓や釜瀛愬厓绱犱箣闂寸殑缂╂斁+娣″叆娣″嚭鍒囨崲鍔ㄧ敾銆?
-/// Children[0] = false 鎬? Children[1] = true 鎬併€?
-/// 鐐瑰嚮鎸夐挳鏃讹細榧犳爣鎸変笅鏃у浘鏍囨贰鍑猴紝鏉惧紑鍚庢柊鍥炬爣娣″叆锛堟棤缂╂斁锛夈€?
-/// 閿洏/鍏朵粬瑙﹀彂鏃讹細scale + opacity 瀹屾暣鍔ㄧ敾銆?
-/// </summary>
 public static class IconCrossfader
 {
     private static readonly HashSet<Panel> _initialized = new();
     private static readonly Dictionary<Button, Panel> _buttonToPanel = new();
     private static readonly HashSet<Panel> _clickOutDone = new();
 
-    // 鈹€鈹€ IsActive 鈹€鈹€
 
     public static bool GetIsActive(DependencyObject obj) => (bool)obj.GetValue(IsActiveProperty);
     public static void SetIsActive(DependencyObject obj, bool value) => obj.SetValue(IsActiveProperty, value);
@@ -27,7 +20,6 @@ public static class IconCrossfader
         DependencyProperty.RegisterAttached("IsActive", typeof(bool), typeof(IconCrossfader),
             new PropertyMetadata(false, OnIsActiveChanged));
 
-    // 鈹€鈹€ DurationMs 鈹€鈹€
 
     public static int GetDurationMs(DependencyObject obj) => (int)obj.GetValue(DurationMsProperty);
     public static void SetDurationMs(DependencyObject obj, int value) => obj.SetValue(DurationMsProperty, value);
@@ -36,7 +28,6 @@ public static class IconCrossfader
         DependencyProperty.RegisterAttached("DurationMs", typeof(int), typeof(IconCrossfader),
             new PropertyMetadata(300));
 
-    // 鈹€鈹€ SuppressScale (鍐呴儴) 鈹€鈹€
 
     private static bool GetSuppressScale(DependencyObject obj) => (bool)obj.GetValue(SuppressScaleProperty);
     private static void SetSuppressScale(DependencyObject obj, bool value) => obj.SetValue(SuppressScaleProperty, value);
@@ -45,7 +36,6 @@ public static class IconCrossfader
         DependencyProperty.RegisterAttached("SuppressScale", typeof(bool), typeof(IconCrossfader),
             new PropertyMetadata(false));
 
-    // 鈹€鈹€ ListenButton 鈹€鈹€
 
     public static Button? GetListenButton(DependencyObject obj) => (Button?)obj.GetValue(ListenButtonProperty);
     public static void SetListenButton(DependencyObject obj, Button? value) => obj.SetValue(ListenButtonProperty, value);
@@ -86,7 +76,6 @@ public static class IconCrossfader
         var currentElement = isActive ? panel.Children[1] as UIElement : panel.Children[0] as UIElement;
         if (currentElement is null) return;
 
-        // 鎸変笅绔嬪嵆娣″嚭褰撳墠鍥炬爣锛堜粎閫忔槑搴︼級
         var scale = currentElement.RenderTransform as ScaleTransform;
         if (scale != null)
         {
@@ -110,7 +99,6 @@ public static class IconCrossfader
             SetSuppressScale(panel, false);
     }
 
-    // 鈹€鈹€ 鏍稿績閫昏緫 鈹€鈹€
 
     private static void OnIsActiveChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {

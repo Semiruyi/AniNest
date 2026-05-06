@@ -35,7 +35,6 @@ public partial class ThumbnailPreviewController : ObservableObject
     private bool _thumbClosing;
     private int _lastRequestedSecond = -1;
 
-    // ========== 缁戝畾灞炴€?==========
 
     [ObservableProperty]
     private bool _isOpen;
@@ -117,7 +116,6 @@ public partial class ThumbnailPreviewController : ObservableObject
 
         TimeText = FormatTime(hoverTimeMs);
         double popupW = 160;
-        // 姘村钩涓績涓嶈秴杩囪繘搴︽潯杈圭晫锛屽乏鍙冲悇鍙秴鍑轰竴鍗?
         HOffset = Math.Max(-popupW / 2, Math.Min(pos.X - popupW / 2, sliderWidth - popupW / 2));
 
         string? currentVideoPath = _getCurrentVideoPath();
@@ -224,7 +222,6 @@ public partial class ThumbnailPreviewController : ObservableObject
         }
         catch (Exception ex)
         {
-            Log.Error($"缂╃暐鍥捐В鐮佸紓甯?second={second}", ex);
             return null;
         }
     }

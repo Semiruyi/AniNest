@@ -36,7 +36,6 @@ public class VideoFrameProvider : IDisposable
 
     public void AttachToPlayer(LibVLCSharp.Shared.MediaPlayer player)
     {
-        // BGRA 涓?WPF PixelFormats.Bgra32 鐨勫瓧鑺傚簭瀹屽叏涓€鑷达紝鏃犻渶 R/B 浜ゆ崲
         player.SetVideoFormat("BGRA", (uint)_width, (uint)_height, (uint)_stride);
         player.SetVideoCallbacks(VideoLock, VideoUnlock, VideoDisplay);
         Log.Info($"AttachToPlayer: {_width}x{_height}, stride={_stride}");

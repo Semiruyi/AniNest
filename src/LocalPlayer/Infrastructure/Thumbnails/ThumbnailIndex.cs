@@ -47,7 +47,6 @@ internal static class ThumbnailIndex
 
         if (!File.Exists(indexPath))
         {
-            Log.Info( "index.json 涓嶅瓨鍦紝璺宠繃");
             return tasks;
         }
 
@@ -70,7 +69,6 @@ internal static class ThumbnailIndex
             string md5Dir = kv.Value.Md5;
             string fullDir = Path.Combine(thumbBaseDir, md5Dir);
 
-            // 纾佺洏涓婂凡鏈夋暟鎹?鈫?鐩存帴鏍囪 Ready
             if (Directory.Exists(fullDir) && state != ThumbnailState.Ready)
             {
                 var files = Directory.GetFiles(fullDir, "*.jpg");

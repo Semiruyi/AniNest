@@ -70,38 +70,24 @@ public static class MouseGestureBehavior
         }
     }
 
-    // ================================================================
-    //  鐘舵€?
-    // ================================================================
 
     private static readonly DependencyProperty StateKey =
         DependencyProperty.RegisterAttached("__State", typeof(ButtonState), typeof(MouseGestureBehavior));
 
     private static ButtonState GetState(UIElement e) => (ButtonState)e.GetValue(StateKey);
 
-    /// <summary>
-    /// 鍗曞嚮寤惰繜 (ms) 鈥?鍖哄垎鍗曞嚮鍜屽弻鍑?
-    /// </summary>
     private const int ClickDelay = 200;
 
     private class ButtonState
     {
-        /// <summary>宸﹂敭锛氬崟鍑诲悗绛夊緟 200ms 浠ュ尯鍒嗗弻鍑荤殑璁℃椂鍣?/summary>
         public DispatcherTimer? ClickTimer;
-        /// <summary>宸﹂敭锛氬弻鍑诲凡鍦ㄦ寜涓嬫椂瑙﹀彂锛岃烦杩囩揣鎺ョ潃鐨勫脊璧蜂簨浠?/summary>
         public bool SkipNextUp;
 
-        /// <summary>鍙抽敭锛氭寜涓嬩腑</summary>
         public bool RightDown;
-        /// <summary>鍙抽敭锛氶暱鎸夊凡瑙﹀彂</summary>
         public bool RightHoldFired;
-        /// <summary>鍙抽敭锛氶暱鎸夎鏃跺櫒</summary>
         public DispatcherTimer? RightHoldTimer;
     }
 
-    // ================================================================
-    //  宸﹂敭锛氬崟鍑?/ 鍙屽嚮
-    // ================================================================
 
     private static void OnLeftDown(object sender, MouseButtonEventArgs e)
     {
@@ -113,7 +99,6 @@ public static class MouseGestureBehavior
             s.ClickTimer.Stop();
             s.ClickTimer = null;
             s.SkipNextUp = true;
-            Log.Debug("L鈻?鈫?DoubleClick");
             Execute(GetLeftDoubleClick(el), GetCommandParameter(el));
             e.Handled = true;
         }
@@ -124,26 +109,20 @@ public static class MouseGestureBehavior
         if (sender is not UIElement el || PassThrough(el, e)) return;
         var s = GetState(el);
 
-        // 鍙屽嚮宸茶Е鍙戯紝蹇界暐绱ч殢鐨勫脊璧?
         if (s.SkipNextUp)
         {
             s.SkipNextUp = false;
             return;
         }
 
-        // 棣栨鍗曞嚮寮硅捣锛氬惎鍔?200ms 璁℃椂鍣紝瓒呮椂鏃犲啀娆℃寜涓嬪垯瑙﹀彂鍗曞嚮
         s.ClickTimer = NewTimer(ClickDelay, () =>
         {
             s.ClickTimer = null;
-            Log.Debug("L鈻?鈫?Click");
             Execute(GetLeftClick(el), GetCommandParameter(el));
         });
         s.ClickTimer.Start();
     }
 
-    // ================================================================
-    //  鍙抽敭锛氶暱鎸?
-    // ================================================================
 
     private static void OnRightDown(object sender, MouseButtonEventArgs e)
     {
@@ -196,9 +175,6 @@ public static class MouseGestureBehavior
         }
     }
 
-    // ================================================================
-    //  宸ュ叿
-    // ================================================================
 
     private static readonly Logger Log = AppLog.For(nameof(MouseGestureBehavior));
 

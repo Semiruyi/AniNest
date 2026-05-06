@@ -45,7 +45,6 @@
                                     </Border.Background>
                                 </Border>
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                <!-- 宸茬湅瀵瑰嬀 -->
                                 <Grid x:Name="CheckIcon" HorizontalAlignment="Right" VerticalAlignment="Top"
                                       Width="{StaticResource CheckIconSize}"
                                       Height="{StaticResource CheckIconSize}"
@@ -65,7 +64,6 @@
                                         </Image.Clip>
                                     </Image>
                                 </Grid>
-                                <!-- 鐢熸垚杩涘害楗煎浘 -->
                                 <Grid HorizontalAlignment="Right" VerticalAlignment="Top"
                                       Width="{StaticResource CheckIconSize}"
                                       Height="{StaticResource CheckIconSize}"
@@ -243,7 +241,6 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- 瑙嗛鍖?-->
         <Grid x:Name="VideoContainer" Grid.Row="0" Grid.Column="0" Background="Black"
               behaviors:MouseGestureBehavior.LeftClick="{Binding PlayPauseCommand}"
               behaviors:MouseGestureBehavior.LeftDoubleClick="{Binding ControlBar.ToggleFullscreenCommand}"
@@ -267,7 +264,6 @@
             </Image>
         </Grid>
 
-        <!-- 閫夐泦闈㈡澘 -->
         <Border x:Name="PlaylistPanel" Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
                 Width="{StaticResource PlaylistPanelWidth}"
                 Background="#1A1A1C"
@@ -329,7 +325,6 @@
             </Grid>
         </Border>
 
-        <!-- 鎺у埗鏍忥細闈炲叏灞忔椂鍦ㄨ棰戜笅鏂癸紙Row 1锛夛紝鍏ㄥ睆鏃惰鐩栧湪瑙嗛搴曢儴 -->
         <local:ControlBarView x:Name="ControlBar"
                               Grid.Column="0"
                               DataContext="{Binding ControlBar}">
@@ -339,13 +334,11 @@
                     <Setter Property="Opacity" Value="1"/>
                     <Setter Property="IsHitTestVisible" Value="True"/>
                     <Style.Triggers>
-                        <!-- 鍏ㄥ睆鏃跺彔鍔犲埌瑙嗛搴曢儴 -->
                         <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
                             <Setter Property="Grid.Row" Value="0"/>
                             <Setter Property="VerticalAlignment" Value="Bottom"/>
                             <Setter Property="Panel.ZIndex" Value="1"/>
                         </DataTrigger>
-                        <!-- 鎺у埗鏍忛殣钘忥紙鍏ㄥ睆鏃堕紶鏍囩寮€锛?-->
                         <DataTrigger Binding="{Binding IsControlBarVisible}" Value="False">
                             <Setter Property="IsHitTestVisible" Value="False"/>
                             <DataTrigger.EnterActions>

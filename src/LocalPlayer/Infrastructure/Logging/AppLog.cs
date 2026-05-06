@@ -74,7 +74,6 @@ public static class AppLog
     public static Logger For(string category) => new(category);
 }
 
-/// <summary>闆跺垎閰嶃€侀浂 ceremony 鐨勬棩蹇楀叆鍙ｃ€傜敤娉曪細Log.Info("message"); Log.Warning("..."); Log.Error("...", ex);</summary>
 public readonly struct Logger
 {
     private readonly string _category;

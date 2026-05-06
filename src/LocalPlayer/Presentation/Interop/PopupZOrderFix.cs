@@ -6,12 +6,6 @@ using System.Windows.Interop;
 
 namespace LocalPlayer.Presentation.Interop;
 
-/// <summary>
-/// 淇 WPF Popup 娴湪鎵€鏈夌獥鍙ｉ《灞傜殑闂銆?
-/// 鍏抽敭锛歋etWindowPos(HWND_NOTOPMOST) 鐢?GetWindowRect 鍙栧疄闄呭潗鏍囷紝
-/// 涓嶅姞 SWP_NOMOVE|SWP_NOSIZE锛岀郴缁熸墠浼氬鐞?z-order 鍙樻洿銆?
-/// SetWindowLongPtr(GWLP_HWNDPARENT) 璁?Owner 纭繚 Popup 涓嶆帀鍒颁富绐楀彛鑳屽悗銆?
-/// </summary>
 public static class PopupZOrderFix
 {
     [DllImport("user32.dll")]

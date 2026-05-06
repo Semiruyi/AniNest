@@ -117,7 +117,6 @@ public class FpsMonitor
         _overlay.Visibility = Visibility.Collapsed;
         _updateTimer.Stop();
         _logTimer.Stop();
-        Log.Info($"FPS 鐩戞帶鍏抽棴 | Min={_minFps:F1} Max={_maxFps:F1} RenderTier={_renderTier}");
     }
 
     public void Toggle()
@@ -159,7 +158,6 @@ public class FpsMonitor
         _fpsSum += delta > 0 ? 1.0 / delta : 0;
         _sampleCount++;
 
-        // 250ms 鏇存柊涓€娆″睆骞曟樉绀?
         if ((now - _lastScreenUpdate).TotalMilliseconds >= 250)
         {
             _currentFps = _fpsSum / _sampleCount;

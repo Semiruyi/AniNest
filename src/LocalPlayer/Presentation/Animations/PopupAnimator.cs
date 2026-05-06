@@ -6,10 +6,6 @@ using Point = System.Windows.Point;
 
 namespace LocalPlayer.Presentation.Animations;
 
-/// <summary>
-/// UIElement scale+opacity 鏄鹃殣鍔ㄧ敾銆?
-/// 瀵逛簬 Popup 鐨勫畬鏁村姩鐢荤鐞嗭紝璇蜂娇鐢?<see cref="View.Primitives.AnimatedPopup"/>銆?
-/// </summary>
 public class PopupAnimator
 {
     private readonly UIElement _element;
@@ -59,7 +55,6 @@ public class PopupAnimator
         _element.Opacity = 1;
     }
 
-    // ========== 闄勫姞灞炴€э細灏?bool 缁戝畾鍒版樉闅愬姩鐢?==========
 
     public static bool GetBindVisible(DependencyObject obj) => (bool)obj.GetValue(BindVisibleProperty);
     public static void SetBindVisible(DependencyObject obj, bool value) => obj.SetValue(BindVisibleProperty, value);

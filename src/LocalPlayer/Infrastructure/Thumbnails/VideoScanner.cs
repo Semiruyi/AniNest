@@ -128,7 +128,6 @@ public class VideoScanner
             var files = Directory.GetFiles(folderPath);
             Log.Info($"FindCoverImage.Directory.GetFiles({Path.GetFileName(folderPath)}) took {sw.ElapsedMilliseconds}ms, {files.Length} files");
 
-            // 1. 鍏堟壘甯歌鍛藉悕
             foreach (var file in files)
             {
                 string fileName = Path.GetFileNameWithoutExtension(file).ToLower();
@@ -140,7 +139,6 @@ public class VideoScanner
                 }
             }
 
-            // 2. 鎵句换鎰忓浘鐗囦綔涓哄閫?
             foreach (var file in files)
             {
                 string ext = Path.GetExtension(file).ToLower();

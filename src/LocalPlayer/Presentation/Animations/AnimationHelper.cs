@@ -17,8 +17,6 @@ public static class AnimationHelper
     public static IEasingFunction EaseInOut => _easeInOut ??= new CubicEase { EasingMode = EasingMode.EaseInOut };
     public static IEasingFunction EaseOut => _easeOut ??= new CubicEase { EasingMode = EasingMode.EaseOut };
 
-    // 鍒犻櫎绛夐€€鍑哄姩鐢荤敤 Material 鏍囧噯 Accelerate 鏇茬嚎 (0.4,0,1,1),
-    // t=0.5 鏃惰繘搴?35%, 姣斿師鐢?CubicEase-In (12.5%) 鍚姩蹇緱澶?
     public static IEasingFunction EaseIn => _easeIn ??= new CubicBezierEase { X1 = 0.4, Y1 = 0, X2 = 1, Y2 = 1 };
 
     public static DoubleAnimation CreateAnim(double from, double to, int durationMs, IEasingFunction? ease = null, int beginTimeMs = 0)

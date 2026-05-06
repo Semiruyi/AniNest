@@ -5,16 +5,6 @@ using System.Windows.Media.Animation;
 
 namespace LocalPlayer.Presentation.Animations;
 
-/// <summary>
-/// 鎸夐挳 hover/press 缂╂斁鍔ㄧ敾闄勫姞琛屼负銆?
-/// <example>
-/// &lt;Button animations:ButtonScaleHover.IsEnabled="True"
-///         animations:ButtonScaleHover.HoverScale="1.15"
-///         animations:ButtonScaleHover.Easing&gt;
-///     &lt;ElasticEase Oscillations="1" Springiness="8" EasingMode="EaseOut"/&gt;
-/// &lt;/animations:ButtonScaleHover.Easing&gt;
-/// </example>
-/// </summary>
 public static class ButtonScaleHover
 {
     public static readonly DependencyProperty IsEnabledProperty =
@@ -82,7 +72,6 @@ public static class ButtonScaleHover
     public static IEasingFunction GetEasing(DependencyObject obj) => (IEasingFunction)obj.GetValue(EasingProperty);
     public static void SetEasing(DependencyObject obj, IEasingFunction value) => obj.SetValue(EasingProperty, value);
 
-    // ---- 缁戝畾鍚敤 ----
 
     private static void OnIsEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
@@ -99,7 +88,6 @@ public static class ButtonScaleHover
         };
     }
 
-    // ---- 鏍稿績閫昏緫 ----
 
     public static void Attach(Button button, ScaleTransform scale,
         double hoverScale = 1.2, double pressScale = 0.85,

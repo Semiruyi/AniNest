@@ -26,7 +26,6 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <!-- 宸︿晶锛氭挱鏀炬帶鍒?+ 鏃堕棿 -->
             <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left"
                         VerticalAlignment="Center">
                 <Button x:Name="PreviousBtn" Style="{StaticResource IconButton}"
@@ -89,7 +88,6 @@
                            FontFamily="Segoe UI, Microsoft YaHei, sans-serif"/>
             </StackPanel>
 
-            <!-- 涓棿锛氳繘搴︽潯 -->
             <primitives:SeekBar x:Name="SeekBar" Grid.Column="1"
                                 Position="{Binding CurrentTime, Mode=TwoWay}"
                                 Duration="{Binding TotalTime}"
@@ -142,10 +140,8 @@
                 </Border>
             </primitives:AnimatedPopup>
 
-            <!-- 鍙充晶锛氬€嶉€?+ 鑿滃崟 -->
             <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"
                         VerticalAlignment="Center">
-                <!-- 鍊嶉€熸寜閽?-->
                 <Grid>
                     <Button x:Name="SpeedBtn"
                             Style="{StaticResource IconButton}"

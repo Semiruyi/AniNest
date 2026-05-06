@@ -6,7 +6,7 @@ public class AppSettings
     public List<FolderInfo> Folders { get; set; } = new();
     public Dictionary<string, VideoProgress> VideoProgress { get; set; } = new();
     public Dictionary<string, FolderProgress> FolderProgress { get; set; } = new();
-    public int ThumbnailExpiryDays { get; set; } = 30; // 0 = 姘镐笉杩囨湡
+    public int ThumbnailExpiryDays { get; set; } = 30;
     public string Language { get; set; } = "zh-CN";
     public string FullscreenAnimation { get; set; } = "none";
 }
@@ -15,7 +15,7 @@ public class FolderInfo
 {
     public string Path { get; set; } = "";
     public string Name { get; set; } = "";
-    public long AddedTime { get; set; }  // Unix 鏃堕棿鎴?
+    public long AddedTime { get; set; }
     public int OrderIndex { get; set; }
 }
 

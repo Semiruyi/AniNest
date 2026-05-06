@@ -49,8 +49,6 @@ public static class StaggeredItemsAnimation
 
         ic.ItemContainerGenerator.StatusChanged += (_, _) => AnimatePending(ic);
 
-        // 鍒濆鍔犺浇鍚?generator 涓€鐩村浜?ContainersGenerated锛屾柊澧炲崟涓?item 涓嶆敼鍙樼姸鎬侊紝
-        // StatusChanged 涓嶄細鍐嶈Е鍙戯紝鍥犳鐩存帴鐩戝惉闆嗗悎鍙樺寲鏉ユ崟鑾峰悗缁殑 Add銆?
         if (ic.ItemsSource is INotifyCollectionChanged ncc)
         {
             ncc.CollectionChanged += (_, args) =>

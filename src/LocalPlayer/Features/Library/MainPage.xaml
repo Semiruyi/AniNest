@@ -47,18 +47,15 @@
                                                       Rect="0,0,190,253"/>
                                 </Grid.Clip>
 
-                                <!-- 灏侀潰鍥?-->
                                 <Image Stretch="UniformToFill" Source="{Binding CoverPath}"
                                        Visibility="{Binding CoverPath, Converter={StaticResource NullToVis}}"/>
 
-                                <!-- 鏃犲皝闈㈠崰浣?-->
                                 <Rectangle Fill="#252525"
                                            Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
                                 <TextBlock Text="&#x1F3AC;" FontSize="32"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"
                                            Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
 
-                                <!-- 搴曢儴娓愬彉閬僵 + 淇℃伅 -->
                                 <Border VerticalAlignment="Bottom" Height="{StaticResource FolderCardGradientHeight}">
                                     <Border.Background>
                                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
@@ -75,7 +72,6 @@
                                     </StackPanel>
                                 </Border>
 
-                                <!-- 鍒犻櫎鎸夐挳 -->
                                 <Button Content="&#x2715;" FontSize="12"
                                         Style="{StaticResource DeleteIconButton}"
                                         HorizontalAlignment="Right" VerticalAlignment="Top" Margin="6"

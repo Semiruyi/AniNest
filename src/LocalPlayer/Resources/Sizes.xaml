@@ -2,13 +2,11 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
 
-    <!-- ═══ 窗口 ═══ -->
     <system:Double x:Key="WindowDefaultWidth">1280</system:Double>
     <system:Double x:Key="WindowDefaultHeight">668</system:Double>
     <system:Double x:Key="WindowMinWidth">800</system:Double>
     <system:Double x:Key="WindowMinHeight">500</system:Double>
 
-    <!-- ═══ 标题栏 ═══ -->
     <system:Double x:Key="TitleBarHeight">40</system:Double>
     <system:Double x:Key="TitleBarButtonWidth">46</system:Double>
     <system:Double x:Key="TitleBarButtonHeight">40</system:Double>
@@ -18,7 +16,6 @@
     <system:Double x:Key="TitleBarTextFontSize">13</system:Double>
     <system:Double x:Key="TitleBarTextOpacity">0.7</system:Double>
 
-    <!-- ═══ 图标 ═══ -->
     <system:Double x:Key="IconSizeSmall">14</system:Double>
     <system:Double x:Key="IconSizeNormal">16</system:Double>
     <system:Double x:Key="IconSizeLarge">20</system:Double>
@@ -26,7 +23,6 @@
     <system:Double x:Key="IconButtonOpacity">0.8</system:Double>
     <system:Double x:Key="DeleteButtonSize">26</system:Double>
 
-    <!-- ═══ 控制栏 ═══ -->
     <system:Double x:Key="ControlBarHeight">63</system:Double>
     <system:Double x:Key="PlayPauseButtonSize">34</system:Double>
     <system:Double x:Key="SliderTrackHeight">4</system:Double>
@@ -41,42 +37,34 @@
     <system:Double x:Key="SpeedOptionHeight">34</system:Double>
     <system:Double x:Key="SpeedPopupMinWidth">70</system:Double>
 
-    <!-- ═══ 缩略图预览 ═══ -->
     <system:Double x:Key="ThumbnailPreviewImageClipRadius">10</system:Double>
     <CornerRadius x:Key="ThumbnailPreviewTimeCornerRadius">4</CornerRadius>
     <system:Double x:Key="ThumbnailPreviewFontSize">11</system:Double>
     <Thickness x:Key="ThumbnailPreviewTimePadding">6,2</Thickness>
     <Thickness x:Key="ThumbnailPreviewTimeMargin">0,0,0,4</Thickness>
 
-    <!-- ═══ 进度条 (SeekBar) ═══ -->
     <system:Double x:Key="SeekBarTrackHeight">4</system:Double>
     <system:Double x:Key="SeekBarThumbSize">14</system:Double>
     <system:Double x:Key="SeekBarThumbShadowSize">16</system:Double>
     <system:Double x:Key="SeekBarThumbHoverScale">1.35</system:Double>
     <system:Double x:Key="SeekBarTooltipOffset">-28</system:Double>
 
-    <!-- ═══ 选集面板 ═══ -->
     <system:Double x:Key="PlaylistPanelWidth">276</system:Double>
     <system:Double x:Key="EpisodeButtonSize">54</system:Double>
 
-    <!-- ═══ 播放器 ═══ -->
     <system:Double x:Key="PauseBigIconSize">80</system:Double>
     <system:Double x:Key="CheckIconSize">20</system:Double>
 
-    <!-- ═══ 滚动条 ═══ -->
     <system:Double x:Key="ScrollbarThumbWidth">4</system:Double>
 
-    <!-- ═══ 库页面 ═══ -->
     <system:Double x:Key="FolderCardWidth">190</system:Double>
     <system:Double x:Key="FolderCardHeight">253</system:Double>
     <system:Double x:Key="FolderCardGradientHeight">100</system:Double>
     <system:Double x:Key="ToolbarHeight">64</system:Double>
     <system:Double x:Key="AddFolderButtonHeight">38</system:Double>
 
-    <!-- ═══ 标题栏 GridLength ═══ -->
     <GridLength x:Key="TitleBarRowHeight">40</GridLength>
 
-    <!-- ═══ Popup 菜单 ═══ -->
     <system:Double x:Key="PopupFileMenuMinWidth">30</system:Double>
     <system:Double x:Key="PopupSettingsMenuMinWidth">30</system:Double>
     <system:Double x:Key="PopupSubmenuMinWidth">30</system:Double>

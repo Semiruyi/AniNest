@@ -5,10 +5,6 @@ using System.Windows.Media;
 
 namespace LocalPlayer.Presentation.Animations;
 
-/// <summary>
-/// 鏂囧瓧鍙樺寲鍔ㄧ敾锛氭棫鏂囧瓧缂╁皬娣″嚭锛屾柊鏂囧瓧鏀惧ぇ娣″叆銆?
-/// 闄勫姞鍒板寘鍚袱涓?TextBlock 鐨?Panel 涓婏紝Children[0] 涓烘棫鏂囧瓧锛孋hildren[1] 涓烘柊鏂囧瓧銆?
-/// </summary>
 public static class TextSwapAnimator
 {
     private static readonly HashSet<Panel> _initialized = new();
@@ -49,7 +45,6 @@ public static class TextSwapAnimator
 
         if (oldText == newText) return;
 
-        // 鏃ф枃瀛楃缉灏忔贰鍑?
         oldBlock.Text = oldText;
         SetOpacity(oldBlock, 1);
         SetScale(oldBlock, 1);
@@ -58,7 +53,6 @@ public static class TextSwapAnimator
         AnimationHelper.AnimateFromCurrent(
             oldBlock, UIElement.OpacityProperty, 0, duration, AnimationHelper.EaseIn);
 
-        // 鏂版枃瀛楁斁澶ф贰鍏?
         newBlock.Text = newText;
         SetOpacity(newBlock, 0);
         SetScale(newBlock, 0);

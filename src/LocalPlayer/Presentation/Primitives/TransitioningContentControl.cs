@@ -127,8 +127,6 @@ public class TransitioningContentControl : ContentControl
         _inactivePresenter.Content = newContent;
         _inactivePresenter.IsHitTestVisible = true;
 
-        // 寮哄埗涓€娆℃€у畬鎴愭柊椤甸潰鐨?Measure/Arrange锛岄槻姝㈤甯у竷灞€
-        // 婧㈠嚭鍒板姩鐢诲抚閲岄€犳垚灏栧埡甯?
         _inactivePresenter.UpdateLayout();
 
         int fadeMs = TransitionDuration > 0 ? TransitionDuration : 160;

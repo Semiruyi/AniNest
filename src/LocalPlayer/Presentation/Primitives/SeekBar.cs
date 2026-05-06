@@ -18,7 +18,6 @@ public class SeekBar : ContentControl
 {
     private const string LogTag = "[SeekBar]";
 
-    // 鈹€鈹€ Dependency properties 鈹€鈹€
 
     public static readonly DependencyProperty PositionProperty =
         DependencyProperty.Register(nameof(Position), typeof(double), typeof(SeekBar),
@@ -64,7 +63,6 @@ public class SeekBar : ContentControl
         remove => RemoveHandler(SeekCompletedEvent, value);
     }
 
-    // 鈹€鈹€ Visual elements 鈹€鈹€
 
     private Grid? _rootGrid;
     private Border? _trackBg;
@@ -77,7 +75,6 @@ public class SeekBar : ContentControl
     private AnimatedPopup? _tooltip;
     private TextBlock? _tooltipText;
 
-    // 鈹€鈹€ State 鈹€鈹€
 
     private bool _isDragging;
     private bool _isMouseOver;
@@ -85,7 +82,6 @@ public class SeekBar : ContentControl
     private long _seekTarget = -1;
     private bool _restoringPosition;
 
-    // 鈹€鈹€ Cached resources 鈹€鈹€
 
     private Brush _trackBgBrush = new SolidColorBrush(Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF));
     private Brush _bufferedBrush = new SolidColorBrush(Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF));
@@ -95,7 +91,6 @@ public class SeekBar : ContentControl
     private double _thumbSize = 14;
     private double _thumbShadowSize = 16;
 
-    // 鈹€鈹€ Constructor 鈹€鈹€
 
     public SeekBar()
     {
@@ -213,7 +208,6 @@ public class SeekBar : ContentControl
         Content = _rootGrid;
     }
 
-    // 鈹€鈹€ Layout 鈹€鈹€
 
     protected override Size ArrangeOverride(Size arrangeBounds)
     {
@@ -222,7 +216,6 @@ public class SeekBar : ContentControl
         return result;
     }
 
-    // 鈹€鈹€ Mouse 鈹€鈹€
 
     protected override void OnPreviewMouseDown(MouseButtonEventArgs e)
     {
@@ -317,7 +310,6 @@ public class SeekBar : ContentControl
         FinishSeek();
     }
 
-    // 鈹€鈹€ Drag / Seek 鈹€鈹€
 
     private void UpdateDragPosition()
     {
@@ -346,7 +338,6 @@ public class SeekBar : ContentControl
         RaiseEvent(new RoutedEventArgs(SeekCompletedEvent));
     }
 
-    // 鈹€鈹€ Tooltip 鈹€鈹€
 
     private void SetThumbScale(double s, bool animate = false, int durationMs = 200)
     {
@@ -390,7 +381,6 @@ public class SeekBar : ContentControl
             _tooltip.IsOpenAnimated = false;
     }
 
-    // 鈹€鈹€ DP callbacks 鈹€鈹€
 
     private static void OnPositionChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
@@ -423,7 +413,6 @@ public class SeekBar : ContentControl
         ((SeekBar)d).UpdateVisuals();
     }
 
-    // 鈹€鈹€ Visual update 鈹€鈹€
 
     private int _updateCount;
 
