@@ -16,7 +16,6 @@
         MinHeight="{StaticResource WindowMinHeight}"
         Background="Transparent"
         InputMethod.IsInputMethodEnabled="False"
-        WindowStartupLocation="CenterScreen"
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize">
 

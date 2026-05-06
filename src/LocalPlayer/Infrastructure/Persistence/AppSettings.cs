@@ -11,6 +11,16 @@ public class AppSettings
     public string Language { get; set; } = "zh-CN";
     public string FullscreenAnimation { get; set; } = "none";
     public PlayerInputProfile PlayerInput { get; set; } = new();
+    public WindowGeometry Window { get; set; } = new();
+}
+
+public class WindowGeometry
+{
+    public double X { get; set; }
+    public double Y { get; set; }
+    public double Width { get; set; }
+    public double Height { get; set; }
+    public bool Maximized { get; set; }
 }
 
 public class FolderInfo

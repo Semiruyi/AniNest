@@ -1,8 +1,10 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using LocalPlayer.Features.Shell;
 using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Persistence;
 using LocalPlayer.Presentation.Diagnostics;
 using LocalPlayer.Presentation.Primitives;
 
@@ -17,8 +19,11 @@ public partial class MainWindow : Window
     private bool _savedTopmost;
     private double _savedLeft, _savedTop, _savedWidth, _savedHeight;
 
-    public MainWindow(ShellViewModel vm)
+    private readonly ISettingsService _settingsService;
+
+    public MainWindow(ShellViewModel vm, ISettingsService settingsService)
     {
+        _settingsService = settingsService;
         DataContext = vm;
         InitializeComponent();
         PopupInputCoordinator.Instance.Attach(this);
@@ -35,6 +40,17 @@ public partial class MainWindow : Window
         PreviewKeyDown += OnPreviewKeyDown;
         PreviewMouseDown += OnPreviewMouseDown;
         PreviewMouseWheel += OnPreviewMouseWheel;
+
+        Closing += (_, _) =>
+        {
+            var settings = _settingsService.Load();
+            settings.Window.X = Left;
+            settings.Window.Y = Top;
+            settings.Window.Width = Width;
+            settings.Window.Height = Height;
+            settings.Window.Maximized = WindowState == WindowState.Maximized;
+            _settingsService.Save();
+        };
     }
 
     private void OnToggleFullscreenRequested()
@@ -121,10 +137,50 @@ public partial class MainWindow : Window
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
-        var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        var hwnd = new WindowInteropHelper(this).Handle;
         var preference = DWMWCP_ROUND;
         DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
             ref preference, sizeof(uint));
+
+        RestoreWindowGeometry();
+    }
+
+    private void RestoreWindowGeometry()
+    {
+        var w = _settingsService.Load().Window;
+        if (w.Width <= 0)
+        {
+            WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            return;
+        }
+
+        if (!IsOnScreen(w.X, w.Y, w.Width, w.Height))
+        {
+            WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            return;
+        }
+
+        Left = w.X;
+        Top = w.Y;
+        Width = w.Width;
+        Height = w.Height;
+
+        if (w.Maximized)
+            WindowState = WindowState.Maximized;
+    }
+
+    private static bool IsOnScreen(double x, double y, double width, double height)
+    {
+        var vsLeft = SystemParameters.VirtualScreenLeft;
+        var vsTop = SystemParameters.VirtualScreenTop;
+        var vsRight = vsLeft + SystemParameters.VirtualScreenWidth;
+        var vsBottom = vsTop + SystemParameters.VirtualScreenHeight;
+
+        var windowRight = x + width;
+        var windowBottom = y + height;
+
+        return x < vsRight && windowRight > vsLeft &&
+               y < vsBottom && windowBottom > vsTop;
     }
 
     private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
