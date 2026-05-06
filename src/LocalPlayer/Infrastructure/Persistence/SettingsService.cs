@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Windows.Input;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Paths;
 using LocalPlayer.Infrastructure.Persistence;
@@ -39,7 +38,7 @@ public class SettingsService : ISettingsService
     {
         if (settings != null)
         {
-            Log.Debug($"Load: returning cached settings, KeyBindings count: {settings.KeyBindings?.Count ?? 0}");
+            Log.Debug("Load: returning cached settings");
             return settings;
         }
 
@@ -51,12 +50,7 @@ public class SettingsService : ISettingsService
                 string json = File.ReadAllText(settingsPath);
                 Log.Debug($"Load: read {settingsPath}, {json.Length} bytes, elapsed {sw.ElapsedMilliseconds}ms");
                 settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
-                Log.Debug($"Load: deserialized, KeyBindings count: {settings.KeyBindings?.Count ?? 0}, elapsed {sw.ElapsedMilliseconds}ms");
-                if (settings.KeyBindings != null)
-                {
-                    foreach (var kv in settings.KeyBindings)
-                        Log.Debug($"Load:   KeyBinding: {kv.Key} = {(Key)kv.Value} ({kv.Value})");
-                }
+                Log.Debug($"Load: deserialized, elapsed {sw.ElapsedMilliseconds}ms");
             }
             else
             {
@@ -81,12 +75,7 @@ public class SettingsService : ISettingsService
             return;
         }
 
-        Log.Debug($"Save: begin, KeyBindings count: {settings.KeyBindings?.Count ?? 0}");
-        if (settings.KeyBindings != null)
-        {
-            foreach (var kv in settings.KeyBindings)
-                Log.Debug($"Save:   KeyBinding: {kv.Key} = {(Key)kv.Value} ({kv.Value})");
-        }
+        Log.Debug("Save: begin");
 
         try
         {
@@ -247,56 +236,6 @@ public class SettingsService : ISettingsService
         Save();
     }
 
-    public static List<KeyBindingInfo> GetDefaultKeyBindings()
-    {
-        return new List<KeyBindingInfo>
-        {
-            new() { ActionName = "TogglePlayPause", DisplayName = "Play/Pause", DefaultKey = (int)Key.Space },
-            new() { ActionName = "SeekBackward", DisplayName = "Seek Back 5s", DefaultKey = (int)Key.Left },
-            new() { ActionName = "SeekForward", DisplayName = "Seek Forward 5s", DefaultKey = (int)Key.Right },
-            new() { ActionName = "Back", DisplayName = "Back", DefaultKey = (int)Key.Escape },
-            new() { ActionName = "SeekBackwardAlt", DisplayName = "Seek Back 5s (Alt)", DefaultKey = (int)Key.J },
-            new() { ActionName = "SeekForwardAlt", DisplayName = "Seek Forward 5s (Alt)", DefaultKey = (int)Key.L },
-            new() { ActionName = "NextEpisode", DisplayName = "Next Episode", DefaultKey = (int)Key.N },
-            new() { ActionName = "PreviousEpisode", DisplayName = "Previous Episode", DefaultKey = (int)Key.P },
-        };
-    }
-
-    public Key GetKeyBinding(string actionName)
-    {
-        var current = Load();
-        if (current.KeyBindings.TryGetValue(actionName, out int keyCode))
-            return (Key)keyCode;
-
-        var defaults = GetDefaultKeyBindings();
-        var def = defaults.Find(d => d.ActionName == actionName);
-        return def != null ? (Key)def.DefaultKey : Key.None;
-    }
-
-    public void SetKeyBinding(string actionName, Key key)
-    {
-        Log.Debug($"SetKeyBinding: action={actionName}, key={key} ({(int)key})");
-        var current = Load();
-        current.KeyBindings ??= new Dictionary<string, int>();
-        current.KeyBindings[actionName] = (int)key;
-        Save();
-    }
-
-    public Dictionary<string, Key> GetAllKeyBindings()
-    {
-        var result = new Dictionary<string, Key>();
-        var defaults = GetDefaultKeyBindings();
-        var current = Load();
-        current.KeyBindings ??= new Dictionary<string, int>();
-
-        foreach (var def in defaults)
-        {
-            var found = current.KeyBindings.TryGetValue(def.ActionName, out int keyCode);
-            result[def.ActionName] = found ? (Key)keyCode : (Key)def.DefaultKey;
-        }
-
-        return result;
-    }
 }
 
 

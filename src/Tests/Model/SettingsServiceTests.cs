@@ -1,11 +1,6 @@
 ﻿using System.IO;
 using FluentAssertions;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Paths;
 using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Thumbnails;
-using Moq;
 using Xunit;
 
 namespace LocalPlayer.Tests.Model;
@@ -167,39 +162,6 @@ public class SettingsServiceTests : IDisposable
         var videos = new[] { "/f/a.mp4" };
 
         _service.GetFolderPlayedPercent("/f", videos).Should().Be(0);
-    }
-
-    [Fact]
-    public void GetDefaultKeyBindings_HasEightEntries()
-    {
-        SettingsService.GetDefaultKeyBindings().Should().HaveCount(8);
-    }
-
-    [Fact]
-    public void SetKeyBinding_CustomizesAction()
-    {
-        _service.SetKeyBinding("TogglePlayPause", System.Windows.Input.Key.Enter);
-
-        _service.GetKeyBinding("TogglePlayPause").Should().Be(System.Windows.Input.Key.Enter);
-    }
-
-    [Fact]
-    public void GetAllKeyBindings_ReturnsDefaultsWhenNoCustom()
-    {
-        var bindings = _service.GetAllKeyBindings();
-
-        bindings.Should().HaveCount(8);
-        bindings["TogglePlayPause"].Should().Be(System.Windows.Input.Key.Space);
-    }
-
-    [Fact]
-    public void GetAllKeyBindings_ReturnsCustomOverrides()
-    {
-        _service.SetKeyBinding("Back", System.Windows.Input.Key.B);
-
-        var bindings = _service.GetAllKeyBindings();
-
-        bindings["Back"].Should().Be(System.Windows.Input.Key.B);
     }
 
     [Fact]

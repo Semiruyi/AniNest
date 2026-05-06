@@ -1,10 +1,4 @@
 ﻿using System.Collections.Generic;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Paths;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Infrastructure.Interop;
 namespace LocalPlayer.Infrastructure.Persistence;
 
 public class AppSettings
@@ -13,16 +7,8 @@ public class AppSettings
     public Dictionary<string, VideoProgress> VideoProgress { get; set; } = new();
     public Dictionary<string, FolderProgress> FolderProgress { get; set; } = new();
     public int ThumbnailExpiryDays { get; set; } = 30; // 0 = 姘镐笉杩囨湡
-    public Dictionary<string, int> KeyBindings { get; set; } = new();
     public string Language { get; set; } = "zh-CN";
     public string FullscreenAnimation { get; set; } = "none";
-}
-
-public class KeyBindingInfo
-{
-    public string ActionName { get; set; } = "";
-    public string DisplayName { get; set; } = "";
-    public int DefaultKey { get; set; }
 }
 
 public class FolderInfo

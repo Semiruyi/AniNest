@@ -1,6 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Windows.Input;
-using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Paths;
 using LocalPlayer.Infrastructure.Persistence;
 using LocalPlayer.Infrastructure.Media;
@@ -30,9 +28,6 @@ public interface ISettingsService
     int GetThumbnailExpiryDays();
     void SetThumbnailExpiryDays(int days);
 
-    Key GetKeyBinding(string actionName);
-    void SetKeyBinding(string actionName, Key key);
-    Dictionary<string, Key> GetAllKeyBindings();
 }
 
 

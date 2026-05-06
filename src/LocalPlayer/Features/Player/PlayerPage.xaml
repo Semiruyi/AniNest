@@ -10,7 +10,7 @@
              Background="{StaticResource BackgroundDark}"
              Focusable="True"
              behaviors:LoadedCommandBehavior.FocusOnLoaded="True"
-             behaviors:KeyboardBehavior.KeyDownCommand="{Binding KeyDownCommand}">
+             >
     <UserControl.Resources>
         <ResourceDictionary>
             <BooleanToVisibilityConverter x:Key="BoolToVis"/>

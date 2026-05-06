@@ -13,8 +13,7 @@
     </UserControl.Resources>
 
     <Grid x:Name="RootGrid" Height="{StaticResource ControlBarHeight}"
-          Focusable="True"
-          behaviors:KeyboardBehavior.KeyDownCommand="{Binding KeyDownCommand}">
+          Focusable="True">
         <Grid.Background>
             <SolidColorBrush Color="#CC0F0F0F"/>
         </Grid.Background>

@@ -1,23 +1,18 @@
 using System;
-using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Input;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalPlayer.Features.Player.Models;
 using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Persistence;
 using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Presentation.Interop;
 using LocalPlayer.Presentation.Primitives;
 
 namespace LocalPlayer.Features.Player;
 
 public partial class PlayerViewModel : ObservableObject, ITransitioningContentLifecycle
 {
-    private readonly PlayerInputHandler _inputHandler;
     private readonly PlayerSessionController _session;
     private readonly PlayerPlaybackStateController _playback;
     private readonly IMediaPlayerController _media;
@@ -45,14 +40,9 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
 
     public static string FormatTime(long ms) => MediaPlayerController.FormatTime(ms);
 
-    public Dictionary<string, Key> GetCurrentBindings() => _inputHandler.GetCurrentBindings();
-    public void ReloadBindings() => _inputHandler.ReloadBindings();
-    public bool HandleKeyDown(KeyEventArgs e) => _inputHandler.HandleKeyDown(e);
-
     public PlayerViewModel(
         PlayerSessionController session,
         PlayerPlaybackStateController playback,
-        ISettingsService settings,
         IThumbnailGenerator thumbnailGenerator,
         IMediaPlayerController media,
         ILocalizationService loc)
@@ -60,9 +50,8 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
         _session = session;
         _playback = playback;
         _media = media;
-        _inputHandler = new PlayerInputHandler(settings);
 
-        ControlBar = new ControlBarViewModel(media, _inputHandler, thumbnailGenerator, loc, playback);
+        ControlBar = new ControlBarViewModel(media, thumbnailGenerator, loc, playback);
 
         ControlBar.NextRequested += () => _ = _session.PlayNext();
         ControlBar.PreviousRequested += () => _ = _session.PlayPrevious();
@@ -71,21 +60,6 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
         ControlBar.ToggleFullscreenRequested += () => ToggleFullscreenRequested?.Invoke();
 
         _session.CurrentIndexChanged += value => CurrentIndex = value;
-
-        _inputHandler.TogglePlayPause += (_, _) => _media.TogglePlayPause();
-        _inputHandler.SeekForward += (_, _) => _media.SeekForward(5000);
-        _inputHandler.SeekBackward += (_, _) => _media.SeekBackward(5000);
-        _inputHandler.NextEpisode += (_, _) => _ = _session.PlayNext();
-        _inputHandler.PreviousEpisode += (_, _) => _ = _session.PlayPrevious();
-        _inputHandler.Back += (_, _) =>
-        {
-            if (IsFullscreen)
-                ToggleFullscreenRequested?.Invoke();
-            else
-                GoBackInternal();
-        };
-
-        _inputHandler.ReloadBindings();
     }
 
     partial void OnCurrentIndexChanged(int value)
@@ -154,9 +128,6 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
         ControlBar.SetRate(_savedRate);
         _media.Rate = _savedRate;
     }
-
-    [RelayCommand]
-    private void KeyDown(KeyEventArgs e) => HandleKeyDown(e);
 
     [RelayCommand]
     private void Cleanup()

@@ -1,15 +1,11 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Windows.Input;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Infrastructure.Media;
 using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Presentation.Converters;
-using LocalPlayer.Presentation.Interop;
 using LocalPlayer.Features.Player.Models;
 
 namespace LocalPlayer.Features.Player;
@@ -17,7 +13,6 @@ namespace LocalPlayer.Features.Player;
 public partial class ControlBarViewModel : ObservableObject
 {
     private readonly IMediaPlayerController _media;
-    private readonly PlayerInputHandler _inputHandler;
     private readonly ILocalizationService _loc;
     private readonly PlayerPlaybackStateController _playback;
     private readonly PropertyChangedEventHandler _locPropertyChangedHandler;
@@ -60,16 +55,9 @@ public partial class ControlBarViewModel : ObservableObject
 
     public long MediaLength => _playback.MediaLength;
 
-    public string PlayPauseTooltip => FormatTooltip(_loc["Player.PlayPause"], "TogglePlayPause");
-    public string PreviousTooltip => FormatTooltip(_loc["Player.Previous"], "PreviousEpisode");
-    public string NextTooltip => FormatTooltip(_loc["Player.Next"], "NextEpisode");
-
-    private string FormatTooltip(string label, string actionName)
-    {
-        var bindings = _inputHandler.GetCurrentBindings();
-        var key = bindings.TryGetValue(actionName, out var k) ? k : Key.None;
-        return key == Key.None ? label : $"{label} ({KeyDisplayConverter.Format(key, _loc)})";
-    }
+    public string PlayPauseTooltip => _loc["Player.PlayPause"];
+    public string PreviousTooltip => _loc["Player.Previous"];
+    public string NextTooltip => _loc["Player.Next"];
 
     public event Action? NextRequested;
     public event Action? PreviousRequested;
@@ -79,13 +67,11 @@ public partial class ControlBarViewModel : ObservableObject
 
     public ControlBarViewModel(
         IMediaPlayerController media,
-        PlayerInputHandler inputHandler,
         IThumbnailGenerator thumbnailGenerator,
         ILocalizationService loc,
         PlayerPlaybackStateController playback)
     {
         _media = media;
-        _inputHandler = inputHandler;
         _loc = loc;
         _playback = playback;
         _locPropertyChangedHandler = (_, args) =>
@@ -136,12 +122,6 @@ public partial class ControlBarViewModel : ObservableObject
             () => CurrentVideoPath,
             () => _media.Length);
 
-        _inputHandler.BindingsChanged += () =>
-        {
-            OnPropertyChanged(nameof(PlayPauseTooltip));
-            OnPropertyChanged(nameof(PreviousTooltip));
-            OnPropertyChanged(nameof(NextTooltip));
-        };
         _loc.PropertyChanged += _locPropertyChangedHandler;
         _playback.PropertyChanged += _playbackPropertyChangedHandler;
         _playback.PropertyChanged += (_, args) =>
@@ -274,11 +254,6 @@ public partial class ControlBarViewModel : ObservableObject
         SetRate(_savedRate);
         _media.Rate = _savedRate;
     }
-
-    public bool HandleKeyDown(KeyEventArgs e) => _inputHandler.HandleKeyDown(e);
-
-    [RelayCommand]
-    private void KeyDown(KeyEventArgs e) => HandleKeyDown(e);
 
     public void Cleanup()
     {
