@@ -205,7 +205,7 @@ public class SeekBar : ContentControl
             AllowsTransparency = true,
             IsHitTestVisible = false,
             CloseOnOutsideClick = false,
-            Child = new Border
+            Content = new Border
             {
                 Background = new SolidColorBrush(Color.FromArgb(0xE6, 0x28, 0x28, 0x28)),
                 CornerRadius = new CornerRadius(4),

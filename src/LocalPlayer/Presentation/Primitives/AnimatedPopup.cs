@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Threading;
 using LocalPlayer.Presentation.Animations;
@@ -17,8 +18,12 @@ namespace LocalPlayer.Presentation.Primitives;
 /// outside-click-to-close, window-move tracking, and z-order fix.
 /// Bind <see cref="IsOpenAnimated"/> instead of Popup.IsOpen.
 /// </summary>
+[ContentProperty(nameof(Content))]
 public class AnimatedPopup : Popup
 {
+    private readonly PopupRoot _popupRoot;
+    private readonly AnimationLayer _animationLayer;
+
     public AnimatedPopup? ParentPopup { get; internal set; }
 
     // ========== Dependency Properties ==========
@@ -43,10 +48,15 @@ public class AnimatedPopup : Popup
         DependencyProperty.Register(nameof(OutsideClickPassthroughTargets), typeof(PopupPassthroughTargets), typeof(AnimatedPopup),
             new PropertyMetadata(PopupPassthroughTargets.None));
 
+    public static readonly DependencyProperty ContentProperty =
+        DependencyProperty.Register(nameof(Content), typeof(UIElement), typeof(AnimatedPopup),
+            new PropertyMetadata(null, OnContentChanged));
+
     public bool IsOpenAnimated { get => (bool)GetValue(IsOpenAnimatedProperty); set => SetValue(IsOpenAnimatedProperty, value); }
     public Point OpenAnimationOrigin { get => (Point)GetValue(OpenAnimationOriginProperty); set => SetValue(OpenAnimationOriginProperty, value); }
     public int CloseDurationMs { get => (int)GetValue(CloseDurationMsProperty); set => SetValue(CloseDurationMsProperty, value); }
     public bool CloseOnOutsideClick { get => (bool)GetValue(CloseOnOutsideClickProperty); set => SetValue(CloseOnOutsideClickProperty, value); }
+    public UIElement? Content { get => (UIElement?)GetValue(ContentProperty); set => SetValue(ContentProperty, value); }
     public PopupPassthroughTargets OutsideClickPassthroughTargets
     {
         get => (PopupPassthroughTargets)GetValue(OutsideClickPassthroughTargetsProperty);
@@ -55,16 +65,34 @@ public class AnimatedPopup : Popup
 
     // ========== Static state ==========
 
+    private static readonly MethodInfo? RepositionMethod =
+        typeof(Popup).GetMethod("Reposition", BindingFlags.Instance | BindingFlags.NonPublic);
+
     private sealed record WindowSubs(Window Window, EventHandler Move);
     private static readonly Dictionary<AnimatedPopup, WindowSubs> _windowSubs = new();
-    private sealed class AnimationHost : Border;
+    private sealed class PopupRoot : Border;
+    private sealed class AnimationLayer : Border;
+
+    public AnimatedPopup()
+    {
+        _animationLayer = new AnimationLayer
+        {
+            Background = Brushes.Transparent
+        };
+        _popupRoot = new PopupRoot
+        {
+            Background = Brushes.Transparent,
+            Child = _animationLayer
+        };
+        base.Child = _popupRoot;
+    }
 
     // ========== Open / Close orchestration ==========
 
     private static void OnIsOpenAnimatedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var popup = (AnimatedPopup)d;
-        var child = GetAnimatedChild(popup);
+        var child = popup.GetAnimationTarget();
         if (child is null) return;
 
         if ((bool)e.NewValue)
@@ -176,30 +204,18 @@ public class AnimatedPopup : Popup
 
     private static void ForceReposition(AnimatedPopup popup)
     {
-        typeof(Popup).GetMethod("Reposition", BindingFlags.Instance | BindingFlags.NonPublic)?.Invoke(popup, null);
+        RepositionMethod?.Invoke(popup, null);
     }
 
-    private static UIElement? GetAnimatedChild(AnimatedPopup popup)
+    private UIElement? GetAnimationTarget()
     {
-        if (popup.Child is null)
-            return null;
+        return _animationLayer;
+    }
 
-        if (popup.Child is AnimationHost existingHost)
-            return existingHost.Child as UIElement;
-
-        if (popup.Child is not UIElement currentChild)
-            return null;
-
-        popup.Child = null;
-
-        var host = new AnimationHost
-        {
-            Background = Brushes.Transparent,
-            Child = currentChild
-        };
-
-        popup.Child = host;
-        return currentChild;
+    private static void OnContentChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var popup = (AnimatedPopup)d;
+        popup._animationLayer.Child = e.NewValue as UIElement;
     }
 }
 
