@@ -89,7 +89,7 @@
             </StackPanel>
 
             <primitives:SeekBar x:Name="SeekBar" Grid.Column="1"
-                                Position="{Binding CurrentTime, Mode=TwoWay}"
+                                Position="{Binding CurrentTime, Mode=OneWay}"
                                 Duration="{Binding TotalTime}"
                                 BufferedPosition="{Binding BufferedPosition}"
                                 IsSeeking="{Binding IsSeeking, Mode=TwoWay}"

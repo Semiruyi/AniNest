@@ -152,7 +152,8 @@ public partial class ControlBarViewModel : ObservableObject
     private void Previous() => PreviousRequested?.Invoke();
 
     [RelayCommand]
-    private void Seek(long time) => _media.SeekTo(time);
+    private void Seek(long time)
+        => _media.SeekTo(time);
 
     [RelayCommand]
     private void ChangeSpeed(float speed)

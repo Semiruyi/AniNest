@@ -4,15 +4,12 @@ using System.Windows;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using LocalPlayer.Features.Player.Models;
-using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Media;
 
 namespace LocalPlayer.Features.Player;
 
 public partial class PlayerPlaybackStateController : ObservableObject
 {
-    private static readonly Logger Log = AppLog.For<PlayerPlaybackStateController>();
-
     private readonly IMediaPlayerController _media;
     private readonly Action<string> _videoPathChangedHandler;
     private readonly EventHandler _playingHandler;
@@ -67,12 +64,16 @@ public partial class PlayerPlaybackStateController : ObservableObject
         _media.Stopped += _stoppedHandler;
         _media.ProgressUpdated += _progressUpdatedHandler;
 
-        Log.Info("PlayerPlaybackStateController initialized");
         RefreshVideoSource();
     }
 
     public void SetSeeking(bool value)
-        => IsSeeking = value;
+    {
+        if (IsSeeking == value)
+            return;
+
+        IsSeeking = value;
+    }
 
     public void RefreshVideoSource()
         => OnPropertyChanged(nameof(VideoSource));
@@ -107,7 +108,8 @@ public partial class PlayerPlaybackStateController : ObservableObject
 
     private void OnProgressUpdated(ProgressUpdatedEventArgs args)
     {
-        if (IsSeeking) return;
+        if (IsSeeking)
+            return;
 
         if (args.CurrentTime == 0 && IsPlaying)
         {

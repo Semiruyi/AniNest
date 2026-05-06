@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
@@ -7,6 +8,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using LocalPlayer.Features.Player;
+using LocalPlayer.Infrastructure.Diagnostics;
+using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Presentation.Animations;
 using Point = System.Windows.Point;
 using Rectangle = System.Windows.Shapes.Rectangle;
@@ -17,11 +20,12 @@ namespace LocalPlayer.Presentation.Primitives;
 public class SeekBar : ContentControl
 {
     private const string LogTag = "[SeekBar]";
+    private static readonly Logger Log = AppLog.For<SeekBar>();
 
 
     public static readonly DependencyProperty PositionProperty =
         DependencyProperty.Register(nameof(Position), typeof(double), typeof(SeekBar),
-            new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnPositionChanged));
+            new FrameworkPropertyMetadata(0.0, OnPositionChanged));
 
     public static readonly DependencyProperty DurationProperty =
         DependencyProperty.Register(nameof(Duration), typeof(double), typeof(SeekBar),
@@ -81,6 +85,15 @@ public class SeekBar : ContentControl
     private Point _lastMousePos;
     private long _seekTarget = -1;
     private bool _restoringPosition;
+    private PerfSpan? _dragPerfSpan;
+    private FrameTimingCollector? _dragFrameCollector;
+    private long _dragStartedTimestamp;
+    private double _dragStartPosition;
+    private int _dragMoveCount;
+    private int _dragVisualCount;
+    private double _dragVisualTotalMs;
+    private double _dragVisualMaxMs;
+    private long _lastThumbPreviewUpdateTs;
 
 
     private Brush _trackBgBrush = new SolidColorBrush(Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF));
@@ -234,8 +247,9 @@ public class SeekBar : ContentControl
         {
             double ratio = Math.Clamp(pos.X / ActualWidth, 0, 1);
             Position = ratio * Duration;
-            Debug.WriteLine($"{LogTag}   seek ratio={ratio:F3} ms={Position}");
         }
+
+        BeginDragPerfSession();
 
         CaptureMouse();
         e.Handled = true;
@@ -251,23 +265,22 @@ public class SeekBar : ContentControl
         if (_isDragging)
         {
             UpdateDragPosition();
+            UpdateDragThumbnailPreview();
         }
         else
         {
             UpdateTooltip();
+            ThumbnailPreview?.OnMove(_lastMousePos, ActualWidth);
         }
-
-        ThumbnailPreview?.OnMove(_lastMousePos, ActualWidth);
     }
 
     protected override void OnPreviewMouseUp(MouseButtonEventArgs e)
     {
         base.OnPreviewMouseUp(e);
-        Debug.WriteLine($"{LogTag} Up isDragging={_isDragging} btn={e.ChangedButton}");
 
         if (!_isDragging || e.ChangedButton != MouseButton.Left) return;
-        ReleaseMouseCapture();
         FinishSeek();
+        ReleaseMouseCapture();
         e.Handled = true;
     }
 
@@ -305,7 +318,6 @@ public class SeekBar : ContentControl
     protected override void OnLostMouseCapture(MouseEventArgs e)
     {
         base.OnLostMouseCapture(e);
-        Debug.WriteLine($"{LogTag} LostCapture isDragging={_isDragging}");
         if (!_isDragging) return;
         FinishSeek();
     }
@@ -316,23 +328,23 @@ public class SeekBar : ContentControl
         if (ActualWidth <= 0) return;
         double ratio = Math.Clamp(_lastMousePos.X / ActualWidth, 0, 1);
         Position = ratio * Duration;
-        UpdateVisuals();
+        _dragMoveCount++;
+        MeasureDragVisualUpdate();
     }
 
     private void FinishSeek()
     {
-        Debug.WriteLine($"{LogTag} FinishSeek");
         _isDragging = false;
         IsSeeking = false;
         _seekTarget = (long)Position;
         SetThumbScale(_isMouseOver ? 1.35 : 1.0);
         ExecuteSeek(_seekTarget);
+        EndDragPerfSession();
     }
 
     private void ExecuteSeek(long timeMs)
     {
         var cmd = SeekCommand;
-        Debug.WriteLine($"{LogTag} ExecuteSeek ms={timeMs} cmd={cmd}");
         if (cmd?.CanExecute(timeMs) == true)
             cmd.Execute(timeMs);
         RaiseEvent(new RoutedEventArgs(SeekCompletedEvent));
@@ -385,7 +397,11 @@ public class SeekBar : ContentControl
     private static void OnPositionChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var sb = (SeekBar)d;
-        if (sb._isDragging) return;
+        if (sb._isDragging)
+        {
+            sb.UpdateVisuals();
+            return;
+        }
 
         if (sb._seekTarget >= 0)
         {
@@ -451,6 +467,87 @@ public class SeekBar : ContentControl
             Canvas.SetLeft(thumbGrid, thumbLeft - (_thumbShadowSize - _thumbSize) / 2);
             Canvas.SetTop(thumbGrid, (22 - _thumbShadowSize) / 2);
         }
+    }
+
+    private void UpdateDragThumbnailPreview()
+    {
+        if (ThumbnailPreview == null || ActualWidth <= 0)
+            return;
+
+        long now = Stopwatch.GetTimestamp();
+        long minIntervalTicks = Stopwatch.Frequency / 60;
+        if (_lastThumbPreviewUpdateTs != 0 && now - _lastThumbPreviewUpdateTs < minIntervalTicks)
+            return;
+
+        _lastThumbPreviewUpdateTs = now;
+        ThumbnailPreview.OnMove(_lastMousePos, ActualWidth);
+    }
+
+    private void BeginDragPerfSession()
+    {
+        EndDragPerfSession();
+
+        _dragStartedTimestamp = Stopwatch.GetTimestamp();
+        _dragStartPosition = Position;
+        _dragMoveCount = 0;
+        _dragVisualCount = 0;
+        _dragVisualTotalMs = 0;
+        _dragVisualMaxMs = 0;
+
+        _dragPerfSpan = PerfSpan.Begin("SeekBar.Drag", new Dictionary<string, string>
+        {
+            ["durationMs"] = ((long)Duration).ToString(),
+            ["trackWidthPx"] = ActualWidth.ToString("F1"),
+            ["startPositionMs"] = ((long)_dragStartPosition).ToString()
+        });
+
+        _dragFrameCollector = new FrameTimingCollector(capacity: 8_192, jankThresholdMs: 6.25);
+        _dragFrameCollector.Start();
+    }
+
+    private void EndDragPerfSession()
+    {
+        FrameTimingSnapshot? snapshot = null;
+        if (_dragFrameCollector != null)
+        {
+            snapshot = _dragFrameCollector.Stop();
+            _dragFrameCollector.Dispose();
+            _dragFrameCollector = null;
+        }
+
+        var perfSpan = _dragPerfSpan;
+        _dragPerfSpan = null;
+        perfSpan?.Dispose();
+
+        if (_dragStartedTimestamp == 0)
+            return;
+
+        double elapsedMs = (Stopwatch.GetTimestamp() - _dragStartedTimestamp) * 1000.0 / Stopwatch.Frequency;
+        _dragStartedTimestamp = 0;
+        _lastThumbPreviewUpdateTs = 0;
+
+        FrameStatistics? frameStats = null;
+        if (snapshot != null)
+            frameStats = FrameStatistics.FromSamples(snapshot.FrameTimesMs, snapshot.DroppedSamples, snapshot.JankFrames);
+
+        string frameSummary = frameStats == null || frameStats.FrameCount == 0
+            ? "frames=0"
+            : $"frames={frameStats.FrameCount} avgFps={frameStats.AverageFps:F1} p95={frameStats.P95FrameTimeMs:F2}ms p99={frameStats.P99FrameTimeMs:F2}ms max={frameStats.MaxFrameTimeMs:F2}ms jank6.25={frameStats.JankOver6_25MsCount} jank8.33={frameStats.JankOver8_33MsCount} jank16.67={frameStats.JankOver16_67MsCount}";
+
+        double avgVisualMs = _dragVisualCount > 0 ? _dragVisualTotalMs / _dragVisualCount : 0;
+        Log.Info(
+            $"SeekDragPerf elapsed={elapsedMs:F1}ms start={_dragStartPosition:F0} end={Position:F0} moves={_dragMoveCount} visuals={_dragVisualCount} visualAvg={avgVisualMs:F3}ms visualMax={_dragVisualMaxMs:F3}ms {frameSummary}");
+    }
+
+    private void MeasureDragVisualUpdate()
+    {
+        long started = Stopwatch.GetTimestamp();
+        UpdateVisuals();
+        double elapsedMs = (Stopwatch.GetTimestamp() - started) * 1000.0 / Stopwatch.Frequency;
+        _dragVisualCount++;
+        _dragVisualTotalMs += elapsedMs;
+        if (elapsedMs > _dragVisualMaxMs)
+            _dragVisualMaxMs = elapsedMs;
     }
 
     private static string FormatTime(long ms)

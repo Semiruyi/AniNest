@@ -183,7 +183,7 @@ public class MediaPlayerController : IMediaPlayerController
     {
         if (mediaPlayer == null || mediaPlayer.Length <= 0) return;
         long target = Math.Max(0, Math.Min(mediaPlayer.Length, time));
-        Log.Debug($"SeekTo {target}ms");
+        Log.Debug($"SeekTo request={time} target={target} current={mediaPlayer.Time} length={mediaPlayer.Length} isPlaying={mediaPlayer.IsPlaying}");
         mediaPlayer.Time = target;
     }
 
