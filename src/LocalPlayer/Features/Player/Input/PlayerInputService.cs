@@ -7,6 +7,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Persistence;
+using LocalPlayer.Presentation.Primitives;
 
 namespace LocalPlayer.Features.Player.Input;
 
@@ -264,6 +265,7 @@ public sealed class PlayerInputService : IPlayerInputService
     private static bool ShouldSkipMouse(DependencyObject? source)
         => HasAncestor<ButtonBase>(source)
             || HasAncestor<Thumb>(source)
+            || HasAncestor<SeekBar>(source)
             || HasAncestor<TextBoxBase>(source)
             || HasAncestor<PasswordBox>(source)
             || HasAncestor<ComboBox>(source)
