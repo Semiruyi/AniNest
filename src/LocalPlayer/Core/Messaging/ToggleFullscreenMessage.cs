@@ -1,4 +1,4 @@
-﻿namespace LocalPlayer.Core.Messaging;
+namespace LocalPlayer.Core.Messaging;
 
 public record ToggleFullscreenMessage;
 

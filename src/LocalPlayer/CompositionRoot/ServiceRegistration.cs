@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using LocalPlayer.Features.Library;
 using LocalPlayer.Features.Player;
 using LocalPlayer.Features.Shell;

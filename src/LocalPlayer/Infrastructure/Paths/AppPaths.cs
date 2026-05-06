@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Paths;
 using LocalPlayer.Infrastructure.Persistence;
