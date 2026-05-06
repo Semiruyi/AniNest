@@ -6,15 +6,11 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LibVLCSharp.Shared;
 using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Paths;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Infrastructure.Interop;
 namespace LocalPlayer.Infrastructure.Media;
 
 public class VideoFrameProvider : IDisposable
 {
+    private static readonly Logger Log = AppLog.For<VideoFrameProvider>();
     private readonly int _width;
     private readonly int _height;
     private readonly int _stride;
@@ -43,6 +39,7 @@ public class VideoFrameProvider : IDisposable
         // BGRA 涓?WPF PixelFormats.Bgra32 鐨勫瓧鑺傚簭瀹屽叏涓€鑷达紝鏃犻渶 R/B 浜ゆ崲
         player.SetVideoFormat("BGRA", (uint)_width, (uint)_height, (uint)_stride);
         player.SetVideoCallbacks(VideoLock, VideoUnlock, VideoDisplay);
+        Log.Info($"AttachToPlayer: {_width}x{_height}, stride={_stride}");
     }
 
     private IntPtr VideoLock(IntPtr opaque, IntPtr planes)
@@ -54,6 +51,7 @@ public class VideoFrameProvider : IDisposable
             _bufferHandle = GCHandle.Alloc(buf, GCHandleType.Pinned);
             IntPtr ptr = _bufferHandle.AddrOfPinnedObject();
             Marshal.WriteIntPtr(planes, ptr);
+            Log.Debug($"VideoLock: bufferIndex={_bufferIndex}");
             return ptr;
         }
     }
@@ -65,6 +63,7 @@ public class VideoFrameProvider : IDisposable
             if (_bufferHandle.IsAllocated)
                 _bufferHandle.Free();
             _readyBuffer = _buffers[_bufferIndex];
+            Log.Debug($"VideoUnlock: bufferIndex={_bufferIndex}");
         }
     }
 
@@ -78,6 +77,7 @@ public class VideoFrameProvider : IDisposable
         }
 
         if (readyBuf == null || _bitmap == null) return;
+        Log.Debug("VideoDisplay: frame ready");
 
         var wb = _bitmap;
         var w = _width;

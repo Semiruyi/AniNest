@@ -1,15 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using LocalPlayer.Infrastructure.Localization;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Paths;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Infrastructure.Interop;
 using LocalPlayer.Features.Player.Models;
+using LocalPlayer.Infrastructure.Localization;
+using LocalPlayer.Infrastructure.Media;
 
 namespace LocalPlayer.Features.Player;
 
@@ -17,11 +12,15 @@ public partial class PlaylistViewModel : ObservableObject
 {
     private PlaylistManager _playlistManager = null!;
     private readonly ILocalizationService _loc;
+    private Action<string>? _videoPlayedHandler;
 
     public PlaylistViewModel(ILocalizationService loc)
     {
         _loc = loc;
     }
+
+    public event Action<int>? CurrentIndexChanged;
+    public event Action<string>? VideoPlayed;
 
     [ObservableProperty]
     private string _episodeCountText = "";
@@ -47,10 +46,8 @@ public partial class PlaylistViewModel : ObservableObject
     public void SetPlaylistManager(PlaylistManager playlistManager)
     {
         _playlistManager = playlistManager;
-        _playlistManager.VideoPlayed += filePath =>
-        {
-            // CurrentVideoPath 鐢?PlayerViewModel 绠＄悊
-        };
+        _videoPlayedHandler = filePath => VideoPlayed?.Invoke(filePath);
+        _playlistManager.VideoPlayed += _videoPlayedHandler;
     }
 
     public void LoadFolder(string folderPath, string folderName)
@@ -138,6 +135,15 @@ public partial class PlaylistViewModel : ObservableObject
         SetCurrentIndex(_playlistManager.CurrentIndex, force: true);
     }
 
+    public void Cleanup()
+    {
+        if (_videoPlayedHandler != null)
+        {
+            _playlistManager.VideoPlayed -= _videoPlayedHandler;
+            _videoPlayedHandler = null;
+        }
+    }
+
     private void SetCurrentIndex(int value, bool force = false)
     {
         if (!force && _currentIndex == value)
@@ -146,9 +152,6 @@ public partial class PlaylistViewModel : ObservableObject
         _currentIndex = value;
         OnPropertyChanged(nameof(CurrentIndex));
         OnPropertyChanged(nameof(CurrentItem));
+        CurrentIndexChanged?.Invoke(value);
     }
 }
-
-
-
-

@@ -73,6 +73,7 @@ public class MediaPlayerController : IMediaPlayerController
             frameProvider = new VideoFrameProvider();
             frameProvider.AttachToPlayer(mediaPlayer);
             Log.Info("VideoFrameProvider attached to MediaPlayer");
+            Log.Info($"Initialize complete: VideoBitmap={(frameProvider.Bitmap == null ? "null" : "ready")}");
         }
         catch (Exception ex)
         {
@@ -125,6 +126,7 @@ public class MediaPlayerController : IMediaPlayerController
         }
         bool result = mediaPlayer.Play(media);
         Log.Info($"mediaPlayer.Play returned: {result}");
+        Log.Info($"After Play: IsPlaying={mediaPlayer.IsPlaying}, Time={mediaPlayer.Time}, Length={mediaPlayer.Length}");
     }
 
     public void TogglePlayPause()
@@ -132,13 +134,20 @@ public class MediaPlayerController : IMediaPlayerController
         if (mediaPlayer == null) return;
 
         if (mediaPlayer.IsPlaying)
+        {
+            Log.Info("TogglePlayPause -> Pause");
             mediaPlayer.Pause();
+        }
         else
+        {
+            Log.Info("TogglePlayPause -> Play");
             mediaPlayer.Play();
+        }
     }
 
     public void Stop()
     {
+        Log.Info("Stop called");
         mediaPlayer?.Stop();
     }
 

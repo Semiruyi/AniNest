@@ -4,8 +4,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
-using LocalPlayer.Core.Messaging;
 using LocalPlayer.Features.Library.Models;
 using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Infrastructure.Persistence;
@@ -23,6 +21,7 @@ public partial class MainPageViewModel : ObservableObject
     private bool _isCleanedUp;
 
     public event EventHandler? LoadDataCompleted;
+    public event Action<string, string>? FolderSelected;
 
     public ObservableCollection<FolderListItem> FolderItems { get; } = new();
 
@@ -51,12 +50,12 @@ public partial class MainPageViewModel : ObservableObject
 
         FolderItems.CollectionChanged += (_, _) => UpdateToolbarState();
 
-        WeakReferenceMessenger.Default.Register<FolderAddedMessage>(this, (_, m) =>
-        {
-            FolderItems.Add(_coordinator.CreateFolderItem(m.Name, m.Path, m.VideoCount, m.CoverPath));
-        });
-
         thumbnailGenerator.ProgressChanged += _thumbnailProgressChangedHandler;
+    }
+
+    public void AddFolderItem(string name, string path, int videoCount, string? coverPath)
+    {
+        FolderItems.Add(_coordinator.CreateFolderItem(name, path, videoCount, coverPath));
     }
 
     [RelayCommand]
@@ -126,7 +125,7 @@ public partial class MainPageViewModel : ObservableObject
         }
 
         name = System.IO.Path.GetFileName(path);
-        WeakReferenceMessenger.Default.Send(new FolderSelectedMessage(path, name));
+        FolderSelected?.Invoke(path, name);
         return true;
     }
 
@@ -136,7 +135,6 @@ public partial class MainPageViewModel : ObservableObject
             return;
 
         _isCleanedUp = true;
-        WeakReferenceMessenger.Default.UnregisterAll(this);
     }
 
     private void UpdateToolbarState()

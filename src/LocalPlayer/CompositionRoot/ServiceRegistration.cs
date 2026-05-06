@@ -22,7 +22,10 @@ public static class ServiceRegistration
         services.AddSingleton<ITaskbarAutoHideCoordinator, TaskbarAutoHideCoordinator>();
         services.AddSingleton<IThumbnailGenerator, ThumbnailGenerator>();
         services.AddSingleton<ILibraryPageCoordinator, LibraryPageCoordinator>();
-        services.AddTransient<IMediaPlayerController, MediaPlayerController>();
+        services.AddSingleton<PlayerSessionController>();
+        services.AddSingleton<PlayerPlaybackStateController>();
+        services.AddSingleton<IPlayerViewCoordinator, PlayerViewCoordinator>();
+        services.AddSingleton<IMediaPlayerController, MediaPlayerController>();
 
         services.AddSingleton<MainPageViewModel>();
         services.AddSingleton<PlayerViewModel>();

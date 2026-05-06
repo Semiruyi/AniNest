@@ -3,13 +3,10 @@ using System.Linq;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
 using LocalPlayer.Features.Library;
 using LocalPlayer.Features.Player;
-using LocalPlayer.Infrastructure.Localization;
-using LocalPlayer.Core.Messaging;
 using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Paths;
+using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Infrastructure.Persistence;
 using LocalPlayer.Infrastructure.Media;
 using LocalPlayer.Infrastructure.Thumbnails;
@@ -19,9 +16,11 @@ namespace LocalPlayer.Features.Shell;
 
 public partial class ShellViewModel : ObservableObject
 {
+    private static readonly Logger Log = AppLog.For<ShellViewModel>();
     private readonly ISettingsService _settings;
     private readonly ILocalizationService _loc;
     private readonly ITaskbarAutoHideCoordinator _taskbarAutoHide;
+    private readonly IPlayerViewCoordinator _playerCoordinator;
     private readonly MainPageViewModel _mainPage;
     private readonly PlayerViewModel _playerPage;
 
@@ -49,6 +48,8 @@ public partial class ShellViewModel : ObservableObject
     [ObservableProperty]
     private string _currentAnimationCode = "continuous";
 
+    public event Action? ToggleFullscreenRequested;
+
     public ILocalizationService Localization => _loc;
     public IReadOnlyList<LanguageInfo> AvailableLanguages => _loc.AvailableLanguages;
 
@@ -56,32 +57,56 @@ public partial class ShellViewModel : ObservableObject
         ISettingsService settings,
         ILocalizationService loc,
         ITaskbarAutoHideCoordinator taskbarAutoHide,
+        IPlayerViewCoordinator playerCoordinator,
         MainPageViewModel mainPage,
         PlayerViewModel playerPage)
     {
         _settings = settings;
         _loc = loc;
         _taskbarAutoHide = taskbarAutoHide;
+        _playerCoordinator = playerCoordinator;
         _currentLanguageCode = _loc.CurrentLanguage;
         _currentAnimationCode = _settings.Load().FullscreenAnimation;
         _mainPage = mainPage;
         _playerPage = playerPage;
-
-        WeakReferenceMessenger.Default.Register<FolderSelectedMessage>(this, (_, m) =>
-        {
-            _ = _taskbarAutoHide.EnterPlayerPageAsync(CurrentAnimationCode);
-            CurrentPage = _playerPage;
-            WeakReferenceMessenger.Default.Send(new LoadPlayerFolderSkeletonMessage(m.Path, m.Name));
-        });
-
-        WeakReferenceMessenger.Default.Register<BackRequestedMessage>(this, (_, _) =>
-        {
-            _ = _taskbarAutoHide.LeavePlayerPageAsync();
-            CurrentPage = _mainPage;
-        });
+        _mainPage.FolderSelected += OnMainPageFolderSelected;
+        _playerPage.ToggleFullscreenRequested += OnPlayerToggleFullscreenRequested;
+        _playerPage.GoBackRequested += OnPlayerGoBackRequested;
 
         Application.Current.Exit += (_, _) => _taskbarAutoHide.RestoreIfNeeded();
 
+        Log.Info($"ShellViewModel initialized. CurrentAnimation={_currentAnimationCode}, CurrentLanguage={_currentLanguageCode}");
+        CurrentPage = _mainPage;
+    }
+
+    public void OnPageTransitionCompleted()
+    {
+        Log.Info($"OnPageTransitionCompleted. CurrentPage={CurrentPage?.GetType().Name ?? "null"}");
+        if (CurrentPage is PlayerViewModel)
+        {
+            Log.Info("Player page transition completed, requesting LoadFolderDataAsync");
+            _ = _playerCoordinator.LoadFolderDataAsync();
+        }
+    }
+
+    public void SetPlayerFullscreen(bool value)
+        => _playerPage.SetFullscreen(value);
+
+    private void OnMainPageFolderSelected(string path, string name)
+    {
+        Log.Info($"Folder selected: {name} | {path}");
+        _ = _playerCoordinator.EnterPlayerPageAsync(CurrentAnimationCode);
+        CurrentPage = _playerPage;
+        _playerCoordinator.LoadFolderSkeleton(path, name);
+        _ = _playerCoordinator.LoadFolderDataAsync();
+    }
+
+    private void OnPlayerToggleFullscreenRequested()
+        => ToggleFullscreenRequested?.Invoke();
+
+    private void OnPlayerGoBackRequested()
+    {
+        _ = _taskbarAutoHide.LeavePlayerPageAsync();
         CurrentPage = _mainPage;
     }
 
@@ -172,7 +197,7 @@ public partial class ShellViewModel : ObservableObject
             MessageBox.Show(error ?? _loc["Dialog.UnknownError"], _loc["Dialog.Error"]);
             return;
         }
-        WeakReferenceMessenger.Default.Send(new FolderAddedMessage(name, path, scanResult.VideoCount, scanResult.CoverPath));
+        _mainPage.AddFolderItem(name, path, scanResult.VideoCount, scanResult.CoverPath);
     }
 
 }

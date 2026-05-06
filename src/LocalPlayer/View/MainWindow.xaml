@@ -192,7 +192,7 @@
                                                             <Button Style="{StaticResource PopupMenuButton}"
                                                                     Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                     CommandParameter="zh-CN">
-                                                                <TextBlock Text="涓枃" VerticalAlignment="Center"/>
+                                                                <TextBlock Text="中文" VerticalAlignment="Center"/>
                                                             </Button>
                                                             <Button Style="{StaticResource PopupMenuButton}"
                                                                     Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"

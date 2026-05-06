@@ -1,13 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
-using LocalPlayer.Core.Messaging;
 using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Infrastructure.Media;
 using LocalPlayer.Infrastructure.Thumbnails;
@@ -22,36 +19,34 @@ public partial class ControlBarViewModel : ObservableObject
     private readonly IMediaPlayerController _media;
     private readonly PlayerInputHandler _inputHandler;
     private readonly ILocalizationService _loc;
+    private readonly PlayerPlaybackStateController _playback;
     private readonly PropertyChangedEventHandler _locPropertyChangedHandler;
+    private readonly PropertyChangedEventHandler _playbackPropertyChangedHandler;
 
     private float _savedRate = 1.0f;
-    private long _lastNonZeroTime;
 
     public ThumbnailPreviewController ThumbnailPreview { get; }
 
-    [ObservableProperty]
-    private bool _isPlaying;
-
-    [ObservableProperty]
-    private long _currentTime;
-
-    [ObservableProperty]
-    private long _totalTime;
-
-    [ObservableProperty]
-    private string _currentTimeText = "00:00";
-
-    [ObservableProperty]
-    private string _totalTimeText = "00:00";
-
-    [ObservableProperty]
-    private float _rate = 1.0f;
-
-    [ObservableProperty]
-    private long _bufferedPosition;
-
-    [ObservableProperty]
-    private bool _isSeeking;
+    public bool IsPlaying => _playback.IsPlaying;
+    public long CurrentTime
+    {
+        get => _playback.CurrentTime;
+        set
+        {
+            if (_playback.CurrentTime == value) return;
+            _media.SeekTo(value);
+        }
+    }
+    public long TotalTime => _playback.TotalTime;
+    public string CurrentTimeText => _playback.CurrentTimeText;
+    public string TotalTimeText => _playback.TotalTimeText;
+    public float Rate { get; private set; } = 1.0f;
+    public long BufferedPosition => _playback.BufferedPosition;
+    public bool IsSeeking
+    {
+        get => _playback.IsSeeking;
+        set => _playback.SetSeeking(value);
+    }
 
     public static float[] SpeedOptions { get; } = { 2.0f, 1.5f, 1.25f, 1.0f, 0.75f, 0.5f };
 
@@ -61,10 +56,9 @@ public partial class ControlBarViewModel : ObservableObject
     [RelayCommand]
     private void ToggleSpeedPopup() => IsSpeedPopupOpen = !IsSpeedPopupOpen;
 
-    [ObservableProperty]
-    private string? _currentVideoPath;
+    public string? CurrentVideoPath => _playback.CurrentVideoPath;
 
-    public long MediaLength => _media.Length;
+    public long MediaLength => _playback.MediaLength;
 
     public string PlayPauseTooltip => FormatTooltip(_loc["Player.PlayPause"], "TogglePlayPause");
     public string PreviousTooltip => FormatTooltip(_loc["Player.Previous"], "PreviousEpisode");
@@ -81,13 +75,19 @@ public partial class ControlBarViewModel : ObservableObject
     public event Action? PreviousRequested;
     public event Action? GoBackRequested;
     public event Action? TogglePlaylistRequested;
+    public event Action? ToggleFullscreenRequested;
 
-    public ControlBarViewModel(IMediaPlayerController media, PlayerInputHandler inputHandler,
-                               IThumbnailGenerator thumbnailGenerator, ILocalizationService loc)
+    public ControlBarViewModel(
+        IMediaPlayerController media,
+        PlayerInputHandler inputHandler,
+        IThumbnailGenerator thumbnailGenerator,
+        ILocalizationService loc,
+        PlayerPlaybackStateController playback)
     {
         _media = media;
         _inputHandler = inputHandler;
         _loc = loc;
+        _playback = playback;
         _locPropertyChangedHandler = (_, args) =>
         {
             if (args.PropertyName is null || args.PropertyName == nameof(ILocalizationService.CurrentLanguage) || args.PropertyName == "Item[]")
@@ -95,6 +95,39 @@ public partial class ControlBarViewModel : ObservableObject
                 OnPropertyChanged(nameof(PlayPauseTooltip));
                 OnPropertyChanged(nameof(PreviousTooltip));
                 OnPropertyChanged(nameof(NextTooltip));
+            }
+        };
+        _playbackPropertyChangedHandler = (_, args) =>
+        {
+            if (args.PropertyName is null)
+                return;
+
+            switch (args.PropertyName)
+            {
+                case nameof(PlayerPlaybackStateController.IsPlaying):
+                    OnPropertyChanged(nameof(IsPlaying));
+                    break;
+                case nameof(PlayerPlaybackStateController.CurrentTime):
+                    OnPropertyChanged(nameof(CurrentTime));
+                    break;
+                case nameof(PlayerPlaybackStateController.TotalTime):
+                    OnPropertyChanged(nameof(TotalTime));
+                    break;
+                case nameof(PlayerPlaybackStateController.CurrentTimeText):
+                    OnPropertyChanged(nameof(CurrentTimeText));
+                    break;
+                case nameof(PlayerPlaybackStateController.TotalTimeText):
+                    OnPropertyChanged(nameof(TotalTimeText));
+                    break;
+                case nameof(PlayerPlaybackStateController.BufferedPosition):
+                    OnPropertyChanged(nameof(BufferedPosition));
+                    break;
+                case nameof(PlayerPlaybackStateController.IsSeeking):
+                    OnPropertyChanged(nameof(IsSeeking));
+                    break;
+                case nameof(PlayerPlaybackStateController.CurrentVideoPath):
+                    OnPropertyChanged(nameof(CurrentVideoPath));
+                    break;
             }
         };
 
@@ -110,35 +143,20 @@ public partial class ControlBarViewModel : ObservableObject
             OnPropertyChanged(nameof(NextTooltip));
         };
         _loc.PropertyChanged += _locPropertyChangedHandler;
-
-        _media.Playing += (_, _) =>
-            Application.Current.Dispatcher.Invoke(() => IsPlaying = true);
-
-        _media.Paused += (_, _) =>
-            Application.Current.Dispatcher.Invoke(() => IsPlaying = false);
-
-        _media.Stopped += (_, _) =>
-            Application.Current.Dispatcher.Invoke(() => IsPlaying = false);
-
-        _media.ProgressUpdated += (_, args) =>
+        _playback.PropertyChanged += _playbackPropertyChangedHandler;
+        _playback.PropertyChanged += (_, args) =>
         {
-            if (IsSeeking) return;
-
-            if (args.CurrentTime == 0 && IsPlaying)
-            {
-                if (_lastNonZeroTime > 0)
-                    CurrentTime = _lastNonZeroTime;
-                TotalTime = args.TotalTime;
-                return;
-            }
-
-            _lastNonZeroTime = args.CurrentTime;
-            CurrentTime = args.CurrentTime;
-            TotalTime = args.TotalTime;
-            BufferedPosition = args.TotalTime;
-            CurrentTimeText = MediaPlayerController.FormatTime(args.CurrentTime);
-            TotalTimeText = MediaPlayerController.FormatTime(args.TotalTime);
+            if (args.PropertyName == nameof(PlayerPlaybackStateController.CurrentVideoPath))
+                ThumbnailPreview.OnCurrentVideoPathChanged();
         };
+        SetRate(_media.Rate);
+    }
+
+    public void SetRate(float value)
+    {
+        if (Rate == value) return;
+        Rate = value;
+        OnPropertyChanged(nameof(Rate));
     }
 
     [RelayCommand]
@@ -160,7 +178,7 @@ public partial class ControlBarViewModel : ObservableObject
     private void ChangeSpeed(float speed)
     {
         _media.Rate = speed;
-        Rate = speed;
+        SetRate(speed);
     }
 
     [ObservableProperty]
@@ -234,7 +252,7 @@ public partial class ControlBarViewModel : ObservableObject
     private void TogglePlaylist() => TogglePlaylistRequested?.Invoke();
 
     [RelayCommand]
-    private void ToggleFullscreen() => WeakReferenceMessenger.Default.Send(new ToggleFullscreenMessage());
+    private void ToggleFullscreen() => ToggleFullscreenRequested?.Invoke();
 
     [RelayCommand]
     private void GoBack()
@@ -246,14 +264,14 @@ public partial class ControlBarViewModel : ObservableObject
     private void EnterRightHold()
     {
         _savedRate = Rate;
-        Rate = 3.0f;
+        SetRate(3.0f);
         _media.Rate = 3.0f;
     }
 
     [RelayCommand]
     private void ExitRightHold()
     {
-        Rate = _savedRate;
+        SetRate(_savedRate);
         _media.Rate = _savedRate;
     }
 
@@ -265,5 +283,6 @@ public partial class ControlBarViewModel : ObservableObject
     public void Cleanup()
     {
         _loc.PropertyChanged -= _locPropertyChangedHandler;
+        _playback.PropertyChanged -= _playbackPropertyChangedHandler;
     }
 }

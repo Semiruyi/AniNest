@@ -1,10 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
-using CommunityToolkit.Mvvm.Messaging;
-using LocalPlayer.Features.Player;
 using LocalPlayer.Features.Shell;
-using LocalPlayer.Core.Messaging;
 using LocalPlayer.Presentation.Diagnostics;
 using LocalPlayer.Presentation.Primitives;
 
@@ -30,17 +27,24 @@ public partial class MainWindow : Window
 
         PageTransition.TransitionCompleted += (_, _) =>
         {
-            if (DataContext is ShellViewModel vm && vm.CurrentPage is PlayerViewModel)
-                WeakReferenceMessenger.Default.Send(new LoadPlayerFolderDataMessage());
+            vm.OnPageTransitionCompleted();
         };
 
-        WeakReferenceMessenger.Default.Register<ToggleFullscreenMessage>(this, (_, _) =>
+        vm.ToggleFullscreenRequested += OnToggleFullscreenRequested;
+    }
+
+    private void OnToggleFullscreenRequested()
+    {
+        if (!_isTrueFullscreen && TitleBarRow.Height.Value > 0)
         {
-            if (!_isTrueFullscreen && TitleBarRow.Height.Value > 0)
-                EnterFullscreen();
-            else
-                ExitFullscreen();
-        });
+            EnterFullscreen();
+            ((ShellViewModel)DataContext).SetPlayerFullscreen(true);
+        }
+        else
+        {
+            ExitFullscreen();
+            ((ShellViewModel)DataContext).SetPlayerFullscreen(false);
+        }
     }
 
     private void RegisterPopupRegions()
