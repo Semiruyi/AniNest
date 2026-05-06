@@ -107,37 +107,33 @@
                    IsOpenAnimated="{Binding ThumbnailPreview.IsOpen}"
                    OpenAnimationOrigin="0.5,1"
                    HorizontalOffset="{Binding ThumbnailPreview.HOffset}"
-                   VerticalOffset="{StaticResource ThumbnailPopupOffset}">
-                <Border Background="{StaticResource PopupMenuBackground}"
-                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
-                        Padding="{StaticResource PopupMenuPadding}">
-                    <Grid>
-                        <Border x:Name="ThumbnailImageBorder"
-                                Width="{StaticResource ThumbnailPopupWidth}"
-                                Height="{StaticResource ThumbnailPopupHeight}">
-                            <Border.Clip>
-                                <RectangleGeometry RadiusX="{StaticResource ThumbnailPreviewImageClipRadius}"
-                                                   RadiusY="{StaticResource ThumbnailPreviewImageClipRadius}"
-                                                   Rect="0,0,160,90"/>
-                            </Border.Clip>
-                            <Image Source="{Binding ThumbnailPreview.ImageSource}"
-                                   Visibility="{Binding ThumbnailPreview.ImageVisibility}"
-                                   Width="{StaticResource ThumbnailPopupWidth}"
-                                   Height="{StaticResource ThumbnailPopupHeight}"
-                                   Stretch="UniformToFill"/>
-                        </Border>
-                        <Border Background="{StaticResource ThumbnailPreviewTimeBackground}"
-                                CornerRadius="{StaticResource ThumbnailPreviewTimeCornerRadius}"
-                                Padding="{StaticResource ThumbnailPreviewTimePadding}"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Bottom">
-                            <TextBlock Text="{Binding ThumbnailPreview.TimeText}"
-                                       Foreground="{StaticResource TextPrimary}"
-                                       FontSize="{StaticResource ThumbnailPreviewFontSize}"
-                                       FontFamily="Segoe UI, Microsoft YaHei, sans-serif"/>
-                        </Border>
-                    </Grid>
-                </Border>
+                   VerticalOffset="{Binding ThumbnailPreview.PopupVerticalOffset}">
+                <Grid Width="{Binding ThumbnailPreview.PopupWidth}">
+                    <Border x:Name="ThumbnailImageBorder"
+                            Width="{StaticResource ThumbnailPopupWidth}"
+                            Height="{StaticResource ThumbnailPopupHeight}"
+                            Visibility="{Binding ThumbnailPreview.ImageVisibility}">
+                        <Border.Clip>
+                            <RectangleGeometry RadiusX="{StaticResource ThumbnailPreviewImageClipRadius}"
+                                               RadiusY="{StaticResource ThumbnailPreviewImageClipRadius}"
+                                               Rect="0,0,160,90"/>
+                        </Border.Clip>
+                        <Image Source="{Binding ThumbnailPreview.ImageSource}"
+                               Width="{StaticResource ThumbnailPopupWidth}"
+                               Height="{StaticResource ThumbnailPopupHeight}"
+                               Stretch="UniformToFill"/>
+                    </Border>
+                    <Border Background="{StaticResource ThumbnailPreviewTimeBackground}"
+                            CornerRadius="{StaticResource ThumbnailPreviewTimeCornerRadius}"
+                            Padding="{StaticResource ThumbnailPreviewTimePadding}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Bottom">
+                        <TextBlock Text="{Binding ThumbnailPreview.TimeText}"
+                                   Foreground="{StaticResource TextPrimary}"
+                                   FontSize="{StaticResource ThumbnailPreviewFontSize}"
+                                   FontFamily="Segoe UI, Microsoft YaHei, sans-serif"/>
+                    </Border>
+                </Grid>
             </primitives:AnimatedPopup>
 
             <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"

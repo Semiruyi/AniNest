@@ -51,6 +51,12 @@ public partial class ThumbnailPreviewController : ObservableObject
     [ObservableProperty]
     private double _hOffset;
 
+    [ObservableProperty]
+    private double _popupWidth = 160;
+
+    [ObservableProperty]
+    private double _popupVerticalOffset = -120;
+
     public ThumbnailPreviewController(
         IThumbnailGenerator thumbnailGenerator,
         Func<string?> getCurrentVideoPath,
@@ -115,16 +121,20 @@ public partial class ThumbnailPreviewController : ObservableObject
         int hoverSecond = (int)(hoverTimeMs / 1000);
 
         TimeText = FormatTime(hoverTimeMs);
-        double popupW = 160;
-        HOffset = Math.Max(-popupW / 2, Math.Min(pos.X - popupW / 2, sliderWidth - popupW / 2));
-
         string? currentVideoPath = _getCurrentVideoPath();
         bool thumbReady = currentVideoPath != null &&
             _thumbnailGenerator.GetState(currentVideoPath) == ThumbnailState.Ready;
         ImageVisibility = thumbReady ? Visibility.Visible : Visibility.Collapsed;
+        if (!thumbReady)
+            ImageSource = null;
+
+        PopupWidth = thumbReady ? 160 : Math.Max(52, (TimeText.Length * 9) + 20);
+        PopupVerticalOffset = thumbReady ? -120 : -28;
+        HOffset = Math.Clamp(pos.X - (PopupWidth / 2), 0, Math.Max(0, sliderWidth - PopupWidth));
 
         if (hoverSecond == _lastRequestedSecond) return;
         _lastRequestedSecond = hoverSecond;
+        Log.Debug($"PreviewLayout second={hoverSecond} ready={thumbReady} x={pos.X:F1}/{sliderWidth:F1} width={PopupWidth:F1} hOffset={HOffset:F1} vOffset={PopupVerticalOffset:F1}");
 
         if (thumbReady && currentVideoPath != null)
         {
@@ -145,6 +155,10 @@ public partial class ThumbnailPreviewController : ObservableObject
                         var toRemove = _thumbCache.Keys.OrderBy(k => k).Take(_thumbCache.Count / 2).ToList();
                         foreach (var k in toRemove) _thumbCache.Remove(k);
                     }
+                }
+                else
+                {
+                    ImageSource = null;
                 }
             }
         }
