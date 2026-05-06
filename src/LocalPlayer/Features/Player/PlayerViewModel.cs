@@ -4,6 +4,7 @@ using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalPlayer.Features.Player.Models;
+using LocalPlayer.Features.Player.Input;
 using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Infrastructure.Media;
 using LocalPlayer.Infrastructure.Thumbnails;
@@ -11,7 +12,7 @@ using LocalPlayer.Presentation.Primitives;
 
 namespace LocalPlayer.Features.Player;
 
-public partial class PlayerViewModel : ObservableObject, ITransitioningContentLifecycle
+public partial class PlayerViewModel : ObservableObject, ITransitioningContentLifecycle, IPlayerInputHost
 {
     private readonly PlayerSessionController _session;
     private readonly PlayerPlaybackStateController _playback;
@@ -25,6 +26,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
 
     public event Action? ToggleFullscreenRequested;
     public event Action? GoBackRequested;
+    public IPlayerInputService InputService { get; }
 
     public ImageSource? VideoSource => _playback.VideoSource;
     public PlaylistItem? CurrentItem => _session.CurrentItem;
@@ -45,11 +47,13 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
         PlayerPlaybackStateController playback,
         IThumbnailGenerator thumbnailGenerator,
         IMediaPlayerController media,
-        ILocalizationService loc)
+        ILocalizationService loc,
+        IPlayerInputService inputService)
     {
         _session = session;
         _playback = playback;
         _media = media;
+        InputService = inputService;
 
         ControlBar = new ControlBarViewModel(media, thumbnailGenerator, loc, playback);
 
@@ -100,6 +104,54 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     {
         if (_media.IsPlaying)
             _media.TogglePlayPause();
+    }
+
+    public bool TryHandleInput(PlayerInputAction action)
+    {
+        switch (action)
+        {
+            case PlayerInputAction.PlayPause:
+                _media.TogglePlayPause();
+                return true;
+            case PlayerInputAction.Stop:
+                _media.Stop();
+                return true;
+            case PlayerInputAction.Next:
+                _ = _session.PlayNext();
+                return true;
+            case PlayerInputAction.Previous:
+                _ = _session.PlayPrevious();
+                return true;
+            case PlayerInputAction.ToggleFullscreen:
+                ToggleFullscreenRequested?.Invoke();
+                return true;
+            case PlayerInputAction.ExitFullscreenOrBack:
+                GoBack();
+                return true;
+            case PlayerInputAction.TogglePlaylist:
+                Playlist.IsVisible = !Playlist.IsVisible;
+                return true;
+            case PlayerInputAction.SeekForwardSmall:
+                _media.SeekForward(5_000);
+                return true;
+            case PlayerInputAction.SeekBackwardSmall:
+                _media.SeekBackward(5_000);
+                return true;
+            case PlayerInputAction.SeekForwardLarge:
+                _media.SeekForward(15_000);
+                return true;
+            case PlayerInputAction.SeekBackwardLarge:
+                _media.SeekBackward(15_000);
+                return true;
+            case PlayerInputAction.BoostSpeedHold:
+                EnterRightHold();
+                return true;
+            case PlayerInputAction.BoostSpeedRelease:
+                ExitRightHold();
+                return true;
+            default:
+                return false;
+        }
     }
 
     [RelayCommand]

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using LocalPlayer.Features.Library;
 using LocalPlayer.Features.Player;
+using LocalPlayer.Features.Player.Input;
 using LocalPlayer.Features.Shell;
 using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Infrastructure.Logging;
@@ -25,6 +26,7 @@ public static class ServiceRegistration
         services.AddSingleton<PlayerSessionController>();
         services.AddSingleton<PlayerPlaybackStateController>();
         services.AddSingleton<IPlayerViewCoordinator, PlayerViewCoordinator>();
+        services.AddSingleton<IPlayerInputService, PlayerInputService>();
         services.AddSingleton<IMediaPlayerController, MediaPlayerController>();
 
         services.AddSingleton<MainPageViewModel>();
