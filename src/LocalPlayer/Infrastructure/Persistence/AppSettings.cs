@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LocalPlayer.Features.Player.Input;
 namespace LocalPlayer.Infrastructure.Persistence;
 
 public class AppSettings
@@ -9,6 +10,7 @@ public class AppSettings
     public int ThumbnailExpiryDays { get; set; } = 30;
     public string Language { get; set; } = "zh-CN";
     public string FullscreenAnimation { get; set; } = "none";
+    public PlayerInputProfile PlayerInput { get; set; } = new();
 }
 
 public class FolderInfo

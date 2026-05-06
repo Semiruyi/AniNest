@@ -5,6 +5,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using LocalPlayer.Infrastructure.Persistence;
 
 namespace LocalPlayer.Features.Player.Input;
 
@@ -13,7 +14,8 @@ public sealed class PlayerInputService : IPlayerInputService
     private const int ClickDelayMs = 200;
     private const int HoldDurationMs = 500;
 
-    private readonly PlayerInputProfile _profile = PlayerInputDefaults.Create();
+    private readonly ISettingsService _settings;
+    private PlayerInputProfile _profile;
     private DispatcherTimer? _leftClickTimer;
     private IPlayerInputHost? _pendingLeftClickHost;
     private bool _skipNextLeftUp;
@@ -21,6 +23,31 @@ public sealed class PlayerInputService : IPlayerInputService
     private IPlayerInputHost? _rightHoldHost;
     private bool _rightDown;
     private bool _rightHoldTriggered;
+
+    public PlayerInputService(ISettingsService settings)
+    {
+        _settings = settings;
+        _profile = LoadProfile(settings.Load());
+    }
+
+    public PlayerInputProfile CurrentProfile => _profile.Clone();
+
+    public void ReloadProfile()
+    {
+        ResetTransientState();
+        _settings.Reload();
+        _profile = LoadProfile(_settings.Load());
+    }
+
+    public void SaveProfile(PlayerInputProfile profile)
+    {
+        var normalized = NormalizeProfile(profile);
+        var settings = _settings.Load();
+        settings.PlayerInput = normalized.Clone();
+        _settings.Save();
+        _profile = normalized;
+        ResetTransientState();
+    }
 
     public bool TryHandlePreviewKeyDown(IPlayerInputHost host, KeyEventArgs args)
     {
@@ -230,6 +257,42 @@ public sealed class PlayerInputService : IPlayerInputService
         _leftClickTimer?.Stop();
         _leftClickTimer = null;
         _pendingLeftClickHost = null;
+    }
+
+    private void ResetTransientState()
+    {
+        CancelPendingLeftClick();
+        _skipNextLeftUp = false;
+        _rightHoldTimer?.Stop();
+        _rightHoldTimer = null;
+        _rightHoldHost = null;
+        _rightDown = false;
+        _rightHoldTriggered = false;
+    }
+
+    private static PlayerInputProfile LoadProfile(AppSettings settings)
+    {
+        if (settings.PlayerInput is { HasBindings: true })
+            return NormalizeProfile(settings.PlayerInput);
+
+        return PlayerInputDefaults.Create();
+    }
+
+    private static PlayerInputProfile NormalizeProfile(PlayerInputProfile? profile)
+    {
+        if (profile is null || !profile.HasBindings)
+            return PlayerInputDefaults.Create();
+
+        var normalized = new PlayerInputProfile();
+        foreach (var binding in profile.Bindings)
+        {
+            if (binding.KeyTrigger is null && binding.MouseTrigger is null)
+                continue;
+
+            normalized.Bindings.Add(binding.Clone());
+        }
+
+        return normalized.HasBindings ? normalized : PlayerInputDefaults.Create();
     }
 
     private static DispatcherTimer NewTimer(int ms, Action action)
