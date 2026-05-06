@@ -338,6 +338,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             }
             catch (Exception ex)
             {
+                Log.Error("Generate thumbnail failed", ex);
                 task.State = ThumbnailState.Failed;
                 SaveIndex();
                 UpdateProgress();
@@ -427,6 +428,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
         catch (Exception ex)
         {
+            Log.Error("Cleanup temp directories failed", ex);
         }
     }
 
@@ -478,6 +480,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             }
             catch (Exception ex)
             {
+                Log.Error("Delete expired thumbnail directory failed", ex);
             }
 
             lock (_taskLock)
@@ -524,6 +527,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
         catch (Exception ex)
         {
+            Log.Error("Load tasks failed", ex);
             sw.Stop();
         }
     }
@@ -538,6 +542,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
         catch (Exception ex)
         {
+            Log.Error("Save thumbnail index failed", ex);
         }
     }
 
@@ -595,6 +600,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
         catch (Exception ex)
         {
+            Log.Error("Parse video duration failed", ex);
         }
         return 0;
     }

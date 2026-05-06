@@ -13,6 +13,7 @@ using LocalPlayer.Infrastructure.Persistence;
 using LocalPlayer.Infrastructure.Media;
 using LocalPlayer.Infrastructure.Thumbnails;
 using LocalPlayer.Infrastructure.Interop;
+using LocalPlayer.Infrastructure.Logging;
 using Point = System.Windows.Point;
 using LocalPlayer.Features.Player.Models;
 
@@ -20,6 +21,8 @@ namespace LocalPlayer.Features.Player;
 
 public partial class ThumbnailPreviewController : ObservableObject
 {
+    private static readonly Logger Log = AppLog.For<ThumbnailPreviewController>();
+
     private readonly IThumbnailGenerator _thumbnailGenerator;
     private readonly Func<string?> _getCurrentVideoPath;
     private readonly Func<long> _getMediaLength;
@@ -232,6 +235,7 @@ public partial class ThumbnailPreviewController : ObservableObject
         }
         catch (Exception ex)
         {
+            Log.Error("Load thumbnail failed", ex);
             return null;
         }
     }

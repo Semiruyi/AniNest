@@ -173,6 +173,7 @@ internal class ThumbnailRenderer
         }
         catch (Exception ex)
         {
+            Log.Error("Get video duration failed", ex);
             return 0;
         }
     }
