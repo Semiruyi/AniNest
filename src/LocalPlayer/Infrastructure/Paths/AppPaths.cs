@@ -24,7 +24,7 @@ public static class AppPaths
     public static string SettingsPath { get; } = Path.Combine(ConfigDirectory, "settings.json");
     public static string PlayerLogPath { get; } = Path.Combine(LogsDirectory, "player.log");
     public static string PerfLogPath { get; } = Path.Combine(LogsDirectory, "perf.log");
-    public static string FfmpegPath { get; } = Path.Combine(AppRootDirectory, "ffmpeg.exe");
+    public static string FfmpegPath { get; } = ResolveFfmpegPath();
 
     static AppPaths()
     {
@@ -41,6 +41,19 @@ public static class AppPaths
 
     public static string ResolveInLogs(string fileName)
         => Path.IsPathRooted(fileName) ? fileName : Path.Combine(LogsDirectory, fileName);
+
+    private static string ResolveFfmpegPath()
+    {
+        string appRootPath = Path.Combine(AppRootDirectory, "ffmpeg.exe");
+        if (File.Exists(appRootPath))
+            return appRootPath;
+
+        string repoToolsPath = Path.GetFullPath(Path.Combine(AppRootDirectory, "..", "..", "..", "..", "tools", "ffmpeg", "ffmpeg.exe"));
+        if (File.Exists(repoToolsPath))
+            return repoToolsPath;
+
+        return appRootPath;
+    }
 }
 
 

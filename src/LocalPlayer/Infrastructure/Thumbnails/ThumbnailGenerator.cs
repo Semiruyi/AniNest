@@ -92,10 +92,8 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         var sw = Stopwatch.StartNew();
 
         _ffmpegAvailable = File.Exists(_ffmpegPath);
-        if (!_ffmpegAvailable)
-        {
-        }
-        else
+        Log.Info($"[Init] ffmpegPath={_ffmpegPath}, exists={_ffmpegAvailable}");
+        if (_ffmpegAvailable)
         {
             try
             {
@@ -116,7 +114,12 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             }
             catch (Exception ex)
             {
+                Log.Info($"[Init] ffmpeg version probe failed: {ex.Message}");
             }
+        }
+        else
+        {
+            Log.Info("[Init] ffmpeg not available, thumbnail generation disabled");
         }
 
         CleanupTempDirs();
