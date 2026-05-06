@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Paths;
@@ -6,6 +7,7 @@ using LocalPlayer.Infrastructure.Persistence;
 using LocalPlayer.Infrastructure.Media;
 using LocalPlayer.Infrastructure.Thumbnails;
 using LocalPlayer.Infrastructure.Interop;
+
 namespace LocalPlayer.Infrastructure.Media;
 
 public interface IMediaPlayerController : IDisposable
@@ -18,6 +20,7 @@ public interface IMediaPlayerController : IDisposable
     float Rate { get; set; }
 
     void Initialize();
+    Task WarmupAsync();
     void Play(string filePath, long startTimeMs = 0);
     void TogglePlayPause();
     void Stop();
@@ -30,6 +33,3 @@ public interface IMediaPlayerController : IDisposable
     event EventHandler? Stopped;
     event EventHandler<ProgressUpdatedEventArgs>? ProgressUpdated;
 }
-
-
-

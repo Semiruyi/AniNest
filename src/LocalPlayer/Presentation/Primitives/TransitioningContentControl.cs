@@ -9,6 +9,12 @@ using Size = System.Windows.Size;
 
 namespace LocalPlayer.Presentation.Primitives;
 
+public interface ITransitioningContentLifecycle
+{
+    void OnAppearing();
+    void OnDisappearing();
+}
+
 public class TransitioningContentControl : ContentControl
 {
     private readonly Grid _root = new();
@@ -70,6 +76,12 @@ public class TransitioningContentControl : ContentControl
     {
         base.OnContentChanged(oldContent, newContent);
 
+        if (ReferenceEquals(oldContent, newContent))
+            return;
+
+        if (oldContent is ITransitioningContentLifecycle oldLifecycle)
+            oldLifecycle.OnDisappearing();
+
         if (newContent == null)
         {
             _activePresenter.Content = null;
@@ -82,6 +94,9 @@ public class TransitioningContentControl : ContentControl
             _activePresenter.Content = newContent;
             return;
         }
+
+        if (newContent is ITransitioningContentLifecycle newLifecycle)
+            newLifecycle.OnAppearing();
 
         if (_isTransitioning)
             AbortTransition();

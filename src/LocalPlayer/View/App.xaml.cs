@@ -7,6 +7,7 @@ using LocalPlayer.Features.Player;
 using LocalPlayer.Features.Shell;
 using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Media;
 using LocalPlayer.Infrastructure.Persistence;
 using LocalPlayer.View;
 
@@ -25,6 +26,7 @@ public partial class App : Application
 
         var settings = provider.GetRequiredService<ISettingsService>().Load();
         provider.GetRequiredService<ILocalizationService>().SetLanguage(settings.Language);
+        _ = provider.GetRequiredService<IMediaPlayerController>().WarmupAsync();
 
         ApplicationExceptionHandler.Configure(this);
 

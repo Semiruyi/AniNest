@@ -18,6 +18,7 @@ public class MediaPlayerController : IMediaPlayerController
     private static readonly Logger Log = AppLog.For<MediaPlayerController>();
 
     private static LibVLC? _sharedLibVLC;
+    private static readonly object _preinitLock = new();
     private static Task<LibVLC>? _preinitTask;
 
     private LibVLC? libVLC;
@@ -42,16 +43,29 @@ public class MediaPlayerController : IMediaPlayerController
     public event EventHandler? Stopped;
     public event EventHandler<ProgressUpdatedEventArgs>? ProgressUpdated;
 
-    static MediaPlayerController()
+    private static Task<LibVLC> GetOrStartPreinitializationTask()
     {
-        _preinitTask = Task.Run(() =>
+        if (_sharedLibVLC != null)
+            return Task.FromResult(_sharedLibVLC);
+
+        lock (_preinitLock)
         {
-            Log.Info("[Preinitialize] 寮€濮嬪垱寤哄叏灞€ LibVLC...");
-            var vlc = new LibVLC();
-            _sharedLibVLC = vlc;
-            Log.Info("[Preinitialize] 鍏ㄥ眬 LibVLC 鍒涘缓鎴愬姛");
-            return vlc;
-        });
+            if (_sharedLibVLC != null)
+                return Task.FromResult(_sharedLibVLC);
+
+            if (_preinitTask != null)
+                return _preinitTask;
+
+            _preinitTask = Task.Run(() =>
+            {
+                Log.Info("[Preinitialize] 寮€濮嬪垱寤哄叏灞€ LibVLC...");
+                var vlc = new LibVLC();
+                _sharedLibVLC = vlc;
+                Log.Info("[Preinitialize] 鍏ㄥ眬 LibVLC 鍒涘缓鎴愬姛");
+                return vlc;
+            });
+            return _preinitTask;
+        }
     }
 
     public void Initialize()
@@ -62,7 +76,7 @@ public class MediaPlayerController : IMediaPlayerController
             var vlc = _sharedLibVLC;
             if (vlc == null)
             {
-                vlc = _preinitTask!.GetAwaiter().GetResult();
+                vlc = GetOrStartPreinitializationTask().GetAwaiter().GetResult();
                 Log.Info("绛夊緟棰勭儹 LibVLC 瀹屾垚");
             }
             libVLC = vlc;
@@ -95,6 +109,9 @@ public class MediaPlayerController : IMediaPlayerController
 
         Log.Info("VLC initialized");
     }
+
+    public Task WarmupAsync()
+        => GetOrStartPreinitializationTask();
 
     private void UpdateTimer_Tick(object? sender, EventArgs e)
     {

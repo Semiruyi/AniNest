@@ -11,15 +11,17 @@ using LocalPlayer.Infrastructure.Media;
 using LocalPlayer.Infrastructure.Persistence;
 using LocalPlayer.Infrastructure.Thumbnails;
 using LocalPlayer.Presentation.Interop;
+using LocalPlayer.Presentation.Primitives;
 
 namespace LocalPlayer.Features.Player;
 
-public partial class PlayerViewModel : ObservableObject
+public partial class PlayerViewModel : ObservableObject, ITransitioningContentLifecycle
 {
     private readonly PlayerInputHandler _inputHandler;
     private readonly PlayerSessionController _session;
     private readonly PlayerPlaybackStateController _playback;
     private readonly IMediaPlayerController _media;
+    private bool _isMediaInitialized;
 
     private float _savedRate = 1.0f;
 
@@ -84,8 +86,6 @@ public partial class PlayerViewModel : ObservableObject
         };
 
         _inputHandler.ReloadBindings();
-        _media.Initialize();
-        OnPropertyChanged(nameof(VideoSource));
     }
 
     partial void OnCurrentIndexChanged(int value)
@@ -111,6 +111,21 @@ public partial class PlayerViewModel : ObservableObject
         {
             Playlist.IsVisible = _savedPlaylistVisible;
         }
+    }
+
+    public void OnAppearing()
+    {
+        if (_isMediaInitialized)
+            return;
+        _media.Initialize();
+        _isMediaInitialized = true;
+        OnPropertyChanged(nameof(VideoSource));
+    }
+
+    public void OnDisappearing()
+    {
+        if (_media.IsPlaying)
+            _media.TogglePlayPause();
     }
 
     [RelayCommand]
