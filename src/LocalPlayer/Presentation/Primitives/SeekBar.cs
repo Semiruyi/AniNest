@@ -7,6 +7,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using LocalPlayer.Features.Player;
 using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Infrastructure.Logging;
@@ -94,6 +95,7 @@ public class SeekBar : ContentControl
     private double _dragVisualTotalMs;
     private double _dragVisualMaxMs;
     private long _lastThumbPreviewUpdateTs;
+    private bool _visualUpdateScheduled;
 
 
     private Brush _trackBgBrush = new SolidColorBrush(Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF));
@@ -109,6 +111,8 @@ public class SeekBar : ContentControl
     {
         Debug.WriteLine($"{LogTag} Constructor");
         Focusable = true;
+        UseLayoutRounding = true;
+        SnapsToDevicePixels = true;
         BuildVisualTree();
         Loaded += OnLoaded;
     }
@@ -225,7 +229,7 @@ public class SeekBar : ContentControl
     protected override Size ArrangeOverride(Size arrangeBounds)
     {
         var result = base.ArrangeOverride(arrangeBounds);
-        UpdateVisuals();
+        ScheduleVisualUpdate();
         return result;
     }
 
@@ -292,7 +296,7 @@ public class SeekBar : ContentControl
         long newPos = (long)Math.Clamp(Position + offset, 0, Duration);
         _seekTarget = newPos;
         Position = newPos;
-        UpdateVisuals();
+        ScheduleVisualUpdate(immediate: true);
         ExecuteSeek(newPos);
         e.Handled = true;
     }
@@ -398,10 +402,7 @@ public class SeekBar : ContentControl
     {
         var sb = (SeekBar)d;
         if (sb._isDragging)
-        {
-            sb.UpdateVisuals();
             return;
-        }
 
         if (sb._seekTarget >= 0)
         {
@@ -410,7 +411,7 @@ public class SeekBar : ContentControl
             {
                 sb._seekTarget = -1;
                 sb.IsSeeking = false;
-                sb.UpdateVisuals();
+                sb.ScheduleVisualUpdate();
             }
             else if (!sb._restoringPosition)
             {
@@ -421,12 +422,12 @@ public class SeekBar : ContentControl
             return;
         }
 
-        sb.UpdateVisuals();
+        sb.ScheduleVisualUpdate();
     }
 
     private static void OnLayoutPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        ((SeekBar)d).UpdateVisuals();
+        ((SeekBar)d).ScheduleVisualUpdate();
     }
 
 
@@ -453,20 +454,43 @@ public class SeekBar : ContentControl
 
         double playedRatio = Math.Clamp(Position / Duration, 0, 1);
         double bufferedRatio = Math.Clamp(BufferedPosition / Duration, 0, 1);
+        double playedWidth = Math.Clamp(Math.Round(playedRatio * trackWidth), 0, trackWidth);
+        double bufferedWidth = Math.Clamp(Math.Round(bufferedRatio * trackWidth), 0, trackWidth);
 
-        _playedRect.Width = playedRatio * trackWidth;
-        _bufferedRect.Width = bufferedRatio * trackWidth;
+        _playedRect.Width = playedWidth;
+        _bufferedRect.Width = bufferedWidth;
 
-        double thumbCenterX = playedRatio * trackWidth;
-        double thumbLeft = thumbCenterX - _thumbSize / 2;
         var thumbGrid = _thumbCanvas.Children[0] as FrameworkElement;
         if (thumbGrid != null)
         {
             thumbGrid.Width = _thumbShadowSize;
             thumbGrid.Height = _thumbShadowSize;
-            Canvas.SetLeft(thumbGrid, thumbLeft - (_thumbShadowSize - _thumbSize) / 2);
-            Canvas.SetTop(thumbGrid, (22 - _thumbShadowSize) / 2);
+            double thumbLeft = Math.Round(playedWidth - (thumbGrid.Width / 2));
+            double trackHostHeight = _rootGrid?.ActualHeight > 0 ? _rootGrid.ActualHeight : 22;
+            Canvas.SetLeft(thumbGrid, thumbLeft);
+            Canvas.SetTop(thumbGrid, Math.Round((trackHostHeight - thumbGrid.Height) / 2));
         }
+    }
+
+    private void ScheduleVisualUpdate(bool immediate = false)
+    {
+        if (immediate || !IsLoaded)
+        {
+            _visualUpdateScheduled = false;
+            UpdateVisuals();
+            return;
+        }
+
+        if (_visualUpdateScheduled)
+            return;
+
+        _visualUpdateScheduled = true;
+        Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(() =>
+        {
+            _visualUpdateScheduled = false;
+            if (IsLoaded)
+                UpdateVisuals();
+        }));
     }
 
     private void UpdateDragThumbnailPreview()
