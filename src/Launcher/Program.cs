@@ -22,7 +22,7 @@ internal static class Program
                 return code;
         }
 
-        return LaunchApp(applier.AppDirectory);
+        return LaunchApp(root);
     }
 
     private static int ApplyPackageAndReport(PatchApplier applier, string packagePath)
@@ -39,12 +39,13 @@ internal static class Program
         return 0;
     }
 
-    private static int LaunchApp(string appDirectory)
+    private static int LaunchApp(string root)
     {
+        var appDirectory = LauncherPaths.ResolveAppDirectory(root);
         var exePath = Path.Combine(appDirectory, "LocalPlayer.exe");
         if (!File.Exists(exePath))
         {
-            Console.Error.WriteLine($"App not found: {exePath}");
+            Console.Error.WriteLine($"App not found. Resolved app directory: {appDirectory}");
             return 2;
         }
 

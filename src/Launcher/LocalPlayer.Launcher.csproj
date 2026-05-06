@@ -5,7 +5,7 @@
     <TargetFramework>net9.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>Launcher</AssemblyName>
+    <AssemblyName>LocalPlayer.Launcher</AssemblyName>
     <RootNamespace>LocalPlayer.Launcher</RootNamespace>
     <SelfContained>true</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>

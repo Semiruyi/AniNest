@@ -8,11 +8,12 @@ $ErrorActionPreference = "Stop"
 
 $root = Resolve-Path (Join-Path $PSScriptRoot "..")
 $artifactsRoot = Join-Path $root "artifacts"
-$publishRoot = Join-Path $artifactsRoot "release"
-$appPublishRoot = Join-Path $artifactsRoot "publish\app"
+$publishRoot = Join-Path $artifactsRoot "publish"
+$launcherTempRoot = Join-Path $artifactsRoot "publish-temp\launcher"
+$appTempRoot = Join-Path $artifactsRoot "publish-temp\app"
 $appOut = Join-Path $publishRoot "app"
 $dataOut = Join-Path $publishRoot "data"
-$launcherOut = Join-Path $publishRoot "Launcher.exe"
+$launcherOut = Join-Path $publishRoot "LocalPlayer.Launcher.exe"
 $zipOut = Join-Path $artifactsRoot "LocalPlayer-portable.zip"
 
 function Remove-PathIfExists([string]$path) {
@@ -38,21 +39,24 @@ function Copy-Folder([string]$source, [string]$destination) {
 }
 
 Remove-PathIfExists $publishRoot
-Remove-PathIfExists $appPublishRoot
+Remove-PathIfExists $launcherTempRoot
+Remove-PathIfExists $appTempRoot
 New-Item -ItemType Directory -Force -Path $publishRoot | Out-Null
-New-Item -ItemType Directory -Force -Path $appPublishRoot | Out-Null
+New-Item -ItemType Directory -Force -Path $appTempRoot | Out-Null
 
-dotnet publish (Join-Path $root "src\LocalPlayer\LocalPlayer.csproj") -c $Configuration -r $Runtime -o $appPublishRoot
-dotnet publish (Join-Path $root "src\Launcher\LocalPlayer.Launcher.csproj") -c $Configuration -r $Runtime -o (Join-Path $artifactsRoot "publish\launcher")
+dotnet publish (Join-Path $root "src\LocalPlayer\LocalPlayer.csproj") -c $Configuration -r $Runtime -o $appTempRoot
+dotnet publish (Join-Path $root "src\Launcher\LocalPlayer.Launcher.csproj") -c $Configuration -r $Runtime -o $launcherTempRoot
 
-Copy-Folder $appPublishRoot $appOut
+Copy-Folder $appTempRoot $appOut
 Copy-Folder (Join-Path $root "data") $dataOut
 
-$launcherExe = Join-Path $artifactsRoot "publish\launcher\Launcher.exe"
+$launcherExe = Join-Path $launcherTempRoot "LocalPlayer.Launcher.exe"
 if (-not (Test-Path $launcherExe)) {
-    throw "Launcher.exe not found after build."
+    throw "LocalPlayer.Launcher.exe not found after build."
 }
 Copy-Item -LiteralPath $launcherExe -Destination $launcherOut -Force
+Remove-PathIfExists $launcherTempRoot
+Remove-PathIfExists $appTempRoot
 
 if ($Zip) {
     Remove-PathIfExists $zipOut

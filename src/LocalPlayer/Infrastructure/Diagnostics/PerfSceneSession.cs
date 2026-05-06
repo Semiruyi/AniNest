@@ -52,6 +52,27 @@ public sealed class PerfSceneSession : IDisposable
         if (_report != null)
             return _report;
 
+        if (ReferenceEquals(this, Noop))
+        {
+            var noopEndedAtUtc = DateTimeOffset.UtcNow;
+            _report = new PerfSceneReport
+            {
+                SceneName = _sceneName,
+                StartedAtUtc = noopEndedAtUtc,
+                EndedAtUtc = noopEndedAtUtc,
+                DurationMs = 0,
+                RenderTier = 0,
+                AllocatedBytes = 0,
+                Gen0Collections = 0,
+                Gen1Collections = 0,
+                Gen2Collections = 0,
+                Statistics = FrameStatistics.FromSamples([], droppedSamples: 0),
+                Tags = _tags
+            };
+
+            return _report;
+        }
+
         long endedTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
         var endedAtUtc = DateTimeOffset.UtcNow;
         var snapshot = _collector!.Stop();
