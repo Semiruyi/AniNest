@@ -59,6 +59,11 @@
 
   <ItemGroup>
     <Resource Include="Resources\Icons\*.png" />
+    <Resource Include="Resources\Icons\App.ico" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <ApplicationIcon>Resources\Icons\App.ico</ApplicationIcon>
+  </PropertyGroup>
 
 </Project>

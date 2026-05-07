@@ -10,6 +10,7 @@
         xmlns:pagesPlayer="clr-namespace:AniNest.Features.Player"
         xmlns:animations="clr-namespace:AniNest.Presentation.Animations"
         Title="AniNest"
+        Icon="/Resources/Icons/App.ico"
         Height="{StaticResource WindowDefaultHeight}"
         Width="{StaticResource WindowDefaultWidth}"
         MinWidth="{StaticResource WindowMinWidth}"
@@ -78,12 +79,12 @@
                     <StackPanel Grid.Column="0" Orientation="Horizontal"
                                 HorizontalAlignment="Center" VerticalAlignment="Center"
                                 Margin="{StaticResource TitleBarLeftMargin}">
-                        <Viewbox Width="{StaticResource TitleBarAppIconSize}"
-                                 Height="{StaticResource TitleBarAppIconSize}"
-                                 VerticalAlignment="Center">
-                            <Path Data="{StaticResource AppIconGeometry}"
-                                  Fill="{StaticResource AccentBlue}"/>
-                        </Viewbox>
+                        <Image Source="/Resources/Icons/App.png"
+                               Width="{StaticResource TitleBarAppIconSize}"
+                               Height="{StaticResource TitleBarAppIconSize}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"
+                               SnapsToDevicePixels="True"/>
                         <Grid animations:VisibilityAnimator.BindVisible="{Binding IsOnMainPage}">
                             <Button x:Name="FileButton"
                                     Style="{StaticResource TitleBarTextButton}"
