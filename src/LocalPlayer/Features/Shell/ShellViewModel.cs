@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Input;
+using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalPlayer.Features.Library;
@@ -17,6 +18,7 @@ namespace LocalPlayer.Features.Shell;
 public partial class ShellViewModel : ObservableObject
 {
     private static readonly Logger Log = AppLog.For<ShellViewModel>();
+    private const double FrameBudgetMs160Hz = 1000.0 / 160.0;
     private readonly ILocalizationService _loc;
     private readonly ILibraryAppService _libraryService;
     private readonly ITaskbarAutoHideCoordinator _taskbarAutoHide;
@@ -90,9 +92,23 @@ public partial class ShellViewModel : ObservableObject
 
     public void OnPageTransitionCompleted()
     {
+        var sw = Stopwatch.StartNew();
         Log.Info($"OnPageTransitionCompleted. CurrentPage={CurrentPage?.GetType().Name ?? "null"}");
+
         if (CurrentPage is PlayerViewModel)
+        {
             _playerAppService.OnPlayerPageTransitionCompleted();
+        }
+        else if (CurrentPage is MainPageViewModel)
+        {
+            _playerAppService.CompleteLeavePlayerTransition();
+        }
+
+        sw.Stop();
+        var overBudget = sw.Elapsed.TotalMilliseconds > FrameBudgetMs160Hz;
+        Log.Info(
+            $"OnPageTransitionCompleted finished in {sw.Elapsed.TotalMilliseconds:F3}ms " +
+            $"(budget {FrameBudgetMs160Hz:F2}ms @160Hz, overBudget={overBudget})");
     }
 
     public void SetPlayerFullscreen(bool value)
@@ -110,7 +126,7 @@ public partial class ShellViewModel : ObservableObject
 
     private void OnPlayerGoBackRequested()
     {
-        _ = _playerAppService.LeavePlayerAsync();
+        _ = _playerAppService.BeginLeavePlayerAsync();
         CurrentPage = _mainPage;
     }
 

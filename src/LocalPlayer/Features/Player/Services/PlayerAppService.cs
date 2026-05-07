@@ -2,6 +2,7 @@ using LocalPlayer.Infrastructure.Interop;
 using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Media;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -10,6 +11,7 @@ namespace LocalPlayer.Features.Player.Services;
 public sealed class PlayerAppService : IPlayerAppService
 {
     private static readonly Logger Log = AppLog.For<PlayerAppService>();
+    private const double FrameBudgetMs160Hz = 1000.0 / 160.0;
     private readonly ITaskbarAutoHideCoordinator _taskbarAutoHide;
     private readonly PlayerSessionController _session;
     private readonly PlayerPlaybackStateController _playback;
@@ -21,6 +23,7 @@ public sealed class PlayerAppService : IPlayerAppService
     private long _pendingActivationGeneration;
     private PerfSpan? _loadFolderSpan;
     private bool _isPlayerPageVisible;
+    private bool _isLeavingPlayer;
 
     public PlayerAppService(
         ITaskbarAutoHideCoordinator taskbarAutoHide,
@@ -50,6 +53,7 @@ public sealed class PlayerAppService : IPlayerAppService
         CancelAndDispose(ref _loadCts);
         _loadCts = new CancellationTokenSource();
         var cancellationToken = _loadCts.Token;
+        _isLeavingPlayer = false;
         _isPlayerPageVisible = false;
         _pendingActivationGeneration = 0;
 
@@ -100,9 +104,9 @@ public sealed class PlayerAppService : IPlayerAppService
             ("items", _session.PlaylistItems.Count)));
     }
 
-    public Task LeavePlayerAsync()
+    public Task BeginLeavePlayerAsync()
     {
-        Log.Info(MemorySnapshot.Capture("PlayerAppService.LeavePlayer.begin",
+        Log.Info(MemorySnapshot.Capture("PlayerAppService.BeginLeavePlayer.begin",
             ("loadGeneration", _loadGeneration),
             ("loadedGeneration", _loadedGeneration),
             ("activatedGeneration", _activatedGeneration),
@@ -110,22 +114,63 @@ public sealed class PlayerAppService : IPlayerAppService
             ("items", _session.PlaylistItems.Count),
             ("currentIndex", _session.CurrentIndex),
             ("pageVisible", _isPlayerPageVisible)));
+        _isLeavingPlayer = true;
         _isPlayerPageVisible = false;
         _pendingActivationGeneration = 0;
         _activatedGeneration = 0;
         CancelAndDispose(ref _loadCts);
-        _media.ResetSession();
-        _session.ResetSession();
-        _playback.ResetSession();
-        Log.Info(MemorySnapshot.Capture("PlayerAppService.LeavePlayer.end",
+        Log.Info(MemorySnapshot.Capture("PlayerAppService.BeginLeavePlayer.end",
             ("loadGeneration", _loadGeneration),
             ("loadedGeneration", _loadedGeneration),
             ("activatedGeneration", _activatedGeneration),
             ("pendingGeneration", _pendingActivationGeneration),
             ("items", _session.PlaylistItems.Count),
             ("currentIndex", _session.CurrentIndex),
-            ("pageVisible", _isPlayerPageVisible)));
+            ("pageVisible", _isPlayerPageVisible),
+            ("isLeavingPlayer", _isLeavingPlayer)));
         return _taskbarAutoHide.LeavePlayerPageAsync();
+    }
+
+    public void CompleteLeavePlayerTransition()
+    {
+        if (!_isLeavingPlayer)
+        {
+            Log.Debug("CompleteLeavePlayerTransition skipped: player is not leaving");
+            return;
+        }
+
+        var totalStopwatch = Stopwatch.StartNew();
+
+        Log.Info(MemorySnapshot.Capture("PlayerAppService.CompleteLeavePlayerTransition.begin",
+            ("loadGeneration", _loadGeneration),
+            ("loadedGeneration", _loadedGeneration),
+            ("activatedGeneration", _activatedGeneration),
+            ("pendingGeneration", _pendingActivationGeneration),
+            ("items", _session.PlaylistItems.Count),
+            ("currentIndex", _session.CurrentIndex),
+            ("pageVisible", _isPlayerPageVisible),
+            ("isLeavingPlayer", _isLeavingPlayer)));
+
+        var resetStopwatch = Stopwatch.StartNew();
+        _playback.ResetSession();
+        resetStopwatch.Stop();
+        _isLeavingPlayer = false;
+        totalStopwatch.Stop();
+
+        Log.Info(MemorySnapshot.Capture("PlayerAppService.CompleteLeavePlayerTransition.end",
+            ("loadGeneration", _loadGeneration),
+            ("loadedGeneration", _loadedGeneration),
+            ("activatedGeneration", _activatedGeneration),
+            ("pendingGeneration", _pendingActivationGeneration),
+            ("items", _session.PlaylistItems.Count),
+            ("currentIndex", _session.CurrentIndex),
+            ("pageVisible", _isPlayerPageVisible),
+            ("isLeavingPlayer", _isLeavingPlayer)));
+
+        Log.Info(
+            $"CompleteLeavePlayerTransition timing: playbackReset={resetStopwatch.Elapsed.TotalMilliseconds:F3}ms, " +
+            $"total={totalStopwatch.Elapsed.TotalMilliseconds:F3}ms, " +
+            $"budget={FrameBudgetMs160Hz:F2}ms @160Hz, overBudget={totalStopwatch.Elapsed.TotalMilliseconds > FrameBudgetMs160Hz}");
     }
 
     public void OnPlayerPageTransitionCompleted()
