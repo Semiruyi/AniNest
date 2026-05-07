@@ -118,29 +118,21 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
         MouseGestureBehavior.ResetRightState(border);
 
-        if (CardContextMenuOverlay.IsOpen && ReferenceEquals(_overlayItem, item))
-        {
-            CloseCardContextMenu(OverlayCloseReason.Toggle);
-            e.Handled = true;
-            return;
-        }
-
         e.Handled = true;
 
         Dispatcher.BeginInvoke(new Action(() =>
         {
             Log.Debug($"OpenOverlayDispatch: name={item.Name}");
-            _overlayItem = item;
             CardContextMenuOverlay.DataContext = item;
-
-            if (CardContextMenuOverlay.IsOpen)
+            var opened = CardContextMenuOverlay.ToggleForAnchor(border);
+            if (opened)
             {
-                CardContextMenuOverlay.SwitchAnchor(border);
+                _overlayItem = item;
                 return;
             }
 
-            CardContextMenuOverlay.SwitchAnchor(border);
-            CardContextMenuOverlay.IsOpen = true;
+            CardContextMenuOverlay.DataContext = null;
+            _overlayItem = null;
         }), DispatcherPriority.Input);
     }
 
@@ -207,7 +199,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
         Log.Debug($"CloseCardContextMenu: reason={reason}");
         CardContextMenuOverlay.Close(reason);
         CardContextMenuOverlay.DataContext = null;
-        CardContextMenuOverlay.SwitchAnchor(null);
+        CardContextMenuOverlay.ResetAnchor();
         _overlayItem = null;
     }
 

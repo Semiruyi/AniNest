@@ -52,11 +52,29 @@ public class AnimatedOverlay : ContentControl
         DependencyProperty.Register(nameof(AnimationOrigin), typeof(Point), typeof(AnimatedOverlay),
             new PropertyMetadata(new Point(0, 0)));
 
+    public static readonly DependencyProperty OpenScaleFromProperty =
+        DependencyProperty.Register(nameof(OpenScaleFrom), typeof(double), typeof(AnimatedOverlay),
+            new PropertyMetadata(0.96d));
+
+    public static readonly DependencyProperty CloseScaleToProperty =
+        DependencyProperty.Register(nameof(CloseScaleTo), typeof(double), typeof(AnimatedOverlay),
+            new PropertyMetadata(0.96d));
+
     private static readonly DependencyPropertyKey SurfaceMarginPropertyKey =
         DependencyProperty.RegisterReadOnly(nameof(SurfaceMargin), typeof(Thickness), typeof(AnimatedOverlay),
             new PropertyMetadata(new Thickness()));
 
+    private static readonly DependencyPropertyKey CurrentStatePropertyKey =
+        DependencyProperty.RegisterReadOnly(nameof(CurrentState), typeof(string), typeof(AnimatedOverlay),
+            new PropertyMetadata("Closed"));
+
     public static readonly DependencyProperty SurfaceMarginProperty = SurfaceMarginPropertyKey.DependencyProperty;
+    public static readonly DependencyProperty CurrentStateProperty = CurrentStatePropertyKey.DependencyProperty;
+
+    public event EventHandler? Opened;
+    public event EventHandler? Closed;
+    public event EventHandler? Opening;
+    public event EventHandler? Closing;
 
     public bool IsOpen
     {
@@ -106,10 +124,28 @@ public class AnimatedOverlay : ContentControl
         set => SetValue(AnimationOriginProperty, value);
     }
 
+    public double OpenScaleFrom
+    {
+        get => (double)GetValue(OpenScaleFromProperty);
+        set => SetValue(OpenScaleFromProperty, value);
+    }
+
+    public double CloseScaleTo
+    {
+        get => (double)GetValue(CloseScaleToProperty);
+        set => SetValue(CloseScaleToProperty, value);
+    }
+
     public Thickness SurfaceMargin
     {
         get => (Thickness)GetValue(SurfaceMarginProperty);
         private set => SetValue(SurfaceMarginPropertyKey, value);
+    }
+
+    public string CurrentState
+    {
+        get => (string)GetValue(CurrentStateProperty);
+        private set => SetValue(CurrentStatePropertyKey, value);
     }
 
     public AnimatedOverlay()
@@ -161,6 +197,40 @@ public class AnimatedOverlay : ContentControl
 
         Log.Debug($"Close: reason={reason} state={_state}");
         IsOpen = false;
+    }
+
+    public bool ToggleForAnchor(FrameworkElement anchor, OverlayCloseReason toggleCloseReason = OverlayCloseReason.Toggle)
+    {
+        if (anchor == null)
+            throw new ArgumentNullException(nameof(anchor));
+
+        if (IsOpen && ReferenceEquals(AnchorElement, anchor))
+        {
+            Log.Debug($"ToggleForAnchor: closing current anchor={anchor.Name}");
+            Close(toggleCloseReason);
+            return false;
+        }
+
+        OpenOrRetarget(anchor);
+        return true;
+    }
+
+    public void OpenOrRetarget(FrameworkElement anchor)
+    {
+        if (anchor == null)
+            throw new ArgumentNullException(nameof(anchor));
+
+        Log.Debug($"OpenOrRetarget: anchor={anchor.Name} isOpen={IsOpen} state={_state}");
+        SwitchAnchor(anchor);
+
+        if (!IsOpen)
+            IsOpen = true;
+    }
+
+    public void ResetAnchor()
+    {
+        Log.Debug("ResetAnchor");
+        SwitchAnchor(null);
     }
 
     public void SwitchAnchor(FrameworkElement? anchor)
@@ -347,7 +417,7 @@ public class AnimatedOverlay : ContentControl
             return;
         }
 
-        _state = OverlayState.Opening;
+        SetState(OverlayState.Opening);
         Reposition();
         UpdateLayout();
         UpdateSurfaceInteractiveState();
@@ -356,7 +426,7 @@ public class AnimatedOverlay : ContentControl
 
         var entrance = new EntranceEffect
         {
-            Scale = new AnimationEffect { From = 0.92, To = 1.0, DurationMs = OpenDurationMs, Easing = AnimationHelper.EaseOut },
+            Scale = new AnimationEffect { From = OpenScaleFrom, To = 1.0, DurationMs = OpenDurationMs, Easing = AnimationHelper.EaseOut },
             Opacity = new AnimationEffect { From = 0, To = 1, DurationMs = OpenDurationMs, Easing = AnimationHelper.EaseOut },
             Origin = AnimationOrigin,
         };
@@ -372,7 +442,7 @@ public class AnimatedOverlay : ContentControl
             if (!IsOpen)
                 return;
 
-            _state = OverlayState.Open;
+            SetState(OverlayState.Open);
             UpdateSurfaceInteractiveState();
             Reposition();
             Log.Debug($"BeginOpen.Completed: version={version} marginLeft={SurfaceMargin.Left:F1} marginTop={SurfaceMargin.Top:F1}");
@@ -386,7 +456,7 @@ public class AnimatedOverlay : ContentControl
         if (_surface == null)
         {
             Visibility = Visibility.Collapsed;
-            _state = OverlayState.Closed;
+            SetState(OverlayState.Closed);
             return;
         }
 
@@ -396,13 +466,13 @@ public class AnimatedOverlay : ContentControl
             return;
         }
 
-        _state = OverlayState.Closing;
+        SetState(OverlayState.Closing);
         UpdateSurfaceInteractiveState();
         ResetSurfaceAnimations();
 
         var exit = new ExitEffect
         {
-            Scale = new AnimationEffect { From = 1.0, To = 0.96, DurationMs = CloseDurationMs, Easing = AnimationHelper.EaseIn },
+            Scale = new AnimationEffect { From = 1.0, To = CloseScaleTo, DurationMs = CloseDurationMs, Easing = AnimationHelper.EaseIn },
             Opacity = new AnimationEffect { From = 1, To = 0, DurationMs = CloseDurationMs, Easing = AnimationHelper.EaseIn },
             Origin = AnimationOrigin,
         };
@@ -420,7 +490,7 @@ public class AnimatedOverlay : ContentControl
 
             SetSurfaceVisibility(Visibility.Visible);
             Visibility = Visibility.Collapsed;
-            _state = OverlayState.Closed;
+            SetState(OverlayState.Closed);
             UpdateSurfaceInteractiveState();
             Log.Debug($"BeginClose.Completed: version={version}");
         });
@@ -507,6 +577,32 @@ public class AnimatedOverlay : ContentControl
         {
             scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
             scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        }
+    }
+
+    private void SetState(OverlayState state)
+    {
+        if (_state == state)
+            return;
+
+        _state = state;
+        CurrentState = state.ToString();
+        Log.Debug($"StateChanged: state={CurrentState}");
+
+        switch (state)
+        {
+            case OverlayState.Opening:
+                Opening?.Invoke(this, EventArgs.Empty);
+                break;
+            case OverlayState.Open:
+                Opened?.Invoke(this, EventArgs.Empty);
+                break;
+            case OverlayState.Closing:
+                Closing?.Invoke(this, EventArgs.Empty);
+                break;
+            case OverlayState.Closed:
+                Closed?.Invoke(this, EventArgs.Empty);
+                break;
         }
     }
 
