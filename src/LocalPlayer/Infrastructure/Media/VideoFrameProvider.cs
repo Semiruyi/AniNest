@@ -70,20 +70,33 @@ public class VideoFrameProvider : IDisposable
 
     public void ClearBitmap()
     {
+        Log.Info(MemorySnapshot.Capture("VideoFrameProvider.ClearBitmap.begin",
+            ("bitmap", _bitmap != null),
+            ("readyBuffer", _readyBuffer != null)));
+
         var application = Application.Current;
         if (application?.Dispatcher == null)
         {
             ClearBitmapCore();
+            Log.Info(MemorySnapshot.Capture("VideoFrameProvider.ClearBitmap.end",
+                ("bitmap", _bitmap != null),
+                ("readyBuffer", _readyBuffer != null)));
             return;
         }
 
         if (application.Dispatcher.CheckAccess())
         {
             ClearBitmapCore();
+            Log.Info(MemorySnapshot.Capture("VideoFrameProvider.ClearBitmap.end",
+                ("bitmap", _bitmap != null),
+                ("readyBuffer", _readyBuffer != null)));
             return;
         }
 
         application.Dispatcher.Invoke(ClearBitmapCore);
+        Log.Info(MemorySnapshot.Capture("VideoFrameProvider.ClearBitmap.end",
+            ("bitmap", _bitmap != null),
+            ("readyBuffer", _readyBuffer != null)));
     }
 
     private IntPtr VideoLock(IntPtr opaque, IntPtr planes)
@@ -215,6 +228,9 @@ public class VideoFrameProvider : IDisposable
 
     public void Dispose()
     {
+        Log.Info(MemorySnapshot.Capture("VideoFrameProvider.Dispose.begin",
+            ("bitmap", _bitmap != null),
+            ("readyBuffer", _readyBuffer != null)));
         lock (_lock)
         {
             if (_bufferHandle.IsAllocated)
@@ -222,6 +238,9 @@ public class VideoFrameProvider : IDisposable
             _readyBuffer = null;
         }
         _bitmap = null;
+        Log.Info(MemorySnapshot.Capture("VideoFrameProvider.Dispose.end",
+            ("bitmap", _bitmap != null),
+            ("readyBuffer", _readyBuffer != null)));
     }
 }
 

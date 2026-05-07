@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using LocalPlayer.Features.Player.Models;
 using LocalPlayer.Features.Player.Services;
+using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Infrastructure.Logging;
 
 namespace LocalPlayer.Features.Player;
@@ -69,9 +70,17 @@ public partial class PlayerSessionController : ObservableObject
 
     public void ResetSession()
     {
+        Log.Info(MemorySnapshot.Capture("PlayerSessionController.ResetSession.begin",
+            ("items", PlaylistItems.Count),
+            ("currentIndex", CurrentIndex),
+            ("hasCurrentVideoPath", !string.IsNullOrWhiteSpace(CurrentVideoPath))));
         _playlistService.ResetSession();
         CurrentVideoPath = null;
         SyncCurrentIndex();
+        Log.Info(MemorySnapshot.Capture("PlayerSessionController.ResetSession.end",
+            ("items", PlaylistItems.Count),
+            ("currentIndex", CurrentIndex),
+            ("hasCurrentVideoPath", !string.IsNullOrWhiteSpace(CurrentVideoPath))));
     }
 
     public void Cleanup()

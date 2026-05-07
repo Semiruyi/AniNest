@@ -40,6 +40,13 @@ public sealed class PlayerAppService : IPlayerAppService
         if (_session.IsCleanedUp)
             return;
 
+        Log.Info(MemorySnapshot.Capture("PlayerAppService.EnterPlayer.begin",
+            ("folder", name),
+            ("loadGeneration", _loadGeneration),
+            ("loadedGeneration", _loadedGeneration),
+            ("activatedGeneration", _activatedGeneration),
+            ("items", _session.PlaylistItems.Count)));
+
         CancelAndDispose(ref _loadCts);
         _loadCts = new CancellationTokenSource();
         var cancellationToken = _loadCts.Token;
@@ -86,10 +93,23 @@ public sealed class PlayerAppService : IPlayerAppService
         _pendingActivationGeneration = generation;
         TryActivatePendingVideo("data-loaded");
         Log.Info($"LoadFolderDataAsync complete: CurrentIndex={_session.CurrentIndex}, CurrentVideoPath={_session.CurrentVideoPath ?? "null"}");
+        Log.Info(MemorySnapshot.Capture("PlayerAppService.EnterPlayer.end",
+            ("folder", name),
+            ("generation", generation),
+            ("currentIndex", _session.CurrentIndex),
+            ("items", _session.PlaylistItems.Count)));
     }
 
     public Task LeavePlayerAsync()
     {
+        Log.Info(MemorySnapshot.Capture("PlayerAppService.LeavePlayer.begin",
+            ("loadGeneration", _loadGeneration),
+            ("loadedGeneration", _loadedGeneration),
+            ("activatedGeneration", _activatedGeneration),
+            ("pendingGeneration", _pendingActivationGeneration),
+            ("items", _session.PlaylistItems.Count),
+            ("currentIndex", _session.CurrentIndex),
+            ("pageVisible", _isPlayerPageVisible)));
         _isPlayerPageVisible = false;
         _pendingActivationGeneration = 0;
         _activatedGeneration = 0;
@@ -97,6 +117,14 @@ public sealed class PlayerAppService : IPlayerAppService
         _media.ResetSession();
         _session.ResetSession();
         _playback.ResetSession();
+        Log.Info(MemorySnapshot.Capture("PlayerAppService.LeavePlayer.end",
+            ("loadGeneration", _loadGeneration),
+            ("loadedGeneration", _loadedGeneration),
+            ("activatedGeneration", _activatedGeneration),
+            ("pendingGeneration", _pendingActivationGeneration),
+            ("items", _session.PlaylistItems.Count),
+            ("currentIndex", _session.CurrentIndex),
+            ("pageVisible", _isPlayerPageVisible)));
         return _taskbarAutoHide.LeavePlayerPageAsync();
     }
 
