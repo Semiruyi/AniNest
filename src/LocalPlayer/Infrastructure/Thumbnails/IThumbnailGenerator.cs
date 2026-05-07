@@ -15,9 +15,9 @@ public interface IThumbnailGenerator
     ThumbnailState GetState(string videoPath);
     string? GetThumbnailPath(string videoPath, int second);
 
-    void EnqueueFolder(string folderPath, int cardOrder,
+    void EnqueueFolder(string folderPath, IReadOnlyCollection<string> videoFiles, int cardOrder,
         string? lastPlayedPath, HashSet<string> playedPaths);
-    void DeleteForFolder(string folderPath);
+    void DeleteForFolder(string folderPath, IReadOnlyCollection<string>? videoFiles = null);
 
     void Shutdown();
 

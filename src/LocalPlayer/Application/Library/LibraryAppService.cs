@@ -122,7 +122,7 @@ public sealed class LibraryAppService : ILibraryAppService
     {
         cancellationToken.ThrowIfCancellationRequested();
         _settings.RemoveFolder(path);
-        _thumbnailGenerator.DeleteForFolder(path);
+            _thumbnailGenerator.DeleteForFolder(path);
         return Task.CompletedTask;
     }
 
@@ -144,6 +144,6 @@ public sealed class LibraryAppService : ILibraryAppService
                 playedPaths.Add(videoFile);
         }
 
-        _thumbnailGenerator.EnqueueFolder(folderPath, cardOrder, lastPlayed, playedPaths);
+        _thumbnailGenerator.EnqueueFolder(folderPath, videoFiles, cardOrder, lastPlayed, playedPaths);
     }
 }

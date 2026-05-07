@@ -46,7 +46,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     // Dependencies
     private readonly ISettingsService _settings;
-    private readonly IVideoScanner _videoScanner;
 
     // Paths
     private readonly string _thumbBaseDir;
@@ -75,10 +74,9 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     public bool IsFfmpegAvailable => _ffmpegAvailable;
 
-    public ThumbnailGenerator(ISettingsService settings, IVideoScanner videoScanner)
+    public ThumbnailGenerator(ISettingsService settings)
     {
         _settings = settings;
-        _videoScanner = videoScanner;
         _thumbBaseDir = AppPaths.ThumbnailDirectory;
         _indexPath = Path.Combine(_thumbBaseDir, "index.json");
         _ffmpegPath = AppPaths.FfmpegPath;
@@ -136,7 +134,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     }
 
 
-    public void EnqueueFolder(string folderPath, int cardOrder,
+    public void EnqueueFolder(string folderPath, IReadOnlyCollection<string> videoFiles, int cardOrder,
         string? lastPlayedPath, HashSet<string> playedPaths)
     {
         if (!_ffmpegAvailable)
@@ -145,7 +143,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
 
         var sw = Stopwatch.StartNew();
-        var videoFiles = _videoScanner.GetVideoFiles(folderPath);
 
         int added = 0;
         foreach (var videoPath in videoFiles)
@@ -194,16 +191,18 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         sw.Stop();
     }
 
-    public void DeleteForFolder(string folderPath)
+    public void DeleteForFolder(string folderPath, IReadOnlyCollection<string>? videoFiles = null)
     {
         var sw = Stopwatch.StartNew();
-        var videoFiles = _videoScanner.GetVideoFiles(folderPath);
         int marked = 0;
 
-        foreach (var videoPath in videoFiles)
+        if (videoFiles != null)
         {
-            MarkForDeletion(videoPath);
-            marked++;
+            foreach (var videoPath in videoFiles)
+            {
+                MarkForDeletion(videoPath);
+                marked++;
+            }
         }
 
         lock (_taskLock)
@@ -212,7 +211,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
                 t.VideoPath.StartsWith(folderPath, StringComparison.OrdinalIgnoreCase)).ToList();
             foreach (var t in matching)
             {
-                if (!videoFiles.Contains(t.VideoPath, StringComparer.OrdinalIgnoreCase))
+                if (videoFiles == null || !videoFiles.Contains(t.VideoPath, StringComparer.OrdinalIgnoreCase))
                 {
                     t.MarkedForDeletionAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
                     marked++;
