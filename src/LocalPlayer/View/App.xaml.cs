@@ -34,6 +34,7 @@ public partial class App : Application
         {
             provider.GetRequiredService<PlayerViewModel>().CleanupCommand.Execute(null);
             provider.GetRequiredService<MainPageViewModel>().Cleanup();
+            provider.GetRequiredService<ISettingsService>().Save();
             provider.Dispose();
         };
 

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Paths;
 using LocalPlayer.Infrastructure.Persistence;
@@ -11,12 +13,17 @@ using LocalPlayer.Infrastructure.Thumbnails;
 using LocalPlayer.Infrastructure.Interop;
 namespace LocalPlayer.Infrastructure.Persistence;
 
-public class SettingsService : ISettingsService
+public class SettingsService : ISettingsService, IDisposable
 {
     private static readonly Logger Log = AppLog.For<SettingsService>();
+    private static readonly TimeSpan DeferredSaveDelay = TimeSpan.FromMilliseconds(800);
 
     private readonly string settingsPath;
+    private readonly object _sync = new();
     private AppSettings? settings;
+    private CancellationTokenSource? _deferredSaveCts;
+    private Task? _deferredSaveTask;
+    private bool _isDisposed;
 
     public SettingsService(string? customSettingsPath = null)
     {
@@ -31,55 +38,77 @@ public class SettingsService : ISettingsService
     public void Reload()
     {
         Log.Debug("Reload: clearing cache");
-        settings = null;
+        lock (_sync)
+        {
+            settings = null;
+        }
     }
 
     public AppSettings Load()
     {
-        if (settings != null)
+        lock (_sync)
         {
-            Log.Debug("Load: returning cached settings");
-            return settings;
+            if (settings != null)
+            {
+                Log.Debug("Load: returning cached settings");
+                return settings;
+            }
         }
 
         var sw = System.Diagnostics.Stopwatch.StartNew();
+        AppSettings loaded;
         try
         {
             if (File.Exists(settingsPath))
             {
                 string json = File.ReadAllText(settingsPath);
                 Log.Debug($"Load: read {settingsPath}, {json.Length} bytes, elapsed {sw.ElapsedMilliseconds}ms");
-                settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+                loaded = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
                 Log.Debug($"Load: deserialized, elapsed {sw.ElapsedMilliseconds}ms");
             }
             else
             {
-                settings = new AppSettings();
+                loaded = new AppSettings();
                 Log.Info($"Load: file missing, created empty settings, elapsed {sw.ElapsedMilliseconds}ms");
             }
         }
         catch (Exception ex)
         {
-            settings = new AppSettings();
+            loaded = new AppSettings();
             Log.Error("Load exception", ex);
         }
 
-        return settings;
+        lock (_sync)
+        {
+            settings = loaded;
+            return settings;
+        }
     }
 
     public void Save()
     {
-        if (settings == null)
-        {
-            Log.Debug("Save: settings is null, skipped");
-            return;
-        }
+        CancelDeferredSave();
+        SaveCore();
+    }
 
-        Log.Debug("Save: begin");
+    private void SaveCore()
+    {
+        string? json = null;
+
+        lock (_sync)
+        {
+            if (settings == null)
+            {
+                Log.Debug("Save: settings is null, skipped");
+                return;
+            }
+
+            Log.Debug("Save: begin");
+            json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
+        }
 
         try
         {
-            string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(settingsPath, json);
             Log.Info("settings saved");
         }
@@ -107,8 +136,7 @@ public class SettingsService : ISettingsService
 
         try
         {
-            string json = JsonSerializer.Serialize(current, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(settingsPath, json);
+            SaveCore();
             return (true, null);
         }
         catch (Exception ex)
@@ -202,7 +230,7 @@ public class SettingsService : ISettingsService
             LastPlayed = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
         };
         current.VideoProgress[filePath] = progress;
-        Save();
+        ScheduleDeferredSave();
     }
 
     public void MarkVideoPlayed(string filePath)
@@ -219,7 +247,7 @@ public class SettingsService : ISettingsService
         }
         progress.IsPlayed = true;
         progress.LastPlayed = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        Save();
+        ScheduleDeferredSave();
     }
 
     public bool IsVideoPlayed(string filePath)
@@ -245,7 +273,7 @@ public class SettingsService : ISettingsService
             LastVideoPath = lastVideoPath,
             LastPlayed = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
         };
-        Save();
+        ScheduleDeferredSave();
     }
 
     public double GetFolderPlayedPercent(string folderPath, string[] videoFiles)
@@ -264,6 +292,63 @@ public class SettingsService : ISettingsService
         var current = Load();
         current.ThumbnailExpiryDays = days;
         Save();
+    }
+
+    private void ScheduleDeferredSave()
+    {
+        if (_isDisposed)
+            return;
+
+        CancellationTokenSource? previousCts;
+        CancellationTokenSource currentCts;
+
+        lock (_sync)
+        {
+            previousCts = _deferredSaveCts;
+            _deferredSaveCts = new CancellationTokenSource();
+            currentCts = _deferredSaveCts;
+            _deferredSaveTask = DeferredSaveAsync(currentCts.Token);
+        }
+
+        previousCts?.Cancel();
+        previousCts?.Dispose();
+    }
+
+    private async Task DeferredSaveAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(DeferredSaveDelay, cancellationToken);
+            SaveCore();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void CancelDeferredSave()
+    {
+        CancellationTokenSource? cts;
+
+        lock (_sync)
+        {
+            cts = _deferredSaveCts;
+            _deferredSaveCts = null;
+            _deferredSaveTask = null;
+        }
+
+        cts?.Cancel();
+        cts?.Dispose();
+    }
+
+    public void Dispose()
+    {
+        if (_isDisposed)
+            return;
+
+        _isDisposed = true;
+        CancelDeferredSave();
+        SaveCore();
     }
 
 }
