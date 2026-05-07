@@ -22,9 +22,6 @@ public class PlayerViewCoordinator : IPlayerViewCoordinator
     public Task LeavePlayerPageAsync()
         => _taskbarAutoHide.LeavePlayerPageAsync();
 
-    public void LoadFolderSkeleton(string path, string name)
-        => _session.LoadFolderSkeleton(path, name);
-
-    public Task LoadFolderDataAsync()
-        => _session.LoadFolderDataAsync();
+    public Task LoadFolderAsync(string path, string name)
+        => _session.LoadFolderAsync(path, name);
 }

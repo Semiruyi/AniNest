@@ -6,6 +6,5 @@ public interface IPlayerViewCoordinator
 {
     Task EnterPlayerPageAsync(string animationCode);
     Task LeavePlayerPageAsync();
-    void LoadFolderSkeleton(string path, string name);
-    Task LoadFolderDataAsync();
+    Task LoadFolderAsync(string path, string name);
 }

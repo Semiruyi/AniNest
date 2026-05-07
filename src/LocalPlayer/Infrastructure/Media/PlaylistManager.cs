@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Infrastructure.Logging;
@@ -48,11 +49,14 @@ public class PlaylistManager
 
     public void LoadFolder(string folderPath, string folderName)
     {
-        LoadFolderSkeleton(folderPath, folderName);
+        LoadFolderSkeletonAsync(folderPath, folderName).GetAwaiter().GetResult();
         LoadFolderData();
     }
 
     public void LoadFolderSkeleton(string folderPath, string folderName)
+        => LoadFolderSkeletonAsync(folderPath, folderName).GetAwaiter().GetResult();
+
+    public async Task LoadFolderSkeletonAsync(string folderPath, string folderName, CancellationToken cancellationToken = default)
     {
         using var loadSpan = PerfSpan.Begin("Playlist.LoadFolderSkeleton", new Dictionary<string, string>
         {
@@ -67,7 +71,7 @@ public class PlaylistManager
             ["folder"] = folderName
         }))
         {
-            VideoFiles = _videoScanner.GetVideoFiles(folderPath);
+            VideoFiles = await _videoScanner.GetVideoFilesAsync(folderPath, cancellationToken);
         }
 
         Log.Info($"Scanned {VideoFiles.Length} video files");
@@ -96,6 +100,9 @@ public class PlaylistManager
     }
 
     public void PreloadFolderData()
+        => PreloadFolderData(CancellationToken.None);
+
+    public void PreloadFolderData(CancellationToken cancellationToken)
     {
         if (VideoFiles.Length == 0)
         {
@@ -109,14 +116,18 @@ public class PlaylistManager
             var thumbStates = new bool[VideoFiles.Length];
             for (int i = 0; i < VideoFiles.Length; i++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 playedStates[i] = _settings.IsVideoPlayed(VideoFiles[i]);
                 thumbStates[i] = _getThumbnailState(VideoFiles[i]) == ThumbnailState.Ready;
             }
             return (playedStates, thumbStates);
-        });
+        }, cancellationToken);
     }
 
-    public async Task LoadFolderDataAsync()
+    public Task LoadFolderDataAsync()
+        => LoadFolderDataAsync(CancellationToken.None);
+
+    public async Task LoadFolderDataAsync(CancellationToken cancellationToken)
     {
         if (VideoFiles.Length == 0)
         {
@@ -138,6 +149,7 @@ public class PlaylistManager
             thumbStates = new bool[VideoFiles.Length];
             for (int i = 0; i < VideoFiles.Length; i++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 playedStates[i] = _settings.IsVideoPlayed(VideoFiles[i]);
                 thumbStates[i] = _getThumbnailState(VideoFiles[i]) == ThumbnailState.Ready;
             }
@@ -145,6 +157,7 @@ public class PlaylistManager
 
         for (int i = 0; i < VideoFiles.Length; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Items[i].IsPlayed = playedStates[i];
             Items[i].IsThumbnailReady = thumbStates[i];
         }

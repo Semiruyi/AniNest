@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using LocalPlayer.Features.Player.Models;
@@ -23,6 +24,7 @@ public partial class PlayerSessionController : ObservableObject
     private readonly Action<string, int> _videoProgressHandler;
     private readonly PlaylistManager _playlistManager;
     private bool _isCleanedUp;
+    private CancellationTokenSource? _loadCts;
     private long _loadGeneration;
     private long _loadedGeneration;
     private PerfSpan? _loadFolderSpan;
@@ -63,10 +65,14 @@ public partial class PlayerSessionController : ObservableObject
         _thumbnailGenerator.VideoProgress += _videoProgressHandler;
     }
 
-    public void LoadFolderSkeleton(string folderPath, string folderName)
+    public async Task LoadFolderAsync(string folderPath, string folderName)
     {
         if (_isCleanedUp)
             return;
+
+        CancelAndDispose(ref _loadCts);
+        _loadCts = new CancellationTokenSource();
+        var cancellationToken = _loadCts.Token;
 
         Log.Info($"LoadFolderSkeleton start: {folderName} | {folderPath}");
         _loadGeneration++;
@@ -80,28 +86,22 @@ public partial class PlayerSessionController : ObservableObject
         {
             ["folder"] = folderName
         });
-        Playlist.LoadFolderSkeleton(folderPath, folderName);
+        await Playlist.LoadFolderSkeletonAsync(folderPath, folderName, cancellationToken);
         Log.Info($"LoadFolderSkeleton done: generation={_loadGeneration}, items={PlaylistItems.Count}");
 
         _loadFolderSpan?.Dispose();
         _loadFolderSpan = null;
-    }
-
-    public async Task LoadFolderDataAsync()
-    {
-        if (_isCleanedUp)
-            return;
 
         var generation = _loadGeneration;
         if (generation == _loadedGeneration)
         {
-            Log.Debug($"LoadFolderDataAsync skipped: generation already loaded ({generation})");
+            Log.Debug($"LoadFolderAsync skipped data load: generation already loaded ({generation})");
             return;
         }
 
         Log.Info($"LoadFolderDataAsync start: generation={generation}, loaded={_loadedGeneration}, items={PlaylistItems.Count}");
         using var dataSpan = PerfSpan.Begin("Player.LoadFolderData");
-        await Playlist.LoadFolderDataAsync();
+        await Playlist.LoadFolderDataAsync(cancellationToken);
 
         using var currentIndexSpan = PerfSpan.Begin("Player.CurrentIndexSync");
         SyncCurrentIndex();
@@ -133,6 +133,7 @@ public partial class PlayerSessionController : ObservableObject
         _isCleanedUp = true;
         _loadFolderSpan?.Dispose();
         _loadFolderSpan = null;
+        CancelAndDispose(ref _loadCts);
 
         Playlist.CurrentIndexChanged -= OnPlaylistCurrentIndexChanged;
         Playlist.VideoPlayed -= OnPlaylistVideoPlayed;
@@ -192,5 +193,12 @@ public partial class PlayerSessionController : ObservableObject
             Log.Debug($"VideoProgress -> UpdateThumbnailProgress: {Path.GetFileName(path)}={percent}%");
             _playlistManager.UpdateThumbnailProgress(path, percent);
         });
+    }
+
+    private static void CancelAndDispose(ref CancellationTokenSource? cancellationTokenSource)
+    {
+        cancellationTokenSource?.Cancel();
+        cancellationTokenSource?.Dispose();
+        cancellationTokenSource = null;
     }
 }

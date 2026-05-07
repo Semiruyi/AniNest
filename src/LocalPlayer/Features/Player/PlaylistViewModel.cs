@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalPlayer.Features.Player.Models;
@@ -61,8 +62,11 @@ public partial class PlaylistViewModel : ObservableObject
     }
 
     public void LoadFolderSkeleton(string folderPath, string folderName)
+        => LoadFolderSkeletonAsync(folderPath, folderName).GetAwaiter().GetResult();
+
+    public async System.Threading.Tasks.Task LoadFolderSkeletonAsync(string folderPath, string folderName, CancellationToken cancellationToken = default)
     {
-        _playlistManager.LoadFolderSkeleton(folderPath, folderName);
+        await _playlistManager.LoadFolderSkeletonAsync(folderPath, folderName, cancellationToken);
         CurrentFolderName = folderName;
 
         var items = _playlistManager.Items;
@@ -73,6 +77,12 @@ public partial class PlaylistViewModel : ObservableObject
     public async System.Threading.Tasks.Task LoadFolderDataAsync()
     {
         await _playlistManager.LoadFolderDataAsync();
+        SetCurrentIndex(_playlistManager.CurrentIndex, force: true);
+    }
+
+    public async System.Threading.Tasks.Task LoadFolderDataAsync(CancellationToken cancellationToken)
+    {
+        await _playlistManager.LoadFolderDataAsync(cancellationToken);
         SetCurrentIndex(_playlistManager.CurrentIndex, force: true);
     }
 

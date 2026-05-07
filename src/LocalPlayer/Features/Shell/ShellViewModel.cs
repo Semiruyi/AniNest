@@ -90,11 +90,6 @@ public partial class ShellViewModel : ObservableObject
     public void OnPageTransitionCompleted()
     {
         Log.Info($"OnPageTransitionCompleted. CurrentPage={CurrentPage?.GetType().Name ?? "null"}");
-        if (CurrentPage is PlayerViewModel)
-        {
-            Log.Info("Player page transition completed, requesting LoadFolderDataAsync");
-            _ = _playerCoordinator.LoadFolderDataAsync();
-        }
     }
 
     public void SetPlayerFullscreen(bool value)
@@ -105,8 +100,7 @@ public partial class ShellViewModel : ObservableObject
         Log.Info($"Folder selected: {name} | {path}");
         _ = _playerCoordinator.EnterPlayerPageAsync(CurrentAnimationCode);
         CurrentPage = _playerPage;
-        _playerCoordinator.LoadFolderSkeleton(path, name);
-        _ = _playerCoordinator.LoadFolderDataAsync();
+        _ = _playerCoordinator.LoadFolderAsync(path, name);
     }
 
     private void OnPlayerToggleFullscreenRequested()
