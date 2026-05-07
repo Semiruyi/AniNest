@@ -13,8 +13,8 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);..\..\Tests\**\*;..\..\Launcher\**\*;..\..\artifacts\**\*</DefaultItemExcludes>
 
     <SelfContained Condition="'$(Configuration)' == 'Release'">true</SelfContained>
-    <PublishSingleFile Condition="'$(Configuration)' == 'Release'">true</PublishSingleFile>
-    <IncludeNativeLibrariesForSelfExtract Condition="'$(Configuration)' == 'Release'">true</IncludeNativeLibrariesForSelfExtract>
+    <PublishSingleFile Condition="'$(Configuration)' == 'Release'">false</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract Condition="'$(Configuration)' == 'Release'">false</IncludeNativeLibrariesForSelfExtract>
     <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
 

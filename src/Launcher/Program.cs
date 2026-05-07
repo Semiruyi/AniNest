@@ -1,5 +1,3 @@
-using System.IO.Compression;
-
 namespace LocalPlayer.Launcher;
 
 internal static class Program
@@ -11,15 +9,22 @@ internal static class Program
 
         if (TryGetApplyPath(args, out var packagePath))
         {
-            return ApplyPackageAndReport(applier, packagePath);
+            var code = ApplyPackageAndReport(applier, packagePath);
+            if (code != 0)
+                return code;
+
+            DeleteAppliedPackage(packagePath);
+            return LaunchApp(root);
         }
 
-        var pendingPackage = FindPendingPackage(root);
+        var pendingPackage = LauncherPackageLocator.FindPendingPackage(root);
         if (!string.IsNullOrWhiteSpace(pendingPackage))
         {
             var code = ApplyPackageAndReport(applier, pendingPackage);
             if (code != 0)
                 return code;
+
+            DeleteAppliedPackage(pendingPackage);
         }
 
         return LaunchApp(root);
@@ -82,29 +87,15 @@ internal static class Program
         return false;
     }
 
-    private static string? FindPendingPackage(string root)
+    private static void DeleteAppliedPackage(string packagePath)
     {
-        var updateDir = Path.Combine(root, "data", "updates");
-        if (!Directory.Exists(updateDir))
-            return null;
-
-        var candidates = Directory.GetFiles(updateDir, "*.zip")
-            .OrderByDescending(File.GetLastWriteTimeUtc)
-            .ToList();
-
-        foreach (var candidate in candidates)
+        try
         {
-            try
-            {
-                using var archive = ZipFile.OpenRead(candidate);
-                if (archive.GetEntry("manifest.json") != null)
-                    return candidate;
-            }
-            catch
-            {
-            }
+            if (File.Exists(packagePath))
+                File.Delete(packagePath);
         }
-
-        return null;
+        catch
+        {
+        }
     }
 }

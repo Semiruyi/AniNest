@@ -74,6 +74,21 @@ public class PatchApplierTests : IDisposable
         File.ReadAllText(Path.Combine(_root, "app", "keep.txt")).Should().Be("old");
     }
 
+    [Fact]
+    public void ApplyPackage_DoesNotTouchZipBesideLauncherContract()
+    {
+        var package = CreatePatchPackage(
+            "1.0.0",
+            "1.0.1",
+            [new PatchFileEntry { Path = "keep.txt", Action = "replace", Sha256 = HashOf("new") }],
+            new Dictionary<string, string> { ["keep.txt"] = "new" });
+
+        var result = new PatchApplier(_root).ApplyPackage(package);
+
+        result.Success.Should().BeTrue();
+        File.Exists(package).Should().BeTrue();
+    }
+
     private string CreatePatchPackage(string baseVersion, string version, IEnumerable<PatchFileEntry> files, Dictionary<string, string> payloads)
     {
         var zipPath = Path.Combine(_root, $"patch_{Guid.NewGuid():N}.zip");

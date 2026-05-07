@@ -6,12 +6,6 @@ namespace LocalPlayer.Launcher;
 
 public sealed class PatchApplier
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        WriteIndented = true
-    };
-
     private readonly string _rootDirectory;
     private readonly string _appDirectory;
     private readonly string _backupDirectory;
@@ -74,7 +68,7 @@ public sealed class PatchApplier
             try
             {
                 var json = File.ReadAllText(manifestPath);
-                var manifest = JsonSerializer.Deserialize<PatchManifest>(json, JsonOptions);
+                var manifest = JsonSerializer.Deserialize(json, LauncherJsonContext.Default.PatchManifest);
                 if (manifest != null && !string.IsNullOrWhiteSpace(manifest.Version))
                     return manifest.Version;
             }
@@ -107,7 +101,7 @@ public sealed class PatchApplier
             return null;
 
         using var stream = entry.Open();
-        return JsonSerializer.Deserialize<PatchManifest>(stream, JsonOptions);
+        return JsonSerializer.Deserialize(stream, LauncherJsonContext.Default.PatchManifest);
     }
 
     private void EnsureAppRoot()
@@ -214,7 +208,7 @@ public sealed class PatchApplier
     private void WriteInstalledManifest(PatchManifest manifest)
     {
         var manifestPath = Path.Combine(_appDirectory, "manifest.json");
-        var json = JsonSerializer.Serialize(manifest, JsonOptions);
+        var json = JsonSerializer.Serialize(manifest, LauncherJsonContext.Default.PatchManifest);
         File.WriteAllText(manifestPath, json);
     }
 

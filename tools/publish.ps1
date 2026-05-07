@@ -1,6 +1,7 @@
 param(
     [string]$Runtime = "win-x64",
     [string]$Configuration = "Release",
+    [string]$Version = "",
     [switch]$Zip
 )
 
@@ -15,6 +16,10 @@ $appOut = Join-Path $publishRoot "app"
 $dataOut = Join-Path $publishRoot "data"
 $launcherOut = Join-Path $publishRoot "LocalPlayer.Launcher.exe"
 $zipOut = Join-Path $artifactsRoot "LocalPlayer-portable.zip"
+
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    $Version = Get-Date -Format "yyyy.MM.dd.HHmmss"
+}
 
 function Remove-PathIfExists([string]$path) {
     if (Test-Path $path) {
@@ -38,6 +43,21 @@ function Copy-Folder([string]$source, [string]$destination) {
     }
 }
 
+function Write-AppManifest([string]$appDir, [string]$version) {
+    $manifestPath = Join-Path $appDir "manifest.json"
+    $manifest = @{
+        appId = "LocalPlayer"
+        packageType = "full"
+        version = $version
+        baseVersion = ""
+        generatedAtUtc = [DateTime]::UtcNow.ToString("o")
+        description = "publish"
+        files = @()
+    }
+
+    $manifest | ConvertTo-Json -Depth 5 | Set-Content -Path $manifestPath -Encoding UTF8
+}
+
 Remove-PathIfExists $publishRoot
 Remove-PathIfExists $launcherTempRoot
 Remove-PathIfExists $appTempRoot
@@ -49,6 +69,7 @@ dotnet publish (Join-Path $root "src\Launcher\LocalPlayer.Launcher.csproj") -c $
 
 Copy-Folder $appTempRoot $appOut
 Copy-Folder (Join-Path $root "data") $dataOut
+Write-AppManifest $appOut $Version
 
 $launcherExe = Join-Path $launcherTempRoot "LocalPlayer.Launcher.exe"
 if (-not (Test-Path $launcherExe)) {
