@@ -18,6 +18,8 @@ public static class MouseGestureBehavior
         RegisterCommand("LeftClick");
     public static readonly DependencyProperty LeftDoubleClickProperty =
         RegisterCommand("LeftDoubleClick");
+    public static readonly DependencyProperty RightClickProperty =
+        RegisterCommand("RightClick");
     public static readonly DependencyProperty RightHoldProperty =
         RegisterCommand("RightHold");
     public static readonly DependencyProperty RightHoldReleaseProperty =
@@ -29,6 +31,8 @@ public static class MouseGestureBehavior
     public static void SetLeftClick(DependencyObject o, ICommand v) => o.SetValue(LeftClickProperty, v);
     public static ICommand GetLeftDoubleClick(DependencyObject o) => (ICommand)o.GetValue(LeftDoubleClickProperty);
     public static void SetLeftDoubleClick(DependencyObject o, ICommand v) => o.SetValue(LeftDoubleClickProperty, v);
+    public static ICommand GetRightClick(DependencyObject o) => (ICommand)o.GetValue(RightClickProperty);
+    public static void SetRightClick(DependencyObject o, ICommand v) => o.SetValue(RightClickProperty, v);
     public static ICommand GetRightHold(DependencyObject o) => (ICommand)o.GetValue(RightHoldProperty);
     public static void SetRightHold(DependencyObject o, ICommand v) => o.SetValue(RightHoldProperty, v);
     public static ICommand GetRightHoldRelease(DependencyObject o) => (ICommand)o.GetValue(RightHoldReleaseProperty);
@@ -179,6 +183,21 @@ public static class MouseGestureBehavior
             s.RightHoldFired = false;
             Log.Debug("RDown -> HoldRelease");
             Execute(GetRightHoldRelease(el), GetCommandParameter(el));
+            e.Handled = true;
+            return;
+        }
+
+        var cmd = GetRightClick(el);
+        var param = GetCommandParameter(el);
+        if (cmd?.CanExecute(param) == true)
+        {
+            Log.Debug($"RDown -> Click ({cmd.GetType().Name})");
+            cmd.Execute(param);
+            e.Handled = true;
+        }
+        else
+        {
+            Log.Debug("RDown -> Click skipped");
         }
     }
 
@@ -227,6 +246,7 @@ public static class MouseGestureBehavior
     {
         return GetLeftClick(el) != null ||
                GetLeftDoubleClick(el) != null ||
+               GetRightClick(el) != null ||
                GetRightHold(el) != null ||
                GetRightHoldRelease(el) != null ||
                GetXButton1(el) != null;

@@ -7,6 +7,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Threading;
+using AniNest.Infrastructure.Logging;
 using AniNest.Presentation.Animations;
 using AniNest.Presentation.Interop;
 using Point = System.Windows.Point;
@@ -21,6 +22,7 @@ namespace AniNest.Presentation.Primitives;
 [ContentProperty(nameof(Content))]
 public class AnimatedPopup : Popup
 {
+    private static readonly Logger Log = AppLog.For(nameof(AnimatedPopup));
     private readonly PopupRoot _popupRoot;
     private readonly AnimationLayer _animationLayer;
 
@@ -96,6 +98,8 @@ public class AnimatedPopup : Popup
         var child = popup.GetAnimationTarget();
         if (child is null) return;
 
+        Log.Debug($"IsOpenAnimatedChanged: popup={popup.GetHashCode()} newValue={e.NewValue} isOpen={popup.IsOpen}");
+
         if ((bool)e.NewValue)
         {
             child.Opacity = 0;
@@ -109,7 +113,8 @@ public class AnimatedPopup : Popup
         else
         {
             popup.Opened -= OnOpened;
-            popup.Closed -= OnClosed;
+            PopupInputCoordinator.Instance.RegisterClosedPopup(popup);
+            RemoveWindowSubs(popup);
             PlayExit(popup, child, () =>
             {
                 if (!popup.IsOpenAnimated)
@@ -152,6 +157,8 @@ public class AnimatedPopup : Popup
         if (sender is not AnimatedPopup popup) return;
         if (_windowSubs.ContainsKey(popup)) return;
 
+        Log.Debug($"Opened: popup={popup.GetHashCode()}");
+
         var window = Window.GetWindow(popup.PlacementTarget ?? popup.Child)
                   ?? Application.Current?.MainWindow;
         if (window is null) return;
@@ -173,6 +180,7 @@ public class AnimatedPopup : Popup
     {
         if (sender is AnimatedPopup popup)
         {
+            Log.Debug($"Closed: popup={popup.GetHashCode()}");
             PopupInputCoordinator.Instance.RegisterClosedPopup(popup);
             RemoveWindowSubs(popup);
         }
@@ -206,6 +214,7 @@ public class AnimatedPopup : Popup
         if (!IsOpenAnimated)
             return;
 
+        Log.Debug($"RequestClose: popup={GetHashCode()} reason={reason}");
         IsOpenAnimated = false;
     }
 

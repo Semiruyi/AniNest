@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using AniNest.Infrastructure.Logging;
 
 namespace AniNest.Presentation.Primitives;
 
@@ -59,6 +60,7 @@ public sealed class PopupHitResult
 public sealed class PopupInputCoordinator
 {
     private static readonly Lazy<PopupInputCoordinator> _instance = new(() => new PopupInputCoordinator());
+    private static readonly Logger Log = AppLog.For(nameof(PopupInputCoordinator));
 
     private readonly HashSet<AnimatedPopup> _openPopups = new();
     private readonly Dictionary<UIElement, AnimatedPopup> _popupRoots = new();
@@ -204,6 +206,8 @@ public sealed class PopupInputCoordinator
             .Where(popup => popup.CloseOnOutsideClick && popup.IsOpenAnimated && !keepSet.Contains(popup))
             .ToArray();
 
+        Log.Debug($"OnPreviewMouseLeftButtonDown: hit={hit.Kind} open={_openPopups.Count} keep={keepSet.Count} close={closeSet.Length} handled={e.Handled}");
+
         if (closeSet.Length == 0)
             return;
 
@@ -252,7 +256,10 @@ public sealed class PopupInputCoordinator
     private void ClosePopups(IEnumerable<AnimatedPopup> popups, PopupCloseReason reason)
     {
         foreach (var popup in popups)
+        {
+            Log.Debug($"ClosePopups: popup={popup.GetHashCode()} reason={reason}");
             popup.RequestClose(reason);
+        }
     }
 
     private PopupHitResult AnalyzeHit(DependencyObject? target)

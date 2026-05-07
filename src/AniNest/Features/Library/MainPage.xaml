@@ -5,6 +5,7 @@
              xmlns:animations="clr-namespace:AniNest.Presentation.Animations"
              xmlns:conv="clr-namespace:AniNest.Presentation.Converters"
              xmlns:loc="clr-namespace:AniNest.Infrastructure.Localization"
+             xmlns:primitives="clr-namespace:AniNest.Presentation.Primitives"
              Background="{StaticResource BackgroundDark}">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
@@ -27,13 +28,15 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Width="{StaticResource FolderCardWidth}"
+                        <Border x:Name="CardBorder"
+                                Width="{StaticResource FolderCardWidth}"
                                 Height="{StaticResource FolderCardHeight}"
                                 Margin="{StaticResource FolderCardMargin}"
                                 Background="{StaticResource SurfaceDark}"
                                 CornerRadius="{StaticResource FolderCardCornerRadius}"
                                 Cursor="Hand"
                                 behaviors:MouseGestureBehavior.LeftClick="{Binding DataContext.SelectFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                behaviors:MouseGestureBehavior.RightClick="{Binding DataContext.OpenFolderPopupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                 behaviors:MouseGestureBehavior.CommandParameter="{Binding}"
                                 animations:CardAnimation.Enabled="True"
                                 animations:CardAnimation.HoverDurationMs="250"
@@ -74,12 +77,38 @@
                                     </StackPanel>
                                 </Border>
 
-                                <Button Content="&#x2715;" FontSize="12"
-                                        Style="{StaticResource DeleteIconButton}"
-                                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="6"
-                                        Command="{Binding DataContext.DeleteFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        CommandParameter="{Binding}"
-                                        Panel.ZIndex="10"/>
+                                <primitives:AnimatedPopup StaysOpen="True"
+                                                          IsOpenAnimated="{Binding IsPopupOpen, Mode=TwoWay}"
+                                                          OpenAnimationOrigin="0,0"
+                                                          CloseDurationMs="0"
+                                                          PlacementTarget="{Binding ElementName=CardBorder}"
+                                                          Placement="Right"
+                                                          HorizontalOffset="8"
+                                                          VerticalOffset="8"
+                                                          AllowsTransparency="True"
+                                                          Panel.ZIndex="10">
+                                    <Border Background="{StaticResource PopupMenuBackground}"
+                                            CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                                            Padding="{StaticResource PopupMenuPadding}"
+                                            MinWidth="128">
+                                        <StackPanel>
+                                            <Button Style="{StaticResource PopupMenuButton}"
+                                                    Command="{Binding DataContext.MoveFolderToFrontCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    IsEnabled="{Binding CanMoveToFront}">
+                                                <TextBlock Text="{Binding DataContext.Localization[Library.MoveToFront], RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                           VerticalAlignment="Center"/>
+                                            </Button>
+                                            <Button Style="{StaticResource PopupMenuButton}"
+                                                    Command="{Binding DataContext.DeleteFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}">
+                                                <TextBlock Text="{Binding DataContext.Localization[Library.RemoveFromLibrary], RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                           Foreground="#FFFF7070"
+                                                           VerticalAlignment="Center"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+                                </primitives:AnimatedPopup>
                             </Grid>
                         </Border>
                     </DataTemplate>

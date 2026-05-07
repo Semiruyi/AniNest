@@ -1,5 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -21,12 +23,14 @@ public partial class MainPageViewModel : ObservableObject
     private readonly EventHandler<ThumbnailProgressEventArgs> _thumbnailProgressChangedHandler;
     private CancellationTokenSource? _loadDataCts;
     private CancellationTokenSource? _selectFolderCts;
+    private FolderListItem? _activePopupItem;
     private bool _dataLoaded;
     private bool _isCleanedUp;
 
     public event EventHandler? LoadDataCompleted;
     public event Action<string, string>? FolderSelected;
 
+    public ILocalizationService Localization => _loc;
     public ObservableCollection<FolderListItem> FolderItems { get; } = new();
 
     [ObservableProperty]
@@ -49,7 +53,7 @@ public partial class MainPageViewModel : ObservableObject
         _loc = loc;
         _thumbnailProgressChangedHandler = OnThumbnailProgressChanged;
 
-        FolderItems.CollectionChanged += (_, _) => UpdateToolbarState();
+        FolderItems.CollectionChanged += OnFolderItemsCollectionChanged;
 
         _libraryService.ThumbnailProgressChanged += _thumbnailProgressChangedHandler;
     }
@@ -93,9 +97,62 @@ public partial class MainPageViewModel : ObservableObject
     [RelayCommand]
     private async Task SelectFolder(FolderListItem? item)
     {
+        CloseFolderPopup();
+
         if (item != null)
+        {
+            Log.Debug($"SelectFolder: name={item.Name} path={item.Path}");
             await TrySelectFolderAsync(item.Path);
+        }
     }
+
+    [RelayCommand]
+    private void OpenFolderPopup(FolderListItem? item)
+    {
+        if (item == null)
+            return;
+
+        if (ReferenceEquals(_activePopupItem, item))
+        {
+            bool nextState = !item.IsPopupOpen;
+            Log.Debug($"OpenFolderPopup(toggle): name={item.Name} path={item.Path} nextState={nextState}");
+            item.IsPopupOpen = nextState;
+            if (!nextState)
+                _activePopupItem = null;
+
+            return;
+        }
+
+        Log.Debug($"OpenFolderPopup(open): name={item.Name} path={item.Path}");
+        CloseFolderPopup();
+        _activePopupItem = item;
+        item.IsPopupOpen = true;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanMoveFolderToFront))]
+    private async Task MoveFolderToFront(FolderListItem? item)
+    {
+        if (item == null)
+            return;
+
+        int currentIndex = FolderItems.IndexOf(item);
+        if (currentIndex <= 0)
+        {
+            Log.Debug($"MoveFolderToFront skipped: already first name={item.Name} path={item.Path}");
+            CloseFolderPopup();
+            return;
+        }
+
+        CloseFolderPopup();
+        Log.Info($"MoveFolderToFront: name={item.Name} path={item.Path} fromIndex={currentIndex}");
+        await _libraryService.MoveFolderToFrontAsync(item.Path);
+        FolderItems.Move(currentIndex, 0);
+        UpdateMoveToFrontState();
+        MoveFolderToFrontCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool CanMoveFolderToFront(FolderListItem? item)
+        => item is { CanMoveToFront: true };
 
     [RelayCommand]
     private async Task DeleteFolder(FolderListItem? item)
@@ -103,6 +160,8 @@ public partial class MainPageViewModel : ObservableObject
         if (item == null)
             return;
 
+        CloseFolderPopup();
+        Log.Info($"DeleteFolder: name={item.Name} path={item.Path}");
         await _libraryService.DeleteFolderAsync(item.Path);
         FolderItems.Remove(item);
     }
@@ -159,6 +218,7 @@ public partial class MainPageViewModel : ObservableObject
             return;
 
         _isCleanedUp = true;
+        CloseFolderPopup();
         CancelAndDispose(ref _loadDataCts);
         CancelAndDispose(ref _selectFolderCts);
         _libraryService.ThumbnailProgressChanged -= _thumbnailProgressChangedHandler;
@@ -190,10 +250,80 @@ public partial class MainPageViewModel : ObservableObject
     }
 
     private FolderListItem CreateFolderItem(LibraryFolderDto item)
-        => new(item.Name, item.Path, item.VideoCount, item.CoverPath)
+    {
+        return new FolderListItem(item.Name, item.Path, item.VideoCount, item.CoverPath)
         {
             VideoCountText = string.Format(_loc["Library.VideoCount"], item.VideoCount)
         };
+    }
+
+    private void OnFolderItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems != null)
+        {
+            foreach (FolderListItem item in e.OldItems)
+                item.PropertyChanged -= OnFolderItemPropertyChanged;
+        }
+
+        if (e.NewItems != null)
+        {
+            foreach (FolderListItem item in e.NewItems)
+                item.PropertyChanged += OnFolderItemPropertyChanged;
+        }
+
+        UpdateToolbarState();
+        UpdateMoveToFrontState();
+        MoveFolderToFrontCommand.NotifyCanExecuteChanged();
+
+        if (_activePopupItem != null && !FolderItems.Contains(_activePopupItem))
+            _activePopupItem = null;
+    }
+
+    private void OnFolderItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is not FolderListItem item || e.PropertyName != nameof(FolderListItem.IsPopupOpen))
+            return;
+
+        Log.Debug($"FolderPopupStateChanged: name={item.Name} path={item.Path} isOpen={item.IsPopupOpen} active={ReferenceEquals(_activePopupItem, item)}");
+
+        if (item.IsPopupOpen)
+        {
+            if (!ReferenceEquals(_activePopupItem, item))
+            {
+                CloseFolderPopup(item);
+                _activePopupItem = item;
+            }
+
+            return;
+        }
+
+        if (ReferenceEquals(_activePopupItem, item))
+            _activePopupItem = null;
+    }
+
+    private void UpdateMoveToFrontState()
+    {
+        for (int i = 0; i < FolderItems.Count; i++)
+            FolderItems[i].CanMoveToFront = i > 0;
+    }
+
+    private void CloseFolderPopup(FolderListItem? except = null)
+    {
+        foreach (var item in FolderItems)
+        {
+            if (ReferenceEquals(item, except))
+                continue;
+
+            if (item.IsPopupOpen)
+            {
+                Log.Debug($"CloseFolderPopup: name={item.Name} path={item.Path}");
+                item.IsPopupOpen = false;
+            }
+        }
+
+        if (_activePopupItem != null && !ReferenceEquals(_activePopupItem, except))
+            _activePopupItem = null;
+    }
 
     private static void CancelAndDispose(ref CancellationTokenSource? cancellationTokenSource)
     {

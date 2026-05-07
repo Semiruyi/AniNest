@@ -42,6 +42,8 @@
   "Library.NoCover": "暂无封面",
   "Library.VideoCount": "{0} 个视频",
   "Library.FolderCount": "{0} 个文件夹",
+  "Library.MoveToFront": "移至最前",
+  "Library.RemoveFromLibrary": "从媒体库移除",
   "Library.ThumbnailProgress": "缩略图 {0}/{1}",
 
   "Dialog.AddFolder": "选择包含视频的文件夹",

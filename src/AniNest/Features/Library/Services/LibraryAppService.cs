@@ -124,6 +124,20 @@ public sealed class LibraryAppService : ILibraryAppService
         return new BatchAddFoldersResult(addedFolders, skipped);
     }
 
+    public Task MoveFolderToFrontAsync(string path, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var orderedPaths = _settings.GetFolders()
+            .Select(folder => folder.Path)
+            .Where(folderPath => !string.Equals(folderPath, path, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        orderedPaths.Insert(0, path);
+        _settings.ReorderFolders(orderedPaths);
+        return Task.CompletedTask;
+    }
+
     public Task DeleteFolderAsync(string path, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();

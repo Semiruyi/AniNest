@@ -42,6 +42,8 @@
   "Library.NoCover": "No Cover",
   "Library.VideoCount": "{0} video(s)",
   "Library.FolderCount": "{0} folder(s)",
+  "Library.MoveToFront": "Move to Front",
+  "Library.RemoveFromLibrary": "Remove from Library",
   "Library.ThumbnailProgress": "Thumbnails {0}/{1}",
 
   "Dialog.AddFolder": "Add a folder containing videos",
