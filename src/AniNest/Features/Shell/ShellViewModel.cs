@@ -156,32 +156,10 @@ public partial class ShellViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ToggleLanguageSubmenu()
-    {
-        IsLanguageSubmenuOpen = !IsLanguageSubmenuOpen;
-    }
-
-    [RelayCommand]
     private void SwitchLanguage(string code)
     {
         _preferencesService.SetLanguage(code);
         CurrentLanguageCode = _preferencesService.CurrentLanguageCode;
-    }
-
-    [RelayCommand]
-    private void ToggleFullscreenAnimationSubmenu()
-    {
-        IsFullscreenAnimationSubmenuOpen = !IsFullscreenAnimationSubmenuOpen;
-    }
-
-    [RelayCommand]
-    private void TogglePlayerInputSubmenu()
-    {
-        IsPlayerInputSubmenuOpen = !IsPlayerInputSubmenuOpen;
-        if (IsPlayerInputSubmenuOpen)
-            PlayerInputSettings.RefreshFromService();
-        else
-            PlayerInputSettings.CancelCapture();
     }
 
     [RelayCommand]

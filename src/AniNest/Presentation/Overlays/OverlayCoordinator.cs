@@ -26,6 +26,8 @@ public sealed class OverlayCoordinator
     private static readonly Logger Log = AppLog.For(nameof(OverlayCoordinator));
     private readonly HashSet<AnimatedOverlay> _openOverlays = new();
     private readonly HashSet<Window> _attachedWindows = new();
+    private bool _consumeCurrentLeftClickSequence;
+    private bool _consumeCurrentRightClickSequence;
 
     public static OverlayCoordinator Instance => _instance.Value;
 
@@ -40,6 +42,8 @@ public sealed class OverlayCoordinator
 
         window.PreviewMouseLeftButtonDown += OnPreviewMouseButtonDown;
         window.PreviewMouseRightButtonDown += OnPreviewMouseButtonDown;
+        window.PreviewMouseLeftButtonUp += OnPreviewMouseButtonUp;
+        window.PreviewMouseRightButtonUp += OnPreviewMouseButtonUp;
     }
 
     public void RegisterOpenedOverlay(AnimatedOverlay overlay)
@@ -67,6 +71,7 @@ public sealed class OverlayCoordinator
 
     private void OnPreviewMouseButtonDown(object sender, MouseButtonEventArgs e)
     {
+        ResetConsumeFlag(e.ChangedButton);
         SweepStaleState();
         if (_openOverlays.Count == 0)
             return;
@@ -89,10 +94,22 @@ public sealed class OverlayCoordinator
             $"behavior={behavior} reason={closeReason}");
 
         if (behavior == OverlayPointerBehavior.CloseAndConsume)
+        {
             e.Handled = true;
+            SetConsumeFlag(e.ChangedButton, value: true);
+        }
 
         foreach (var overlay in closeSet)
             overlay.Close(closeReason);
+    }
+
+    private void OnPreviewMouseButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!GetConsumeFlag(e.ChangedButton))
+            return;
+
+        e.Handled = true;
+        ResetConsumeFlag(e.ChangedButton);
     }
 
     private AnimatedOverlay? FindParentOverlay(AnimatedOverlay overlay)
@@ -246,4 +263,27 @@ public sealed class OverlayCoordinator
 
         return overlay.Name;
     }
+
+    private bool GetConsumeFlag(MouseButton button)
+        => button switch
+        {
+            MouseButton.Left => _consumeCurrentLeftClickSequence,
+            MouseButton.Right => _consumeCurrentRightClickSequence,
+            _ => false,
+        };
+
+    private void SetConsumeFlag(MouseButton button, bool value)
+    {
+        switch (button)
+        {
+            case MouseButton.Left:
+                _consumeCurrentLeftClickSequence = value;
+                break;
+            case MouseButton.Right:
+                _consumeCurrentRightClickSequence = value;
+                break;
+        }
+    }
+
+    private void ResetConsumeFlag(MouseButton button) => SetConsumeFlag(button, value: false);
 }

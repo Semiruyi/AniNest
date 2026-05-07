@@ -1,7 +1,8 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:animations="clr-namespace:AniNest.Presentation.Animations"
-                    xmlns:overlays="clr-namespace:AniNest.Presentation.Overlays">
+                    xmlns:overlays="clr-namespace:AniNest.Presentation.Overlays"
+                    xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework">
 
     <Style x:Key="IconButton" TargetType="Button">
         <Setter Property="Width" Value="{StaticResource IconButtonDefault}"/>
@@ -187,22 +188,25 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type overlays:AnimatedOverlay}">
-                    <Grid Background="{x:Null}">
+                    <Grid Background="{x:Null}"
+                          shell:WindowChrome.IsHitTestVisibleInChrome="True">
                         <Border x:Name="PART_PositionHost"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Top"
                                 Margin="{TemplateBinding SurfaceMargin}"
-                                Background="Transparent">
+                                Background="Transparent"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
                             <Border x:Name="PART_Surface"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Top"
                                 Background="Transparent"
                                 Opacity="0"
-                                RenderTransformOrigin="{TemplateBinding AnimationOrigin}">
+                                RenderTransformOrigin="{TemplateBinding AnimationOrigin}"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
                                 <Border.RenderTransform>
                                     <ScaleTransform ScaleX="0.92" ScaleY="0.92"/>
                                 </Border.RenderTransform>
-                                <ContentPresenter/>
+                                <ContentPresenter shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
                             </Border>
                         </Border>
                     </Grid>

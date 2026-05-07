@@ -2,10 +2,12 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Threading;
 using AniNest.Features.Shell;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Persistence;
 using AniNest.Presentation.Diagnostics;
+using AniNest.Presentation.Overlays;
 using AniNest.Presentation.Primitives;
 
 namespace AniNest.View;
@@ -28,6 +30,11 @@ public partial class MainWindow : Window
         InitializeComponent();
         PopupInputCoordinator.Instance.Attach(this);
         RegisterPopupRegions();
+        FileOverlay.Closed += OnFileOverlayClosed;
+        SettingsOverlay.Closed += OnSettingsOverlayClosed;
+        LanguageOverlay.Closed += OnLanguageOverlayClosed;
+        FullscreenAnimationOverlay.Closed += OnFullscreenAnimationOverlayClosed;
+        PlayerInputOverlay.Closed += OnPlayerInputOverlayClosed;
         _fps = new FpsMonitor(this);
         _fps.Attach();
 
@@ -209,31 +216,198 @@ public partial class MainWindow : Window
         => SystemCommands.CloseWindow(this);
 
     private static readonly Logger MainWindowLog = AppLog.For("MainWindow");
+    private ShellViewModel Shell => (ShellViewModel)DataContext;
+
+    private bool ToggleAnchoredOverlay(
+        AnimatedOverlay overlay,
+        FrameworkElement anchor,
+        Action<ShellViewModel, bool> syncState,
+        string logName,
+        bool deferReposition = false,
+        Action<ShellViewModel>? onOpened = null,
+        Action<ShellViewModel>? onClosed = null)
+    {
+        var opened = overlay.ToggleForAnchor(anchor);
+        syncState(Shell, opened);
+
+        if (opened)
+            onOpened?.Invoke(Shell);
+        else
+            onClosed?.Invoke(Shell);
+
+        MainWindowLog.Debug($"{logName}: opened={opened}");
+
+        if (opened && deferReposition)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                overlay.Reposition();
+                MainWindowLog.Debug(
+                    $"{overlay.Name}.Reposition deferred: anchorWidth={anchor.ActualWidth:F1} " +
+                    $"anchorHeight={anchor.ActualHeight:F1} overlayState={overlay.CurrentState}");
+            }), DispatcherPriority.Loaded);
+        }
+
+        return opened;
+    }
+
+    private void CloseOverlay(
+        AnimatedOverlay overlay,
+        Action<ShellViewModel> syncState,
+        OverlayCloseReason reason = OverlayCloseReason.ChainSwitch,
+        Action<ShellViewModel>? afterClose = null)
+    {
+        overlay.Close(reason);
+        syncState(Shell);
+        afterClose?.Invoke(Shell);
+    }
+
+    private void CloseSettingsChildOverlays(OverlayCloseReason reason)
+    {
+        CloseOverlay(LanguageOverlay, shell => shell.IsLanguageSubmenuOpen = false, reason);
+        CloseOverlay(FullscreenAnimationOverlay, shell => shell.IsFullscreenAnimationSubmenuOpen = false, reason);
+        CloseOverlay(
+            PlayerInputOverlay,
+            shell => shell.IsPlayerInputSubmenuOpen = false,
+            reason,
+            shell => shell.PlayerInputSettings.CancelCapture());
+    }
+
+    private void FileButton_Click(object sender, RoutedEventArgs e)
+    {
+        CloseOverlay(SettingsOverlay, shell => shell.IsSettingsPopupOpen = false);
+        ToggleAnchoredOverlay(
+            FileOverlay,
+            FileButton,
+            static (shell, opened) => shell.IsFilePopupOpen = opened,
+            nameof(FileButton_Click),
+            deferReposition: true);
+    }
+
+    private void OnFileOverlayActionClick(object sender, RoutedEventArgs e)
+    {
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            FileOverlay.Close(OverlayCloseReason.Programmatic);
+        }), System.Windows.Threading.DispatcherPriority.Background);
+    }
+
+    private void OnFileOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
+    {
+        Shell.IsFilePopupOpen = false;
+        MainWindowLog.Debug($"OnFileOverlayClosed: reason={e.Reason}");
+    }
+
+    private void SettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        CloseOverlay(FileOverlay, shell => shell.IsFilePopupOpen = false);
+        ToggleAnchoredOverlay(
+            SettingsOverlay,
+            SettingsButton,
+            static (shell, opened) => shell.IsSettingsPopupOpen = opened,
+            nameof(SettingsButton_Click),
+            deferReposition: true);
+    }
+
+    private void OnSettingsOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
+    {
+        Shell.IsSettingsPopupOpen = false;
+        CloseSettingsChildOverlays(OverlayCloseReason.ParentClosed);
+        MainWindowLog.Debug($"OnSettingsOverlayClosed: reason={e.Reason}");
+    }
+
+    private void LanguageMenuButton_Click(object sender, RoutedEventArgs e)
+    {
+        CloseOverlay(FullscreenAnimationOverlay, shell => shell.IsFullscreenAnimationSubmenuOpen = false);
+        CloseOverlay(
+            PlayerInputOverlay,
+            shell => shell.IsPlayerInputSubmenuOpen = false,
+            afterClose: shell => shell.PlayerInputSettings.CancelCapture());
+        ToggleAnchoredOverlay(
+            LanguageOverlay,
+            LanguageMenuButton,
+            static (shell, opened) => shell.IsLanguageSubmenuOpen = opened,
+            nameof(LanguageMenuButton_Click));
+    }
+
+    private void FullscreenAnimationMenuButton_Click(object sender, RoutedEventArgs e)
+    {
+        CloseOverlay(LanguageOverlay, shell => shell.IsLanguageSubmenuOpen = false);
+        CloseOverlay(
+            PlayerInputOverlay,
+            shell => shell.IsPlayerInputSubmenuOpen = false,
+            afterClose: shell => shell.PlayerInputSettings.CancelCapture());
+        ToggleAnchoredOverlay(
+            FullscreenAnimationOverlay,
+            FullscreenAnimationMenuButton,
+            static (shell, opened) => shell.IsFullscreenAnimationSubmenuOpen = opened,
+            nameof(FullscreenAnimationMenuButton_Click));
+    }
+
+    private void PlayerInputMenuButton_Click(object sender, RoutedEventArgs e)
+    {
+        CloseOverlay(LanguageOverlay, shell => shell.IsLanguageSubmenuOpen = false);
+        CloseOverlay(FullscreenAnimationOverlay, shell => shell.IsFullscreenAnimationSubmenuOpen = false);
+        ToggleAnchoredOverlay(
+            PlayerInputOverlay,
+            PlayerInputMenuButton,
+            static (shell, opened) => shell.IsPlayerInputSubmenuOpen = opened,
+            nameof(PlayerInputMenuButton_Click),
+            onOpened: shell => shell.PlayerInputSettings.RefreshFromService(),
+            onClosed: shell => shell.PlayerInputSettings.CancelCapture());
+    }
+
+    private void OnLanguageOverlayActionClick(object sender, RoutedEventArgs e)
+    {
+        MainWindowLog.Debug("OnLanguageOverlayActionClick");
+    }
+
+    private void OnFullscreenAnimationOverlayActionClick(object sender, RoutedEventArgs e)
+    {
+        MainWindowLog.Debug("OnFullscreenAnimationOverlayActionClick");
+    }
+
+    private void OnLanguageOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
+    {
+        Shell.IsLanguageSubmenuOpen = false;
+        MainWindowLog.Debug($"OnLanguageOverlayClosed: reason={e.Reason}");
+    }
+
+    private void OnFullscreenAnimationOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
+    {
+        Shell.IsFullscreenAnimationSubmenuOpen = false;
+        MainWindowLog.Debug($"OnFullscreenAnimationOverlayClosed: reason={e.Reason}");
+    }
+
+    private void OnPlayerInputOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
+    {
+        Shell.IsPlayerInputSubmenuOpen = false;
+        Shell.PlayerInputSettings.CancelCapture();
+        MainWindowLog.Debug($"OnPlayerInputOverlayClosed: reason={e.Reason}");
+    }
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         MainWindowLog.Debug($"PreviewKeyDown: Key={e.Key} SystemKey={e.SystemKey} IsRepeat={e.IsRepeat} Handled={e.Handled}");
-        var shell = (ShellViewModel)DataContext;
-
-        if (shell.TryCaptureSettingsKey(e))
+        if (Shell.TryCaptureSettingsKey(e))
         {
             MainWindowLog.Info($"PreviewKeyDown captured by settings: Key={e.Key}");
             e.Handled = true;
             return;
         }
 
-        shell.TryHandlePlayerKeyDown(e);
+        Shell.TryHandlePlayerKeyDown(e);
     }
 
     private void OnPreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
-        if (((ShellViewModel)DataContext).TryCaptureSettingsMouseDown(e))
+        if (Shell.TryCaptureSettingsMouseDown(e))
             e.Handled = true;
     }
 
     private void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
-        if (((ShellViewModel)DataContext).TryCaptureSettingsMouseWheel(e))
+        if (Shell.TryCaptureSettingsMouseWheel(e))
             e.Handled = true;
     }
 

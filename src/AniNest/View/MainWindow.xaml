@@ -1,7 +1,8 @@
-<Window x:Class="AniNest.View.MainWindow"
+﻿<Window x:Class="AniNest.View.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:primitives="clr-namespace:AniNest.Presentation.Primitives"
+        xmlns:overlays="clr-namespace:AniNest.Presentation.Overlays"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:featuresLibrary="clr-namespace:AniNest.Features.Library"
         xmlns:featuresPlayer="clr-namespace:AniNest.Features.Player"
@@ -89,323 +90,15 @@
                             <Button x:Name="FileButton"
                                     Style="{StaticResource TitleBarTextButton}"
                                     Content="{Binding DataContext.Localization[App.File], RelativeSource={RelativeSource AncestorType=Window}}"
-                                    Command="{Binding OpenFilePopupCommand}"
+                                    Click="FileButton_Click"
                                     shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
-                            <primitives:AnimatedPopup x:Name="FilePopup"
-                                   StaysOpen="True"
-                                   IsOpenAnimated="{Binding IsFilePopupOpen}"
-                                   OpenAnimationOrigin="0,0"
-                                   PlacementTarget="{Binding ElementName=FileButton}"
-                                   Placement="Bottom"
-                                   HorizontalOffset="{StaticResource PopupMenuHorizontalOffset}"
-                                   AllowsTransparency="True">
-                                <Border Background="{StaticResource PopupMenuBackground}"
-                                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
-                                        Padding="{StaticResource PopupMenuPadding}"
-                                        MinWidth="{StaticResource PopupFileMenuMinWidth}">
-                                    <StackPanel>
-                                        <Button Style="{StaticResource PopupMenuButton}"
-                                                Command="{Binding AddFolderCommand}">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Path Data="M10 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6H12L10 4Z"
-                                                      Fill="{StaticResource IconSecondary}"
-                                                      Width="{StaticResource IconSizeNormal}"
-                                                      Height="{StaticResource IconSizeNormal}"
-                                                      Stretch="Uniform"
-                                                      Margin="0,0,8,0"/>
-                                                <TextBlock Text="{Binding DataContext.Localization[App.AddFolder], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </Button>
-                                        <Button Style="{StaticResource PopupMenuButton}"
-                                                Command="{Binding AddFolderBatchCommand}">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Path Data="M10 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6H12L10 4Z M17 13H13V17H11V13H7V11H11V7H13V11H17V13Z"
-                                                      Fill="{StaticResource IconSecondary}"
-                                                      Width="{StaticResource IconSizeNormal}"
-                                                      Height="{StaticResource IconSizeNormal}"
-                                                      Stretch="Uniform"
-                                                      Margin="0,0,8,0"/>
-                                                <TextBlock Text="{Binding DataContext.Localization[App.AddFolderBatch], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </Button>
-                                    </StackPanel>
-                                </Border>
-                            </primitives:AnimatedPopup>
                         </Grid>
                         <Grid>
                             <Button x:Name="SettingsButton"
                                     Style="{StaticResource TitleBarTextButton}"
                                     Content="{Binding DataContext.Localization[App.Settings], RelativeSource={RelativeSource AncestorType=Window}}"
-                                    Command="{Binding OpenSettingsPopupCommand}"
+                                    Click="SettingsButton_Click"
                                     shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
-                            <primitives:AnimatedPopup x:Name="SettingsPopup"
-                                   StaysOpen="True"
-                                   IsOpenAnimated="{Binding IsSettingsPopupOpen}"
-                                   OpenAnimationOrigin="0,0"
-                                   PlacementTarget="{Binding ElementName=SettingsButton}"
-                                   Placement="Bottom"
-                                   HorizontalOffset="{StaticResource PopupMenuHorizontalOffset}"
-                                   AllowsTransparency="True">
-                                <Border Background="{StaticResource PopupMenuBackground}"
-                                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
-                                        Padding="{StaticResource PopupMenuPadding}"
-                                        MinWidth="{StaticResource PopupSettingsMenuMinWidth}">
-                                    <StackPanel>
-                                        <Grid>
-                                            <Button x:Name="LanguageMenuButton"
-                                                    Style="{StaticResource PopupMenuButton}"
-                                                    Command="{Binding ToggleLanguageSubmenuCommand}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding DataContext.Localization[Settings.Language], RelativeSource={RelativeSource AncestorType=Window}}"
-                                                               VerticalAlignment="Center"/>
-                                                    <Path Data="{StaticResource ChevronRightGeometry}"
-                                                          Fill="{StaticResource IconSecondary}"
-                                                          Stretch="Uniform"
-                                                          VerticalAlignment="Center"
-                                                          Width="{StaticResource SubmenuChevronWidth}"
-                                                          Height="{StaticResource SubmenuChevronHeight}"
-                                                          Margin="{StaticResource SubmenuChevronLeftMargin}"/>
-                                                </StackPanel>
-                                            </Button>
-                                            <primitives:AnimatedPopup x:Name="LanguageSubmenuPopup"
-                                                   StaysOpen="True"
-                                                   IsOpenAnimated="{Binding IsLanguageSubmenuOpen}"
-                                                   OpenAnimationOrigin="0,0"
-                                                   PlacementTarget="{Binding ElementName=LanguageMenuButton}"
-                                                   Placement="Right"
-                                                   HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
-                                                   AllowsTransparency="True">
-                                                <Border Background="{StaticResource PopupMenuBackground}"
-                                                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
-                                                        Padding="{StaticResource PopupMenuPadding}"
-                                                        MinWidth="{StaticResource PopupSubmenuMinWidth}">
-                                                    <Grid>
-                                                        <Border CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
-                                                                Background="{StaticResource AccentBlue}"
-                                                                Height="{StaticResource SpeedOptionHeight}"
-                                                                VerticalAlignment="Top">
-                                                            <Border.RenderTransform>
-                                                                <TranslateTransform Y="0"/>
-                                                            </Border.RenderTransform>
-                                                            <Border.Style>
-                                                                <Style TargetType="Border">
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding DataContext.CurrentLanguageCode, RelativeSource={RelativeSource AncestorType=Window}}" Value="en-US">
-                                                                            <DataTrigger.EnterActions>
-                                                                                <BeginStoryboard Storyboard="{StaticResource SlideToSecond}"/>
-                                                                            </DataTrigger.EnterActions>
-                                                                            <DataTrigger.ExitActions>
-                                                                                <BeginStoryboard Storyboard="{StaticResource SlideToFirst}"/>
-                                                                            </DataTrigger.ExitActions>
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </Border.Style>
-                                                        </Border>
-                                                        <StackPanel>
-                                                            <Button Style="{StaticResource PopupMenuButton}"
-                                                                    Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                    CommandParameter="zh-CN">
-                                                                <TextBlock Text="中文" VerticalAlignment="Center"/>
-                                                            </Button>
-                                                            <Button Style="{StaticResource PopupMenuButton}"
-                                                                    Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                    CommandParameter="en-US">
-                                                                <TextBlock Text="English" VerticalAlignment="Center"/>
-                                                            </Button>
-                                                        </StackPanel>
-                                                    </Grid>
-                                                </Border>
-                                            </primitives:AnimatedPopup>
-                                        </Grid>
-                                        <Grid>
-                                            <Button x:Name="FullscreenAnimationMenuButton"
-                                                    Style="{StaticResource PopupMenuButton}"
-                                                    Command="{Binding ToggleFullscreenAnimationSubmenuCommand}"
-                                                    ToolTip="{Binding DataContext.Localization[Settings.FullscreenAnimation.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding DataContext.Localization[Settings.FullscreenAnimation], RelativeSource={RelativeSource AncestorType=Window}}"
-                                                               VerticalAlignment="Center"/>
-                                                    <Path Data="{StaticResource ChevronRightGeometry}"
-                                                          Fill="{StaticResource IconSecondary}"
-                                                          Stretch="Uniform"
-                                                          VerticalAlignment="Center"
-                                                          Width="{StaticResource SubmenuChevronWidth}"
-                                                          Height="{StaticResource SubmenuChevronHeight}"
-                                                          Margin="{StaticResource SubmenuChevronLeftMargin}"/>
-                                                </StackPanel>
-                                            </Button>
-                                            <primitives:AnimatedPopup x:Name="FullscreenAnimationSubmenuPopup"
-                                                   StaysOpen="True"
-                                                   IsOpenAnimated="{Binding IsFullscreenAnimationSubmenuOpen}"
-                                                   OpenAnimationOrigin="0,0"
-                                                   PlacementTarget="{Binding ElementName=FullscreenAnimationMenuButton}"
-                                                   Placement="Right"
-                                                   HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
-                                                   AllowsTransparency="True">
-                                                <Border Background="{StaticResource PopupMenuBackground}"
-                                                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
-                                                        Padding="{StaticResource PopupMenuPadding}"
-                                                        MinWidth="{StaticResource PopupSubmenuMinWidth}">
-                                                    <Grid>
-                                                        <Border CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
-                                                                Background="{StaticResource AccentBlue}"
-                                                                Height="{StaticResource SpeedOptionHeight}"
-                                                                VerticalAlignment="Top">
-                                                            <Border.RenderTransform>
-                                                                <TranslateTransform Y="0"/>
-                                                            </Border.RenderTransform>
-                                                            <Border.Style>
-                                                                <Style TargetType="Border">
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding DataContext.CurrentAnimationCode, RelativeSource={RelativeSource AncestorType=Window}}" Value="continuous">
-                                                                            <DataTrigger.EnterActions>
-                                                                                <BeginStoryboard Storyboard="{StaticResource SlideToSecond}"/>
-                                                                            </DataTrigger.EnterActions>
-                                                                            <DataTrigger.ExitActions>
-                                                                                <BeginStoryboard Storyboard="{StaticResource SlideToFirst}"/>
-                                                                            </DataTrigger.ExitActions>
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </Border.Style>
-                                                        </Border>
-                                                        <StackPanel>
-                                                            <Button Style="{StaticResource PopupMenuButton}"
-                                                                    Command="{Binding DataContext.SelectFullscreenAnimationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                    CommandParameter="none">
-                                                                <TextBlock Text="{Binding DataContext.Localization[Settings.FullscreenAnimation.NoAnimation], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
-                                                            </Button>
-                                                            <Button Style="{StaticResource PopupMenuButton}"
-                                                                    Command="{Binding DataContext.SelectFullscreenAnimationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                    CommandParameter="continuous">
-                                                                <TextBlock Text="{Binding DataContext.Localization[Settings.FullscreenAnimation.ContinuousAnimation], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
-                                                            </Button>
-                                                        </StackPanel>
-                                                    </Grid>
-                                                </Border>
-                                            </primitives:AnimatedPopup>
-                                        </Grid>
-                                        <Grid>
-                                            <Button x:Name="PlayerInputMenuButton"
-                                                    Style="{StaticResource PopupMenuButton}"
-                                                    Command="{Binding TogglePlayerInputSubmenuCommand}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding PlayerInputSettings.Title}"
-                                                               VerticalAlignment="Center"/>
-                                                    <Path Data="{StaticResource ChevronRightGeometry}"
-                                                          Fill="{StaticResource IconSecondary}"
-                                                          Stretch="Uniform"
-                                                          VerticalAlignment="Center"
-                                                          Width="{StaticResource SubmenuChevronWidth}"
-                                                          Height="{StaticResource SubmenuChevronHeight}"
-                                                          Margin="{StaticResource SubmenuChevronLeftMargin}"/>
-                                                </StackPanel>
-                                            </Button>
-                                            <primitives:AnimatedPopup x:Name="PlayerInputSubmenuPopup"
-                                                   StaysOpen="True"
-                                                   IsOpenAnimated="{Binding IsPlayerInputSubmenuOpen}"
-                                                   OpenAnimationOrigin="0,0"
-                                                   PlacementTarget="{Binding ElementName=PlayerInputMenuButton}"
-                                                   Placement="Right"
-                                                   HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
-                                                   AllowsTransparency="True">
-                                                <Border Background="{StaticResource PopupMenuBackground}"
-                                                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
-                                                        Padding="{StaticResource PopupMenuPadding}"
-                                                        MinWidth="420">
-                                                    <Grid DataContext="{Binding PlayerInputSettings}">
-                                                        <Grid.RowDefinitions>
-                                                            <RowDefinition Height="Auto"/>
-                                                            <RowDefinition Height="*"/>
-                                                            <RowDefinition Height="Auto"/>
-                                                        </Grid.RowDefinitions>
-                                                        <TextBlock Text="{Binding HintText}"
-                                                                   Foreground="{StaticResource TextSecondary}"
-                                                                   FontSize="12"
-                                                                   Margin="12,8,12,10"
-                                                                   TextWrapping="Wrap"/>
-                                                        <ScrollViewer Grid.Row="1"
-                                                                      VerticalScrollBarVisibility="Auto"
-                                                                      HorizontalScrollBarVisibility="Disabled"
-                                                                      MaxHeight="380">
-                                                            <ItemsControl ItemsSource="{Binding Items}">
-                                                                <ItemsControl.ItemTemplate>
-                                                                    <DataTemplate DataType="{x:Type playerSettings:PlayerInputBindingItemViewModel}">
-                                                                        <Grid Margin="6,4">
-                                                                            <Grid.ColumnDefinitions>
-                                                                                <ColumnDefinition Width="150"/>
-                                                                                <ColumnDefinition Width="*"/>
-                                                                                <ColumnDefinition Width="Auto"/>
-                                                                                <ColumnDefinition Width="Auto"/>
-                                                                            </Grid.ColumnDefinitions>
-                                                                            <TextBlock Text="{Binding ActionDisplayName}"
-                                                                                       VerticalAlignment="Center"
-                                                                                       Margin="8,0,10,0"
-                                                                                       TextTrimming="CharacterEllipsis"/>
-                                                                            <Button Grid.Column="1"
-                                                                                    Style="{StaticResource PopupMenuButton}"
-                                                                                    HorizontalContentAlignment="Left"
-                                                                                    MinWidth="140"
-                                                                                    Command="{Binding DataContext.BeginCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                                                    CommandParameter="{Binding Index}">
-                                                                                <TextBlock Text="{Binding BindingDisplay}">
-                                                                                    <TextBlock.Style>
-                                                                                        <Style TargetType="TextBlock">
-                                                                                            <Setter Property="Text" Value="{Binding BindingDisplay}"/>
-                                                                                            <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding IsCapturing}" Value="True">
-                                                                                                    <Setter Property="Text" Value="{Binding DataContext.CapturingButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
-                                                                                                </DataTrigger>
-                                                                                            </Style.Triggers>
-                                                                                        </Style>
-                                                                                    </TextBlock.Style>
-                                                                                </TextBlock>
-                                                                            </Button>
-                                                                            <Button Grid.Column="2"
-                                                                                    Style="{StaticResource PopupMenuButton}"
-                                                                                    Margin="6,0,0,0"
-                                                                                    Command="{Binding DataContext.BeginCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                                                    CommandParameter="{Binding Index}">
-                                                                                <TextBlock>
-                                                                                    <TextBlock.Style>
-                                                                                        <Style TargetType="TextBlock">
-                                                                                            <Setter Property="Text" Value="{Binding DataContext.CaptureButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
-                                                                                            <Style.Triggers>
-                                                                                                <DataTrigger Binding="{Binding IsCapturing}" Value="True">
-                                                                                                    <Setter Property="Text" Value="{Binding DataContext.CapturingButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
-                                                                                                </DataTrigger>
-                                                                                            </Style.Triggers>
-                                                                                        </Style>
-                                                                                    </TextBlock.Style>
-                                                                                </TextBlock>
-                                                                            </Button>
-                                                                            <Button Grid.Column="3"
-                                                                                    Style="{StaticResource PopupMenuButton}"
-                                                                                    Margin="6,0,0,0"
-                                                                                    Command="{Binding DataContext.ClearBindingCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                                                    CommandParameter="{Binding Index}">
-                                                                                <TextBlock Text="{Binding DataContext.ClearButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
-                                                                            </Button>
-                                                                        </Grid>
-                                                                    </DataTemplate>
-                                                                </ItemsControl.ItemTemplate>
-                                                            </ItemsControl>
-                                                        </ScrollViewer>
-                                                        <Button Grid.Row="2"
-                                                                Style="{StaticResource PopupMenuButton}"
-                                                                HorizontalContentAlignment="Center"
-                                                                Margin="6,10,6,6"
-                                                                Command="{Binding ResetCommand}">
-                                                            <TextBlock Text="{Binding ResetButtonText}"/>
-                                                        </Button>
-                                                    </Grid>
-                                                </Border>
-                                            </primitives:AnimatedPopup>
-                                        </Grid>
-                                    </StackPanel>
-                                </Border>
-                            </primitives:AnimatedPopup>
                         </Grid>
                     </StackPanel>
 
@@ -482,6 +175,384 @@
                     </StackPanel>
                 </Grid>
             </Border>
+
+            <overlays:AnimatedOverlay x:Name="SettingsOverlay"
+                                      Grid.RowSpan="2"
+                                      Placement="BottomLeft"
+                                      HorizontalOffset="{StaticResource PopupMenuHorizontalOffset}"
+                                      VerticalOffset="4"
+                                      AnimationOrigin="0,0"
+                                      CloseOnOutsideClick="True"
+                                      CloseOnEscape="True"
+                                      ResetAnchorOnClose="True"
+                                      LeftAnchorClickBehavior="CloseAndPassThrough"
+                                      RightAnchorClickBehavior="CloseAndPassThrough"
+                                      OutsidePointerBehavior="CloseAndPassThrough"
+                                      OpenDurationMs="220"
+                                      CloseDurationMs="180"
+                                      Panel.ZIndex="2001"
+                                      shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                <Border Background="{StaticResource PopupMenuBackground}"
+                                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                                        Padding="{StaticResource PopupMenuPadding}"
+                                        MinWidth="{StaticResource PopupSettingsMenuMinWidth}"
+                                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                    <StackPanel>
+                                        <Grid>
+                                            <Button x:Name="LanguageMenuButton"
+                                                    Style="{StaticResource PopupMenuButton}"
+                                                    Click="LanguageMenuButton_Click"
+                                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding DataContext.Localization[Settings.Language], RelativeSource={RelativeSource AncestorType=Window}}"
+                                                               VerticalAlignment="Center"/>
+                                                    <Path Data="{StaticResource ChevronRightGeometry}"
+                                                          Fill="{StaticResource IconSecondary}"
+                                                          Stretch="Uniform"
+                                                          VerticalAlignment="Center"
+                                                          Width="{StaticResource SubmenuChevronWidth}"
+                                                          Height="{StaticResource SubmenuChevronHeight}"
+                                                          Margin="{StaticResource SubmenuChevronLeftMargin}"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
+                                        <Grid>
+                                            <Button x:Name="FullscreenAnimationMenuButton"
+                                                    Style="{StaticResource PopupMenuButton}"
+                                                    Click="FullscreenAnimationMenuButton_Click"
+                                                    ToolTip="{Binding DataContext.Localization[Settings.FullscreenAnimation.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding DataContext.Localization[Settings.FullscreenAnimation], RelativeSource={RelativeSource AncestorType=Window}}"
+                                                               VerticalAlignment="Center"/>
+                                                    <Path Data="{StaticResource ChevronRightGeometry}"
+                                                          Fill="{StaticResource IconSecondary}"
+                                                          Stretch="Uniform"
+                                                          VerticalAlignment="Center"
+                                                          Width="{StaticResource SubmenuChevronWidth}"
+                                                          Height="{StaticResource SubmenuChevronHeight}"
+                                                          Margin="{StaticResource SubmenuChevronLeftMargin}"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
+                                        <Grid>
+                                            <Button x:Name="PlayerInputMenuButton"
+                                                    Style="{StaticResource PopupMenuButton}"
+                                                    Click="PlayerInputMenuButton_Click"
+                                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding PlayerInputSettings.Title}"
+                                                               VerticalAlignment="Center"/>
+                                                    <Path Data="{StaticResource ChevronRightGeometry}"
+                                                          Fill="{StaticResource IconSecondary}"
+                                                          Stretch="Uniform"
+                                                          VerticalAlignment="Center"
+                                                          Width="{StaticResource SubmenuChevronWidth}"
+                                                          Height="{StaticResource SubmenuChevronHeight}"
+                                                          Margin="{StaticResource SubmenuChevronLeftMargin}"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+            </overlays:AnimatedOverlay>
+
+            <overlays:AnimatedOverlay x:Name="LanguageOverlay"
+                                      Grid.RowSpan="2"
+                                      Placement="RightTop"
+                                      HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
+                                      VerticalOffset="0"
+                                      AnimationOrigin="0,0"
+                                      CloseOnOutsideClick="True"
+                                      CloseOnEscape="True"
+                                      ResetAnchorOnClose="True"
+                                      LeftAnchorClickBehavior="CloseAndPassThrough"
+                                      RightAnchorClickBehavior="CloseAndPassThrough"
+                                      OutsidePointerBehavior="CloseAndPassThrough"
+                                      OpenDurationMs="220"
+                                      CloseDurationMs="180"
+                                      Panel.ZIndex="2002"
+                                      shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                <Border Background="{StaticResource PopupMenuBackground}"
+                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                        Padding="{StaticResource PopupMenuPadding}"
+                        MinWidth="{StaticResource PopupSubmenuMinWidth}"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Grid>
+                        <Border CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
+                                Background="{StaticResource AccentBlue}"
+                                Height="{StaticResource SpeedOptionHeight}"
+                                VerticalAlignment="Top">
+                            <Border.RenderTransform>
+                                <TranslateTransform Y="0"/>
+                            </Border.RenderTransform>
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DataContext.CurrentLanguageCode, RelativeSource={RelativeSource AncestorType=Window}}" Value="en-US">
+                                            <DataTrigger.EnterActions>
+                                                <BeginStoryboard Storyboard="{StaticResource SlideToSecond}"/>
+                                            </DataTrigger.EnterActions>
+                                            <DataTrigger.ExitActions>
+                                                <BeginStoryboard Storyboard="{StaticResource SlideToFirst}"/>
+                                            </DataTrigger.ExitActions>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                        </Border>
+                        <StackPanel>
+                            <Button Style="{StaticResource PopupMenuButton}"
+                                    Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="zh-CN"
+                                    Click="OnLanguageOverlayActionClick"
+                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                <TextBlock Text="&#x7B80;&#x4F53;&#x4E2D;&#x6587;" VerticalAlignment="Center"/>
+                            </Button>
+                            <Button Style="{StaticResource PopupMenuButton}"
+                                    Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="en-US"
+                                    Click="OnLanguageOverlayActionClick"
+                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                <TextBlock Text="English" VerticalAlignment="Center"/>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </overlays:AnimatedOverlay>
+
+            <overlays:AnimatedOverlay x:Name="FullscreenAnimationOverlay"
+                                      Grid.RowSpan="2"
+                                      Placement="RightTop"
+                                      HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
+                                      VerticalOffset="0"
+                                      AnimationOrigin="0,0"
+                                      CloseOnOutsideClick="True"
+                                      CloseOnEscape="True"
+                                      ResetAnchorOnClose="True"
+                                      LeftAnchorClickBehavior="CloseAndPassThrough"
+                                      RightAnchorClickBehavior="CloseAndPassThrough"
+                                      OutsidePointerBehavior="CloseAndPassThrough"
+                                      OpenDurationMs="220"
+                                      CloseDurationMs="180"
+                                      Panel.ZIndex="2003"
+                                      shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                <Border Background="{StaticResource PopupMenuBackground}"
+                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                        Padding="{StaticResource PopupMenuPadding}"
+                        MinWidth="{StaticResource PopupSubmenuMinWidth}"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Grid>
+                        <Border CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
+                                Background="{StaticResource AccentBlue}"
+                                Height="{StaticResource SpeedOptionHeight}"
+                                VerticalAlignment="Top">
+                            <Border.RenderTransform>
+                                <TranslateTransform Y="0"/>
+                            </Border.RenderTransform>
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DataContext.CurrentAnimationCode, RelativeSource={RelativeSource AncestorType=Window}}" Value="continuous">
+                                            <DataTrigger.EnterActions>
+                                                <BeginStoryboard Storyboard="{StaticResource SlideToSecond}"/>
+                                            </DataTrigger.EnterActions>
+                                            <DataTrigger.ExitActions>
+                                                <BeginStoryboard Storyboard="{StaticResource SlideToFirst}"/>
+                                            </DataTrigger.ExitActions>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                        </Border>
+                        <StackPanel>
+                            <Button Style="{StaticResource PopupMenuButton}"
+                                    Command="{Binding DataContext.SelectFullscreenAnimationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="none"
+                                    Click="OnFullscreenAnimationOverlayActionClick"
+                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                <TextBlock Text="{Binding DataContext.Localization[Settings.FullscreenAnimation.NoAnimation], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
+                            </Button>
+                            <Button Style="{StaticResource PopupMenuButton}"
+                                    Command="{Binding DataContext.SelectFullscreenAnimationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="continuous"
+                                    Click="OnFullscreenAnimationOverlayActionClick"
+                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                <TextBlock Text="{Binding DataContext.Localization[Settings.FullscreenAnimation.ContinuousAnimation], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </overlays:AnimatedOverlay>
+
+            <overlays:AnimatedOverlay x:Name="PlayerInputOverlay"
+                                      Grid.RowSpan="2"
+                                      Placement="RightTop"
+                                      HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
+                                      VerticalOffset="0"
+                                      AnimationOrigin="0,0"
+                                      CloseOnOutsideClick="True"
+                                      CloseOnEscape="True"
+                                      ResetAnchorOnClose="True"
+                                      LeftAnchorClickBehavior="CloseAndPassThrough"
+                                      RightAnchorClickBehavior="CloseAndPassThrough"
+                                      OutsidePointerBehavior="CloseAndPassThrough"
+                                      OpenDurationMs="220"
+                                      CloseDurationMs="180"
+                                      Panel.ZIndex="2004"
+                                      shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                <Border Background="{StaticResource PopupMenuBackground}"
+                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                        Padding="{StaticResource PopupMenuPadding}"
+                        MinWidth="420"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Grid DataContext="{Binding PlayerInputSettings}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="{Binding HintText}"
+                                   Foreground="{StaticResource TextSecondary}"
+                                   FontSize="12"
+                                   Margin="12,8,12,10"
+                                   TextWrapping="Wrap"/>
+                        <ScrollViewer Grid.Row="1"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      MaxHeight="380"
+                                      shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <ItemsControl ItemsSource="{Binding Items}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type playerSettings:PlayerInputBindingItemViewModel}">
+                                        <Grid Margin="6,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="150"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding ActionDisplayName}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="8,0,10,0"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <Button Grid.Column="1"
+                                                    Style="{StaticResource PopupMenuButton}"
+                                                    HorizontalContentAlignment="Left"
+                                                    MinWidth="140"
+                                                    Command="{Binding DataContext.BeginCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding Index}"
+                                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                                <TextBlock Text="{Binding BindingDisplay}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="{Binding BindingDisplay}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsCapturing}" Value="True">
+                                                                    <Setter Property="Text" Value="{Binding DataContext.CapturingButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Button>
+                                            <Button Grid.Column="2"
+                                                    Style="{StaticResource PopupMenuButton}"
+                                                    Margin="6,0,0,0"
+                                                    Command="{Binding DataContext.BeginCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding Index}"
+                                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                                <TextBlock>
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="{Binding DataContext.CaptureButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsCapturing}" Value="True">
+                                                                    <Setter Property="Text" Value="{Binding DataContext.CapturingButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Button>
+                                            <Button Grid.Column="3"
+                                                    Style="{StaticResource PopupMenuButton}"
+                                                    Margin="6,0,0,0"
+                                                    Command="{Binding DataContext.ClearBindingCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding Index}"
+                                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                                <TextBlock Text="{Binding DataContext.ClearButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                                            </Button>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                        <Button Grid.Row="2"
+                                Style="{StaticResource PopupMenuButton}"
+                                HorizontalContentAlignment="Center"
+                                Margin="6,10,6,6"
+                                Command="{Binding ResetCommand}"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <TextBlock Text="{Binding ResetButtonText}"/>
+                        </Button>
+                    </Grid>
+                </Border>
+            </overlays:AnimatedOverlay>
+
+            <overlays:AnimatedOverlay x:Name="FileOverlay"
+                                      Grid.RowSpan="2"
+                                      Placement="BottomLeft"
+                                      HorizontalOffset="{StaticResource PopupMenuHorizontalOffset}"
+                                      VerticalOffset="4"
+                                      AnimationOrigin="0,0"
+                                      CloseOnOutsideClick="True"
+                                      CloseOnEscape="True"
+                                      ResetAnchorOnClose="True"
+                                      LeftAnchorClickBehavior="CloseAndPassThrough"
+                                      RightAnchorClickBehavior="CloseAndPassThrough"
+                                      OutsidePointerBehavior="CloseAndPassThrough"
+                                      OpenDurationMs="220"
+                                      CloseDurationMs="180"
+                                      Panel.ZIndex="2000"
+                                      shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                <Border Background="{StaticResource PopupMenuBackground}"
+                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                        Padding="{StaticResource PopupMenuPadding}"
+                        MinWidth="{StaticResource PopupFileMenuMinWidth}"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <StackPanel>
+                        <Button Style="{StaticResource PopupMenuButton}"
+                                Command="{Binding AddFolderCommand}"
+                                Click="OnFileOverlayActionClick"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="M10 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6H12L10 4Z"
+                                      Fill="{StaticResource IconSecondary}"
+                                      Width="{StaticResource IconSizeNormal}"
+                                      Height="{StaticResource IconSizeNormal}"
+                                      Stretch="Uniform"
+                                      Margin="0,0,8,0"/>
+                                <TextBlock Text="{Binding DataContext.Localization[App.AddFolder], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource PopupMenuButton}"
+                                Command="{Binding AddFolderBatchCommand}"
+                                Click="OnFileOverlayActionClick"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="M10 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6H12L10 4Z M17 13H13V17H11V13H7V11H11V7H13V11H17V13Z"
+                                      Fill="{StaticResource IconSecondary}"
+                                      Width="{StaticResource IconSizeNormal}"
+                                      Height="{StaticResource IconSizeNormal}"
+                                      Stretch="Uniform"
+                                      Margin="0,0,8,0"/>
+                                <TextBlock Text="{Binding DataContext.Localization[App.AddFolderBatch], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </overlays:AnimatedOverlay>
 
             <primitives:TransitioningContentControl x:Name="PageTransition"
                 Grid.Row="1" Content="{Binding CurrentPage}"/>

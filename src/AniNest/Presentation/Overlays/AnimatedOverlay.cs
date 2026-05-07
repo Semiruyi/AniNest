@@ -648,13 +648,15 @@ public class AnimatedOverlay : ContentControl
 
     private void UpdateSurfaceInteractiveState()
     {
+        var interactive = _state == OverlayState.Open || _state == OverlayState.Opening;
+
         if (_surface != null)
-            _surface.IsHitTestVisible = _state == OverlayState.Open;
+            _surface.IsHitTestVisible = interactive;
 
         if (_positionHost != null)
-            _positionHost.IsHitTestVisible = _state == OverlayState.Open;
+            _positionHost.IsHitTestVisible = interactive;
 
-        IsHitTestVisible = _state == OverlayState.Open;
+        IsHitTestVisible = interactive;
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
