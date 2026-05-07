@@ -46,13 +46,14 @@ public partial class PlayerSessionController : ObservableObject
         ISettingsService settings,
         IThumbnailGenerator thumbnailGenerator,
         IMediaPlayerController media,
+        IVideoScanner videoScanner,
         ILocalizationService loc)
     {
         _thumbnailGenerator = thumbnailGenerator;
         _videoReadyHandler = OnVideoReady;
         _videoProgressHandler = OnVideoProgress;
 
-        _playlistManager = new PlaylistManager(settings, media, path => thumbnailGenerator.GetState(path));
+        _playlistManager = new PlaylistManager(settings, media, videoScanner, path => thumbnailGenerator.GetState(path));
         Playlist = new PlaylistViewModel(loc);
         Playlist.SetPlaylistManager(_playlistManager);
         Playlist.CurrentIndexChanged += OnPlaylistCurrentIndexChanged;

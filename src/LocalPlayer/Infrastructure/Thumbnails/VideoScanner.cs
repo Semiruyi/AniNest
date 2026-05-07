@@ -9,7 +9,7 @@ using LocalPlayer.Infrastructure.Thumbnails;
 using LocalPlayer.Infrastructure.Interop;
 namespace LocalPlayer.Infrastructure.Thumbnails;
 
-public class VideoScanner
+public class VideoScanner : IVideoScanner
 {
     private static readonly string[] VideoExtensions =
     {
@@ -29,7 +29,7 @@ public class VideoScanner
 
     private static readonly Logger Log = AppLog.For<VideoScanner>();
 
-    public static FolderScanResult ScanFolder(string folderPath)
+    public FolderScanResult ScanFolder(string folderPath)
     {
         if (!Directory.Exists(folderPath))
             return new FolderScanResult(0, null, Array.Empty<string>());
@@ -81,7 +81,7 @@ public class VideoScanner
         }
     }
 
-    public static int CountVideosInFolder(string folderPath)
+    public int CountVideosInFolder(string folderPath)
     {
         if (!Directory.Exists(folderPath))
             return 0;
@@ -101,7 +101,7 @@ public class VideoScanner
         }
     }
 
-    public static string[] GetVideoFiles(string folderPath)
+    public string[] GetVideoFiles(string folderPath)
     {
         if (!Directory.Exists(folderPath))
             return Array.Empty<string>();
@@ -120,7 +120,7 @@ public class VideoScanner
         }
     }
 
-    public static string? FindCoverImage(string folderPath)
+    public string? FindCoverImage(string folderPath)
     {
         if (!Directory.Exists(folderPath))
             return null;
@@ -169,7 +169,7 @@ public class VideoScanner
         return VideoExtensions.Contains(ext);
     }
 
-    public static List<string> FindVideoFolders(string rootPath)
+    public List<string> FindVideoFolders(string rootPath)
     {
         var result = new List<string>();
         if (!Directory.Exists(rootPath))
@@ -190,7 +190,7 @@ public class VideoScanner
         return result;
     }
 
-    private static void FindVideoFoldersRecursive(string folderPath, List<string> result)
+    private void FindVideoFoldersRecursive(string folderPath, List<string> result)
     {
         string[] subDirs;
         try

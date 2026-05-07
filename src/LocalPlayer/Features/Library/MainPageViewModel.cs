@@ -5,6 +5,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalPlayer.Features.Library.Models;
+using LocalPlayer.Features.Library.Services;
 using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Infrastructure.Persistence;
 using LocalPlayer.Infrastructure.Thumbnails;
@@ -13,7 +14,7 @@ namespace LocalPlayer.Features.Library;
 
 public partial class MainPageViewModel : ObservableObject
 {
-    private readonly ILibraryPageCoordinator _coordinator;
+    private readonly ILibraryAppService _libraryService;
     private readonly ISettingsService _settings;
     private readonly ILocalizationService _loc;
     private readonly EventHandler<ThumbnailProgressEventArgs> _thumbnailProgressChangedHandler;
@@ -38,12 +39,12 @@ public partial class MainPageViewModel : ObservableObject
     private bool _isThumbnailProgressVisible;
 
     public MainPageViewModel(
-        ILibraryPageCoordinator coordinator,
+        ILibraryAppService libraryService,
         ISettingsService settings,
         ILocalizationService loc,
         IThumbnailGenerator thumbnailGenerator)
     {
-        _coordinator = coordinator;
+        _libraryService = libraryService;
         _settings = settings;
         _loc = loc;
         _thumbnailProgressChangedHandler = OnThumbnailProgressChanged;
@@ -55,7 +56,7 @@ public partial class MainPageViewModel : ObservableObject
 
     public void AddFolderItem(string name, string path, int videoCount, string? coverPath)
     {
-        FolderItems.Add(_coordinator.CreateFolderItem(name, path, videoCount, coverPath));
+        FolderItems.Add(CreateFolderItem(new LibraryFolderDto(name, path, videoCount, coverPath)));
     }
 
     [RelayCommand]
@@ -67,31 +68,30 @@ public partial class MainPageViewModel : ObservableObject
             return;
         }
 
-        var loadedItems = await Task.Run(_coordinator.LoadFoldersData);
+        var loadedItems = await _libraryService.LoadLibraryAsync();
 
         FolderItems.Clear();
         foreach (var item in loadedItems)
-            FolderItems.Add(item.Item);
+            FolderItems.Add(CreateFolderItem(item));
 
-        _coordinator.EnqueueAllFolders(loadedItems);
         _dataLoaded = true;
         LoadDataCompleted?.Invoke(this, EventArgs.Empty);
     }
 
     [RelayCommand]
-    private void SelectFolder(FolderListItem? item)
+    private async Task SelectFolder(FolderListItem? item)
     {
         if (item != null)
-            TrySelectFolder(item.Path, out _);
+            await TrySelectFolderAsync(item.Path);
     }
 
     [RelayCommand]
-    private void DeleteFolder(FolderListItem? item)
+    private async Task DeleteFolder(FolderListItem? item)
     {
         if (item == null)
             return;
 
-        _coordinator.DeleteFolder(item);
+        await _libraryService.DeleteFolderAsync(item.Path);
         FolderItems.Remove(item);
     }
 
@@ -114,18 +114,16 @@ public partial class MainPageViewModel : ObservableObject
         }
     }
 
-    public bool TrySelectFolder(string path, out string name)
+    public async Task<bool> TrySelectFolderAsync(string path)
     {
-        name = "";
-        var videos = VideoScanner.GetVideoFiles(path);
-        if (videos.Length == 0)
+        var result = await _libraryService.OpenFolderAsync(path);
+        if (!result.Success)
         {
             MessageBox.Show(_loc["Dialog.NoVideosInFolder"], _loc["Dialog.Info"]);
             return false;
         }
 
-        name = System.IO.Path.GetFileName(path);
-        FolderSelected?.Invoke(path, name);
+        FolderSelected?.Invoke(path, result.FolderName);
         return true;
     }
 
@@ -161,4 +159,10 @@ public partial class MainPageViewModel : ObservableObject
     {
         Application.Current.Dispatcher.BeginInvoke(() => UpdateThumbnailProgress(args.Ready, args.Total));
     }
+
+    private FolderListItem CreateFolderItem(LibraryFolderDto item)
+        => new(item.Name, item.Path, item.VideoCount, item.CoverPath)
+        {
+            VideoCountText = string.Format(_loc["Library.VideoCount"], item.VideoCount)
+        };
 }

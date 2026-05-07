@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using LocalPlayer.Features.Library;
+using LocalPlayer.Features.Library.Services;
 using LocalPlayer.Features.Player;
 using LocalPlayer.Features.Player.Input;
 using LocalPlayer.Features.Player.Settings;
@@ -22,8 +23,9 @@ public static class ServiceRegistration
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<ITaskbarAutoHideCoordinator, TaskbarAutoHideCoordinator>();
+        services.AddSingleton<IVideoScanner, VideoScanner>();
         services.AddSingleton<IThumbnailGenerator, ThumbnailGenerator>();
-        services.AddSingleton<ILibraryPageCoordinator, LibraryPageCoordinator>();
+        services.AddSingleton<ILibraryAppService, LibraryAppService>();
         services.AddSingleton<PlayerSessionController>();
         services.AddSingleton<PlayerPlaybackStateController>();
         services.AddSingleton<IPlayerViewCoordinator, PlayerViewCoordinator>();

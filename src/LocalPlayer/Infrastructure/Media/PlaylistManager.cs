@@ -19,6 +19,7 @@ public class PlaylistManager
 
     private readonly ISettingsService _settings;
     private readonly IMediaPlayerController _media;
+    private readonly IVideoScanner _videoScanner;
     private readonly Func<string, ThumbnailState> _getThumbnailState;
     private Task<(bool[] Played, bool[] Thumb)>? _preloadTask;
 
@@ -36,10 +37,12 @@ public class PlaylistManager
     public event Action<string>? VideoPlayed;
 
     public PlaylistManager(ISettingsService settings, IMediaPlayerController media,
+                           IVideoScanner videoScanner,
                            Func<string, ThumbnailState> getThumbnailState)
     {
         _settings = settings;
         _media = media;
+        _videoScanner = videoScanner;
         _getThumbnailState = getThumbnailState;
     }
 
@@ -64,7 +67,7 @@ public class PlaylistManager
             ["folder"] = folderName
         }))
         {
-            VideoFiles = VideoScanner.GetVideoFiles(folderPath);
+            VideoFiles = _videoScanner.GetVideoFiles(folderPath);
         }
 
         Log.Info($"Scanned {VideoFiles.Length} video files");

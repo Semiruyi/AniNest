@@ -46,6 +46,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     // Dependencies
     private readonly ISettingsService _settings;
+    private readonly IVideoScanner _videoScanner;
 
     // Paths
     private readonly string _thumbBaseDir;
@@ -74,9 +75,10 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     public bool IsFfmpegAvailable => _ffmpegAvailable;
 
-    public ThumbnailGenerator(ISettingsService settings)
+    public ThumbnailGenerator(ISettingsService settings, IVideoScanner videoScanner)
     {
         _settings = settings;
+        _videoScanner = videoScanner;
         _thumbBaseDir = AppPaths.ThumbnailDirectory;
         _indexPath = Path.Combine(_thumbBaseDir, "index.json");
         _ffmpegPath = AppPaths.FfmpegPath;
@@ -143,7 +145,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
 
         var sw = Stopwatch.StartNew();
-        var videoFiles = VideoScanner.GetVideoFiles(folderPath);
+        var videoFiles = _videoScanner.GetVideoFiles(folderPath);
 
         int added = 0;
         foreach (var videoPath in videoFiles)
@@ -195,7 +197,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     public void DeleteForFolder(string folderPath)
     {
         var sw = Stopwatch.StartNew();
-        var videoFiles = VideoScanner.GetVideoFiles(folderPath);
+        var videoFiles = _videoScanner.GetVideoFiles(folderPath);
         int marked = 0;
 
         foreach (var videoPath in videoFiles)

@@ -11,6 +11,7 @@ namespace LocalPlayer.Tests.Model;
 
 public class VideoScannerTests : IDisposable
 {
+    private readonly IVideoScanner _scanner = new VideoScanner();
     private readonly string _tempDir;
 
     public VideoScannerTests()
@@ -27,7 +28,7 @@ public class VideoScannerTests : IDisposable
     [Fact]
     public void ScanFolder_NonExistent_ReturnsZero()
     {
-        var result = VideoScanner.ScanFolder(Path.Combine(_tempDir, "nope"));
+        var result = _scanner.ScanFolder(Path.Combine(_tempDir, "nope"));
         result.VideoCount.Should().Be(0);
         result.CoverPath.Should().BeNull();
     }
@@ -39,7 +40,7 @@ public class VideoScannerTests : IDisposable
         CreateFile("show.mkv");
         CreateFile("notes.txt");
 
-        var result = VideoScanner.ScanFolder(_tempDir);
+        var result = _scanner.ScanFolder(_tempDir);
 
         result.VideoCount.Should().Be(2);
     }
@@ -51,7 +52,7 @@ public class VideoScannerTests : IDisposable
         foreach (var ext in exts)
             CreateFile($"video.{ext}");
 
-        var result = VideoScanner.ScanFolder(_tempDir);
+        var result = _scanner.ScanFolder(_tempDir);
 
         result.VideoCount.Should().Be(13);
     }
@@ -62,7 +63,7 @@ public class VideoScannerTests : IDisposable
         CreateFile("video.mp4");
         CreateFile("folder.jpg");
 
-        var result = VideoScanner.ScanFolder(_tempDir);
+        var result = _scanner.ScanFolder(_tempDir);
 
         result.CoverPath.Should().EndWith("folder.jpg");
     }
@@ -73,7 +74,7 @@ public class VideoScannerTests : IDisposable
         CreateFile("video.mp4");
         CreateFile("cover.png");
 
-        var result = VideoScanner.ScanFolder(_tempDir);
+        var result = _scanner.ScanFolder(_tempDir);
 
         result.CoverPath.Should().EndWith("cover.png");
     }
@@ -85,7 +86,7 @@ public class VideoScannerTests : IDisposable
         CreateFile("thumb.jpg");
         CreateFile("folder.jpg");
 
-        var result = VideoScanner.ScanFolder(_tempDir);
+        var result = _scanner.ScanFolder(_tempDir);
 
         result.CoverPath.Should().EndWith("folder.jpg");
     }
@@ -95,7 +96,7 @@ public class VideoScannerTests : IDisposable
     {
         CreateFile("video.mp4");
 
-        var result = VideoScanner.ScanFolder(_tempDir);
+        var result = _scanner.ScanFolder(_tempDir);
 
         result.CoverPath.Should().BeNull();
     }
@@ -106,7 +107,7 @@ public class VideoScannerTests : IDisposable
         CreateFile("video.mp4");
         CreateFile("screenshot.bmp");
 
-        var result = VideoScanner.ScanFolder(_tempDir);
+        var result = _scanner.ScanFolder(_tempDir);
 
         result.CoverPath.Should().EndWith("screenshot.bmp");
     }
@@ -118,7 +119,7 @@ public class VideoScannerTests : IDisposable
         CreateFile("a.mp4");
         CreateFile("b.mp4");
 
-        var files = VideoScanner.GetVideoFiles(_tempDir);
+        var files = _scanner.GetVideoFiles(_tempDir);
 
         files.Should().BeInAscendingOrder();
     }
@@ -126,7 +127,7 @@ public class VideoScannerTests : IDisposable
     [Fact]
     public void GetVideoFiles_EmptyDir_ReturnsEmpty()
     {
-        var files = VideoScanner.GetVideoFiles(_tempDir);
+        var files = _scanner.GetVideoFiles(_tempDir);
         files.Should().BeEmpty();
     }
 
@@ -136,7 +137,7 @@ public class VideoScannerTests : IDisposable
         CreateFile("readme.txt");
         CreateFile("video.mp4");
 
-        var files = VideoScanner.GetVideoFiles(_tempDir);
+        var files = _scanner.GetVideoFiles(_tempDir);
 
         files.Should().ContainSingle().Which.Should().EndWith("video.mp4");
     }
@@ -148,7 +149,7 @@ public class VideoScannerTests : IDisposable
         CreateFile("b.mkv");
         CreateFile("c.txt");
 
-        var count = VideoScanner.CountVideosInFolder(_tempDir);
+        var count = _scanner.CountVideosInFolder(_tempDir);
 
         count.Should().Be(2);
     }
@@ -159,7 +160,7 @@ public class VideoScannerTests : IDisposable
         CreateFile("random.png");
         CreateFile("poster.jpg");
 
-        var cover = VideoScanner.FindCoverImage(_tempDir);
+        var cover = _scanner.FindCoverImage(_tempDir);
 
         cover.Should().EndWith("poster.jpg");
     }
@@ -171,7 +172,7 @@ public class VideoScannerTests : IDisposable
     {
         CreateFile("movie.mp4");
 
-        var result = VideoScanner.FindVideoFolders(_tempDir);
+        var result = _scanner.FindVideoFolders(_tempDir);
 
         result.Should().ContainSingle().Which.Should().Be(_tempDir);
     }
@@ -184,7 +185,7 @@ public class VideoScannerTests : IDisposable
         CreateFileIn(subA, "01.mp4");
         CreateFileIn(subB, "01.mkv");
 
-        var result = VideoScanner.FindVideoFolders(_tempDir);
+        var result = _scanner.FindVideoFolders(_tempDir);
 
         result.Should().BeEquivalentTo(new[] { subA, subB });
     }
@@ -197,7 +198,7 @@ public class VideoScannerTests : IDisposable
         var level3 = CreateSubDir("Level3", level2);
         CreateFileIn(level3, "video.mp4");
 
-        var result = VideoScanner.FindVideoFolders(_tempDir);
+        var result = _scanner.FindVideoFolders(_tempDir);
 
         result.Should().ContainSingle().Which.Should().Be(level3);
     }
@@ -212,7 +213,7 @@ public class VideoScannerTests : IDisposable
         var deep = CreateSubDir("Deep", noVideo);
         CreateFileIn(deep, "01.mkv");
 
-        var result = VideoScanner.FindVideoFolders(_tempDir);
+        var result = _scanner.FindVideoFolders(_tempDir);
 
         result.Should().BeEquivalentTo(new[] { hasVideo, deep });
     }
@@ -220,7 +221,7 @@ public class VideoScannerTests : IDisposable
     [Fact]
     public void FindVideoFolders_EmptyDir_ReturnsEmpty()
     {
-        var result = VideoScanner.FindVideoFolders(_tempDir);
+        var result = _scanner.FindVideoFolders(_tempDir);
 
         result.Should().BeEmpty();
     }
@@ -228,7 +229,7 @@ public class VideoScannerTests : IDisposable
     [Fact]
     public void FindVideoFolders_NonExistent_ReturnsEmpty()
     {
-        var result = VideoScanner.FindVideoFolders(Path.Combine(_tempDir, "nope"));
+        var result = _scanner.FindVideoFolders(Path.Combine(_tempDir, "nope"));
 
         result.Should().BeEmpty();
     }
@@ -241,7 +242,7 @@ public class VideoScannerTests : IDisposable
         var hasVideo = CreateSubDir("Videos");
         CreateFileIn(hasVideo, "movie.mp4");
 
-        var result = VideoScanner.FindVideoFolders(_tempDir);
+        var result = _scanner.FindVideoFolders(_tempDir);
 
         result.Should().ContainSingle().Which.Should().Be(hasVideo);
     }
@@ -253,7 +254,7 @@ public class VideoScannerTests : IDisposable
         var sub = CreateSubDir("Sub");
         CreateFileIn(sub, "sub-video.mkv");
 
-        var result = VideoScanner.FindVideoFolders(_tempDir);
+        var result = _scanner.FindVideoFolders(_tempDir);
 
         result.Should().BeEquivalentTo(new[] { _tempDir, sub });
     }

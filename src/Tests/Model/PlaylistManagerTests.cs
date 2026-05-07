@@ -14,6 +14,7 @@ public class PlaylistManagerTests : IDisposable
 {
     private readonly Mock<ISettingsService> _settingsMock = new();
     private readonly Mock<IMediaPlayerController> _mediaMock = new();
+    private readonly IVideoScanner _videoScanner = new VideoScanner();
     private readonly PlaylistManager _manager;
     private readonly string _tempDir;
 
@@ -25,6 +26,7 @@ public class PlaylistManagerTests : IDisposable
         _manager = new PlaylistManager(
             _settingsMock.Object,
             _mediaMock.Object,
+            _videoScanner,
             _ => ThumbnailState.Pending);
     }
 

@@ -1,17 +1,14 @@
-using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalPlayer.Features.Library;
+using LocalPlayer.Features.Library.Services;
 using LocalPlayer.Features.Player;
 using LocalPlayer.Features.Player.Settings;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Thumbnails;
 using LocalPlayer.Infrastructure.Interop;
 
 namespace LocalPlayer.Features.Shell;
@@ -21,6 +18,7 @@ public partial class ShellViewModel : ObservableObject
     private static readonly Logger Log = AppLog.For<ShellViewModel>();
     private readonly ISettingsService _settings;
     private readonly ILocalizationService _loc;
+    private readonly ILibraryAppService _libraryService;
     private readonly ITaskbarAutoHideCoordinator _taskbarAutoHide;
     private readonly IPlayerViewCoordinator _playerCoordinator;
     private readonly MainPageViewModel _mainPage;
@@ -62,6 +60,7 @@ public partial class ShellViewModel : ObservableObject
     public ShellViewModel(
         ISettingsService settings,
         ILocalizationService loc,
+        ILibraryAppService libraryService,
         ITaskbarAutoHideCoordinator taskbarAutoHide,
         IPlayerViewCoordinator playerCoordinator,
         MainPageViewModel mainPage,
@@ -70,6 +69,7 @@ public partial class ShellViewModel : ObservableObject
     {
         _settings = settings;
         _loc = loc;
+        _libraryService = libraryService;
         _taskbarAutoHide = taskbarAutoHide;
         _playerCoordinator = playerCoordinator;
         _currentLanguageCode = _loc.CurrentLanguage;
@@ -185,7 +185,7 @@ public partial class ShellViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void AddFolder()
+    private async Task AddFolder()
     {
         IsFilePopupOpen = false;
         var dialog = new Microsoft.Win32.OpenFolderDialog
@@ -196,28 +196,26 @@ public partial class ShellViewModel : ObservableObject
         if (dialog.ShowDialog() != true) return;
 
         string path = dialog.FolderName;
-        string name = Path.GetFileName(path);
-
-        if (_settings.GetFolders().Any(f => f.Path == path))
+        var result = await _libraryService.AddFolderAsync(path);
+        if (!result.Success)
         {
-            MessageBox.Show(_loc["Dialog.FolderAlreadyAdded"], _loc["Dialog.Info"]);
+            switch (result.Failure)
+            {
+                case AddFolderFailure.Duplicate:
+                    MessageBox.Show(_loc["Dialog.FolderAlreadyAdded"], _loc["Dialog.Info"]);
+                    break;
+                case AddFolderFailure.NoVideos:
+                    MessageBox.Show(_loc["Dialog.NoVideosInFolder"], _loc["Dialog.Info"]);
+                    break;
+                default:
+                    MessageBox.Show(result.ErrorMessage ?? _loc["Dialog.UnknownError"], _loc["Dialog.Error"]);
+                    break;
+            }
             return;
         }
 
-        var scanResult = VideoScanner.ScanFolder(path);
-        if (scanResult.VideoCount == 0)
-        {
-            MessageBox.Show(_loc["Dialog.NoVideosInFolder"], _loc["Dialog.Info"]);
-            return;
-        }
-
-        var (success, error) = _settings.AddFolder(path, name);
-        if (!success)
-        {
-            MessageBox.Show(error ?? _loc["Dialog.UnknownError"], _loc["Dialog.Error"]);
-            return;
-        }
-        _mainPage.AddFolderItem(name, path, scanResult.VideoCount, scanResult.CoverPath);
+        var folder = result.Folder!;
+        _mainPage.AddFolderItem(folder.Name, folder.Path, folder.VideoCount, folder.CoverPath);
     }
 
     [RelayCommand]
@@ -234,36 +232,19 @@ public partial class ShellViewModel : ObservableObject
         string rootPath = dialog.FolderName;
         Log.Info($"AddFolderBatch: user selected {rootPath}");
 
-        var foundFolders = await Task.Run(() => VideoScanner.FindVideoFolders(rootPath));
-
-        if (foundFolders.Count == 0)
+        var result = await _libraryService.AddFolderBatchAsync(rootPath);
+        if (result.AddedFolders.Count == 0 && result.SkippedCount == 0)
         {
             Log.Info("AddFolderBatch: no video folders found");
             MessageBox.Show(_loc["Dialog.NoVideoFoldersFound"], _loc["Dialog.Info"]);
             return;
         }
 
-        var toAdd = foundFolders
-            .Select(p => (Path: p, Name: Path.GetFileName(p)))
-            .ToList();
+        foreach (var folder in result.AddedFolders)
+            _mainPage.AddFolderItem(folder.Name, folder.Path, folder.VideoCount, folder.CoverPath);
 
-        var (addedPaths, skipped) = _settings.AddFoldersBatch(toAdd);
-
-        foreach (var path in addedPaths)
-        {
-            try
-            {
-                var scan = VideoScanner.ScanFolder(path);
-                _mainPage.AddFolderItem(Path.GetFileName(path), path, scan.VideoCount, scan.CoverPath);
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"AddFolderBatch: failed to add folder item to UI: {path}", ex);
-            }
-        }
-
-        Log.Info($"AddFolderBatch: done, added {addedPaths.Count} items, skipped {skipped}");
-        string msg = string.Format(_loc["Dialog.BatchResult"], addedPaths.Count, skipped);
+        Log.Info($"AddFolderBatch: done, added {result.AddedFolders.Count} items, skipped {result.SkippedCount}");
+        string msg = string.Format(_loc["Dialog.BatchResult"], result.AddedFolders.Count, result.SkippedCount);
         MessageBox.Show(msg, _loc["Dialog.Info"]);
     }
 
