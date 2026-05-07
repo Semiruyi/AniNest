@@ -132,7 +132,10 @@ public class TransitioningContentControl : ContentControl
 
         using (PerfSpan.Begin($"PageTransition.Layout.{fromName}->{toName}", tags))
         {
-            _inactivePresenter.UpdateLayout();
+            _inactivePresenter.InvalidateMeasure();
+            _inactivePresenter.InvalidateArrange();
+            _root.InvalidateMeasure();
+            _root.InvalidateArrange();
         }
 
         int fadeMs = TransitionDuration > 0 ? TransitionDuration : 160;

@@ -1,6 +1,8 @@
 using LocalPlayer.Infrastructure.Interop;
 using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Infrastructure.Logging;
+using System.Windows;
+using System.Windows.Threading;
 
 namespace LocalPlayer.Features.Player.Services;
 
@@ -12,7 +14,10 @@ public sealed class PlayerAppService : IPlayerAppService
     private CancellationTokenSource? _loadCts;
     private long _loadGeneration;
     private long _loadedGeneration;
+    private long _activatedGeneration;
+    private long _pendingActivationGeneration;
     private PerfSpan? _loadFolderSpan;
+    private bool _isPlayerPageVisible;
 
     public PlayerAppService(
         ITaskbarAutoHideCoordinator taskbarAutoHide,
@@ -31,6 +36,8 @@ public sealed class PlayerAppService : IPlayerAppService
         CancelAndDispose(ref _loadCts);
         _loadCts = new CancellationTokenSource();
         var cancellationToken = _loadCts.Token;
+        _isPlayerPageVisible = false;
+        _pendingActivationGeneration = 0;
 
         Log.Info($"LoadFolderSkeleton start: {name} | {path}");
         _loadGeneration++;
@@ -68,18 +75,107 @@ public sealed class PlayerAppService : IPlayerAppService
         if (_session.IsCleanedUp || generation != _loadGeneration)
             return;
 
-        _session.ActivateCurrentVideo();
         _loadedGeneration = generation;
+        _pendingActivationGeneration = generation;
+        TryActivatePendingVideo("data-loaded");
         Log.Info($"LoadFolderDataAsync complete: CurrentIndex={_session.CurrentIndex}, CurrentVideoPath={_session.CurrentVideoPath ?? "null"}");
     }
 
     public Task LeavePlayerAsync()
-        => _taskbarAutoHide.LeavePlayerPageAsync();
+    {
+        _isPlayerPageVisible = false;
+        _pendingActivationGeneration = 0;
+        return _taskbarAutoHide.LeavePlayerPageAsync();
+    }
+
+    public void OnPlayerPageTransitionCompleted()
+    {
+        _isPlayerPageVisible = true;
+        Log.Info($"Player page transition completed: pending={_pendingActivationGeneration}, loaded={_loadedGeneration}, activated={_activatedGeneration}");
+        TryActivatePendingVideo("transition-complete");
+    }
 
     private static void CancelAndDispose(ref CancellationTokenSource? cancellationTokenSource)
     {
         cancellationTokenSource?.Cancel();
         cancellationTokenSource?.Dispose();
         cancellationTokenSource = null;
+    }
+
+    private void TryActivatePendingVideo(string reason)
+    {
+        var generation = _pendingActivationGeneration;
+        if (generation <= 0)
+        {
+            Log.Debug($"Skip ActivateCurrentVideo ({reason}): no pending generation");
+            return;
+        }
+
+        if (!_isPlayerPageVisible)
+        {
+            Log.Debug($"Skip ActivateCurrentVideo ({reason}): player page not visible yet");
+            return;
+        }
+
+        if (generation != _loadGeneration || generation != _loadedGeneration)
+        {
+            Log.Debug($"Skip ActivateCurrentVideo ({reason}): generation mismatch pending={generation}, load={_loadGeneration}, loaded={_loadedGeneration}");
+            return;
+        }
+
+        if (generation == _activatedGeneration)
+        {
+            Log.Debug($"Skip ActivateCurrentVideo ({reason}): generation {generation} already activated");
+            return;
+        }
+
+        var dispatcher = Application.Current?.Dispatcher;
+        if (dispatcher == null)
+        {
+            ActivatePendingVideo(generation, reason);
+            return;
+        }
+
+        dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+        {
+            ActivatePendingVideo(generation, $"{reason}-dispatch");
+        }));
+    }
+
+    private void ActivatePendingVideo(long generation, string reason)
+    {
+        if (_session.IsCleanedUp)
+            return;
+
+        if (!_isPlayerPageVisible)
+        {
+            Log.Debug($"Skip ActivateCurrentVideo ({reason}): player page no longer visible");
+            return;
+        }
+
+        if (generation != _pendingActivationGeneration || generation != _loadGeneration || generation != _loadedGeneration)
+        {
+            Log.Debug($"Skip ActivateCurrentVideo ({reason}): generation changed pending={_pendingActivationGeneration}, load={_loadGeneration}, loaded={_loadedGeneration}, requested={generation}");
+            return;
+        }
+
+        if (generation == _activatedGeneration)
+        {
+            Log.Debug($"Skip ActivateCurrentVideo ({reason}): generation {generation} already activated");
+            return;
+        }
+
+        Log.Info($"ActivateCurrentVideo start: generation={generation}, reason={reason}");
+        using (PerfSpan.Begin("Player.ActivateCurrentVideo", new Dictionary<string, string>
+        {
+            ["reason"] = reason,
+            ["generation"] = generation.ToString()
+        }))
+        {
+            _session.ActivateCurrentVideo();
+        }
+
+        _activatedGeneration = generation;
+        Log.Info($"ActivateCurrentVideo complete: generation={generation}, index={_session.CurrentIndex}, path={_session.CurrentVideoPath ?? "null"}");
     }
 }

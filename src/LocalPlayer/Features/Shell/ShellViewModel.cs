@@ -91,6 +91,8 @@ public partial class ShellViewModel : ObservableObject
     public void OnPageTransitionCompleted()
     {
         Log.Info($"OnPageTransitionCompleted. CurrentPage={CurrentPage?.GetType().Name ?? "null"}");
+        if (CurrentPage is PlayerViewModel)
+            _playerAppService.OnPlayerPageTransitionCompleted();
     }
 
     public void SetPlayerFullscreen(bool value)
