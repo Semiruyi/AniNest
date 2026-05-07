@@ -16,6 +16,7 @@
     <PublishSingleFile Condition="'$(Configuration)' == 'Release'">false</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract Condition="'$(Configuration)' == 'Release'">false</IncludeNativeLibrariesForSelfExtract>
     <PublishTrimmed>false</PublishTrimmed>
+    <LibVlcRuntimeIdentifier Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</LibVlcRuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
@@ -32,12 +33,13 @@
              CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Condition="Exists('..\..\tools\ffmpeg\ffmpeg.exe')" />
   </ItemGroup>
 
-  <Target Name="PublishLibVlc" AfterTargets="Publish">
+  <Target Name="PublishLibVlc" AfterTargets="Publish" Condition="'$(LibVlcRuntimeIdentifier)' != ''">
     <ItemGroup>
-      <LibVlcSourceFiles Include="$(OutDir)libvlc\**\*" />
+      <LibVlcSourceFiles Include="$(OutDir)libvlc\$(LibVlcRuntimeIdentifier)\**\*" />
     </ItemGroup>
+    <RemoveDir Directories="$(PublishDir)libvlc" />
     <Copy SourceFiles="@(LibVlcSourceFiles)"
-          DestinationFolder="$(PublishDir)libvlc\%(RecursiveDir)"
+          DestinationFolder="$(PublishDir)libvlc\$(LibVlcRuntimeIdentifier)\%(RecursiveDir)"
           SkipUnchangedFiles="true" />
   </Target>
 
