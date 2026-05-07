@@ -64,7 +64,7 @@ Remove-PathIfExists $appTempRoot
 New-Item -ItemType Directory -Force -Path $publishRoot | Out-Null
 New-Item -ItemType Directory -Force -Path $appTempRoot | Out-Null
 
-dotnet publish (Join-Path $root "src\LocalPlayer\AniNest.csproj") -c $Configuration -r $Runtime -o $appTempRoot
+dotnet publish (Join-Path $root "src\AniNest\AniNest.csproj") -c $Configuration -r $Runtime -o $appTempRoot
 dotnet publish (Join-Path $root "src\Launcher\AniNest.Launcher.csproj") -c $Configuration -r $Runtime -o $launcherTempRoot
 
 Copy-Folder $appTempRoot $appOut

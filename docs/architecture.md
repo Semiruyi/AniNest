@@ -20,7 +20,7 @@
 
 ```text
 src/
-├─ LocalPlayer/
+├─ AniNest/
 │  ├─ CompositionRoot/
 │  ├─ Core/
 │  ├─ Data/
@@ -65,7 +65,7 @@ CompositionRoot
 
 ### View
 
-目录：`src/LocalPlayer/View`
+目录：`src/AniNest/View`
 
 职责：
 
@@ -90,7 +90,7 @@ CompositionRoot
 
 ### Features
 
-目录：`src/LocalPlayer/Features`
+目录：`src/AniNest/Features`
 
 `Features` 是项目的核心业务层，但不是纯粹的 domain layer，而是“功能组织层”。每个 feature 一般会同时包含：
 
@@ -101,7 +101,7 @@ CompositionRoot
 
 #### Shell
 
-目录：`src/LocalPlayer/Features/Shell`
+目录：`src/AniNest/Features/Shell`
 
 职责：
 
@@ -115,7 +115,7 @@ CompositionRoot
 
 #### Library
 
-目录：`src/LocalPlayer/Features/Library`
+目录：`src/AniNest/Features/Library`
 
 职责：
 
@@ -140,7 +140,7 @@ CompositionRoot
 
 #### Player
 
-目录：`src/LocalPlayer/Features/Player`
+目录：`src/AniNest/Features/Player`
 
 职责：
 
@@ -173,7 +173,7 @@ CompositionRoot
 
 ## Infrastructure
 
-目录：`src/LocalPlayer/Infrastructure`
+目录：`src/AniNest/Infrastructure`
 
 这一层包含所有底层实现，不局限于“持久化”。
 
@@ -236,7 +236,7 @@ CompositionRoot
 
 ## Presentation
 
-目录：`src/LocalPlayer/Presentation`
+目录：`src/AniNest/Presentation`
 
 这一层是 WPF 侧通用部件集合，主要包括：
 
@@ -260,7 +260,7 @@ CompositionRoot
 
 ## Composition Root
 
-目录：`src/LocalPlayer/CompositionRoot`
+目录：`src/AniNest/CompositionRoot`
 
 `ServiceRegistration` 统一注册依赖。项目使用 `Microsoft.Extensions.DependencyInjection` 做装配，生命周期目前以 `Singleton` 为主。
 

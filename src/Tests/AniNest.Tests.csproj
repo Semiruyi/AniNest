@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\LocalPlayer\AniNest.csproj" />
+    <ProjectReference Include="..\AniNest\AniNest.csproj" />
     <ProjectReference Include="..\Launcher\AniNest.Launcher.csproj" />
   </ItemGroup>
 
