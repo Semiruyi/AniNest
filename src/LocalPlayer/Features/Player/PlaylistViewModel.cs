@@ -3,11 +3,11 @@ using System.Collections.ObjectModel;
 using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using LocalPlayer.Features.Player.Models;
-using LocalPlayer.Infrastructure.Localization;
-using LocalPlayer.Infrastructure.Media;
+using AniNest.Features.Player.Models;
+using AniNest.Infrastructure.Localization;
+using AniNest.Infrastructure.Media;
 
-namespace LocalPlayer.Features.Player;
+namespace AniNest.Features.Player;
 
 public partial class PlaylistViewModel : ObservableObject
 {

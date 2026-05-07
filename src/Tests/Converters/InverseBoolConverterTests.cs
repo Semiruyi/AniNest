@@ -1,8 +1,8 @@
 using FluentAssertions;
-using LocalPlayer.Presentation.Converters;
+using AniNest.Presentation.Converters;
 using Xunit;
 
-namespace LocalPlayer.Tests.Converters;
+namespace AniNest.Tests.Converters;
 
 public class InverseBoolConverterTests
 {

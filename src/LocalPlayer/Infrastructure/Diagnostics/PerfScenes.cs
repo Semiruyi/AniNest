@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace LocalPlayer.Infrastructure.Diagnostics;
+namespace AniNest.Infrastructure.Diagnostics;
 
 public static class PerfScenes
 {

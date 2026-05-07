@@ -1,11 +1,11 @@
 using System.Collections.ObjectModel;
-using LocalPlayer.Features.Player.Models;
-using LocalPlayer.Infrastructure.Localization;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Thumbnails;
+using AniNest.Features.Player.Models;
+using AniNest.Infrastructure.Localization;
+using AniNest.Infrastructure.Media;
+using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Thumbnails;
 
-namespace LocalPlayer.Features.Player.Services;
+namespace AniNest.Features.Player.Services;
 
 public sealed class PlayerPlaylistService : IPlayerPlaylistService
 {

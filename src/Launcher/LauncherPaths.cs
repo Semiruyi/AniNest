@@ -1,4 +1,4 @@
-namespace LocalPlayer.Launcher;
+namespace AniNest.Launcher;
 
 public static class LauncherPaths
 {

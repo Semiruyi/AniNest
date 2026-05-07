@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows.Media;
 
-namespace LocalPlayer.Infrastructure.Diagnostics;
+namespace AniNest.Infrastructure.Diagnostics;
 
 public sealed class FrameTimingCollector : IDisposable
 {

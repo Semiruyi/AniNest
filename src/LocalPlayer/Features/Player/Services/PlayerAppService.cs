@@ -1,12 +1,12 @@
-using LocalPlayer.Infrastructure.Interop;
-using LocalPlayer.Infrastructure.Diagnostics;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Media;
+using AniNest.Infrastructure.Interop;
+using AniNest.Infrastructure.Diagnostics;
+using AniNest.Infrastructure.Logging;
+using AniNest.Infrastructure.Media;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Threading;
 
-namespace LocalPlayer.Features.Player.Services;
+namespace AniNest.Features.Player.Services;
 
 public sealed class PlayerAppService : IPlayerAppService
 {

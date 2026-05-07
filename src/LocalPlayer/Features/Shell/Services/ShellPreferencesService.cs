@@ -1,7 +1,7 @@
-using LocalPlayer.Infrastructure.Localization;
-using LocalPlayer.Infrastructure.Persistence;
+using AniNest.Infrastructure.Localization;
+using AniNest.Infrastructure.Persistence;
 
-namespace LocalPlayer.Features.Shell.Services;
+namespace AniNest.Features.Shell.Services;
 
 public sealed class ShellPreferencesService : IShellPreferencesService
 {

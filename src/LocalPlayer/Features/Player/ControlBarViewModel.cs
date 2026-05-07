@@ -3,11 +3,11 @@ using System.ComponentModel;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using LocalPlayer.Infrastructure.Localization;
-using LocalPlayer.Features.Player.Models;
-using LocalPlayer.Features.Player.Services;
+using AniNest.Infrastructure.Localization;
+using AniNest.Features.Player.Models;
+using AniNest.Features.Player.Services;
 
-namespace LocalPlayer.Features.Player;
+namespace AniNest.Features.Player;
 
 public partial class ControlBarViewModel : ObservableObject
 {

@@ -1,4 +1,4 @@
-namespace LocalPlayer.Features.Player.Input;
+namespace AniNest.Features.Player.Input;
 
 public sealed class PlayerInputBinding
 {

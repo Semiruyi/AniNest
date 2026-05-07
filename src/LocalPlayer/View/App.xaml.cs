@@ -1,18 +1,18 @@
 using System;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
-using LocalPlayer.CompositionRoot;
-using LocalPlayer.Features.Library;
-using LocalPlayer.Features.Player;
-using LocalPlayer.Features.Shell;
-using LocalPlayer.Infrastructure.Localization;
-using LocalPlayer.Infrastructure.Diagnostics;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.View;
+using AniNest.CompositionRoot;
+using AniNest.Features.Library;
+using AniNest.Features.Player;
+using AniNest.Features.Shell;
+using AniNest.Infrastructure.Localization;
+using AniNest.Infrastructure.Diagnostics;
+using AniNest.Infrastructure.Logging;
+using AniNest.Infrastructure.Media;
+using AniNest.Infrastructure.Persistence;
+using AniNest.View;
 
-namespace LocalPlayer;
+namespace AniNest;
 
 public partial class App : Application
 {
@@ -22,7 +22,7 @@ public partial class App : Application
         base.OnStartup(e);
 
         var services = new ServiceCollection();
-        ServiceRegistration.AddLocalPlayerServices(services);
+        ServiceRegistration.AddAniNestServices(services);
         var provider = services.BuildServiceProvider();
 
         var settings = provider.GetRequiredService<ISettingsService>().Load();

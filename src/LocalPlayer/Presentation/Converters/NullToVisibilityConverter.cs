@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace LocalPlayer.Presentation.Converters;
+namespace AniNest.Presentation.Converters;
 
 public sealed class NullToVisibilityConverter : IValueConverter
 {

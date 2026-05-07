@@ -1,7 +1,7 @@
 using System;
 using System.Diagnostics;
 
-namespace LocalPlayer.Infrastructure.Diagnostics;
+namespace AniNest.Infrastructure.Diagnostics;
 
 public static class MemorySnapshot
 {

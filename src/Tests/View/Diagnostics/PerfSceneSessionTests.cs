@@ -1,6 +1,6 @@
-using LocalPlayer.Infrastructure.Diagnostics;
+using AniNest.Infrastructure.Diagnostics;
 
-namespace LocalPlayer.Tests.View.Diagnostics;
+namespace AniNest.Tests.View.Diagnostics;
 
 public class PerfSceneSessionTests
 {

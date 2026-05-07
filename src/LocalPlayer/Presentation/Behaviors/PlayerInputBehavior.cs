@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
-using LocalPlayer.Features.Player.Input;
+using AniNest.Features.Player.Input;
 
-namespace LocalPlayer.Presentation.Behaviors;
+namespace AniNest.Presentation.Behaviors;
 
 public static class PlayerInputBehavior
 {

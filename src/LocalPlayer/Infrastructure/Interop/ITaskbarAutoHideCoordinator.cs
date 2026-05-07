@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace LocalPlayer.Infrastructure.Interop;
+namespace AniNest.Infrastructure.Interop;
 
 public interface ITaskbarAutoHideCoordinator
 {

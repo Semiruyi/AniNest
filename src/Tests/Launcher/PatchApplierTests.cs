@@ -2,10 +2,10 @@ using System.IO;
 using System.IO.Compression;
 using System.Text.Json;
 using FluentAssertions;
-using LocalPlayer.Launcher;
+using AniNest.Launcher;
 using Xunit;
 
-namespace LocalPlayer.Tests.Launcher;
+namespace AniNest.Tests.Launcher;
 
 public class PatchApplierTests : IDisposable
 {
@@ -13,14 +13,14 @@ public class PatchApplierTests : IDisposable
 
     public PatchApplierTests()
     {
-        _root = Path.Combine(Path.GetTempPath(), $"LocalPlayerLauncherTests_{Guid.NewGuid():N}");
+        _root = Path.Combine(Path.GetTempPath(), $"AniNestLauncherTests_{Guid.NewGuid():N}");
         Directory.CreateDirectory(Path.Combine(_root, "app"));
         Directory.CreateDirectory(Path.Combine(_root, "data", "config"));
         Directory.CreateDirectory(Path.Combine(_root, "data", "logs"));
 
         File.WriteAllText(Path.Combine(_root, "app", "manifest.json"), JsonSerializer.Serialize(new PatchManifest
         {
-            AppId = "LocalPlayer",
+            AppId = "AniNest",
             PackageType = "full",
             Version = "1.0.0",
             GeneratedAtUtc = DateTime.UtcNow
@@ -94,7 +94,7 @@ public class PatchApplierTests : IDisposable
         var zipPath = Path.Combine(_root, $"patch_{Guid.NewGuid():N}.zip");
         var manifest = new PatchManifest
         {
-            AppId = "LocalPlayer",
+            AppId = "AniNest",
             PackageType = "patch",
             Version = version,
             BaseVersion = baseVersion,

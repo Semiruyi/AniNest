@@ -1,7 +1,7 @@
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Thumbnails;
+using AniNest.Infrastructure.Media;
+using AniNest.Infrastructure.Thumbnails;
 
-namespace LocalPlayer.Features.Player.Services;
+namespace AniNest.Features.Player.Services;
 
 public sealed class PlayerPlaybackFacade : IPlayerPlaybackFacade
 {

@@ -7,11 +7,11 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Threading;
-using LocalPlayer.Presentation.Animations;
-using LocalPlayer.Presentation.Interop;
+using AniNest.Presentation.Animations;
+using AniNest.Presentation.Interop;
 using Point = System.Windows.Point;
 
-namespace LocalPlayer.Presentation.Primitives;
+namespace AniNest.Presentation.Primitives;
 
 /// <summary>
 /// Popup with built-in scale+opacity entrance/exit animation,

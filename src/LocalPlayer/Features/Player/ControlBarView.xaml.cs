@@ -1,13 +1,13 @@
-using LocalPlayer.Infrastructure.Diagnostics;
-using LocalPlayer.Presentation.Primitives;
-using LocalPlayer.Features.Player.Models;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Paths;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Infrastructure.Interop;
-namespace LocalPlayer.Features.Player;
+using AniNest.Infrastructure.Diagnostics;
+using AniNest.Presentation.Primitives;
+using AniNest.Features.Player.Models;
+using AniNest.Infrastructure.Logging;
+using AniNest.Infrastructure.Paths;
+using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Media;
+using AniNest.Infrastructure.Thumbnails;
+using AniNest.Infrastructure.Interop;
+namespace AniNest.Features.Player;
 
 public partial class ControlBarView : System.Windows.Controls.UserControl
 {

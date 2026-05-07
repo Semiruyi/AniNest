@@ -4,7 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Threading;
 using GeneratorStatus = System.Windows.Controls.Primitives.GeneratorStatus;
 
-namespace LocalPlayer.Presentation.Animations;
+namespace AniNest.Presentation.Animations;
 
 public static class StaggeredItemsAnimation
 {

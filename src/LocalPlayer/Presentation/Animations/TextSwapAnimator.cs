@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace LocalPlayer.Presentation.Animations;
+namespace AniNest.Presentation.Animations;
 
 public static class TextSwapAnimator
 {

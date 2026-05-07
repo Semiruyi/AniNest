@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace LocalPlayer.Infrastructure.Diagnostics;
+namespace AniNest.Infrastructure.Diagnostics;
 
 public sealed class PerfSceneSession : IDisposable
 {

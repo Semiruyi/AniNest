@@ -1,6 +1,6 @@
 using System.IO.Compression;
 
-namespace LocalPlayer.Launcher;
+namespace AniNest.Launcher;
 
 public static class LauncherPackageLocator
 {

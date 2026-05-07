@@ -5,12 +5,12 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
-using LocalPlayer.Presentation.Animations;
-using LocalPlayer.Infrastructure.Diagnostics;
+using AniNest.Presentation.Animations;
+using AniNest.Infrastructure.Diagnostics;
 using Point = System.Windows.Point;
 using Size = System.Windows.Size;
 
-namespace LocalPlayer.Presentation.Primitives;
+namespace AniNest.Presentation.Primitives;
 
 public class AnimatedWrapPanel : WrapPanel
 {

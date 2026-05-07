@@ -1,6 +1,6 @@
-using LocalPlayer.Infrastructure.Thumbnails;
+using AniNest.Infrastructure.Thumbnails;
 
-namespace LocalPlayer.Features.Library.Services;
+namespace AniNest.Features.Library.Services;
 
 public interface ILibraryAppService
 {

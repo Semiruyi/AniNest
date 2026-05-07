@@ -3,13 +3,13 @@ using System.Windows;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using LocalPlayer.Features.Player.Models;
-using LocalPlayer.Features.Player.Input;
-using LocalPlayer.Features.Player.Services;
-using LocalPlayer.Infrastructure.Localization;
-using LocalPlayer.Presentation.Primitives;
+using AniNest.Features.Player.Models;
+using AniNest.Features.Player.Input;
+using AniNest.Features.Player.Services;
+using AniNest.Infrastructure.Localization;
+using AniNest.Presentation.Primitives;
 
-namespace LocalPlayer.Features.Player;
+namespace AniNest.Features.Player;
 
 public partial class PlayerViewModel : ObservableObject, ITransitioningContentLifecycle, IPlayerInputHost
 {

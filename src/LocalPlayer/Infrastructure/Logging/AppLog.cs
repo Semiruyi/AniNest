@@ -5,9 +5,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using LocalPlayer.Infrastructure.Paths;
+using AniNest.Infrastructure.Paths;
 
-namespace LocalPlayer.Infrastructure.Logging;
+namespace AniNest.Infrastructure.Logging;
 
 public enum LogLevel
 {

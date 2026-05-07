@@ -10,12 +10,12 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using LocalPlayer.Features.Player.Services;
-using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Infrastructure.Logging;
+using AniNest.Features.Player.Services;
+using AniNest.Infrastructure.Thumbnails;
+using AniNest.Infrastructure.Logging;
 using Point = System.Windows.Point;
 
-namespace LocalPlayer.Features.Player;
+namespace AniNest.Features.Player;
 
 public partial class ThumbnailPreviewController : ObservableObject
 {

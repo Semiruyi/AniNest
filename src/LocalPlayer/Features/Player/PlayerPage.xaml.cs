@@ -1,9 +1,9 @@
 using System.Windows.Media;
 using System.Collections.Generic;
-using LocalPlayer.Infrastructure.Diagnostics;
-using LocalPlayer.Presentation.Primitives;
-using LocalPlayer.Features.Player.Models;
-namespace LocalPlayer.Features.Player;
+using AniNest.Infrastructure.Diagnostics;
+using AniNest.Presentation.Primitives;
+using AniNest.Features.Player.Models;
+namespace AniNest.Features.Player;
 
 public partial class PlayerPage : System.Windows.Controls.UserControl
 {

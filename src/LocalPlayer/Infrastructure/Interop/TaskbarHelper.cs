@@ -1,9 +1,9 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using LocalPlayer.Infrastructure.Logging;
+using AniNest.Infrastructure.Logging;
 
-namespace LocalPlayer.Infrastructure.Interop;
+namespace AniNest.Infrastructure.Interop;
 
 public static class TaskbarHelper
 {

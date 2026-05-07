@@ -4,7 +4,7 @@ using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
 
-namespace LocalPlayer.Presentation.Interop;
+namespace AniNest.Presentation.Interop;
 
 public static class PopupZOrderFix
 {

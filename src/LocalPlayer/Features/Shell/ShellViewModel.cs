@@ -3,17 +3,17 @@ using System.Windows.Input;
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using LocalPlayer.Features.Library;
-using LocalPlayer.Features.Library.Services;
-using LocalPlayer.Features.Player;
-using LocalPlayer.Features.Player.Services;
-using LocalPlayer.Features.Player.Settings;
-using LocalPlayer.Features.Shell.Services;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Localization;
-using LocalPlayer.Infrastructure.Interop;
+using AniNest.Features.Library;
+using AniNest.Features.Library.Services;
+using AniNest.Features.Player;
+using AniNest.Features.Player.Services;
+using AniNest.Features.Player.Settings;
+using AniNest.Features.Shell.Services;
+using AniNest.Infrastructure.Logging;
+using AniNest.Infrastructure.Localization;
+using AniNest.Infrastructure.Interop;
 
-namespace LocalPlayer.Features.Shell;
+namespace AniNest.Features.Shell;
 
 public partial class ShellViewModel : ObservableObject
 {

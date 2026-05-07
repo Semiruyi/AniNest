@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using LocalPlayer.Features.Player.Input;
+using AniNest.Features.Player.Input;
 
-namespace LocalPlayer.Features.Player.Settings;
+namespace AniNest.Features.Player.Settings;
 
 public partial class PlayerInputBindingItemViewModel : ObservableObject
 {

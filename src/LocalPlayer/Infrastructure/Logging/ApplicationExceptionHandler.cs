@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace LocalPlayer.Infrastructure.Logging;
+namespace AniNest.Infrastructure.Logging;
 
 public static class ApplicationExceptionHandler
 {

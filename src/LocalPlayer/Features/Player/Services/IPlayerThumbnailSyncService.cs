@@ -1,4 +1,4 @@
-namespace LocalPlayer.Features.Player.Services;
+namespace AniNest.Features.Player.Services;
 
 public interface IPlayerThumbnailSyncService
 {

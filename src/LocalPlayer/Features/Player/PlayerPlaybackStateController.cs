@@ -1,11 +1,11 @@
 using System;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
-using LocalPlayer.Features.Player.Models;
-using LocalPlayer.Features.Player.Services;
-using LocalPlayer.Infrastructure.Media;
+using AniNest.Features.Player.Models;
+using AniNest.Features.Player.Services;
+using AniNest.Infrastructure.Media;
 
-namespace LocalPlayer.Features.Player;
+namespace AniNest.Features.Player;
 
 public partial class PlayerPlaybackStateController : ObservableObject
 {

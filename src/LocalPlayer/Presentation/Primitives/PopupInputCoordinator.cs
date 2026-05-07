@@ -6,7 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 
-namespace LocalPlayer.Presentation.Primitives;
+namespace AniNest.Presentation.Primitives;
 
 public enum PopupHitKind
 {

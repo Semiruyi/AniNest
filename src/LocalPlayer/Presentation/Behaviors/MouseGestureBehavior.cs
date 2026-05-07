@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Paths;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Infrastructure.Interop;
+using AniNest.Infrastructure.Logging;
+using AniNest.Infrastructure.Paths;
+using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Media;
+using AniNest.Infrastructure.Thumbnails;
+using AniNest.Infrastructure.Interop;
 
-namespace LocalPlayer.Presentation.Behaviors;
+namespace AniNest.Presentation.Behaviors;
 
 public static class MouseGestureBehavior
 {

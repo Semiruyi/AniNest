@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net9.0-windows</TargetFramework>
     <AssemblyName>AniNest.Tests</AssemblyName>
-    <RootNamespace>LocalPlayer.Tests</RootNamespace>
+    <RootNamespace>AniNest.Tests</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>

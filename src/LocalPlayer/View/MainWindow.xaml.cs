@@ -2,13 +2,13 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
-using LocalPlayer.Features.Shell;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Presentation.Diagnostics;
-using LocalPlayer.Presentation.Primitives;
+using AniNest.Features.Shell;
+using AniNest.Infrastructure.Logging;
+using AniNest.Infrastructure.Persistence;
+using AniNest.Presentation.Diagnostics;
+using AniNest.Presentation.Primitives;
 
-namespace LocalPlayer.View;
+namespace AniNest.View;
 
 public partial class MainWindow : Window
 {

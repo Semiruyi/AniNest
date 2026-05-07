@@ -4,10 +4,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using LocalPlayer.Infrastructure.Diagnostics;
+using AniNest.Infrastructure.Diagnostics;
 using Size = System.Windows.Size;
 
-namespace LocalPlayer.Presentation.Primitives;
+namespace AniNest.Presentation.Primitives;
 
 public interface ITransitioningContentLifecycle
 {

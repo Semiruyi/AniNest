@@ -1,9 +1,9 @@
 using System.IO;
 using FluentAssertions;
-using LocalPlayer.Infrastructure.Persistence;
+using AniNest.Infrastructure.Persistence;
 using Xunit;
 
-namespace LocalPlayer.Tests.Model;
+namespace AniNest.Tests.Model;
 
 public class SettingsServiceTests : IDisposable
 {
@@ -12,7 +12,7 @@ public class SettingsServiceTests : IDisposable
 
     public SettingsServiceTests()
     {
-        _tempDir = Path.Combine(Path.GetTempPath(), $"LocalPlayerTests_{Guid.NewGuid():N}");
+        _tempDir = Path.Combine(Path.GetTempPath(), $"AniNestTests_{Guid.NewGuid():N}");
         var dataDir = Path.Combine(_tempDir, "data", "config");
         Directory.CreateDirectory(dataDir);
 

@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Media.Animation;
 using Point = System.Windows.Point;
 
-namespace LocalPlayer.Presentation.Animations;
+namespace AniNest.Presentation.Animations;
 
 public readonly struct AnimationEffect
 {

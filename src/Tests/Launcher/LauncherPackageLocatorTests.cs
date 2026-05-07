@@ -1,9 +1,9 @@
 using System.IO.Compression;
 using FluentAssertions;
-using LocalPlayer.Launcher;
+using AniNest.Launcher;
 using Xunit;
 
-namespace LocalPlayer.Tests.Launcher;
+namespace AniNest.Tests.Launcher;
 
 public class LauncherPackageLocatorTests : IDisposable
 {
@@ -11,7 +11,7 @@ public class LauncherPackageLocatorTests : IDisposable
 
     public LauncherPackageLocatorTests()
     {
-        _root = Path.Combine(Path.GetTempPath(), $"LocalPlayerLauncherLocatorTests_{Guid.NewGuid():N}");
+        _root = Path.Combine(Path.GetTempPath(), $"AniNestLauncherLocatorTests_{Guid.NewGuid():N}");
         Directory.CreateDirectory(_root);
     }
 

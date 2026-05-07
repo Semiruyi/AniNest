@@ -5,15 +5,15 @@ using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LibVLCSharp.Shared;
-using LocalPlayer.Infrastructure.Diagnostics;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Paths;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Infrastructure.Interop;
+using AniNest.Infrastructure.Diagnostics;
+using AniNest.Infrastructure.Logging;
+using AniNest.Infrastructure.Paths;
+using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Media;
+using AniNest.Infrastructure.Thumbnails;
+using AniNest.Infrastructure.Interop;
 using LibVlcMedia = LibVLCSharp.Shared.Media;
-namespace LocalPlayer.Infrastructure.Media;
+namespace AniNest.Infrastructure.Media;
 
 public class MediaPlayerController : IMediaPlayerController
 {

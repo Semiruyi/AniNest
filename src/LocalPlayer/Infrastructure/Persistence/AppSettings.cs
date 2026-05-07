@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using LocalPlayer.Features.Player.Input;
-namespace LocalPlayer.Infrastructure.Persistence;
+using AniNest.Features.Player.Input;
+namespace AniNest.Infrastructure.Persistence;
 
 public class AppSettings
 {

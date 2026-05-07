@@ -1,7 +1,7 @@
 using System.Windows;
 using System.Windows.Input;
 
-namespace LocalPlayer.Presentation.Behaviors;
+namespace AniNest.Presentation.Behaviors;
 
 public static class LoadedCommandBehavior
 {

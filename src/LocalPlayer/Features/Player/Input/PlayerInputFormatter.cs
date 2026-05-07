@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Windows.Input;
-using LocalPlayer.Infrastructure.Localization;
+using AniNest.Infrastructure.Localization;
 
-namespace LocalPlayer.Features.Player.Input;
+namespace AniNest.Features.Player.Input;
 
 public static class PlayerInputFormatter
 {

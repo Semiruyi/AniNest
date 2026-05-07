@@ -1,26 +1,26 @@
 using Microsoft.Extensions.DependencyInjection;
-using LocalPlayer.Features.Library;
-using LocalPlayer.Features.Library.Services;
-using LocalPlayer.Features.Player;
-using LocalPlayer.Features.Player.Services;
-using LocalPlayer.Features.Player.Input;
-using LocalPlayer.Features.Player.Settings;
-using LocalPlayer.Features.Shell.Services;
-using LocalPlayer.Features.Shell;
-using LocalPlayer.Infrastructure.Localization;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Paths;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Infrastructure.Interop;
-using LocalPlayer.View;
+using AniNest.Features.Library;
+using AniNest.Features.Library.Services;
+using AniNest.Features.Player;
+using AniNest.Features.Player.Services;
+using AniNest.Features.Player.Input;
+using AniNest.Features.Player.Settings;
+using AniNest.Features.Shell.Services;
+using AniNest.Features.Shell;
+using AniNest.Infrastructure.Localization;
+using AniNest.Infrastructure.Logging;
+using AniNest.Infrastructure.Paths;
+using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Media;
+using AniNest.Infrastructure.Thumbnails;
+using AniNest.Infrastructure.Interop;
+using AniNest.View;
 
-namespace LocalPlayer.CompositionRoot;
+namespace AniNest.CompositionRoot;
 
 public static class ServiceRegistration
 {
-    public static void AddLocalPlayerServices(IServiceCollection services)
+    public static void AddAniNestServices(IServiceCollection services)
     {
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<ILocalizationService, LocalizationService>();

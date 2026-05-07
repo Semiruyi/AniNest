@@ -1,8 +1,8 @@
 using System.IO;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Thumbnails;
+using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Thumbnails;
 
-namespace LocalPlayer.Features.Library.Services;
+namespace AniNest.Features.Library.Services;
 
 public sealed class LibraryAppService : ILibraryAppService
 {

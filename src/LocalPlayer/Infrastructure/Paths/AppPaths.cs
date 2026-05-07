@@ -1,11 +1,11 @@
 using System.IO;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Paths;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Infrastructure.Interop;
-namespace LocalPlayer.Infrastructure.Paths;
+using AniNest.Infrastructure.Logging;
+using AniNest.Infrastructure.Paths;
+using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Media;
+using AniNest.Infrastructure.Thumbnails;
+using AniNest.Infrastructure.Interop;
+namespace AniNest.Infrastructure.Paths;
 
 public static class AppPaths
 {

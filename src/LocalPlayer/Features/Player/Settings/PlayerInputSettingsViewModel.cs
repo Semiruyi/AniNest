@@ -5,11 +5,11 @@ using System.Windows;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using LocalPlayer.Features.Player.Input;
-using LocalPlayer.Infrastructure.Localization;
-using LocalPlayer.Infrastructure.Logging;
+using AniNest.Features.Player.Input;
+using AniNest.Infrastructure.Localization;
+using AniNest.Infrastructure.Logging;
 
-namespace LocalPlayer.Features.Player.Settings;
+namespace AniNest.Features.Player.Settings;
 
 public partial class PlayerInputSettingsViewModel : ObservableObject
 {

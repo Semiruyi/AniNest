@@ -1,4 +1,4 @@
-namespace LocalPlayer.Features.Library.Models;
+namespace AniNest.Features.Library.Models;
 
 public record FolderListItem(string Name, string Path, int VideoCount, string? CoverPath)
 {

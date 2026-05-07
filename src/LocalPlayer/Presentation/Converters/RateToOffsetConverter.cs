@@ -2,7 +2,7 @@ using System;
 using System.Globalization;
 using System.Windows.Data;
 
-namespace LocalPlayer.Presentation.Converters;
+namespace AniNest.Presentation.Converters;
 
 public class RateToOffsetConverter : IValueConverter
 {

@@ -6,7 +6,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using Point = System.Windows.Point;
 
-namespace LocalPlayer.Presentation.Animations;
+namespace AniNest.Presentation.Animations;
 
 public static class AnimationHelper
 {

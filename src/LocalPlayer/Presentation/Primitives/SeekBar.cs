@@ -8,15 +8,15 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
-using LocalPlayer.Features.Player;
-using LocalPlayer.Infrastructure.Diagnostics;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Presentation.Animations;
+using AniNest.Features.Player;
+using AniNest.Infrastructure.Diagnostics;
+using AniNest.Infrastructure.Logging;
+using AniNest.Presentation.Animations;
 using Point = System.Windows.Point;
 using Rectangle = System.Windows.Shapes.Rectangle;
 using Size = System.Windows.Size;
 
-namespace LocalPlayer.Presentation.Primitives;
+namespace AniNest.Presentation.Primitives;
 
 public class SeekBar : ContentControl
 {

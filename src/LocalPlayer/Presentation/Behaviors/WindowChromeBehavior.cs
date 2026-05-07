@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 
-namespace LocalPlayer.Presentation.Behaviors;
+namespace AniNest.Presentation.Behaviors;
 
 public static class WindowChromeBehavior
 {

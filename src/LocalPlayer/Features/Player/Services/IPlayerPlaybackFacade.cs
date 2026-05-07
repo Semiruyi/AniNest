@@ -1,6 +1,6 @@
-using LocalPlayer.Infrastructure.Thumbnails;
+using AniNest.Infrastructure.Thumbnails;
 
-namespace LocalPlayer.Features.Player.Services;
+namespace AniNest.Features.Player.Services;
 
 public interface IPlayerPlaybackFacade
 {

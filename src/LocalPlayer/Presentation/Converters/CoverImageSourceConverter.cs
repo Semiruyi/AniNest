@@ -5,9 +5,9 @@ using System.IO;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using LocalPlayer.Infrastructure.Logging;
+using AniNest.Infrastructure.Logging;
 
-namespace LocalPlayer.Presentation.Converters;
+namespace AniNest.Presentation.Converters;
 
 public sealed class CoverImageSourceConverter : IValueConverter
 {

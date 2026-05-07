@@ -4,9 +4,9 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using LocalPlayer.Infrastructure.Paths;
+using AniNest.Infrastructure.Paths;
 
-namespace LocalPlayer.Infrastructure.Localization;
+namespace AniNest.Infrastructure.Localization;
 
 public class LocalizationService : ILocalizationService
 {

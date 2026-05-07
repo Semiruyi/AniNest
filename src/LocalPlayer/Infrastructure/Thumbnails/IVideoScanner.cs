@@ -1,4 +1,4 @@
-namespace LocalPlayer.Infrastructure.Thumbnails;
+namespace AniNest.Infrastructure.Thumbnails;
 
 public interface IVideoScanner
 {

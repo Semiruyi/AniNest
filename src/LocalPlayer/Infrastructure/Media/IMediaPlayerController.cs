@@ -1,14 +1,14 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Paths;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Infrastructure.Interop;
+using AniNest.Infrastructure.Logging;
+using AniNest.Infrastructure.Paths;
+using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Media;
+using AniNest.Infrastructure.Thumbnails;
+using AniNest.Infrastructure.Interop;
 
-namespace LocalPlayer.Infrastructure.Media;
+namespace AniNest.Infrastructure.Media;
 
 public interface IMediaPlayerController : IDisposable
 {

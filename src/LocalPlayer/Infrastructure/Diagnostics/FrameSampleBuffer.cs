@@ -1,6 +1,6 @@
 using System;
 
-namespace LocalPlayer.Infrastructure.Diagnostics;
+namespace AniNest.Infrastructure.Diagnostics;
 
 public sealed class FrameSampleBuffer
 {

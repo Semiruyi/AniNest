@@ -1,4 +1,4 @@
-namespace LocalPlayer.Features.Library.Services;
+namespace AniNest.Features.Library.Services;
 
 public sealed record LibraryFolderDto(
     string Name,

@@ -1,6 +1,6 @@
-using LocalPlayer.Launcher;
+using AniNest.Launcher;
 
-namespace LocalPlayer.Tests.Launcher;
+namespace AniNest.Tests.Launcher;
 
 public class ProgramTests
 {
@@ -25,7 +25,7 @@ public class ProgramTests
 
     private static string CreateTempDirectory()
     {
-        var path = Path.Combine(Path.GetTempPath(), $"LocalPlayer.Tests.{Guid.NewGuid():N}");
+        var path = Path.Combine(Path.GetTempPath(), $"AniNest.Tests.{Guid.NewGuid():N}");
         Directory.CreateDirectory(path);
         return path;
     }

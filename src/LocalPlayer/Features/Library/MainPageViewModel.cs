@@ -5,13 +5,13 @@ using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using LocalPlayer.Features.Library.Models;
-using LocalPlayer.Features.Library.Services;
-using LocalPlayer.Infrastructure.Diagnostics;
-using LocalPlayer.Infrastructure.Localization;
-using LocalPlayer.Infrastructure.Thumbnails;
+using AniNest.Features.Library.Models;
+using AniNest.Features.Library.Services;
+using AniNest.Infrastructure.Diagnostics;
+using AniNest.Infrastructure.Localization;
+using AniNest.Infrastructure.Thumbnails;
 
-namespace LocalPlayer.Features.Library;
+namespace AniNest.Features.Library;
 
 public partial class MainPageViewModel : ObservableObject
 {

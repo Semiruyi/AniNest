@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace LocalPlayer.Launcher;
+namespace AniNest.Launcher;
 
 [JsonSourceGenerationOptions(
     PropertyNameCaseInsensitive = true,

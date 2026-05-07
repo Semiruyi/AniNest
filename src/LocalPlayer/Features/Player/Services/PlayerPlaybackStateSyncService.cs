@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Windows;
-using LocalPlayer.Infrastructure.Diagnostics;
-using LocalPlayer.Infrastructure.Media;
+using AniNest.Infrastructure.Diagnostics;
+using AniNest.Infrastructure.Media;
 
-namespace LocalPlayer.Features.Player.Services;
+namespace AniNest.Features.Player.Services;
 
 public sealed class PlayerPlaybackStateSyncService : IPlayerPlaybackStateSyncService
 {

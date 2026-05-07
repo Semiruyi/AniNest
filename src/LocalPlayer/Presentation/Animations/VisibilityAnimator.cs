@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace LocalPlayer.Presentation.Animations;
+namespace AniNest.Presentation.Animations;
 
 public static class VisibilityAnimator
 {

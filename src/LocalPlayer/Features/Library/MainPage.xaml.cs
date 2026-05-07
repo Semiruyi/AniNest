@@ -1,8 +1,8 @@
 using System.Windows;
 using System.Windows.Media;
-using LocalPlayer.Features.Library;
-using LocalPlayer.Infrastructure.Diagnostics;
-namespace LocalPlayer.Features.Library;
+using AniNest.Features.Library;
+using AniNest.Infrastructure.Diagnostics;
+namespace AniNest.Features.Library;
 
 public partial class MainPage : System.Windows.Controls.UserControl
 {

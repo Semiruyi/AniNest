@@ -5,11 +5,11 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Presentation.Primitives;
+using AniNest.Infrastructure.Logging;
+using AniNest.Infrastructure.Persistence;
+using AniNest.Presentation.Primitives;
 
-namespace LocalPlayer.Features.Player.Input;
+namespace AniNest.Features.Player.Input;
 
 public sealed class PlayerInputService : IPlayerInputService
 {

@@ -2,12 +2,12 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
-using LocalPlayer.Features.Player.Models;
-using LocalPlayer.Features.Player.Services;
-using LocalPlayer.Infrastructure.Diagnostics;
-using LocalPlayer.Infrastructure.Logging;
+using AniNest.Features.Player.Models;
+using AniNest.Features.Player.Services;
+using AniNest.Infrastructure.Diagnostics;
+using AniNest.Infrastructure.Logging;
 
-namespace LocalPlayer.Features.Player;
+namespace AniNest.Features.Player;
 
 public partial class PlayerSessionController : ObservableObject
 {

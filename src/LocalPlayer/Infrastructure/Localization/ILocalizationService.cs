@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace LocalPlayer.Infrastructure.Localization;
+namespace AniNest.Infrastructure.Localization;
 
 public interface ILocalizationService : INotifyPropertyChanged
 {

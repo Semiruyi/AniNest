@@ -2,7 +2,7 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
 
-namespace LocalPlayer.Launcher;
+namespace AniNest.Launcher;
 
 public sealed class PatchApplier
 {

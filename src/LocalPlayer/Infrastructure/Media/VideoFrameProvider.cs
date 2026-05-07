@@ -6,9 +6,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LibVLCSharp.Shared;
-using LocalPlayer.Infrastructure.Diagnostics;
-using LocalPlayer.Infrastructure.Logging;
-namespace LocalPlayer.Infrastructure.Media;
+using AniNest.Infrastructure.Diagnostics;
+using AniNest.Infrastructure.Logging;
+namespace AniNest.Infrastructure.Media;
 
 public class VideoFrameProvider : IDisposable
 {

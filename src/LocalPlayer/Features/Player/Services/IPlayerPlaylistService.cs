@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
-using LocalPlayer.Features.Player.Models;
+using AniNest.Features.Player.Models;
 
-namespace LocalPlayer.Features.Player.Services;
+namespace AniNest.Features.Player.Services;
 
 public interface IPlayerPlaylistService
 {

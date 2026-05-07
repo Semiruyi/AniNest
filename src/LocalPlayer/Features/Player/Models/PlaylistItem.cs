@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace LocalPlayer.Features.Player.Models;
+namespace AniNest.Features.Player.Models;
 
 public class PlaylistItem : INotifyPropertyChanged
 {

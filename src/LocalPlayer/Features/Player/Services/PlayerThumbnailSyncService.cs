@@ -1,9 +1,9 @@
 using System.IO;
 using System.Windows;
-using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Thumbnails;
+using AniNest.Infrastructure.Logging;
+using AniNest.Infrastructure.Thumbnails;
 
-namespace LocalPlayer.Features.Player.Services;
+namespace AniNest.Features.Player.Services;
 
 public sealed class PlayerThumbnailSyncService : IPlayerThumbnailSyncService
 {

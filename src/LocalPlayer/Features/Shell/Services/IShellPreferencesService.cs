@@ -1,4 +1,4 @@
-namespace LocalPlayer.Features.Shell.Services;
+namespace AniNest.Features.Shell.Services;
 
 public interface IShellPreferencesService
 {
