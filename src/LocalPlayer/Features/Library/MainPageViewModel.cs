@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -18,6 +19,8 @@ public partial class MainPageViewModel : ObservableObject
     private readonly ISettingsService _settings;
     private readonly ILocalizationService _loc;
     private readonly EventHandler<ThumbnailProgressEventArgs> _thumbnailProgressChangedHandler;
+    private CancellationTokenSource? _loadDataCts;
+    private CancellationTokenSource? _selectFolderCts;
     private bool _dataLoaded;
     private bool _isCleanedUp;
 
@@ -68,14 +71,23 @@ public partial class MainPageViewModel : ObservableObject
             return;
         }
 
-        var loadedItems = await _libraryService.LoadLibraryAsync();
+        CancelAndDispose(ref _loadDataCts);
+        _loadDataCts = new CancellationTokenSource();
 
-        FolderItems.Clear();
-        foreach (var item in loadedItems)
-            FolderItems.Add(CreateFolderItem(item));
+        try
+        {
+            var loadedItems = await _libraryService.LoadLibraryAsync(_loadDataCts.Token);
 
-        _dataLoaded = true;
-        LoadDataCompleted?.Invoke(this, EventArgs.Empty);
+            FolderItems.Clear();
+            foreach (var item in loadedItems)
+                FolderItems.Add(CreateFolderItem(item));
+
+            _dataLoaded = true;
+            LoadDataCompleted?.Invoke(this, EventArgs.Empty);
+        }
+        catch (OperationCanceledException)
+        {
+        }
     }
 
     [RelayCommand]
@@ -116,15 +128,25 @@ public partial class MainPageViewModel : ObservableObject
 
     public async Task<bool> TrySelectFolderAsync(string path)
     {
-        var result = await _libraryService.OpenFolderAsync(path);
-        if (!result.Success)
+        CancelAndDispose(ref _selectFolderCts);
+        _selectFolderCts = new CancellationTokenSource();
+
+        try
         {
-            MessageBox.Show(_loc["Dialog.NoVideosInFolder"], _loc["Dialog.Info"]);
+            var result = await _libraryService.OpenFolderAsync(path, _selectFolderCts.Token);
+            if (!result.Success)
+            {
+                MessageBox.Show(_loc["Dialog.NoVideosInFolder"], _loc["Dialog.Info"]);
+                return false;
+            }
+
+            FolderSelected?.Invoke(path, result.FolderName);
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
             return false;
         }
-
-        FolderSelected?.Invoke(path, result.FolderName);
-        return true;
     }
 
     public void Cleanup()
@@ -133,6 +155,8 @@ public partial class MainPageViewModel : ObservableObject
             return;
 
         _isCleanedUp = true;
+        CancelAndDispose(ref _loadDataCts);
+        CancelAndDispose(ref _selectFolderCts);
     }
 
     private void UpdateToolbarState()
@@ -165,4 +189,11 @@ public partial class MainPageViewModel : ObservableObject
         {
             VideoCountText = string.Format(_loc["Library.VideoCount"], item.VideoCount)
         };
+
+    private static void CancelAndDispose(ref CancellationTokenSource? cancellationTokenSource)
+    {
+        cancellationTokenSource?.Cancel();
+        cancellationTokenSource?.Dispose();
+        cancellationTokenSource = null;
+    }
 }

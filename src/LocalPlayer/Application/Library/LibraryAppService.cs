@@ -22,128 +22,108 @@ public sealed class LibraryAppService : ILibraryAppService
 
     public async Task<IReadOnlyList<LibraryFolderDto>> LoadLibraryAsync(CancellationToken cancellationToken = default)
     {
-        var loadedFolders = await Task.Run(() =>
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var loadedItems = new List<(LibraryFolderDto Folder, string[] VideoFiles)>();
+        var folders = _settings.GetFolders();
+
+        foreach (var folder in folders)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var loadedItems = new List<(LibraryFolderDto Folder, string[] VideoFiles)>();
-            var folders = _settings.GetFolders();
-
-            foreach (var folder in folders)
+            if (Directory.Exists(folder.Path))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                if (Directory.Exists(folder.Path))
-                {
-                    var result = _videoScanner.ScanFolder(folder.Path);
-                    loadedItems.Add((new LibraryFolderDto(folder.Name, folder.Path, result.VideoCount, result.CoverPath), result.VideoFiles));
-                    continue;
-                }
-
-                _settings.RemoveFolder(folder.Path);
-                _thumbnailGenerator.DeleteForFolder(folder.Path);
+                var result = await _videoScanner.ScanFolderAsync(folder.Path, cancellationToken);
+                loadedItems.Add((new LibraryFolderDto(folder.Name, folder.Path, result.VideoCount, result.CoverPath), result.VideoFiles));
+                continue;
             }
 
-            foreach (var (folder, videoFiles) in loadedItems)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                EnqueueFolderForThumbnails(folder.Path, videoFiles);
-            }
+            _settings.RemoveFolder(folder.Path);
+            _thumbnailGenerator.DeleteForFolder(folder.Path);
+        }
 
-            return (IReadOnlyList<LibraryFolderDto>)loadedItems.Select(static item => item.Folder).ToArray();
-        }, cancellationToken);
+        foreach (var (folder, videoFiles) in loadedItems)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            EnqueueFolderForThumbnails(folder.Path, videoFiles);
+        }
 
-        return loadedFolders;
+        return loadedItems.Select(static item => item.Folder).ToArray();
     }
 
-    public Task<OpenFolderResult> OpenFolderAsync(string path, CancellationToken cancellationToken = default)
+    public async Task<OpenFolderResult> OpenFolderAsync(string path, CancellationToken cancellationToken = default)
     {
-        return Task.Run(() =>
-        {
-            cancellationToken.ThrowIfCancellationRequested();
+        cancellationToken.ThrowIfCancellationRequested();
 
-            var videos = _videoScanner.GetVideoFiles(path);
-            if (videos.Length == 0)
-            {
-                return new OpenFolderResult(false, string.Empty, OpenFolderFailure.NoVideos);
-            }
+        var videos = await _videoScanner.GetVideoFilesAsync(path, cancellationToken);
+        if (videos.Length == 0)
+            return new OpenFolderResult(false, string.Empty, OpenFolderFailure.NoVideos);
 
-            var folderName = Path.GetFileName(path);
-            return new OpenFolderResult(true, folderName);
-        }, cancellationToken);
+        var folderName = Path.GetFileName(path);
+        return new OpenFolderResult(true, folderName);
     }
 
-    public Task<AddFolderResult> AddFolderAsync(string path, CancellationToken cancellationToken = default)
+    public async Task<AddFolderResult> AddFolderAsync(string path, CancellationToken cancellationToken = default)
     {
-        return Task.Run(() =>
+        cancellationToken.ThrowIfCancellationRequested();
+
+        string name = Path.GetFileName(path);
+        var scanResult = await _videoScanner.ScanFolderAsync(path, cancellationToken);
+        if (scanResult.VideoCount == 0)
+            return new AddFolderResult(false, null, AddFolderFailure.NoVideos);
+
+        var (success, error) = _settings.AddFolder(path, name);
+        if (!success)
+        {
+            var failure = error == "This folder has already been added."
+                ? AddFolderFailure.Duplicate
+                : AddFolderFailure.Unknown;
+            return new AddFolderResult(false, null, failure, error);
+        }
+
+        var folder = new LibraryFolderDto(name, path, scanResult.VideoCount, scanResult.CoverPath);
+        EnqueueFolderForThumbnails(path, scanResult.VideoFiles);
+        return new AddFolderResult(true, folder);
+    }
+
+    public async Task<BatchAddFoldersResult> AddFolderBatchAsync(string rootPath, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var foundFolders = await _videoScanner.FindVideoFoldersAsync(rootPath, cancellationToken);
+        var toAdd = foundFolders
+            .Select(path => (Path: path, Name: Path.GetFileName(path)))
+            .ToList();
+
+        var (addedPaths, skipped) = _settings.AddFoldersBatch(toAdd);
+        var addedFolders = new List<LibraryFolderDto>(addedPaths.Count);
+
+        foreach (var path in addedPaths)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            string name = Path.GetFileName(path);
-            var scanResult = _videoScanner.ScanFolder(path);
+            var scanResult = await _videoScanner.ScanFolderAsync(path, cancellationToken);
             if (scanResult.VideoCount == 0)
-            {
-                return new AddFolderResult(false, null, AddFolderFailure.NoVideos);
-            }
+                continue;
 
-            var (success, error) = _settings.AddFolder(path, name);
-            if (!success)
-            {
-                var failure = error == "This folder has already been added."
-                    ? AddFolderFailure.Duplicate
-                    : AddFolderFailure.Unknown;
-                return new AddFolderResult(false, null, failure, error);
-            }
+            addedFolders.Add(new LibraryFolderDto(
+                Path.GetFileName(path),
+                path,
+                scanResult.VideoCount,
+                scanResult.CoverPath));
 
-            var folder = new LibraryFolderDto(name, path, scanResult.VideoCount, scanResult.CoverPath);
             EnqueueFolderForThumbnails(path, scanResult.VideoFiles);
-            return new AddFolderResult(true, folder);
-        }, cancellationToken);
-    }
+        }
 
-    public Task<BatchAddFoldersResult> AddFolderBatchAsync(string rootPath, CancellationToken cancellationToken = default)
-    {
-        return Task.Run(() =>
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var foundFolders = _videoScanner.FindVideoFolders(rootPath);
-            var toAdd = foundFolders
-                .Select(path => (Path: path, Name: Path.GetFileName(path)))
-                .ToList();
-
-            var (addedPaths, skipped) = _settings.AddFoldersBatch(toAdd);
-            var addedFolders = new List<LibraryFolderDto>(addedPaths.Count);
-
-            foreach (var path in addedPaths)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var scanResult = _videoScanner.ScanFolder(path);
-                if (scanResult.VideoCount == 0)
-                    continue;
-
-                addedFolders.Add(new LibraryFolderDto(
-                    Path.GetFileName(path),
-                    path,
-                    scanResult.VideoCount,
-                    scanResult.CoverPath));
-
-                EnqueueFolderForThumbnails(path, scanResult.VideoFiles);
-            }
-
-            return new BatchAddFoldersResult(addedFolders, skipped);
-        }, cancellationToken);
+        return new BatchAddFoldersResult(addedFolders, skipped);
     }
 
     public Task DeleteFolderAsync(string path, CancellationToken cancellationToken = default)
     {
-        return Task.Run(() =>
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            _settings.RemoveFolder(path);
-            _thumbnailGenerator.DeleteForFolder(path);
-        }, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        _settings.RemoveFolder(path);
+        _thumbnailGenerator.DeleteForFolder(path);
+        return Task.CompletedTask;
     }
 
     private void EnqueueFolderForThumbnails(string folderPath, string[] videoFiles)

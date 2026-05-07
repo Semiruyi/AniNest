@@ -30,6 +30,36 @@ public class VideoScanner : IVideoScanner
     private static readonly Logger Log = AppLog.For<VideoScanner>();
 
     public FolderScanResult ScanFolder(string folderPath)
+        => ScanFolderCore(folderPath, CancellationToken.None);
+
+    public Task<FolderScanResult> ScanFolderAsync(string folderPath, CancellationToken cancellationToken = default)
+        => Task.Run(() => ScanFolderCore(folderPath, cancellationToken), cancellationToken);
+
+    public int CountVideosInFolder(string folderPath)
+        => CountVideosInFolderCore(folderPath, CancellationToken.None);
+
+    public Task<int> CountVideosInFolderAsync(string folderPath, CancellationToken cancellationToken = default)
+        => Task.Run(() => CountVideosInFolderCore(folderPath, cancellationToken), cancellationToken);
+
+    public string[] GetVideoFiles(string folderPath)
+        => GetVideoFilesCore(folderPath, CancellationToken.None);
+
+    public Task<string[]> GetVideoFilesAsync(string folderPath, CancellationToken cancellationToken = default)
+        => Task.Run(() => GetVideoFilesCore(folderPath, cancellationToken), cancellationToken);
+
+    public string? FindCoverImage(string folderPath)
+        => FindCoverImageCore(folderPath, CancellationToken.None);
+
+    public Task<string?> FindCoverImageAsync(string folderPath, CancellationToken cancellationToken = default)
+        => Task.Run(() => FindCoverImageCore(folderPath, cancellationToken), cancellationToken);
+
+    public List<string> FindVideoFolders(string rootPath)
+        => FindVideoFoldersCore(rootPath, CancellationToken.None);
+
+    public Task<List<string>> FindVideoFoldersAsync(string rootPath, CancellationToken cancellationToken = default)
+        => Task.Run(() => FindVideoFoldersCore(rootPath, cancellationToken), cancellationToken);
+
+    private FolderScanResult ScanFolderCore(string folderPath, CancellationToken cancellationToken)
     {
         if (!Directory.Exists(folderPath))
             return new FolderScanResult(0, null, Array.Empty<string>());
@@ -46,6 +76,7 @@ public class VideoScanner : IVideoScanner
 
             foreach (var file in files)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 string ext = Path.GetExtension(file).ToLower();
 
                 if (IsVideoFileExt(ext))
@@ -63,6 +94,7 @@ public class VideoScanner : IVideoScanner
             {
                 foreach (var file in files)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (IsCoverExt(Path.GetExtension(file).ToLower()))
                     {
                         coverPath = file;
@@ -81,7 +113,7 @@ public class VideoScanner : IVideoScanner
         }
     }
 
-    public int CountVideosInFolder(string folderPath)
+    private int CountVideosInFolderCore(string folderPath, CancellationToken cancellationToken)
     {
         if (!Directory.Exists(folderPath))
             return 0;
@@ -91,7 +123,13 @@ public class VideoScanner : IVideoScanner
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var files = Directory.GetFiles(folderPath);
             Log.Info($"Directory.GetFiles({Path.GetFileName(folderPath)}) took {sw.ElapsedMilliseconds}ms, {files.Length} files");
-            int count = files.Count(f => IsVideoFile(f));
+            int count = 0;
+            foreach (var file in files)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (IsVideoFile(file))
+                    count++;
+            }
             return count;
         }
         catch (Exception ex)
@@ -101,15 +139,22 @@ public class VideoScanner : IVideoScanner
         }
     }
 
-    public string[] GetVideoFiles(string folderPath)
+    private string[] GetVideoFilesCore(string folderPath, CancellationToken cancellationToken)
     {
         if (!Directory.Exists(folderPath))
             return Array.Empty<string>();
 
         try
         {
-            return Directory.GetFiles(folderPath)
-                .Where(f => IsVideoFile(f))
+            var videoFiles = new List<string>();
+            foreach (var file in Directory.GetFiles(folderPath))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (IsVideoFile(file))
+                    videoFiles.Add(file);
+            }
+
+            return videoFiles
                 .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
         }
@@ -120,7 +165,7 @@ public class VideoScanner : IVideoScanner
         }
     }
 
-    public string? FindCoverImage(string folderPath)
+    private string? FindCoverImageCore(string folderPath, CancellationToken cancellationToken)
     {
         if (!Directory.Exists(folderPath))
             return null;
@@ -133,6 +178,7 @@ public class VideoScanner : IVideoScanner
 
             foreach (var file in files)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 string fileName = Path.GetFileNameWithoutExtension(file).ToLower();
                 string ext = Path.GetExtension(file).ToLower();
 
@@ -144,6 +190,7 @@ public class VideoScanner : IVideoScanner
 
             foreach (var file in files)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 string ext = Path.GetExtension(file).ToLower();
                 if (IsCoverExt(ext))
                 {
@@ -169,7 +216,7 @@ public class VideoScanner : IVideoScanner
         return VideoExtensions.Contains(ext);
     }
 
-    public List<string> FindVideoFolders(string rootPath)
+    private List<string> FindVideoFoldersCore(string rootPath, CancellationToken cancellationToken)
     {
         var result = new List<string>();
         if (!Directory.Exists(rootPath))
@@ -181,16 +228,18 @@ public class VideoScanner : IVideoScanner
         var sw = System.Diagnostics.Stopwatch.StartNew();
         Log.Info($"FindVideoFolders start: {rootPath}");
 
-        if (CountVideosInFolder(rootPath) > 0)
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (CountVideosInFolderCore(rootPath, cancellationToken) > 0)
             result.Add(rootPath);
 
-        FindVideoFoldersRecursive(rootPath, result);
+        FindVideoFoldersRecursive(rootPath, result, cancellationToken);
 
         Log.Info($"FindVideoFolders done: found {result.Count} folders, elapsed {sw.ElapsedMilliseconds}ms");
         return result;
     }
 
-    private void FindVideoFoldersRecursive(string folderPath, List<string> result)
+    private void FindVideoFoldersRecursive(string folderPath, List<string> result, CancellationToken cancellationToken)
     {
         string[] subDirs;
         try
@@ -205,10 +254,12 @@ public class VideoScanner : IVideoScanner
 
         foreach (var subDir in subDirs)
         {
-            if (CountVideosInFolder(subDir) > 0)
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (CountVideosInFolderCore(subDir, cancellationToken) > 0)
                 result.Add(subDir);
             else
-                FindVideoFoldersRecursive(subDir, result);
+                FindVideoFoldersRecursive(subDir, result, cancellationToken);
         }
     }
 
