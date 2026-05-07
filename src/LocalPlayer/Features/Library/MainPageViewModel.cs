@@ -8,7 +8,6 @@ using CommunityToolkit.Mvvm.Input;
 using LocalPlayer.Features.Library.Models;
 using LocalPlayer.Features.Library.Services;
 using LocalPlayer.Infrastructure.Localization;
-using LocalPlayer.Infrastructure.Persistence;
 using LocalPlayer.Infrastructure.Thumbnails;
 
 namespace LocalPlayer.Features.Library;
@@ -16,7 +15,6 @@ namespace LocalPlayer.Features.Library;
 public partial class MainPageViewModel : ObservableObject
 {
     private readonly ILibraryAppService _libraryService;
-    private readonly ISettingsService _settings;
     private readonly ILocalizationService _loc;
     private readonly EventHandler<ThumbnailProgressEventArgs> _thumbnailProgressChangedHandler;
     private CancellationTokenSource? _loadDataCts;
@@ -43,18 +41,15 @@ public partial class MainPageViewModel : ObservableObject
 
     public MainPageViewModel(
         ILibraryAppService libraryService,
-        ISettingsService settings,
-        ILocalizationService loc,
-        IThumbnailGenerator thumbnailGenerator)
+        ILocalizationService loc)
     {
         _libraryService = libraryService;
-        _settings = settings;
         _loc = loc;
         _thumbnailProgressChangedHandler = OnThumbnailProgressChanged;
 
         FolderItems.CollectionChanged += (_, _) => UpdateToolbarState();
 
-        thumbnailGenerator.ProgressChanged += _thumbnailProgressChangedHandler;
+        _libraryService.ThumbnailProgressChanged += _thumbnailProgressChangedHandler;
     }
 
     public void AddFolderItem(string name, string path, int videoCount, string? coverPath)
@@ -110,19 +105,23 @@ public partial class MainPageViewModel : ObservableObject
     [RelayCommand]
     private void Settings()
     {
-        int currentDays = _settings.GetThumbnailExpiryDays();
+        int currentDays = _libraryService.GetThumbnailExpiryDays();
         string input = Microsoft.VisualBasic.Interaction.InputBox(
             _loc["Settings.ThumbnailExpiryPrompt"],
             _loc["Settings.ThumbnailSettings"],
             currentDays.ToString());
 
-        if (int.TryParse(input, out int days) && days >= 0 && days <= 365)
+        var result = _libraryService.SaveThumbnailExpiryDays(input);
+        if (!result.Success)
+            return;
+
+        if (result.Outcome == ThumbnailExpirySaveOutcome.SavedNever)
         {
-            _settings.SetThumbnailExpiryDays(days);
-            if (days == 0)
-                MessageBox.Show(_loc["Settings.ThumbnailSetNever"], _loc["Dialog.Info"]);
-            else
-                MessageBox.Show(string.Format(_loc["Settings.ThumbnailSetDays"], days), _loc["Dialog.Info"]);
+            MessageBox.Show(_loc["Settings.ThumbnailSetNever"], _loc["Dialog.Info"]);
+        }
+        else if (result.Days.HasValue)
+        {
+            MessageBox.Show(string.Format(_loc["Settings.ThumbnailSetDays"], result.Days.Value), _loc["Dialog.Info"]);
         }
     }
 
@@ -157,6 +156,7 @@ public partial class MainPageViewModel : ObservableObject
         _isCleanedUp = true;
         CancelAndDispose(ref _loadDataCts);
         CancelAndDispose(ref _selectFolderCts);
+        _libraryService.ThumbnailProgressChanged -= _thumbnailProgressChangedHandler;
     }
 
     private void UpdateToolbarState()

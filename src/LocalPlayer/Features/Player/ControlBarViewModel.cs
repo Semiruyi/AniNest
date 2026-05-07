@@ -4,15 +4,14 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalPlayer.Infrastructure.Localization;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Thumbnails;
 using LocalPlayer.Features.Player.Models;
+using LocalPlayer.Features.Player.Services;
 
 namespace LocalPlayer.Features.Player;
 
 public partial class ControlBarViewModel : ObservableObject
 {
-    private readonly IMediaPlayerController _media;
+    private readonly IPlayerPlaybackFacade _playbackFacade;
     private readonly ILocalizationService _loc;
     private readonly PlayerPlaybackStateController _playback;
     private readonly PropertyChangedEventHandler _locPropertyChangedHandler;
@@ -29,7 +28,7 @@ public partial class ControlBarViewModel : ObservableObject
         set
         {
             if (_playback.CurrentTime == value) return;
-            _media.SeekTo(value);
+            _playbackFacade.SeekTo(value);
         }
     }
     public long TotalTime => _playback.TotalTime;
@@ -66,12 +65,11 @@ public partial class ControlBarViewModel : ObservableObject
     public event Action? ToggleFullscreenRequested;
 
     public ControlBarViewModel(
-        IMediaPlayerController media,
-        IThumbnailGenerator thumbnailGenerator,
+        IPlayerPlaybackFacade playbackFacade,
         ILocalizationService loc,
         PlayerPlaybackStateController playback)
     {
-        _media = media;
+        _playbackFacade = playbackFacade;
         _loc = loc;
         _playback = playback;
         _locPropertyChangedHandler = (_, args) =>
@@ -118,9 +116,9 @@ public partial class ControlBarViewModel : ObservableObject
         };
 
         ThumbnailPreview = new ThumbnailPreviewController(
-            thumbnailGenerator,
+            _playbackFacade,
             () => CurrentVideoPath,
-            () => _media.Length);
+            () => _playbackFacade.MediaLength);
 
         _loc.PropertyChanged += _locPropertyChangedHandler;
         _playback.PropertyChanged += _playbackPropertyChangedHandler;
@@ -129,7 +127,7 @@ public partial class ControlBarViewModel : ObservableObject
             if (args.PropertyName == nameof(PlayerPlaybackStateController.CurrentVideoPath))
                 ThumbnailPreview.OnCurrentVideoPathChanged();
         };
-        SetRate(_media.Rate);
+        SetRate(_playbackFacade.Rate);
     }
 
     public void SetRate(float value)
@@ -140,10 +138,11 @@ public partial class ControlBarViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void PlayPause() => _media.TogglePlayPause();
+    private void PlayPause() => _playbackFacade.TogglePlayPause();
+
 
     [RelayCommand]
-    private void Stop() => _media.Stop();
+    private void Stop() => _playbackFacade.Stop();
 
     [RelayCommand]
     private void Next() => NextRequested?.Invoke();
@@ -153,12 +152,12 @@ public partial class ControlBarViewModel : ObservableObject
 
     [RelayCommand]
     private void Seek(long time)
-        => _media.SeekTo(time);
+        => _playbackFacade.SeekTo(time);
 
     [RelayCommand]
     private void ChangeSpeed(float speed)
     {
-        _media.Rate = speed;
+        _playbackFacade.Rate = speed;
         SetRate(speed);
     }
 
@@ -246,14 +245,14 @@ public partial class ControlBarViewModel : ObservableObject
     {
         _savedRate = Rate;
         SetRate(3.0f);
-        _media.Rate = 3.0f;
+        _playbackFacade.Rate = 3.0f;
     }
 
     [RelayCommand]
     private void ExitRightHold()
     {
         SetRate(_savedRate);
-        _media.Rate = _savedRate;
+        _playbackFacade.Rate = _savedRate;
     }
 
     public void Cleanup()

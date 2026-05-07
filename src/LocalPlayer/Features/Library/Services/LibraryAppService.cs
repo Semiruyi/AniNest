@@ -20,6 +20,12 @@ public sealed class LibraryAppService : ILibraryAppService
         _videoScanner = videoScanner;
     }
 
+    public event EventHandler<ThumbnailProgressEventArgs>? ThumbnailProgressChanged
+    {
+        add => _thumbnailGenerator.ProgressChanged += value;
+        remove => _thumbnailGenerator.ProgressChanged -= value;
+    }
+
     public async Task<IReadOnlyList<LibraryFolderDto>> LoadLibraryAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -124,6 +130,20 @@ public sealed class LibraryAppService : ILibraryAppService
         _settings.RemoveFolder(path);
         _thumbnailGenerator.DeleteForFolder(path);
         return Task.CompletedTask;
+    }
+
+    public int GetThumbnailExpiryDays()
+        => _settings.GetThumbnailExpiryDays();
+
+    public ThumbnailExpirySaveResult SaveThumbnailExpiryDays(string input)
+    {
+        if (!int.TryParse(input, out int days) || days < 0 || days > 365)
+            return new ThumbnailExpirySaveResult(false, ThumbnailExpirySaveOutcome.InvalidInput);
+
+        _settings.SetThumbnailExpiryDays(days);
+        return days == 0
+            ? new ThumbnailExpirySaveResult(true, ThumbnailExpirySaveOutcome.SavedNever)
+            : new ThumbnailExpirySaveResult(true, ThumbnailExpirySaveOutcome.SavedDays, days);
     }
 
     private void EnqueueFolderForThumbnails(string folderPath, string[] videoFiles)

@@ -34,3 +34,15 @@ public sealed record AddFolderResult(
 public sealed record BatchAddFoldersResult(
     IReadOnlyList<LibraryFolderDto> AddedFolders,
     int SkippedCount);
+
+public enum ThumbnailExpirySaveOutcome
+{
+    InvalidInput,
+    SavedDays,
+    SavedNever
+}
+
+public sealed record ThumbnailExpirySaveResult(
+    bool Success,
+    ThumbnailExpirySaveOutcome Outcome,
+    int? Days = null);

@@ -8,6 +8,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using LocalPlayer.Features.Player.Services;
 using LocalPlayer.Infrastructure.Paths;
 using LocalPlayer.Infrastructure.Persistence;
 using LocalPlayer.Infrastructure.Media;
@@ -23,7 +24,7 @@ public partial class ThumbnailPreviewController : ObservableObject
 {
     private static readonly Logger Log = AppLog.For<ThumbnailPreviewController>();
 
-    private readonly IThumbnailGenerator _thumbnailGenerator;
+    private readonly IPlayerPlaybackFacade _playbackFacade;
     private readonly Func<string?> _getCurrentVideoPath;
     private readonly Func<long> _getMediaLength;
 
@@ -58,11 +59,11 @@ public partial class ThumbnailPreviewController : ObservableObject
     private double _popupVerticalOffset = -120;
 
     public ThumbnailPreviewController(
-        IThumbnailGenerator thumbnailGenerator,
+        IPlayerPlaybackFacade playbackFacade,
         Func<string?> getCurrentVideoPath,
         Func<long> getMediaLength)
     {
-        _thumbnailGenerator = thumbnailGenerator;
+        _playbackFacade = playbackFacade;
         _getCurrentVideoPath = getCurrentVideoPath;
         _getMediaLength = getMediaLength;
     }
@@ -123,7 +124,7 @@ public partial class ThumbnailPreviewController : ObservableObject
         TimeText = FormatTime(hoverTimeMs);
         string? currentVideoPath = _getCurrentVideoPath();
         bool thumbReady = currentVideoPath != null &&
-            _thumbnailGenerator.GetState(currentVideoPath) == ThumbnailState.Ready;
+            _playbackFacade.GetThumbnailState(currentVideoPath) == ThumbnailState.Ready;
         ImageVisibility = thumbReady ? Visibility.Visible : Visibility.Collapsed;
         if (!thumbReady)
             ImageSource = null;
@@ -224,7 +225,7 @@ public partial class ThumbnailPreviewController : ObservableObject
 
     private BitmapSource? LoadJpeg(string videoPath, int second)
     {
-        var path = _thumbnailGenerator.GetThumbnailPath(videoPath, second);
+        var path = _playbackFacade.GetThumbnailPath(videoPath, second);
         if (path == null) return null;
         try
         {

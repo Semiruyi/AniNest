@@ -5,9 +5,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalPlayer.Features.Player.Models;
 using LocalPlayer.Features.Player.Input;
+using LocalPlayer.Features.Player.Services;
 using LocalPlayer.Infrastructure.Localization;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Thumbnails;
 using LocalPlayer.Presentation.Primitives;
 
 namespace LocalPlayer.Features.Player;
@@ -16,7 +15,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
 {
     private readonly PlayerSessionController _session;
     private readonly PlayerPlaybackStateController _playback;
-    private readonly IMediaPlayerController _media;
+    private readonly IPlayerPlaybackFacade _playbackFacade;
     private bool _isMediaInitialized;
 
     private float _savedRate = 1.0f;
@@ -40,22 +39,21 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
 
     private bool _savedPlaylistVisible;
 
-    public static string FormatTime(long ms) => MediaPlayerController.FormatTime(ms);
+    public string FormatTime(long ms) => _playbackFacade.FormatTime(ms);
 
     public PlayerViewModel(
         PlayerSessionController session,
         PlayerPlaybackStateController playback,
-        IThumbnailGenerator thumbnailGenerator,
-        IMediaPlayerController media,
+        IPlayerPlaybackFacade playbackFacade,
         ILocalizationService loc,
         IPlayerInputService inputService)
     {
         _session = session;
         _playback = playback;
-        _media = media;
+        _playbackFacade = playbackFacade;
         InputService = inputService;
 
-        ControlBar = new ControlBarViewModel(media, thumbnailGenerator, loc, playback);
+        ControlBar = new ControlBarViewModel(playbackFacade, loc, playback);
 
         ControlBar.NextRequested += () => _ = _session.PlayNext();
         ControlBar.PreviousRequested += () => _ = _session.PlayPrevious();
@@ -71,7 +69,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
 
     public void SetRate(float rate)
     {
-        _media.Rate = rate;
+        _playbackFacade.Rate = rate;
         ControlBar.SetRate(rate);
     }
 
@@ -95,15 +93,15 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     {
         if (_isMediaInitialized)
             return;
-        _media.Initialize();
+        _playbackFacade.Initialize();
         _isMediaInitialized = true;
         OnPropertyChanged(nameof(VideoSource));
     }
 
     public void OnDisappearing()
     {
-        if (_media.IsPlaying)
-            _media.TogglePlayPause();
+        if (_playbackFacade.IsPlaying)
+            _playbackFacade.TogglePlayPause();
     }
 
     public bool TryHandleInput(PlayerInputAction action)
@@ -111,10 +109,10 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
         switch (action)
         {
             case PlayerInputAction.PlayPause:
-                _media.TogglePlayPause();
+                _playbackFacade.TogglePlayPause();
                 return true;
             case PlayerInputAction.Stop:
-                _media.Stop();
+                _playbackFacade.Stop();
                 return true;
             case PlayerInputAction.Next:
                 _ = _session.PlayNext();
@@ -132,16 +130,16 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
                 Playlist.IsVisible = !Playlist.IsVisible;
                 return true;
             case PlayerInputAction.SeekForwardSmall:
-                _media.SeekForward(5_000);
+                _playbackFacade.SeekForward(5_000);
                 return true;
             case PlayerInputAction.SeekBackwardSmall:
-                _media.SeekBackward(5_000);
+                _playbackFacade.SeekBackward(5_000);
                 return true;
             case PlayerInputAction.SeekForwardLarge:
-                _media.SeekForward(15_000);
+                _playbackFacade.SeekForward(15_000);
                 return true;
             case PlayerInputAction.SeekBackwardLarge:
-                _media.SeekBackward(15_000);
+                _playbackFacade.SeekBackward(15_000);
                 return true;
             case PlayerInputAction.BoostSpeedHold:
                 EnterRightHold();
@@ -155,7 +153,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     }
 
     [RelayCommand]
-    private void PlayPause() => _media.TogglePlayPause();
+    private void PlayPause() => _playbackFacade.TogglePlayPause();
 
     [RelayCommand]
     private void GoBack()
@@ -171,14 +169,14 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     {
         _savedRate = ControlBar.Rate;
         ControlBar.SetRate(3.0f);
-        _media.Rate = 3.0f;
+        _playbackFacade.Rate = 3.0f;
     }
 
     [RelayCommand]
     private void ExitRightHold()
     {
         ControlBar.SetRate(_savedRate);
-        _media.Rate = _savedRate;
+        _playbackFacade.Rate = _savedRate;
     }
 
     [RelayCommand]

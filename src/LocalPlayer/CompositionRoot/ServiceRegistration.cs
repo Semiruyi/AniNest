@@ -5,6 +5,7 @@ using LocalPlayer.Features.Player;
 using LocalPlayer.Features.Player.Services;
 using LocalPlayer.Features.Player.Input;
 using LocalPlayer.Features.Player.Settings;
+using LocalPlayer.Features.Shell.Services;
 using LocalPlayer.Features.Shell;
 using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Infrastructure.Logging;
@@ -27,7 +28,9 @@ public static class ServiceRegistration
         services.AddSingleton<IVideoScanner, VideoScanner>();
         services.AddSingleton<IThumbnailGenerator, ThumbnailGenerator>();
         services.AddSingleton<ILibraryAppService, LibraryAppService>();
+        services.AddSingleton<IShellPreferencesService, ShellPreferencesService>();
         services.AddSingleton<IPlayerAppService, PlayerAppService>();
+        services.AddSingleton<IPlayerPlaybackFacade, PlayerPlaybackFacade>();
         services.AddSingleton<PlayerSessionController>();
         services.AddSingleton<PlayerPlaybackStateController>();
         services.AddSingleton<IPlayerInputService, PlayerInputService>();

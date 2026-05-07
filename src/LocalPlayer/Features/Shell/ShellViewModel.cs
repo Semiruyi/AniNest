@@ -7,9 +7,9 @@ using LocalPlayer.Features.Library.Services;
 using LocalPlayer.Features.Player;
 using LocalPlayer.Features.Player.Services;
 using LocalPlayer.Features.Player.Settings;
+using LocalPlayer.Features.Shell.Services;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Localization;
-using LocalPlayer.Infrastructure.Persistence;
 using LocalPlayer.Infrastructure.Interop;
 
 namespace LocalPlayer.Features.Shell;
@@ -17,11 +17,11 @@ namespace LocalPlayer.Features.Shell;
 public partial class ShellViewModel : ObservableObject
 {
     private static readonly Logger Log = AppLog.For<ShellViewModel>();
-    private readonly ISettingsService _settings;
     private readonly ILocalizationService _loc;
     private readonly ILibraryAppService _libraryService;
     private readonly ITaskbarAutoHideCoordinator _taskbarAutoHide;
     private readonly IPlayerAppService _playerAppService;
+    private readonly IShellPreferencesService _preferencesService;
     private readonly MainPageViewModel _mainPage;
     private readonly PlayerViewModel _playerPage;
 
@@ -59,22 +59,22 @@ public partial class ShellViewModel : ObservableObject
     public PlayerInputSettingsViewModel PlayerInputSettings { get; }
 
     public ShellViewModel(
-        ISettingsService settings,
         ILocalizationService loc,
         ILibraryAppService libraryService,
         ITaskbarAutoHideCoordinator taskbarAutoHide,
         IPlayerAppService playerAppService,
+        IShellPreferencesService preferencesService,
         MainPageViewModel mainPage,
         PlayerViewModel playerPage,
         PlayerInputSettingsViewModel playerInputSettings)
     {
-        _settings = settings;
         _loc = loc;
         _libraryService = libraryService;
         _taskbarAutoHide = taskbarAutoHide;
         _playerAppService = playerAppService;
+        _preferencesService = preferencesService;
         _currentLanguageCode = _loc.CurrentLanguage;
-        _currentAnimationCode = _settings.Load().FullscreenAnimation;
+        _currentAnimationCode = _preferencesService.CurrentFullscreenAnimationCode;
         _mainPage = mainPage;
         _playerPage = playerPage;
         PlayerInputSettings = playerInputSettings;
@@ -146,11 +146,8 @@ public partial class ShellViewModel : ObservableObject
     [RelayCommand]
     private void SwitchLanguage(string code)
     {
-        _loc.SetLanguage(code);
-        CurrentLanguageCode = _loc.CurrentLanguage;
-        var s = _settings.Load();
-        s.Language = code;
-        _settings.Save();
+        _preferencesService.SetLanguage(code);
+        CurrentLanguageCode = _preferencesService.CurrentLanguageCode;
     }
 
     [RelayCommand]
@@ -173,9 +170,7 @@ public partial class ShellViewModel : ObservableObject
     private void SelectFullscreenAnimation(string code)
     {
         CurrentAnimationCode = code;
-        var s = _settings.Load();
-        s.FullscreenAnimation = code;
-        _settings.Save();
+        _preferencesService.SetFullscreenAnimation(code);
     }
 
     [RelayCommand]

@@ -1,3 +1,5 @@
+using LocalPlayer.Infrastructure.Thumbnails;
+
 namespace LocalPlayer.Features.Library.Services;
 
 public interface ILibraryAppService
@@ -7,4 +9,8 @@ public interface ILibraryAppService
     Task<AddFolderResult> AddFolderAsync(string path, CancellationToken cancellationToken = default);
     Task<BatchAddFoldersResult> AddFolderBatchAsync(string rootPath, CancellationToken cancellationToken = default);
     Task DeleteFolderAsync(string path, CancellationToken cancellationToken = default);
+    int GetThumbnailExpiryDays();
+    ThumbnailExpirySaveResult SaveThumbnailExpiryDays(string input);
+
+    event EventHandler<ThumbnailProgressEventArgs>? ThumbnailProgressChanged;
 }
