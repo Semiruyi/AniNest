@@ -152,6 +152,19 @@ public partial class MainPage : System.Windows.Controls.UserControl
         CloseOverlayIfOutside(e.OriginalSource as DependencyObject);
     }
 
+    private void OnRootPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        var closed = CardContextMenuOverlay.HandleKeyDown(e);
+        Log.Debug($"OnRootPreviewKeyDown: key={e.Key} closed={closed} overlayItem={_overlayItem?.Name ?? "null"}");
+
+        if (!closed)
+            return;
+
+        CardContextMenuOverlay.DataContext = null;
+        _overlayItem = null;
+        e.Handled = true;
+    }
+
     private void OnOverlayActionClick(object sender, RoutedEventArgs e)
     {
         Log.Debug(
@@ -177,18 +190,16 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     private void CloseOverlayIfOutside(DependencyObject? target)
     {
-        if (!CardContextMenuOverlay.IsOpen)
-            return;
-
-        var contains = CardContextMenuOverlay.ContainsSurfaceTarget(target);
+        var closed = CardContextMenuOverlay.HandlePointerDown(target);
         Log.Debug(
-            $"CloseOverlayIfOutside: target={DescribeSource(target)} containsSurface={contains} " +
+            $"CloseOverlayIfOutside: target={DescribeSource(target)} closed={closed} " +
             $"overlayItem={_overlayItem?.Name ?? "null"}");
 
-        if (contains)
+        if (!closed)
             return;
 
-        CloseCardContextMenu(OverlayCloseReason.OutsideClick);
+        CardContextMenuOverlay.DataContext = null;
+        _overlayItem = null;
     }
 
     private void CloseCardContextMenu(OverlayCloseReason reason)
@@ -199,7 +210,6 @@ public partial class MainPage : System.Windows.Controls.UserControl
         Log.Debug($"CloseCardContextMenu: reason={reason}");
         CardContextMenuOverlay.Close(reason);
         CardContextMenuOverlay.DataContext = null;
-        CardContextMenuOverlay.ResetAnchor();
         _overlayItem = null;
     }
 

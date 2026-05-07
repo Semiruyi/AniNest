@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using AniNest.Infrastructure.Logging;
 using AniNest.Presentation.Animations;
@@ -14,6 +15,7 @@ public class AnimatedOverlay : ContentControl
     private FrameworkElement? _surface;
     private FrameworkElement? _positionHost;
     private FrameworkElement? _host;
+    private Window? _window;
     private OverlayState _state = OverlayState.Closed;
     private bool _isRepositioning;
     private bool _repositionQueued;
@@ -59,6 +61,18 @@ public class AnimatedOverlay : ContentControl
     public static readonly DependencyProperty CloseScaleToProperty =
         DependencyProperty.Register(nameof(CloseScaleTo), typeof(double), typeof(AnimatedOverlay),
             new PropertyMetadata(0.96d));
+
+    public static readonly DependencyProperty CloseOnOutsideClickProperty =
+        DependencyProperty.Register(nameof(CloseOnOutsideClick), typeof(bool), typeof(AnimatedOverlay),
+            new PropertyMetadata(false));
+
+    public static readonly DependencyProperty ResetAnchorOnCloseProperty =
+        DependencyProperty.Register(nameof(ResetAnchorOnClose), typeof(bool), typeof(AnimatedOverlay),
+            new PropertyMetadata(false));
+
+    public static readonly DependencyProperty CloseOnEscapeProperty =
+        DependencyProperty.Register(nameof(CloseOnEscape), typeof(bool), typeof(AnimatedOverlay),
+            new PropertyMetadata(false));
 
     private static readonly DependencyPropertyKey SurfaceMarginPropertyKey =
         DependencyProperty.RegisterReadOnly(nameof(SurfaceMargin), typeof(Thickness), typeof(AnimatedOverlay),
@@ -136,6 +150,24 @@ public class AnimatedOverlay : ContentControl
         set => SetValue(CloseScaleToProperty, value);
     }
 
+    public bool CloseOnOutsideClick
+    {
+        get => (bool)GetValue(CloseOnOutsideClickProperty);
+        set => SetValue(CloseOnOutsideClickProperty, value);
+    }
+
+    public bool ResetAnchorOnClose
+    {
+        get => (bool)GetValue(ResetAnchorOnCloseProperty);
+        set => SetValue(ResetAnchorOnCloseProperty, value);
+    }
+
+    public bool CloseOnEscape
+    {
+        get => (bool)GetValue(CloseOnEscapeProperty);
+        set => SetValue(CloseOnEscapeProperty, value);
+    }
+
     public Thickness SurfaceMargin
     {
         get => (Thickness)GetValue(SurfaceMarginProperty);
@@ -197,6 +229,9 @@ public class AnimatedOverlay : ContentControl
 
         Log.Debug($"Close: reason={reason} state={_state}");
         IsOpen = false;
+
+        if (ResetAnchorOnClose)
+            ResetAnchor();
     }
 
     public bool ToggleForAnchor(FrameworkElement anchor, OverlayCloseReason toggleCloseReason = OverlayCloseReason.Toggle)
@@ -231,6 +266,33 @@ public class AnimatedOverlay : ContentControl
     {
         Log.Debug("ResetAnchor");
         SwitchAnchor(null);
+    }
+
+    public bool HandlePointerDown(DependencyObject? target, OverlayCloseReason reason = OverlayCloseReason.OutsideClick)
+    {
+        if (!IsOpen || !CloseOnOutsideClick)
+            return false;
+
+        var contains = ContainsSurfaceTarget(target);
+        Log.Debug(
+            $"HandlePointerDown: target={DescribeTarget(target)} containsSurface={contains} " +
+            $"state={_state} closeOnOutside={CloseOnOutsideClick}");
+
+        if (contains)
+            return false;
+
+        Close(reason);
+        return true;
+    }
+
+    public bool HandleKeyDown(KeyEventArgs? args, OverlayCloseReason reason = OverlayCloseReason.EscapeKey)
+    {
+        if (args == null || !IsOpen || !CloseOnEscape || args.Key != Key.Escape)
+            return false;
+
+        Log.Debug($"HandleKeyDown: key={args.Key} state={_state} closeOnEscape={CloseOnEscape}");
+        Close(reason);
+        return true;
     }
 
     public void SwitchAnchor(FrameworkElement? anchor)
@@ -512,6 +574,8 @@ public class AnimatedOverlay : ContentControl
         _host = Parent as FrameworkElement;
         if (_host != null)
             _host.SizeChanged += OnHostSizeChanged;
+
+        AttachWindow();
         Reposition();
     }
 
@@ -521,6 +585,7 @@ public class AnimatedOverlay : ContentControl
         if (_host != null)
             _host.SizeChanged -= OnHostSizeChanged;
         _host = null;
+        DetachWindow();
     }
 
     private void AttachAnchor(FrameworkElement? anchor)
@@ -558,6 +623,33 @@ public class AnimatedOverlay : ContentControl
         Close(OverlayCloseReason.AnchorUnavailable);
     }
 
+    private void AttachWindow()
+    {
+        var window = Window.GetWindow(this);
+        if (ReferenceEquals(_window, window))
+            return;
+
+        DetachWindow();
+        _window = window;
+        if (_window != null)
+            _window.PreviewKeyDown += OnWindowPreviewKeyDown;
+    }
+
+    private void DetachWindow()
+    {
+        if (_window == null)
+            return;
+
+        _window.PreviewKeyDown -= OnWindowPreviewKeyDown;
+        _window = null;
+    }
+
+    private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (HandleKeyDown(e))
+            e.Handled = true;
+    }
+
     private void SetSurfaceVisibility(Visibility visibility)
     {
         if (_positionHost != null)
@@ -578,6 +670,20 @@ public class AnimatedOverlay : ContentControl
             scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
             scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
         }
+    }
+
+    private static string DescribeTarget(DependencyObject? target)
+    {
+        if (target == null)
+            return "null";
+
+        if (target is FrameworkElement frameworkElement)
+        {
+            var name = string.IsNullOrWhiteSpace(frameworkElement.Name) ? "-" : frameworkElement.Name;
+            return $"{frameworkElement.GetType().Name}({name})";
+        }
+
+        return target.GetType().Name;
     }
 
     private void SetState(OverlayState state)
