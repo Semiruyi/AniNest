@@ -122,7 +122,7 @@ public sealed class LibraryAppService : ILibraryAppService
     {
         cancellationToken.ThrowIfCancellationRequested();
         _settings.RemoveFolder(path);
-            _thumbnailGenerator.DeleteForFolder(path);
+        _thumbnailGenerator.DeleteForFolder(path);
         return Task.CompletedTask;
     }
 
