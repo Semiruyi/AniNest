@@ -64,16 +64,16 @@ Remove-PathIfExists $appTempRoot
 New-Item -ItemType Directory -Force -Path $publishRoot | Out-Null
 New-Item -ItemType Directory -Force -Path $appTempRoot | Out-Null
 
-dotnet publish (Join-Path $root "src\LocalPlayer\LocalPlayer.csproj") -c $Configuration -r $Runtime -o $appTempRoot
-dotnet publish (Join-Path $root "src\Launcher\LocalPlayer.Launcher.csproj") -c $Configuration -r $Runtime -o $launcherTempRoot
+dotnet publish (Join-Path $root "src\LocalPlayer\AniNest.csproj") -c $Configuration -r $Runtime -o $appTempRoot
+dotnet publish (Join-Path $root "src\Launcher\AniNest.Launcher.csproj") -c $Configuration -r $Runtime -o $launcherTempRoot
 
 Copy-Folder $appTempRoot $appOut
 Copy-Folder (Join-Path $root "data") $dataOut
 Write-AppManifest $appOut $Version
 
-$launcherExe = Join-Path $launcherTempRoot "LocalPlayer.Launcher.exe"
+$launcherExe = Join-Path $launcherTempRoot "AniNest.Launcher.exe"
 if (-not (Test-Path $launcherExe)) {
-    throw "LocalPlayer.Launcher.exe not found after build."
+    throw "AniNest.Launcher.exe not found after build."
 }
 Copy-Item -LiteralPath $launcherExe -Destination $launcherOut -Force
 Remove-PathIfExists $launcherTempRoot

@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0-windows</TargetFramework>
+    <AssemblyName>AniNest.Tests</AssemblyName>
+    <RootNamespace>LocalPlayer.Tests</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
@@ -21,8 +23,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\LocalPlayer\LocalPlayer.csproj" />
-    <ProjectReference Include="..\Launcher\LocalPlayer.Launcher.csproj" />
+    <ProjectReference Include="..\LocalPlayer\AniNest.csproj" />
+    <ProjectReference Include="..\Launcher\AniNest.Launcher.csproj" />
   </ItemGroup>
 
 </Project>

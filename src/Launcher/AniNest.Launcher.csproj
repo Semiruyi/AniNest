@@ -5,7 +5,8 @@
     <TargetFramework>net9.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>LocalPlayer.Launcher</AssemblyName>
+    <AssemblyName>AniNest.Launcher</AssemblyName>
+    <Product>AniNest Launcher</Product>
     <RootNamespace>LocalPlayer.Launcher</RootNamespace>
     <SelfContained>true</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>

@@ -3,6 +3,8 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0-windows</TargetFramework>
+    <AssemblyName>AniNest</AssemblyName>
+    <Product>AniNest</Product>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
@@ -20,7 +22,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="LocalPlayer.Tests" />
+    <InternalsVisibleTo Include="AniNest.Tests" />
   </ItemGroup>
 
   <ItemGroup>

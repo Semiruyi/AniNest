@@ -77,7 +77,7 @@ public sealed class PatchApplier
             }
         }
 
-        var exePath = Path.Combine(_appDirectory, "LocalPlayer.exe");
+        var exePath = Path.Combine(_appDirectory, "AniNest.exe");
         if (File.Exists(exePath))
         {
             try

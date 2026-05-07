@@ -47,7 +47,7 @@ internal static class Program
     private static int LaunchApp(string root)
     {
         var appDirectory = LauncherPaths.ResolveAppDirectory(root);
-        var exePath = Path.Combine(appDirectory, "LocalPlayer.exe");
+        var exePath = Path.Combine(appDirectory, "AniNest.exe");
         if (!File.Exists(exePath))
         {
             Console.Error.WriteLine($"App not found. Resolved app directory: {appDirectory}");

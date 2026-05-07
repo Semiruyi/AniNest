@@ -1,8 +1,8 @@
 <Project>
   <PropertyGroup>
-    <BaseOutputPath>$(MSBuildThisFileDirectory)..\..\artifacts\LocalPlayer.Launcher\bin\</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)..\..\artifacts\LocalPlayer.Launcher\obj\</BaseIntermediateOutputPath>
-    <MSBuildProjectExtensionsPath>$(MSBuildThisFileDirectory)..\..\artifacts\LocalPlayer.Launcher\obj\</MSBuildProjectExtensionsPath>
-    <ProjectAssetsFile>$(MSBuildThisFileDirectory)..\..\artifacts\LocalPlayer.Launcher\obj\project.assets.json</ProjectAssetsFile>
+    <BaseOutputPath>$(MSBuildThisFileDirectory)..\..\artifacts\AniNest.Launcher\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)..\..\artifacts\AniNest.Launcher\obj\</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(MSBuildThisFileDirectory)..\..\artifacts\AniNest.Launcher\obj\</MSBuildProjectExtensionsPath>
+    <ProjectAssetsFile>$(MSBuildThisFileDirectory)..\..\artifacts\AniNest.Launcher\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
 </Project>

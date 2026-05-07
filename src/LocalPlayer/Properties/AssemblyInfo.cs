@@ -1,3 +1,3 @@
 using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("LocalPlayer.Tests")]
+[assembly: InternalsVisibleTo("AniNest.Tests")]

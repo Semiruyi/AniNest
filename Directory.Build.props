@@ -1,5 +1,5 @@
 <Project>
-  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'LocalPlayer' Or '$(MSBuildProjectName)' == 'LocalPlayer.Tests'">
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'AniNest' Or '$(MSBuildProjectName)' == 'AniNest.Tests'">
     <ArtifactsRoot>$(MSBuildThisFileDirectory)artifacts\$(MSBuildProjectName)\</ArtifactsRoot>
     <BaseOutputPath>$(ArtifactsRoot)bin\</BaseOutputPath>
     <BaseIntermediateOutputPath>$(ArtifactsRoot)obj\</BaseIntermediateOutputPath>
