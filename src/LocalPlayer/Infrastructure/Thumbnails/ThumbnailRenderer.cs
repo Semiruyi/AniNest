@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Paths;
 using LocalPlayer.Infrastructure.Persistence;
@@ -79,6 +80,10 @@ internal class ThumbnailRenderer
         {
             ct.ThrowIfCancellationRequested();
             process.Start();
+            Log.Info(MemorySnapshot.Capture("ThumbnailRenderer.GenerateAsync.process-start",
+                ("file", Path.GetFileName(task.VideoPath)),
+                ("pid", process.Id),
+                ("tmpDir", Path.GetFileName(tmpDir))));
 
             int lastPercent = -1;
             var stderrTask = Task.Run(() =>
@@ -117,6 +122,10 @@ internal class ThumbnailRenderer
                 $"stderrTask 瀹屾垚, PID={process.Id}");
 
             int exitCode = process.ExitCode;
+            Log.Info(MemorySnapshot.Capture("ThumbnailRenderer.GenerateAsync.process-exit",
+                ("file", Path.GetFileName(task.VideoPath)),
+                ("pid", process.Id),
+                ("exitCode", exitCode)));
             Log.Info(
                 $"ffmpeg 閫€鍑? ExitCode={exitCode}, 瑙嗛={Path.GetFileName(task.VideoPath)}");
 
@@ -132,6 +141,10 @@ internal class ThumbnailRenderer
 
                 Log.Info(
                     $"Completed: {Path.GetFileName(task.VideoPath)}, {frameCount} frames");
+                Log.Info(MemorySnapshot.Capture("ThumbnailRenderer.GenerateAsync.completed",
+                    ("file", Path.GetFileName(task.VideoPath)),
+                    ("pid", process.Id),
+                    ("frames", frameCount)));
                 return new RenderResult(ThumbnailState.Ready, frameCount);
             }
             else

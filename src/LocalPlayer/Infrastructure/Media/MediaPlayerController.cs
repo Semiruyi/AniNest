@@ -28,6 +28,9 @@ public class MediaPlayerController : IMediaPlayerController
     private VideoFrameProvider? frameProvider;
     private LibVlcMedia? currentMedia;
     private DispatcherTimer? updateTimer;
+    private readonly EventHandler<EventArgs> _playingHandler;
+    private readonly EventHandler<EventArgs> _pausedHandler;
+    private readonly EventHandler<EventArgs> _stoppedHandler;
     private PerfSpan? _playToPlayingSpan;
     private PerfSpan? _playToFirstFrameSpan;
     private PerfSpan? _playToFirstLockSpan;
@@ -50,6 +53,19 @@ public class MediaPlayerController : IMediaPlayerController
     public event EventHandler? Paused;
     public event EventHandler? Stopped;
     public event EventHandler<ProgressUpdatedEventArgs>? ProgressUpdated;
+
+    public MediaPlayerController()
+    {
+        _playingHandler = (_, _) =>
+        {
+            Log.Info("Playing event raised");
+            _playToPlayingSpan?.Dispose();
+            _playToPlayingSpan = null;
+            Playing?.Invoke(this, EventArgs.Empty);
+        };
+        _pausedHandler = (_, _) => Paused?.Invoke(this, EventArgs.Empty);
+        _stoppedHandler = (_, _) => Stopped?.Invoke(this, EventArgs.Empty);
+    }
 
     private static Task<LibVLC> GetOrStartPreinitializationTask()
     {
@@ -84,17 +100,7 @@ public class MediaPlayerController : IMediaPlayerController
                 vlc = GetOrStartPreinitializationTask().GetAwaiter().GetResult();
             }
             libVLC = vlc;
-
-            mediaPlayer = new MediaPlayer(libVLC);
-
-            frameProvider = new VideoFrameProvider();
-            frameProvider.AttachToPlayer(mediaPlayer);
-            frameProvider.FramePresented += OnFramePresented;
-            frameProvider.FirstFrameLocked += OnFirstFrameLocked;
-            frameProvider.FirstFrameUnlocked += OnFirstFrameUnlocked;
-            frameProvider.FirstFrameDisplayQueued += OnFirstFrameDisplayQueued;
-            Log.Info("VideoFrameProvider attached to MediaPlayer");
-            Log.Info($"Initialize complete: VideoBitmap={(frameProvider.Bitmap == null ? "null" : "ready")}");
+            EnsurePlaybackSession();
             Log.Info(MemorySnapshot.Capture("MediaPlayerController.Initialize",
                 ("mediaPlayer", mediaPlayer != null),
                 ("frameProvider", frameProvider != null),
@@ -106,24 +112,6 @@ public class MediaPlayerController : IMediaPlayerController
             Log.Error("Initialization failed", ex);
             throw;
         }
-
-        var player = mediaPlayer ?? throw new InvalidOperationException("MediaPlayer initialization completed without an instance.");
-
-        player.Playing += (s, e) =>
-        {
-            Log.Info("Playing event raised");
-            _playToPlayingSpan?.Dispose();
-            _playToPlayingSpan = null;
-            Playing?.Invoke(this, EventArgs.Empty);
-        };
-        player.Paused += (s, e) => Paused?.Invoke(this, EventArgs.Empty);
-        player.Stopped += (s, e) => Stopped?.Invoke(this, EventArgs.Empty);
-
-        updateTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
-        updateTimer.Tick += UpdateTimer_Tick;
-        updateTimer.Start();
-
-        Log.Info("VLC initialized");
     }
 
     public Task WarmupAsync()
@@ -143,6 +131,7 @@ public class MediaPlayerController : IMediaPlayerController
     public void Play(string filePath, long startTimeMs = 0)
     {
         Log.Info($"Play called: {filePath}, startTimeMs={startTimeMs}");
+        EnsurePlaybackSession();
         if (mediaPlayer == null || libVLC == null)
         {
             Log.Info($"Play returned early: mediaPlayer={mediaPlayer}, libVLC={libVLC}");
@@ -233,11 +222,8 @@ public class MediaPlayerController : IMediaPlayerController
         _playToFirstDisplayQueuedSpan?.Dispose();
         _playToFirstDisplayQueuedSpan = null;
 
-        mediaPlayer?.Stop();
-        ReleaseCurrentMedia();
         CurrentFilePath = null;
-        frameProvider?.BeginFrameObservation(null);
-        frameProvider?.ClearBitmap();
+        RecreatePlaybackSession();
         Log.Info(MemorySnapshot.Capture("MediaPlayerController.ResetSession.end",
             ("hasCurrentMedia", currentMedia != null),
             ("currentFile", Path.GetFileName(CurrentFilePath)),
@@ -289,18 +275,7 @@ public class MediaPlayerController : IMediaPlayerController
         updateTimer?.Stop();
         updateTimer = null;
 
-        frameProvider?.Dispose();
-        if (frameProvider != null)
-        {
-            frameProvider.FramePresented -= OnFramePresented;
-            frameProvider.FirstFrameLocked -= OnFirstFrameLocked;
-            frameProvider.FirstFrameUnlocked -= OnFirstFrameUnlocked;
-            frameProvider.FirstFrameDisplayQueued -= OnFirstFrameDisplayQueued;
-        }
-        mediaPlayer?.Stop();
-        ReleaseCurrentMedia();
-        mediaPlayer?.Dispose();
-        mediaPlayer = null;
+        DestroyPlaybackSession(clearBitmap: true, disposeFrameProvider: true);
 
         libVLC = null;
         Log.Info(MemorySnapshot.Capture("MediaPlayerController.Dispose.end",
@@ -345,6 +320,88 @@ public class MediaPlayerController : IMediaPlayerController
         }
         currentMedia?.Dispose();
         currentMedia = null;
+    }
+
+    private void EnsurePlaybackSession()
+    {
+        if (libVLC == null)
+            return;
+
+        if (mediaPlayer != null && frameProvider != null)
+            return;
+
+        mediaPlayer = new MediaPlayer(libVLC);
+        mediaPlayer.Playing += _playingHandler;
+        mediaPlayer.Paused += _pausedHandler;
+        mediaPlayer.Stopped += _stoppedHandler;
+
+        frameProvider ??= CreateFrameProvider();
+        frameProvider.AttachToPlayer(mediaPlayer);
+
+        EnsureUpdateTimer();
+
+        Log.Info("VideoFrameProvider attached to MediaPlayer");
+        Log.Info($"Playback session created: VideoBitmap={(frameProvider.Bitmap == null ? "null" : "ready")}");
+        Log.Info("VLC initialized");
+    }
+
+    private void RecreatePlaybackSession()
+    {
+        DestroyPlaybackSession(clearBitmap: true, disposeFrameProvider: false);
+        EnsurePlaybackSession();
+    }
+
+    private void DestroyPlaybackSession(bool clearBitmap, bool disposeFrameProvider)
+    {
+        if (clearBitmap)
+            frameProvider?.ClearBitmap();
+
+        if (disposeFrameProvider && frameProvider != null)
+        {
+            frameProvider.FramePresented -= OnFramePresented;
+            frameProvider.FirstFrameLocked -= OnFirstFrameLocked;
+            frameProvider.FirstFrameUnlocked -= OnFirstFrameUnlocked;
+            frameProvider.FirstFrameDisplayQueued -= OnFirstFrameDisplayQueued;
+        }
+
+        frameProvider?.BeginFrameObservation(null);
+        if (disposeFrameProvider)
+        {
+            frameProvider?.Dispose();
+            frameProvider = null;
+        }
+
+        if (mediaPlayer != null)
+        {
+            mediaPlayer.Playing -= _playingHandler;
+            mediaPlayer.Paused -= _pausedHandler;
+            mediaPlayer.Stopped -= _stoppedHandler;
+            mediaPlayer.Stop();
+        }
+
+        ReleaseCurrentMedia();
+        mediaPlayer?.Dispose();
+        mediaPlayer = null;
+    }
+
+    private void EnsureUpdateTimer()
+    {
+        if (updateTimer != null)
+            return;
+
+        updateTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        updateTimer.Tick += UpdateTimer_Tick;
+        updateTimer.Start();
+    }
+
+    private VideoFrameProvider CreateFrameProvider()
+    {
+        var provider = new VideoFrameProvider();
+        provider.FramePresented += OnFramePresented;
+        provider.FirstFrameLocked += OnFirstFrameLocked;
+        provider.FirstFrameUnlocked += OnFirstFrameUnlocked;
+        provider.FirstFrameDisplayQueued += OnFirstFrameDisplayQueued;
+        return provider;
     }
 }
 

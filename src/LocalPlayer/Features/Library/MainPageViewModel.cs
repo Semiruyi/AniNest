@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalPlayer.Features.Library.Models;
 using LocalPlayer.Features.Library.Services;
+using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Infrastructure.Localization;
 using LocalPlayer.Infrastructure.Thumbnails;
 
@@ -14,6 +15,7 @@ namespace LocalPlayer.Features.Library;
 
 public partial class MainPageViewModel : ObservableObject
 {
+    private static readonly Infrastructure.Logging.Logger Log = Infrastructure.Logging.AppLog.For<MainPageViewModel>();
     private readonly ILibraryAppService _libraryService;
     private readonly ILocalizationService _loc;
     private readonly EventHandler<ThumbnailProgressEventArgs> _thumbnailProgressChangedHandler;
@@ -77,6 +79,9 @@ public partial class MainPageViewModel : ObservableObject
             foreach (var item in loadedItems)
                 FolderItems.Add(CreateFolderItem(item));
 
+            Log.Info(MemorySnapshot.Capture("MainPageViewModel.LoadDataAsync.loaded",
+                ("items", FolderItems.Count),
+                ("withCover", CountItemsWithCover())));
             _dataLoaded = true;
             LoadDataCompleted?.Invoke(this, EventArgs.Empty);
         }
@@ -181,6 +186,11 @@ public partial class MainPageViewModel : ObservableObject
 
     private void OnThumbnailProgressChanged(object? sender, ThumbnailProgressEventArgs args)
     {
+        Log.Info(MemorySnapshot.Capture("MainPageViewModel.ThumbnailProgressChanged",
+            ("ready", args.Ready),
+            ("total", args.Total),
+            ("items", FolderItems.Count),
+            ("withCover", CountItemsWithCover())));
         Application.Current.Dispatcher.BeginInvoke(() => UpdateThumbnailProgress(args.Ready, args.Total));
     }
 
@@ -195,5 +205,17 @@ public partial class MainPageViewModel : ObservableObject
         cancellationTokenSource?.Cancel();
         cancellationTokenSource?.Dispose();
         cancellationTokenSource = null;
+    }
+
+    private int CountItemsWithCover()
+    {
+        int count = 0;
+        foreach (var item in FolderItems)
+        {
+            if (!string.IsNullOrWhiteSpace(item.CoverPath))
+                count++;
+        }
+
+        return count;
     }
 }

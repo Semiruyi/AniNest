@@ -12,6 +12,7 @@ namespace LocalPlayer.Features.Library;
 
 public partial class MainPage : System.Windows.Controls.UserControl
 {
+    private static readonly Logger Log = AppLog.For<MainPage>();
     private PerfSceneSession? _initialLoadScene;
     private MainPageViewModel? _viewModel;
     private bool _initialLoadCompleted;
@@ -33,6 +34,9 @@ public partial class MainPage : System.Windows.Controls.UserControl
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         SyncViewModel();
+        Log.Info(MemorySnapshot.Capture("MainPage.Loaded",
+            ("items", _viewModel?.FolderItems.Count ?? 0),
+            ("loadedScene", _initialLoadScene != null)));
 
         if (_initialLoadScene != null)
             return;
@@ -49,6 +53,9 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
+        Log.Info(MemorySnapshot.Capture("MainPage.Unloaded",
+            ("items", _viewModel?.FolderItems.Count ?? 0),
+            ("initialLoadCompleted", _initialLoadCompleted)));
         CompositionTarget.Rendering -= OnRendering;
 
         if (_viewModel != null)
@@ -79,6 +86,8 @@ public partial class MainPage : System.Windows.Controls.UserControl
     {
         _initialLoadCompleted = true;
         _renderFramesAfterLoadCompleted = 0;
+        Log.Info(MemorySnapshot.Capture("MainPage.LoadDataCompleted",
+            ("items", _viewModel?.FolderItems.Count ?? 0)));
     }
 
     private void OnRendering(object? sender, EventArgs e)
