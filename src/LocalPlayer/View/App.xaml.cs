@@ -6,6 +6,7 @@ using LocalPlayer.Features.Library;
 using LocalPlayer.Features.Player;
 using LocalPlayer.Features.Shell;
 using LocalPlayer.Infrastructure.Localization;
+using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Media;
 using LocalPlayer.Infrastructure.Persistence;
@@ -36,6 +37,7 @@ public partial class App : Application
             provider.GetRequiredService<MainPageViewModel>().Cleanup();
             provider.GetRequiredService<ISettingsService>().Save();
             provider.Dispose();
+            PerfLogger.Shutdown(TimeSpan.FromSeconds(1));
             AppLog.Shutdown(TimeSpan.FromSeconds(1));
         };
 
