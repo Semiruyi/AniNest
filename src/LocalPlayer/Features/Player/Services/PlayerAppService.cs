@@ -106,28 +106,20 @@ public sealed class PlayerAppService : IPlayerAppService
 
     public Task BeginLeavePlayerAsync()
     {
-        Log.Info(MemorySnapshot.Capture("PlayerAppService.BeginLeavePlayer.begin",
-            ("loadGeneration", _loadGeneration),
-            ("loadedGeneration", _loadedGeneration),
-            ("activatedGeneration", _activatedGeneration),
-            ("pendingGeneration", _pendingActivationGeneration),
-            ("items", _session.PlaylistItems.Count),
-            ("currentIndex", _session.CurrentIndex),
-            ("pageVisible", _isPlayerPageVisible)));
+        Log.Info(
+            $"BeginLeavePlayer: loadGeneration={_loadGeneration}, loadedGeneration={_loadedGeneration}, " +
+            $"activatedGeneration={_activatedGeneration}, pendingGeneration={_pendingActivationGeneration}, " +
+            $"items={_session.PlaylistItems.Count}, currentIndex={_session.CurrentIndex}, pageVisible={_isPlayerPageVisible}");
         _isLeavingPlayer = true;
         _isPlayerPageVisible = false;
         _pendingActivationGeneration = 0;
         _activatedGeneration = 0;
         CancelAndDispose(ref _loadCts);
-        Log.Info(MemorySnapshot.Capture("PlayerAppService.BeginLeavePlayer.end",
-            ("loadGeneration", _loadGeneration),
-            ("loadedGeneration", _loadedGeneration),
-            ("activatedGeneration", _activatedGeneration),
-            ("pendingGeneration", _pendingActivationGeneration),
-            ("items", _session.PlaylistItems.Count),
-            ("currentIndex", _session.CurrentIndex),
-            ("pageVisible", _isPlayerPageVisible),
-            ("isLeavingPlayer", _isLeavingPlayer)));
+        Log.Info(
+            $"BeginLeavePlayer done: loadGeneration={_loadGeneration}, loadedGeneration={_loadedGeneration}, " +
+            $"activatedGeneration={_activatedGeneration}, pendingGeneration={_pendingActivationGeneration}, " +
+            $"items={_session.PlaylistItems.Count}, currentIndex={_session.CurrentIndex}, " +
+            $"pageVisible={_isPlayerPageVisible}, isLeavingPlayer={_isLeavingPlayer}");
         return _taskbarAutoHide.LeavePlayerPageAsync();
     }
 
@@ -141,15 +133,11 @@ public sealed class PlayerAppService : IPlayerAppService
 
         var totalStopwatch = Stopwatch.StartNew();
 
-        Log.Info(MemorySnapshot.Capture("PlayerAppService.CompleteLeavePlayerTransition.begin",
-            ("loadGeneration", _loadGeneration),
-            ("loadedGeneration", _loadedGeneration),
-            ("activatedGeneration", _activatedGeneration),
-            ("pendingGeneration", _pendingActivationGeneration),
-            ("items", _session.PlaylistItems.Count),
-            ("currentIndex", _session.CurrentIndex),
-            ("pageVisible", _isPlayerPageVisible),
-            ("isLeavingPlayer", _isLeavingPlayer)));
+        Log.Info(
+            $"CompleteLeavePlayerTransition begin: loadGeneration={_loadGeneration}, loadedGeneration={_loadedGeneration}, " +
+            $"activatedGeneration={_activatedGeneration}, pendingGeneration={_pendingActivationGeneration}, " +
+            $"items={_session.PlaylistItems.Count}, currentIndex={_session.CurrentIndex}, " +
+            $"pageVisible={_isPlayerPageVisible}, isLeavingPlayer={_isLeavingPlayer}");
 
         var resetStopwatch = Stopwatch.StartNew();
         _playback.ResetSession();
@@ -157,15 +145,11 @@ public sealed class PlayerAppService : IPlayerAppService
         _isLeavingPlayer = false;
         totalStopwatch.Stop();
 
-        Log.Info(MemorySnapshot.Capture("PlayerAppService.CompleteLeavePlayerTransition.end",
-            ("loadGeneration", _loadGeneration),
-            ("loadedGeneration", _loadedGeneration),
-            ("activatedGeneration", _activatedGeneration),
-            ("pendingGeneration", _pendingActivationGeneration),
-            ("items", _session.PlaylistItems.Count),
-            ("currentIndex", _session.CurrentIndex),
-            ("pageVisible", _isPlayerPageVisible),
-            ("isLeavingPlayer", _isLeavingPlayer)));
+        Log.Info(
+            $"CompleteLeavePlayerTransition end: loadGeneration={_loadGeneration}, loadedGeneration={_loadedGeneration}, " +
+            $"activatedGeneration={_activatedGeneration}, pendingGeneration={_pendingActivationGeneration}, " +
+            $"items={_session.PlaylistItems.Count}, currentIndex={_session.CurrentIndex}, " +
+            $"pageVisible={_isPlayerPageVisible}, isLeavingPlayer={_isLeavingPlayer}");
 
         Log.Info(
             $"CompleteLeavePlayerTransition timing: playbackReset={resetStopwatch.Elapsed.TotalMilliseconds:F3}ms, " +
