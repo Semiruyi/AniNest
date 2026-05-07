@@ -26,6 +26,7 @@ public class MediaPlayerController : IMediaPlayerController
     private LibVLC? libVLC;
     private MediaPlayer? mediaPlayer;
     private VideoFrameProvider? frameProvider;
+    private LibVlcMedia? currentMedia;
     private DispatcherTimer? updateTimer;
     private PerfSpan? _playToPlayingSpan;
     private PerfSpan? _playToFirstFrameSpan;
@@ -160,12 +161,14 @@ public class MediaPlayerController : IMediaPlayerController
         _playToFirstUnlockSpan = PerfSpan.Begin("Media.PlayToFirstFrameUnlock", tags);
         _playToFirstDisplayQueuedSpan = PerfSpan.Begin("Media.PlayToFirstFrameDisplayQueued", tags);
 
-        var media = new LibVlcMedia(libVLC, filePath);
+        ReleaseCurrentMedia();
+
+        currentMedia = new LibVlcMedia(libVLC, filePath);
         if (startTimeMs > 0)
         {
-            media.AddOption($":start-time={startTimeMs / 1000.0:F1}");
+            currentMedia.AddOption($":start-time={startTimeMs / 1000.0:F1}");
         }
-        bool result = mediaPlayer.Play(media);
+        bool result = mediaPlayer.Play(currentMedia);
         Log.Info($"mediaPlayer.Play returned: {result}");
         Log.Info($"After Play: IsPlaying={mediaPlayer.IsPlaying}, Time={mediaPlayer.Time}, Length={mediaPlayer.Length}");
     }
@@ -190,6 +193,27 @@ public class MediaPlayerController : IMediaPlayerController
     {
         Log.Info("Stop called");
         mediaPlayer?.Stop();
+    }
+
+    public void ResetSession()
+    {
+        Log.Info("ResetSession called");
+        _playToPlayingSpan?.Dispose();
+        _playToPlayingSpan = null;
+        _playToFirstFrameSpan?.Dispose();
+        _playToFirstFrameSpan = null;
+        _playToFirstLockSpan?.Dispose();
+        _playToFirstLockSpan = null;
+        _playToFirstUnlockSpan?.Dispose();
+        _playToFirstUnlockSpan = null;
+        _playToFirstDisplayQueuedSpan?.Dispose();
+        _playToFirstDisplayQueuedSpan = null;
+
+        mediaPlayer?.Stop();
+        ReleaseCurrentMedia();
+        CurrentFilePath = null;
+        frameProvider?.BeginFrameObservation(null);
+        frameProvider?.ClearBitmap();
     }
 
     public void SeekForward(long milliseconds)
@@ -241,6 +265,7 @@ public class MediaPlayerController : IMediaPlayerController
             frameProvider.FirstFrameDisplayQueued -= OnFirstFrameDisplayQueued;
         }
         mediaPlayer?.Stop();
+        ReleaseCurrentMedia();
         mediaPlayer?.Dispose();
         mediaPlayer = null;
 
@@ -272,6 +297,12 @@ public class MediaPlayerController : IMediaPlayerController
     {
         _playToFirstDisplayQueuedSpan?.Dispose();
         _playToFirstDisplayQueuedSpan = null;
+    }
+
+    private void ReleaseCurrentMedia()
+    {
+        currentMedia?.Dispose();
+        currentMedia = null;
     }
 }
 

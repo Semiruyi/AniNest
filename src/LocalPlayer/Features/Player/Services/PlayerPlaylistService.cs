@@ -45,6 +45,9 @@ public sealed class PlayerPlaylistService : IPlayerPlaylistService
     public void SaveProgress()
         => Playlist.SaveProgress();
 
+    public void ResetSession()
+        => Playlist.ResetSession();
+
     public void Cleanup()
         => Playlist.Cleanup();
 }

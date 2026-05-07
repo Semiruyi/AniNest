@@ -24,6 +24,7 @@ public interface IMediaPlayerController : IDisposable
     void Play(string filePath, long startTimeMs = 0);
     void TogglePlayPause();
     void Stop();
+    void ResetSession();
     void SeekForward(long milliseconds);
     void SeekBackward(long milliseconds);
     void SeekTo(long time);

@@ -145,6 +145,15 @@ public partial class PlaylistViewModel : ObservableObject
         SetCurrentIndex(_playlistManager.CurrentIndex, force: true);
     }
 
+    public void ResetSession()
+    {
+        _playlistManager.ResetSession();
+        CurrentFolderName = string.Empty;
+        EpisodeCountText = string.Empty;
+        IsVisible = true;
+        SetCurrentIndex(-1, force: true);
+    }
+
     public void Cleanup()
     {
         if (_videoPlayedHandler != null)

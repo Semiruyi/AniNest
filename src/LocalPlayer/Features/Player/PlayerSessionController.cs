@@ -67,6 +67,13 @@ public partial class PlayerSessionController : ObservableObject
     public void SaveProgress()
         => _playlistService.SaveProgress();
 
+    public void ResetSession()
+    {
+        _playlistService.ResetSession();
+        CurrentVideoPath = null;
+        SyncCurrentIndex();
+    }
+
     public void Cleanup()
     {
         if (_isCleanedUp)

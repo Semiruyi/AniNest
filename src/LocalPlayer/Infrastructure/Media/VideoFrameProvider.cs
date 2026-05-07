@@ -16,6 +16,7 @@ public class VideoFrameProvider : IDisposable
     private readonly int _width;
     private readonly int _height;
     private readonly int _stride;
+    private readonly byte[] _blankFrame;
     private WriteableBitmap? _bitmap;
     private readonly byte[][] _buffers;
     private int _bufferIndex;
@@ -40,6 +41,7 @@ public class VideoFrameProvider : IDisposable
         _height = height;
         _stride = width * 4;
         _bitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Bgra32, null);
+        _blankFrame = new byte[width * height * 4];
         _buffers = new byte[2][];
         for (int i = 0; i < 2; i++)
             _buffers[i] = new byte[width * height * 4];
@@ -64,6 +66,24 @@ public class VideoFrameProvider : IDisposable
             _firstDisplayObserved = false;
             _firstPresentedObserved = false;
         }
+    }
+
+    public void ClearBitmap()
+    {
+        var application = Application.Current;
+        if (application?.Dispatcher == null)
+        {
+            ClearBitmapCore();
+            return;
+        }
+
+        if (application.Dispatcher.CheckAccess())
+        {
+            ClearBitmapCore();
+            return;
+        }
+
+        application.Dispatcher.Invoke(ClearBitmapCore);
     }
 
     private IntPtr VideoLock(IntPtr opaque, IntPtr planes)
@@ -130,7 +150,7 @@ public class VideoFrameProvider : IDisposable
                 _firstDisplayObserved = true;
         }
 
-        if (readyBuf == null || _bitmap == null) return;
+        if (readyBuf == null) return;
         Log.Debug("VideoDisplay: frame ready");
 
         if (isFirstDisplay)
@@ -139,7 +159,6 @@ public class VideoFrameProvider : IDisposable
             FirstFrameDisplayQueued?.Invoke(this, EventArgs.Empty);
         }
 
-        var wb = _bitmap;
         var w = _width;
         var h = _height;
         var stride = _stride;
@@ -151,6 +170,9 @@ public class VideoFrameProvider : IDisposable
         {
             try
             {
+                var wb = _bitmap;
+                if (wb == null)
+                    return;
                 wb.WritePixels(new Int32Rect(0, 0, w, h), readyBuf, stride, 0);
                 if (isFirstDisplay && !_firstPresentedObserved)
                 {
@@ -164,6 +186,20 @@ public class VideoFrameProvider : IDisposable
                 dispatchSpan?.Dispose();
             }
         }, DispatcherPriority.Render);
+    }
+
+    private void ClearBitmapCore()
+    {
+        lock (_lock)
+        {
+            _readyBuffer = null;
+        }
+
+        var wb = _bitmap;
+        if (wb == null)
+            return;
+
+        wb.WritePixels(new Int32Rect(0, 0, _width, _height), _blankFrame, _stride, 0);
     }
 
     private IReadOnlyDictionary<string, string>? CreateObservationTags()

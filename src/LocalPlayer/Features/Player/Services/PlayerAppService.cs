@@ -1,6 +1,7 @@
 using LocalPlayer.Infrastructure.Interop;
 using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Infrastructure.Logging;
+using LocalPlayer.Infrastructure.Media;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -11,6 +12,8 @@ public sealed class PlayerAppService : IPlayerAppService
     private static readonly Logger Log = AppLog.For<PlayerAppService>();
     private readonly ITaskbarAutoHideCoordinator _taskbarAutoHide;
     private readonly PlayerSessionController _session;
+    private readonly PlayerPlaybackStateController _playback;
+    private readonly IMediaPlayerController _media;
     private CancellationTokenSource? _loadCts;
     private long _loadGeneration;
     private long _loadedGeneration;
@@ -21,10 +24,14 @@ public sealed class PlayerAppService : IPlayerAppService
 
     public PlayerAppService(
         ITaskbarAutoHideCoordinator taskbarAutoHide,
-        PlayerSessionController session)
+        PlayerSessionController session,
+        PlayerPlaybackStateController playback,
+        IMediaPlayerController media)
     {
         _taskbarAutoHide = taskbarAutoHide;
         _session = session;
+        _playback = playback;
+        _media = media;
     }
 
     public async Task EnterPlayerAsync(string animationCode, string path, string name)
@@ -85,6 +92,11 @@ public sealed class PlayerAppService : IPlayerAppService
     {
         _isPlayerPageVisible = false;
         _pendingActivationGeneration = 0;
+        _activatedGeneration = 0;
+        CancelAndDispose(ref _loadCts);
+        _media.ResetSession();
+        _session.ResetSession();
+        _playback.ResetSession();
         return _taskbarAutoHide.LeavePlayerPageAsync();
     }
 

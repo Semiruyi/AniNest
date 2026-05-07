@@ -282,6 +282,16 @@ public class PlaylistManager
             }
         }
     }
+
+    public void ResetSession()
+    {
+        _preloadTask = null;
+        CurrentFolderPath = string.Empty;
+        CurrentFolderName = string.Empty;
+        VideoFiles = Array.Empty<string>();
+        Items.Clear();
+        CurrentIndex = -1;
+    }
 }
 
 

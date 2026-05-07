@@ -86,6 +86,19 @@ public partial class PlayerPlaybackStateController : ObservableObject
         RefreshVideoSource();
     }
 
+    public void ResetSession()
+    {
+        IsPlaying = false;
+        CurrentTime = 0;
+        TotalTime = 0;
+        CurrentTimeText = "00:00";
+        TotalTimeText = "00:00";
+        BufferedPosition = 0;
+        IsSeeking = false;
+        CurrentVideoPath = null;
+        RefreshVideoSource();
+    }
+
     public void UpdateProgress(ProgressUpdatedEventArgs args)
     {
         if (IsSeeking)

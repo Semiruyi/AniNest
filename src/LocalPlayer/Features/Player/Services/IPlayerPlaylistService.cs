@@ -15,5 +15,6 @@ public interface IPlayerPlaylistService
     bool PlayNext();
     bool PlayPrevious();
     void SaveProgress();
+    void ResetSession();
     void Cleanup();
 }
