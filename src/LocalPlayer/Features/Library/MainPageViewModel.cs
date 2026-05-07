@@ -186,11 +186,6 @@ public partial class MainPageViewModel : ObservableObject
 
     private void OnThumbnailProgressChanged(object? sender, ThumbnailProgressEventArgs args)
     {
-        Log.Info(MemorySnapshot.Capture("MainPageViewModel.ThumbnailProgressChanged",
-            ("ready", args.Ready),
-            ("total", args.Total),
-            ("items", FolderItems.Count),
-            ("withCover", CountItemsWithCover())));
         Application.Current.Dispatcher.BeginInvoke(() => UpdateThumbnailProgress(args.Ready, args.Total));
     }
 

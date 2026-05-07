@@ -189,14 +189,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         EnsureLoopRunning();
 
         sw.Stop();
-        Log.Info(MemorySnapshot.Capture("ThumbnailGenerator.EnqueueFolder",
-            ("folder", Path.GetFileName(folderPath)),
-            ("videoFiles", videoFiles.Count),
-            ("added", added),
-            ("tasks", GetTaskCount()),
-            ("pending", CountTasksByState(ThumbnailState.Pending)),
-            ("generating", CountTasksByState(ThumbnailState.Generating)),
-            ("ready", CountTasksByState(ThumbnailState.Ready))));
     }
 
     public void DeleteForFolder(string folderPath, IReadOnlyCollection<string>? videoFiles = null)
@@ -236,8 +228,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
                 t.MarkedForDeletionAt > 0 &&
                 t.VideoPath.StartsWith(folderPath, StringComparison.OrdinalIgnoreCase))
                 .Select(t => t.VideoPath);
-            foreach (var p in markedPaths)
-                Log.Info($"[DeleteForFolder] marked: {p}");
         }
     }
 
@@ -249,7 +239,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
                 task.State == ThumbnailState.Ready && task.MarkedForDeletionAt == 0)
             {
                 task.MarkedForDeletionAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                Log.Info($"[MarkForDeletion] {videoPath}");
             }
         }
     }
@@ -325,9 +314,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private async Task ProcessQueueLoop(CancellationToken ct)
     {
-        Log.Info("[ProcessLoop] waiting for initialization...");
         await _initTcs.Task;
-        Log.Info("[ProcessLoop] initialization completed, processing queue");
         while (!ct.IsCancellationRequested && !_isShuttingDown)
         {
             var task = DequeueNext();
@@ -357,13 +344,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private async Task GenerateForTask(ThumbnailTask task, CancellationToken ct)
     {
-        Log.Info(MemorySnapshot.Capture("ThumbnailGenerator.GenerateForTask.begin",
-            ("file", Path.GetFileName(task.VideoPath)),
-            ("state", task.State),
-            ("tasks", GetTaskCount()),
-            ("pending", CountTasksByState(ThumbnailState.Pending)),
-            ("generating", CountTasksByState(ThumbnailState.Generating)),
-            ("ready", CountTasksByState(ThumbnailState.Ready))));
         task.State = ThumbnailState.Generating;
         SaveIndex();
 
@@ -376,7 +356,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
                 task.State = ThumbnailState.Ready;
                 task.TotalFrames = result.FrameCount;
                 lock (_taskLock) { _readyCount++; }
-                Log.Debug($"VideoProgress(100%) + VideoReady: {Path.GetFileName(task.VideoPath)}, subscribed={VideoProgress != null}");
                 VideoProgress?.Invoke(task.VideoPath, 100);
                 VideoReady?.Invoke(task.VideoPath);
             }
@@ -400,14 +379,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             UpdateProgress();
             finallySw.Stop();
             Log.Info($"[GenerateForTask] finally completed in {finallySw.ElapsedMilliseconds}ms");
-            Log.Info(MemorySnapshot.Capture("ThumbnailGenerator.GenerateForTask.end",
-                ("file", Path.GetFileName(task.VideoPath)),
-                ("state", task.State),
-                ("totalFrames", task.TotalFrames),
-                ("tasks", GetTaskCount()),
-                ("pending", CountTasksByState(ThumbnailState.Pending)),
-                ("generating", CountTasksByState(ThumbnailState.Generating)),
-                ("ready", CountTasksByState(ThumbnailState.Ready))));
         }
     }
 
@@ -579,15 +550,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             ready = _readyCount;
             total = _totalCount;
         }
-
-        Log.Info($"[Progress] {ready}/{total}");
-        Log.Info(MemorySnapshot.Capture("ThumbnailGenerator.UpdateProgress",
-            ("ready", ready),
-            ("total", total),
-            ("pending", CountTasksByState(ThumbnailState.Pending)),
-            ("generating", CountTasksByState(ThumbnailState.Generating)),
-            ("readyState", CountTasksByState(ThumbnailState.Ready)),
-            ("failed", CountTasksByState(ThumbnailState.Failed))));
 
         ProgressChanged?.Invoke(this, new ThumbnailProgressEventArgs { Ready = ready, Total = total });
     }

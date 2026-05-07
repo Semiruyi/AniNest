@@ -58,7 +58,6 @@ public class MediaPlayerController : IMediaPlayerController
     {
         _playingHandler = (_, _) =>
         {
-            Log.Info("Playing event raised");
             _playToPlayingSpan?.Dispose();
             _playToPlayingSpan = null;
             Playing?.Invoke(this, EventArgs.Empty);
@@ -130,15 +129,12 @@ public class MediaPlayerController : IMediaPlayerController
 
     public void Play(string filePath, long startTimeMs = 0)
     {
-        Log.Info($"Play called: {filePath}, startTimeMs={startTimeMs}");
         EnsurePlaybackSession();
         if (mediaPlayer == null || libVLC == null)
         {
-            Log.Info($"Play returned early: mediaPlayer={mediaPlayer}, libVLC={libVLC}");
             return;
         }
 
-        Log.Info($"Start playback: {Path.GetFileName(filePath)}");
         CurrentFilePath = filePath;
         frameProvider?.BeginFrameObservation(filePath);
         _playToPlayingSpan?.Dispose();
@@ -156,13 +152,6 @@ public class MediaPlayerController : IMediaPlayerController
         _playToFirstLockSpan = PerfSpan.Begin("Media.PlayToFirstFrameLock", tags);
         _playToFirstUnlockSpan = PerfSpan.Begin("Media.PlayToFirstFrameUnlock", tags);
         _playToFirstDisplayQueuedSpan = PerfSpan.Begin("Media.PlayToFirstFrameDisplayQueued", tags);
-        Log.Info(MemorySnapshot.Capture("MediaPlayerController.Play.before",
-            ("file", Path.GetFileName(filePath)),
-            ("hasCurrentMedia", currentMedia != null),
-            ("bitmap", frameProvider?.Bitmap != null),
-            ("time", mediaPlayer.Time),
-            ("length", mediaPlayer.Length)));
-
         ReleaseCurrentMedia();
 
         currentMedia = new LibVlcMedia(libVLC, filePath);
@@ -170,15 +159,7 @@ public class MediaPlayerController : IMediaPlayerController
         {
             currentMedia.AddOption($":start-time={startTimeMs / 1000.0:F1}");
         }
-        bool result = mediaPlayer.Play(currentMedia);
-        Log.Info($"mediaPlayer.Play returned: {result}");
-        Log.Info($"After Play: IsPlaying={mediaPlayer.IsPlaying}, Time={mediaPlayer.Time}, Length={mediaPlayer.Length}");
-        Log.Info(MemorySnapshot.Capture("MediaPlayerController.Play.after",
-            ("file", Path.GetFileName(filePath)),
-            ("playResult", result),
-            ("hasCurrentMedia", currentMedia != null),
-            ("bitmap", frameProvider?.Bitmap != null),
-            ("isPlaying", mediaPlayer.IsPlaying)));
+        mediaPlayer.Play(currentMedia);
     }
 
     public void TogglePlayPause()
@@ -187,19 +168,16 @@ public class MediaPlayerController : IMediaPlayerController
 
         if (mediaPlayer.IsPlaying)
         {
-            Log.Info("TogglePlayPause -> Pause");
             mediaPlayer.Pause();
         }
         else
         {
-            Log.Info("TogglePlayPause -> Play");
             mediaPlayer.Play();
         }
     }
 
     public void Stop()
     {
-        Log.Info("Stop called");
         mediaPlayer?.Stop();
     }
 
@@ -251,7 +229,6 @@ public class MediaPlayerController : IMediaPlayerController
     {
         if (mediaPlayer == null || mediaPlayer.Length <= 0) return;
         long target = Math.Max(0, Math.Min(mediaPlayer.Length, time));
-        Log.Debug($"SeekTo request={time} target={target} current={mediaPlayer.Time} length={mediaPlayer.Length} isPlaying={mediaPlayer.IsPlaying}");
         mediaPlayer.Time = target;
     }
 
@@ -340,9 +317,6 @@ public class MediaPlayerController : IMediaPlayerController
 
         EnsureUpdateTimer();
 
-        Log.Info("VideoFrameProvider attached to MediaPlayer");
-        Log.Info($"Playback session created: VideoBitmap={(frameProvider.Bitmap == null ? "null" : "ready")}");
-        Log.Info("VLC initialized");
     }
 
     private void RecreatePlaybackSession()

@@ -50,7 +50,6 @@ public class SettingsService : ISettingsService, IDisposable
         {
             if (settings != null)
             {
-                Log.Debug("Load: returning cached settings");
                 return settings;
             }
         }
@@ -62,9 +61,7 @@ public class SettingsService : ISettingsService, IDisposable
             if (File.Exists(settingsPath))
             {
                 string json = File.ReadAllText(settingsPath);
-                Log.Debug($"Load: read {settingsPath}, {json.Length} bytes, elapsed {sw.ElapsedMilliseconds}ms");
                 loaded = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
-                Log.Debug($"Load: deserialized, elapsed {sw.ElapsedMilliseconds}ms");
             }
             else
             {
@@ -99,11 +96,9 @@ public class SettingsService : ISettingsService, IDisposable
         {
             if (settings == null)
             {
-                Log.Debug("Save: settings is null, skipped");
                 return;
             }
 
-            Log.Debug("Save: begin");
             json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
         }
 

@@ -51,7 +51,6 @@ public class VideoFrameProvider : IDisposable
     {
         player.SetVideoFormat("BGRA", (uint)_width, (uint)_height, (uint)_stride);
         player.SetVideoCallbacks(VideoLock, VideoUnlock, VideoDisplay);
-        Log.Info($"AttachToPlayer: {_width}x{_height}, stride={_stride}");
     }
 
     public void BeginFrameObservation(string? filePath)
@@ -110,7 +109,6 @@ public class VideoFrameProvider : IDisposable
             _bufferHandle = GCHandle.Alloc(buf, GCHandleType.Pinned);
             ptr = _bufferHandle.AddrOfPinnedObject();
             Marshal.WriteIntPtr(planes, ptr);
-            Log.Debug($"VideoLock: bufferIndex={_bufferIndex}");
             if (!_firstLockObserved)
             {
                 _firstLockObserved = true;
@@ -135,7 +133,6 @@ public class VideoFrameProvider : IDisposable
             if (_bufferHandle.IsAllocated)
                 _bufferHandle.Free();
             _readyBuffer = _buffers[_bufferIndex];
-            Log.Debug($"VideoUnlock: bufferIndex={_bufferIndex}");
             if (!_firstUnlockObserved)
             {
                 _firstUnlockObserved = true;
@@ -164,8 +161,6 @@ public class VideoFrameProvider : IDisposable
         }
 
         if (readyBuf == null) return;
-        Log.Debug("VideoDisplay: frame ready");
-
         if (isFirstDisplay)
         {
             using var span = PerfSpan.Begin("VideoFrameProvider.FirstFrameDisplayQueued", CreateObservationTags());

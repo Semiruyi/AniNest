@@ -50,7 +50,6 @@ public partial class PlayerSessionController : ObservableObject
     {
         await _playlistService.LoadFolderDataAsync(cancellationToken);
         SyncCurrentIndex();
-        Log.Info($"After LoadFolderDataAsync sync: CurrentIndex={CurrentIndex}, CurrentVideoPath={CurrentVideoPath ?? "null"}");
     }
 
     public void ActivateCurrentVideo()
@@ -107,14 +106,12 @@ public partial class PlayerSessionController : ObservableObject
 
     private void OnPlaylistCurrentIndexChanged(int value)
     {
-        Log.Debug($"Playlist CurrentIndexChanged -> {value}");
         SyncCurrentIndex();
         OnCurrentIndexChangedValue(value);
     }
 
     private void OnPlaylistVideoPlayed(string filePath)
     {
-        Log.Info($"Playlist VideoPlayed -> {Path.GetFileName(filePath)}");
         CurrentVideoPath = filePath;
         CurrentVideoPathChanged?.Invoke(filePath);
     }

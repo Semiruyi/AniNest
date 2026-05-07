@@ -49,12 +49,7 @@ public sealed class PlayerThumbnailSyncService : IPlayerThumbnailSyncService
         Application.Current.Dispatcher.Invoke(() =>
         {
             if (_playlist == null)
-            {
-                Log.Debug($"VideoReady skipped (_playlist=null): {Path.GetFileName(path)}");
                 return;
-            }
-
-            Log.Debug($"VideoReady -> UpdateThumbnailReady: {Path.GetFileName(path)}");
             _playlist.UpdateThumbnailReady(path);
         });
     }
@@ -64,12 +59,7 @@ public sealed class PlayerThumbnailSyncService : IPlayerThumbnailSyncService
         Application.Current.Dispatcher.Invoke(() =>
         {
             if (_playlist == null)
-            {
-                Log.Debug($"VideoProgress skipped (_playlist=null): {Path.GetFileName(path)}={percent}%");
                 return;
-            }
-
-            Log.Debug($"VideoProgress -> UpdateThumbnailProgress: {Path.GetFileName(path)}={percent}%");
             _playlist.UpdateThumbnailProgress(path, percent);
         });
     }
