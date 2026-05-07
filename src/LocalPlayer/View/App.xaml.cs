@@ -36,6 +36,7 @@ public partial class App : Application
             provider.GetRequiredService<MainPageViewModel>().Cleanup();
             provider.GetRequiredService<ISettingsService>().Save();
             provider.Dispose();
+            AppLog.Shutdown(TimeSpan.FromSeconds(1));
         };
 
         provider.GetRequiredService<MainWindow>().Show();
