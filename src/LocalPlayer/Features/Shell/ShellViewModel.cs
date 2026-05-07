@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using LocalPlayer.Features.Library;
 using LocalPlayer.Features.Library.Services;
 using LocalPlayer.Features.Player;
+using LocalPlayer.Features.Player.Services;
 using LocalPlayer.Features.Player.Settings;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Localization;
@@ -20,7 +21,7 @@ public partial class ShellViewModel : ObservableObject
     private readonly ILocalizationService _loc;
     private readonly ILibraryAppService _libraryService;
     private readonly ITaskbarAutoHideCoordinator _taskbarAutoHide;
-    private readonly IPlayerViewCoordinator _playerCoordinator;
+    private readonly IPlayerAppService _playerAppService;
     private readonly MainPageViewModel _mainPage;
     private readonly PlayerViewModel _playerPage;
 
@@ -62,7 +63,7 @@ public partial class ShellViewModel : ObservableObject
         ILocalizationService loc,
         ILibraryAppService libraryService,
         ITaskbarAutoHideCoordinator taskbarAutoHide,
-        IPlayerViewCoordinator playerCoordinator,
+        IPlayerAppService playerAppService,
         MainPageViewModel mainPage,
         PlayerViewModel playerPage,
         PlayerInputSettingsViewModel playerInputSettings)
@@ -71,7 +72,7 @@ public partial class ShellViewModel : ObservableObject
         _loc = loc;
         _libraryService = libraryService;
         _taskbarAutoHide = taskbarAutoHide;
-        _playerCoordinator = playerCoordinator;
+        _playerAppService = playerAppService;
         _currentLanguageCode = _loc.CurrentLanguage;
         _currentAnimationCode = _settings.Load().FullscreenAnimation;
         _mainPage = mainPage;
@@ -98,9 +99,8 @@ public partial class ShellViewModel : ObservableObject
     private void OnMainPageFolderSelected(string path, string name)
     {
         Log.Info($"Folder selected: {name} | {path}");
-        _ = _playerCoordinator.EnterPlayerPageAsync(CurrentAnimationCode);
         CurrentPage = _playerPage;
-        _ = _playerCoordinator.LoadFolderAsync(path, name);
+        _ = _playerAppService.EnterPlayerAsync(CurrentAnimationCode, path, name);
     }
 
     private void OnPlayerToggleFullscreenRequested()
@@ -108,7 +108,7 @@ public partial class ShellViewModel : ObservableObject
 
     private void OnPlayerGoBackRequested()
     {
-        _ = _taskbarAutoHide.LeavePlayerPageAsync();
+        _ = _playerAppService.LeavePlayerAsync();
         CurrentPage = _mainPage;
     }
 

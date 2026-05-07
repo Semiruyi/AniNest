@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using LocalPlayer.Features.Library;
 using LocalPlayer.Features.Library.Services;
 using LocalPlayer.Features.Player;
+using LocalPlayer.Features.Player.Services;
 using LocalPlayer.Features.Player.Input;
 using LocalPlayer.Features.Player.Settings;
 using LocalPlayer.Features.Shell;
@@ -26,9 +27,9 @@ public static class ServiceRegistration
         services.AddSingleton<IVideoScanner, VideoScanner>();
         services.AddSingleton<IThumbnailGenerator, ThumbnailGenerator>();
         services.AddSingleton<ILibraryAppService, LibraryAppService>();
+        services.AddSingleton<IPlayerAppService, PlayerAppService>();
         services.AddSingleton<PlayerSessionController>();
         services.AddSingleton<PlayerPlaybackStateController>();
-        services.AddSingleton<IPlayerViewCoordinator, PlayerViewCoordinator>();
         services.AddSingleton<IPlayerInputService, PlayerInputService>();
         services.AddSingleton<IMediaPlayerController, MediaPlayerController>();
 
