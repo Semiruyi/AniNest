@@ -124,10 +124,16 @@ public class TransitioningContentControl : ContentControl
         _activePresenter.BeginAnimation(OpacityProperty, null);
         _inactivePresenter.BeginAnimation(OpacityProperty, null);
 
-        _inactivePresenter.Content = newContent;
-        _inactivePresenter.IsHitTestVisible = true;
+        using (PerfSpan.Begin($"PageTransition.AttachContent.{fromName}->{toName}", tags))
+        {
+            _inactivePresenter.Content = newContent;
+            _inactivePresenter.IsHitTestVisible = true;
+        }
 
-        _inactivePresenter.UpdateLayout();
+        using (PerfSpan.Begin($"PageTransition.Layout.{fromName}->{toName}", tags))
+        {
+            _inactivePresenter.UpdateLayout();
+        }
 
         int fadeMs = TransitionDuration > 0 ? TransitionDuration : 160;
         var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
@@ -144,8 +150,11 @@ public class TransitioningContentControl : ContentControl
 
         fadeIn.Completed += (_, _) => FinishTransition();
 
-        _activePresenter.BeginAnimation(OpacityProperty, fadeOut);
-        _inactivePresenter.BeginAnimation(OpacityProperty, fadeIn);
+        using (PerfSpan.Begin($"PageTransition.BeginAnimations.{fromName}->{toName}", tags))
+        {
+            _activePresenter.BeginAnimation(OpacityProperty, fadeOut);
+            _inactivePresenter.BeginAnimation(OpacityProperty, fadeIn);
+        }
     }
 
     private void FinishTransition()

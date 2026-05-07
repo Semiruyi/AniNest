@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LibVLCSharp.Shared;
+using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Infrastructure.Logging;
 namespace LocalPlayer.Infrastructure.Media;
 
@@ -20,8 +22,17 @@ public class VideoFrameProvider : IDisposable
     private GCHandle _bufferHandle;
     private byte[]? _readyBuffer;
     private readonly object _lock = new();
+    private string? _observationFileName;
+    private bool _firstLockObserved;
+    private bool _firstUnlockObserved;
+    private bool _firstDisplayObserved;
+    private bool _firstPresentedObserved;
 
     public WriteableBitmap? Bitmap => _bitmap;
+    public event EventHandler? FramePresented;
+    public event EventHandler? FirstFrameLocked;
+    public event EventHandler? FirstFrameUnlocked;
+    public event EventHandler? FirstFrameDisplayQueued;
 
     public VideoFrameProvider(int width = 1920, int height = 1080)
     {
@@ -41,56 +52,129 @@ public class VideoFrameProvider : IDisposable
         Log.Info($"AttachToPlayer: {_width}x{_height}, stride={_stride}");
     }
 
+    public void BeginFrameObservation(string? filePath)
+    {
+        lock (_lock)
+        {
+            _observationFileName = string.IsNullOrWhiteSpace(filePath)
+                ? null
+                : System.IO.Path.GetFileName(filePath);
+            _firstLockObserved = false;
+            _firstUnlockObserved = false;
+            _firstDisplayObserved = false;
+            _firstPresentedObserved = false;
+        }
+    }
+
     private IntPtr VideoLock(IntPtr opaque, IntPtr planes)
     {
+        bool isFirstLock = false;
+        IntPtr ptr;
         lock (_lock)
         {
             _bufferIndex = (_bufferIndex + 1) % 2;
             var buf = _buffers[_bufferIndex];
             _bufferHandle = GCHandle.Alloc(buf, GCHandleType.Pinned);
-            IntPtr ptr = _bufferHandle.AddrOfPinnedObject();
+            ptr = _bufferHandle.AddrOfPinnedObject();
             Marshal.WriteIntPtr(planes, ptr);
             Log.Debug($"VideoLock: bufferIndex={_bufferIndex}");
-            return ptr;
+            if (!_firstLockObserved)
+            {
+                _firstLockObserved = true;
+                isFirstLock = true;
+            }
         }
+
+        if (isFirstLock)
+        {
+            using var span = PerfSpan.Begin("VideoFrameProvider.FirstFrameLock", CreateObservationTags());
+            FirstFrameLocked?.Invoke(this, EventArgs.Empty);
+        }
+
+        return ptr;
     }
 
     private void VideoUnlock(IntPtr opaque, IntPtr picture, IntPtr planes)
     {
+        bool isFirstUnlock = false;
         lock (_lock)
         {
             if (_bufferHandle.IsAllocated)
                 _bufferHandle.Free();
             _readyBuffer = _buffers[_bufferIndex];
             Log.Debug($"VideoUnlock: bufferIndex={_bufferIndex}");
+            if (!_firstUnlockObserved)
+            {
+                _firstUnlockObserved = true;
+                isFirstUnlock = true;
+            }
+        }
+
+        if (isFirstUnlock)
+        {
+            using var span = PerfSpan.Begin("VideoFrameProvider.FirstFrameUnlock", CreateObservationTags());
+            FirstFrameUnlocked?.Invoke(this, EventArgs.Empty);
         }
     }
 
     private void VideoDisplay(IntPtr opaque, IntPtr picture)
     {
         byte[]? readyBuf;
+        bool isFirstDisplay;
         lock (_lock)
         {
             readyBuf = _readyBuffer;
             _readyBuffer = null;
+            isFirstDisplay = !_firstDisplayObserved;
+            if (isFirstDisplay)
+                _firstDisplayObserved = true;
         }
 
         if (readyBuf == null || _bitmap == null) return;
         Log.Debug("VideoDisplay: frame ready");
 
+        if (isFirstDisplay)
+        {
+            using var span = PerfSpan.Begin("VideoFrameProvider.FirstFrameDisplayQueued", CreateObservationTags());
+            FirstFrameDisplayQueued?.Invoke(this, EventArgs.Empty);
+        }
+
         var wb = _bitmap;
         var w = _width;
         var h = _height;
         var stride = _stride;
+        var dispatchSpan = isFirstDisplay
+            ? PerfSpan.Begin("VideoFrameProvider.FirstFrameDispatchToPresent", CreateObservationTags())
+            : null;
 
         System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
         {
             try
             {
                 wb.WritePixels(new Int32Rect(0, 0, w, h), readyBuf, stride, 0);
+                if (isFirstDisplay && !_firstPresentedObserved)
+                {
+                    _firstPresentedObserved = true;
+                }
+                FramePresented?.Invoke(this, EventArgs.Empty);
             }
             catch { }
+            finally
+            {
+                dispatchSpan?.Dispose();
+            }
         }, DispatcherPriority.Render);
+    }
+
+    private IReadOnlyDictionary<string, string>? CreateObservationTags()
+    {
+        if (string.IsNullOrWhiteSpace(_observationFileName))
+            return null;
+
+        return new Dictionary<string, string>
+        {
+            ["file"] = _observationFileName
+        };
     }
 
     public void Dispose()

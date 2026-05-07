@@ -6,6 +6,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using LocalPlayer.Presentation.Animations;
+using LocalPlayer.Infrastructure.Diagnostics;
 using Point = System.Windows.Point;
 using Size = System.Windows.Size;
 
@@ -21,58 +22,89 @@ public class AnimatedWrapPanel : WrapPanel
 
     protected override Size ArrangeOverride(Size finalSize)
     {
+        using var arrangeSpan = PerfSpan.Begin("AnimatedWrapPanel.ArrangeOverride", new Dictionary<string, string>
+        {
+            ["childCount"] = InternalChildren.Count.ToString(),
+            ["finalWidth"] = finalSize.Width.ToString("F2"),
+            ["finalHeight"] = finalSize.Height.ToString("F2")
+        });
+
         var entranceCandidates = new List<UIElement>();
 
         // 1. Record current visual positions
         var positions = new Dictionary<UIElement, Point>();
-        foreach (UIElement child in InternalChildren)
+        using (PerfSpan.Begin("AnimatedWrapPanel.RecordPositions", new Dictionary<string, string>
         {
-            if (child == null) continue;
-
-            if (!_entranceDone.Contains(child))
-                entranceCandidates.Add(child);
-
-            try
+            ["childCount"] = InternalChildren.Count.ToString()
+        }))
+        {
+            foreach (UIElement child in InternalChildren)
             {
-                positions[child] = child.TransformToAncestor(this).Transform(new Point(0, 0));
-            }
-            catch
-            {
-                positions[child] = new Point(0, 0);
-            }
+                if (child == null) continue;
 
-            if (child.RenderTransform is TranslateTransform oldTt)
-            {
-                oldTt.BeginAnimation(TranslateTransform.XProperty, null);
-                oldTt.BeginAnimation(TranslateTransform.YProperty, null);
+                if (!_entranceDone.Contains(child))
+                    entranceCandidates.Add(child);
+
+                try
+                {
+                    positions[child] = child.TransformToAncestor(this).Transform(new Point(0, 0));
+                }
+                catch
+                {
+                    positions[child] = new Point(0, 0);
+                }
+
+                if (child.RenderTransform is TranslateTransform oldTt)
+                {
+                    oldTt.BeginAnimation(TranslateTransform.XProperty, null);
+                    oldTt.BeginAnimation(TranslateTransform.YProperty, null);
+                }
+                child.RenderTransform = null;
             }
-            child.RenderTransform = null;
         }
 
         // 2. Standard arrange
-        Size result = base.ArrangeOverride(finalSize);
+        Size result;
+        using (PerfSpan.Begin("AnimatedWrapPanel.BaseArrange", new Dictionary<string, string>
+        {
+            ["childCount"] = InternalChildren.Count.ToString()
+        }))
+        {
+            result = base.ArrangeOverride(finalSize);
+        }
 
         // 3. Position animation for existing children
-        foreach (UIElement child in InternalChildren)
+        int animatedOffsetCount = 0;
+        using (PerfSpan.Begin("AnimatedWrapPanel.AnimateExistingOffsets", new Dictionary<string, string>
         {
-            if (child == null || entranceCandidates.Contains(child))
-                continue;
-            if (!positions.TryGetValue(child, out Point oldVisualPos))
-                continue;
-
-            Point newLayoutPos;
-            try
+            ["childCount"] = InternalChildren.Count.ToString(),
+            ["entranceCandidateCount"] = entranceCandidates.Count.ToString()
+        }))
+        {
+            foreach (UIElement child in InternalChildren)
             {
-                newLayoutPos = child.TransformToAncestor(this).Transform(new Point(0, 0));
-            }
-            catch
-            {
-                continue;
-            }
+                if (child == null || entranceCandidates.Contains(child))
+                    continue;
+                if (!positions.TryGetValue(child, out Point oldVisualPos))
+                    continue;
 
-            Vector offset = oldVisualPos - newLayoutPos;
-            if (Math.Abs(offset.X) > 0.5 || Math.Abs(offset.Y) > 0.5)
-                AnimateOffset(child, offset);
+                Point newLayoutPos;
+                try
+                {
+                    newLayoutPos = child.TransformToAncestor(this).Transform(new Point(0, 0));
+                }
+                catch
+                {
+                    continue;
+                }
+
+                Vector offset = oldVisualPos - newLayoutPos;
+                if (Math.Abs(offset.X) > 0.5 || Math.Abs(offset.Y) > 0.5)
+                {
+                    animatedOffsetCount++;
+                    AnimateOffset(child, offset);
+                }
+            }
         }
 
         // 4. Entrance animation for new children
@@ -116,6 +148,11 @@ public class AnimatedWrapPanel : WrapPanel
 
     private void AnimateEntrance(List<UIElement> children)
     {
+        using var span = PerfSpan.Begin("AnimatedWrapPanel.AnimateEntrance", new Dictionary<string, string>
+        {
+            ["childCount"] = children.Count.ToString()
+        });
+
         for (int i = 0; i < children.Count; i++)
         {
             var child = children[i];

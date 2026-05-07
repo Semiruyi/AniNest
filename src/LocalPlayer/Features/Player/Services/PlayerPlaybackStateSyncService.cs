@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.Windows;
+using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Infrastructure.Media;
 
 namespace LocalPlayer.Features.Player.Services;
@@ -21,14 +23,14 @@ public sealed class PlayerPlaybackStateSyncService : IPlayerPlaybackStateSyncSer
         _session = session;
         _media = media;
         _videoPathChangedHandler = OnSessionCurrentVideoPathChanged;
-        _playingHandler = (_, _) => Dispatch(controller => controller.SetPlayingState(true));
-        _pausedHandler = (_, _) => Dispatch(controller => controller.SetPlayingState(false));
-        _stoppedHandler = (_, _) => Dispatch(controller =>
+        _playingHandler = (_, _) => Dispatch("Playing", controller => controller.SetPlayingState(true));
+        _pausedHandler = (_, _) => Dispatch("Paused", controller => controller.SetPlayingState(false));
+        _stoppedHandler = (_, _) => Dispatch("Stopped", controller =>
         {
             controller.SetPlayingState(false);
             controller.RefreshVideoSource();
         });
-        _progressUpdatedHandler = (_, args) => Dispatch(controller => controller.UpdateProgress(args));
+        _progressUpdatedHandler = (_, args) => Dispatch("ProgressUpdated", controller => controller.UpdateProgress(args), instrument: false);
     }
 
     public void Attach(PlayerPlaybackStateController controller)
@@ -61,13 +63,49 @@ public sealed class PlayerPlaybackStateSyncService : IPlayerPlaybackStateSyncSer
     }
 
     private void OnSessionCurrentVideoPathChanged(string path)
-        => Dispatch(controller => controller.SetCurrentVideoPath(path));
+        => Dispatch("CurrentVideoPathChanged", controller => controller.SetCurrentVideoPath(path));
 
-    private void Dispatch(Action<PlayerPlaybackStateController> action)
+    private void Dispatch(string eventName, Action<PlayerPlaybackStateController> action, bool instrument = true)
     {
         if (_controller == null)
             return;
 
-        Application.Current.Dispatcher.Invoke(() => action(_controller));
+        var controller = _controller;
+        var dispatcher = Application.Current.Dispatcher;
+        var tags = instrument
+            ? new Dictionary<string, string>
+            {
+                ["event"] = eventName
+            }
+            : null;
+
+        if (dispatcher.CheckAccess())
+        {
+            if (instrument)
+            {
+                using var executeSpan = PerfSpan.Begin("PlayerPlaybackStateSync.Execute", tags);
+                action(controller);
+            }
+            else
+            {
+                action(controller);
+            }
+
+            return;
+        }
+
+        if (instrument)
+        {
+            using var waitSpan = PerfSpan.Begin("PlayerPlaybackStateSync.DispatchWait", tags);
+            dispatcher.Invoke(() =>
+            {
+                using var executeSpan = PerfSpan.Begin("PlayerPlaybackStateSync.Execute", tags);
+                action(controller);
+            });
+        }
+        else
+        {
+            dispatcher.Invoke(() => action(controller));
+        }
     }
 }

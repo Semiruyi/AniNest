@@ -1,4 +1,5 @@
 using System.Windows.Media;
+using System.Collections.Generic;
 using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Presentation.Primitives;
 using LocalPlayer.Features.Player.Models;
@@ -14,6 +15,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
 {
     private PerfSpan? _loadToFirstRenderSpan;
     private bool _renderedOnce;
+    private readonly HashSet<string> _loggedLayoutProbes = new();
 
     public PlayerPage()
     {
@@ -32,6 +34,23 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
         coordinator.RegisterRegion(PlaylistPanel, PopupHitKind.ControlBarInteractive);
         coordinator.RegisterRegion(PageRoot, PopupHitKind.DismissBackground);
 
+        AttachLayoutProbe(PageRoot, "PlayerPage.PageRootLayout");
+        AttachLayoutProbe(VideoContainer, "PlayerPage.VideoContainerLayout");
+        AttachLayoutProbe(PlaylistPanel, "PlayerPage.PlaylistPanelLayout");
+        AttachLayoutProbe(ControlBar, "PlayerPage.ControlBarLayout");
+        Dispatcher.BeginInvoke(() =>
+        {
+            using (PerfSpan.Begin("PlayerPage.PlaylistPanel.UpdateLayout"))
+            {
+                PlaylistPanel.UpdateLayout();
+            }
+
+            using (PerfSpan.Begin("PlayerPage.ControlBar.UpdateLayout"))
+            {
+                ControlBar.UpdateLayout();
+            }
+        }, System.Windows.Threading.DispatcherPriority.Loaded);
+
         CompositionTarget.Rendering += OnRendering;
     }
 
@@ -45,6 +64,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
         _loadToFirstRenderSpan?.Dispose();
         _loadToFirstRenderSpan = null;
         _renderedOnce = false;
+        _loggedLayoutProbes.Clear();
     }
 
     private void OnRendering(object? sender, EventArgs e)
@@ -55,6 +75,30 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
         _renderedOnce = true;
         _loadToFirstRenderSpan?.Dispose();
         _loadToFirstRenderSpan = null;
+    }
+
+    private void AttachLayoutProbe(System.Windows.FrameworkElement element, string spanName)
+    {
+        if (_loggedLayoutProbes.Contains(spanName))
+            return;
+
+        void Handler(object? sender, EventArgs args)
+        {
+            if (_loggedLayoutProbes.Contains(spanName))
+                return;
+
+            _loggedLayoutProbes.Add(spanName);
+            element.LayoutUpdated -= Handler;
+            using var span = PerfSpan.Begin(spanName, new Dictionary<string, string>
+            {
+                ["actualWidth"] = element.ActualWidth.ToString("F2"),
+                ["actualHeight"] = element.ActualHeight.ToString("F2"),
+                ["visibility"] = element.Visibility.ToString(),
+                ["isVisible"] = element.IsVisible.ToString()
+            });
+        }
+
+        element.LayoutUpdated += Handler;
     }
 }
 

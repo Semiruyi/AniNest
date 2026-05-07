@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LibVLCSharp.Shared;
+using LocalPlayer.Infrastructure.Diagnostics;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Paths;
 using LocalPlayer.Infrastructure.Persistence;
@@ -25,6 +27,11 @@ public class MediaPlayerController : IMediaPlayerController
     private MediaPlayer? mediaPlayer;
     private VideoFrameProvider? frameProvider;
     private DispatcherTimer? updateTimer;
+    private PerfSpan? _playToPlayingSpan;
+    private PerfSpan? _playToFirstFrameSpan;
+    private PerfSpan? _playToFirstLockSpan;
+    private PerfSpan? _playToFirstUnlockSpan;
+    private PerfSpan? _playToFirstDisplayQueuedSpan;
 
     public bool IsPlaying => mediaPlayer?.IsPlaying ?? false;
     public long Time => mediaPlayer?.Time ?? 0;
@@ -81,6 +88,10 @@ public class MediaPlayerController : IMediaPlayerController
 
             frameProvider = new VideoFrameProvider();
             frameProvider.AttachToPlayer(mediaPlayer);
+            frameProvider.FramePresented += OnFramePresented;
+            frameProvider.FirstFrameLocked += OnFirstFrameLocked;
+            frameProvider.FirstFrameUnlocked += OnFirstFrameUnlocked;
+            frameProvider.FirstFrameDisplayQueued += OnFirstFrameDisplayQueued;
             Log.Info("VideoFrameProvider attached to MediaPlayer");
             Log.Info($"Initialize complete: VideoBitmap={(frameProvider.Bitmap == null ? "null" : "ready")}");
         }
@@ -93,6 +104,8 @@ public class MediaPlayerController : IMediaPlayerController
         mediaPlayer.Playing += (s, e) =>
         {
             Log.Info("Playing event raised");
+            _playToPlayingSpan?.Dispose();
+            _playToPlayingSpan = null;
             Playing?.Invoke(this, EventArgs.Empty);
         };
         mediaPlayer.Paused += (s, e) => Paused?.Invoke(this, EventArgs.Empty);
@@ -130,6 +143,22 @@ public class MediaPlayerController : IMediaPlayerController
 
         Log.Info($"Start playback: {Path.GetFileName(filePath)}");
         CurrentFilePath = filePath;
+        frameProvider?.BeginFrameObservation(filePath);
+        _playToPlayingSpan?.Dispose();
+        _playToFirstFrameSpan?.Dispose();
+        _playToFirstLockSpan?.Dispose();
+        _playToFirstUnlockSpan?.Dispose();
+        _playToFirstDisplayQueuedSpan?.Dispose();
+        var tags = new Dictionary<string, string>
+        {
+            ["file"] = Path.GetFileName(filePath),
+            ["startTimeMs"] = startTimeMs.ToString()
+        };
+        _playToPlayingSpan = PerfSpan.Begin("Media.PlayToPlaying", tags);
+        _playToFirstFrameSpan = PerfSpan.Begin("Media.PlayToFirstFrame", tags);
+        _playToFirstLockSpan = PerfSpan.Begin("Media.PlayToFirstFrameLock", tags);
+        _playToFirstUnlockSpan = PerfSpan.Begin("Media.PlayToFirstFrameUnlock", tags);
+        _playToFirstDisplayQueuedSpan = PerfSpan.Begin("Media.PlayToFirstFrameDisplayQueued", tags);
 
         var media = new LibVlcMedia(libVLC, filePath);
         if (startTimeMs > 0)
@@ -204,11 +233,45 @@ public class MediaPlayerController : IMediaPlayerController
         updateTimer = null;
 
         frameProvider?.Dispose();
+        if (frameProvider != null)
+        {
+            frameProvider.FramePresented -= OnFramePresented;
+            frameProvider.FirstFrameLocked -= OnFirstFrameLocked;
+            frameProvider.FirstFrameUnlocked -= OnFirstFrameUnlocked;
+            frameProvider.FirstFrameDisplayQueued -= OnFirstFrameDisplayQueued;
+        }
         mediaPlayer?.Stop();
         mediaPlayer?.Dispose();
         mediaPlayer = null;
 
         libVLC = null;
+    }
+
+    private void OnFramePresented(object? sender, EventArgs e)
+    {
+        if (_playToFirstFrameSpan == null)
+            return;
+
+        _playToFirstFrameSpan.Dispose();
+        _playToFirstFrameSpan = null;
+    }
+
+    private void OnFirstFrameLocked(object? sender, EventArgs e)
+    {
+        _playToFirstLockSpan?.Dispose();
+        _playToFirstLockSpan = null;
+    }
+
+    private void OnFirstFrameUnlocked(object? sender, EventArgs e)
+    {
+        _playToFirstUnlockSpan?.Dispose();
+        _playToFirstUnlockSpan = null;
+    }
+
+    private void OnFirstFrameDisplayQueued(object? sender, EventArgs e)
+    {
+        _playToFirstDisplayQueuedSpan?.Dispose();
+        _playToFirstDisplayQueuedSpan = null;
     }
 }
 
