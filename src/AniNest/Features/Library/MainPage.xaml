@@ -14,10 +14,7 @@
         <conv:CoverImageSourceConverter x:Key="CoverImageSource" DecodePixelWidth="380"/>
     </UserControl.Resources>
 
-    <Grid x:Name="RootGrid"
-          PreviewMouseLeftButtonDown="OnRootPreviewMouseLeftButtonDown"
-          PreviewMouseRightButtonDown="OnRootPreviewMouseRightButtonDown"
-          PreviewKeyDown="OnRootPreviewKeyDown">
+    <Grid x:Name="RootGrid">
         <ScrollViewer x:Name="LibraryScrollViewer"
                       VerticalScrollBarVisibility="Auto"
                       ScrollChanged="OnLibraryScrollChanged">
@@ -99,6 +96,9 @@
                                   CloseOnOutsideClick="True"
                                   CloseOnEscape="True"
                                   ResetAnchorOnClose="True"
+                                  LeftAnchorClickBehavior="CloseAndPassThrough"
+                                  RightAnchorClickBehavior="CloseAndPassThrough"
+                                  OutsidePointerBehavior="CloseAndPassThrough"
                                   OpenDurationMs="350"
                                   CloseDurationMs="320"
                                   Panel.ZIndex="1000">
@@ -128,4 +128,3 @@
         </overlays:AnimatedOverlay>
     </Grid>
 </UserControl>
-

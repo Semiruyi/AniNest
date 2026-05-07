@@ -9,8 +9,27 @@ using Point = System.Windows.Point;
 
 namespace AniNest.Presentation.Overlays;
 
+/// <summary>
+/// Tree-hosted animated overlay primitive.
+///
+/// Intended public usage:
+/// - Anchor and placement define where the overlay lives.
+/// - <see cref="ToggleForAnchor"/> and <see cref="OpenOrRetarget"/> are the main
+///   interaction entry points for feature code.
+/// - Dismissal policy is configured with CloseOnOutsideClick / CloseOnEscape and
+///   pointer behavior properties, while actual pointer arbitration is delegated to
+///   <see cref="OverlayCoordinator"/>.
+/// - <see cref="Closed"/> and <see cref="LastCloseReason"/> provide the feature layer
+///   with a single cleanup hook.
+/// </summary>
 public class AnimatedOverlay : ContentControl
 {
+    public sealed class OverlayClosedEventArgs : EventArgs
+    {
+        public OverlayClosedEventArgs(OverlayCloseReason reason) => Reason = reason;
+        public OverlayCloseReason Reason { get; }
+    }
+
     private static readonly Logger Log = AppLog.For(nameof(AnimatedOverlay));
     private FrameworkElement? _surface;
     private FrameworkElement? _positionHost;
@@ -74,6 +93,18 @@ public class AnimatedOverlay : ContentControl
         DependencyProperty.Register(nameof(CloseOnEscape), typeof(bool), typeof(AnimatedOverlay),
             new PropertyMetadata(false));
 
+    public static readonly DependencyProperty LeftAnchorClickBehaviorProperty =
+        DependencyProperty.Register(nameof(LeftAnchorClickBehavior), typeof(OverlayPointerBehavior), typeof(AnimatedOverlay),
+            new PropertyMetadata(OverlayPointerBehavior.KeepOpen));
+
+    public static readonly DependencyProperty RightAnchorClickBehaviorProperty =
+        DependencyProperty.Register(nameof(RightAnchorClickBehavior), typeof(OverlayPointerBehavior), typeof(AnimatedOverlay),
+            new PropertyMetadata(OverlayPointerBehavior.KeepOpen));
+
+    public static readonly DependencyProperty OutsidePointerBehaviorProperty =
+        DependencyProperty.Register(nameof(OutsidePointerBehavior), typeof(OverlayPointerBehavior), typeof(AnimatedOverlay),
+            new PropertyMetadata(OverlayPointerBehavior.CloseAndPassThrough));
+
     private static readonly DependencyPropertyKey SurfaceMarginPropertyKey =
         DependencyProperty.RegisterReadOnly(nameof(SurfaceMargin), typeof(Thickness), typeof(AnimatedOverlay),
             new PropertyMetadata(new Thickness()));
@@ -82,13 +113,20 @@ public class AnimatedOverlay : ContentControl
         DependencyProperty.RegisterReadOnly(nameof(CurrentState), typeof(string), typeof(AnimatedOverlay),
             new PropertyMetadata("Closed"));
 
+    private static readonly DependencyPropertyKey LastCloseReasonPropertyKey =
+        DependencyProperty.RegisterReadOnly(nameof(LastCloseReason), typeof(OverlayCloseReason), typeof(AnimatedOverlay),
+            new PropertyMetadata(OverlayCloseReason.Programmatic));
+
     public static readonly DependencyProperty SurfaceMarginProperty = SurfaceMarginPropertyKey.DependencyProperty;
     public static readonly DependencyProperty CurrentStateProperty = CurrentStatePropertyKey.DependencyProperty;
+    public static readonly DependencyProperty LastCloseReasonProperty = LastCloseReasonPropertyKey.DependencyProperty;
 
     public event EventHandler? Opened;
-    public event EventHandler? Closed;
+    public event EventHandler<OverlayClosedEventArgs>? Closed;
     public event EventHandler? Opening;
     public event EventHandler? Closing;
+
+    public AnimatedOverlay? ParentOverlay { get; internal set; }
 
     public bool IsOpen
     {
@@ -168,6 +206,24 @@ public class AnimatedOverlay : ContentControl
         set => SetValue(CloseOnEscapeProperty, value);
     }
 
+    public OverlayPointerBehavior LeftAnchorClickBehavior
+    {
+        get => (OverlayPointerBehavior)GetValue(LeftAnchorClickBehaviorProperty);
+        set => SetValue(LeftAnchorClickBehaviorProperty, value);
+    }
+
+    public OverlayPointerBehavior RightAnchorClickBehavior
+    {
+        get => (OverlayPointerBehavior)GetValue(RightAnchorClickBehaviorProperty);
+        set => SetValue(RightAnchorClickBehaviorProperty, value);
+    }
+
+    public OverlayPointerBehavior OutsidePointerBehavior
+    {
+        get => (OverlayPointerBehavior)GetValue(OutsidePointerBehaviorProperty);
+        set => SetValue(OutsidePointerBehaviorProperty, value);
+    }
+
     public Thickness SurfaceMargin
     {
         get => (Thickness)GetValue(SurfaceMarginProperty);
@@ -178,6 +234,12 @@ public class AnimatedOverlay : ContentControl
     {
         get => (string)GetValue(CurrentStateProperty);
         private set => SetValue(CurrentStatePropertyKey, value);
+    }
+
+    public OverlayCloseReason LastCloseReason
+    {
+        get => (OverlayCloseReason)GetValue(LastCloseReasonProperty);
+        private set => SetValue(LastCloseReasonPropertyKey, value);
     }
 
     public AnimatedOverlay()
@@ -222,12 +284,35 @@ public class AnimatedOverlay : ContentControl
         return false;
     }
 
+    public bool ContainsAnchorTarget(DependencyObject? target)
+    {
+        if (AnchorElement == null || target == null)
+            return false;
+
+        DependencyObject? current = target;
+        while (current != null)
+        {
+            if (ReferenceEquals(current, AnchorElement))
+                return true;
+
+            current = current switch
+            {
+                Visual visual => VisualTreeHelper.GetParent(visual),
+                System.Windows.Media.Media3D.Visual3D visual3D => VisualTreeHelper.GetParent(visual3D),
+                _ => LogicalTreeHelper.GetParent(current),
+            };
+        }
+
+        return false;
+    }
+
     public void Close(OverlayCloseReason reason = OverlayCloseReason.Programmatic)
     {
         if (!IsOpen && _state == OverlayState.Closed)
             return;
 
         Log.Debug($"Close: reason={reason} state={_state}");
+        LastCloseReason = reason;
         IsOpen = false;
 
         if (ResetAnchorOnClose)
@@ -294,6 +379,9 @@ public class AnimatedOverlay : ContentControl
         Close(reason);
         return true;
     }
+
+    internal OverlayPointerBehavior GetAnchorClickBehavior(MouseButton button)
+        => button == MouseButton.Right ? RightAnchorClickBehavior : LeftAnchorClickBehavior;
 
     public void SwitchAnchor(FrameworkElement? anchor)
     {
@@ -697,6 +785,16 @@ public class AnimatedOverlay : ContentControl
 
         switch (state)
         {
+            case OverlayState.Open:
+                OverlayCoordinator.Instance.RegisterOpenedOverlay(this);
+                break;
+            case OverlayState.Closed:
+                OverlayCoordinator.Instance.RegisterClosedOverlay(this);
+                break;
+        }
+
+        switch (state)
+        {
             case OverlayState.Opening:
                 Opening?.Invoke(this, EventArgs.Empty);
                 break;
@@ -707,7 +805,7 @@ public class AnimatedOverlay : ContentControl
                 Closing?.Invoke(this, EventArgs.Empty);
                 break;
             case OverlayState.Closed:
-                Closed?.Invoke(this, EventArgs.Empty);
+                Closed?.Invoke(this, new OverlayClosedEventArgs(LastCloseReason));
                 break;
         }
     }
