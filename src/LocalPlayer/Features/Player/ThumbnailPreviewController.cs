@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -9,14 +11,9 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalPlayer.Features.Player.Services;
-using LocalPlayer.Infrastructure.Paths;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Media;
 using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Infrastructure.Interop;
 using LocalPlayer.Infrastructure.Logging;
 using Point = System.Windows.Point;
-using LocalPlayer.Features.Player.Models;
 
 namespace LocalPlayer.Features.Player;
 
@@ -35,6 +32,9 @@ public partial class ThumbnailPreviewController : ObservableObject
     private bool _thumbVisible;
     private bool _thumbClosing;
     private int _lastRequestedSecond = -1;
+    private int _lastLoadedSecond = -1;
+    private CancellationTokenSource? _imageLoadCts;
+    private int _imageLoadVersion;
 
 
     [ObservableProperty]
@@ -70,8 +70,11 @@ public partial class ThumbnailPreviewController : ObservableObject
 
     public void OnCurrentVideoPathChanged()
     {
+        CancelImageLoad();
         _thumbCache.Clear();
         _lastRequestedSecond = -1;
+        _lastLoadedSecond = -1;
+        ImageSource = null;
     }
 
     public void OnEnter()
@@ -140,26 +143,12 @@ public partial class ThumbnailPreviewController : ObservableObject
         {
             if (_thumbCache.TryGetValue(hoverSecond, out var cached))
             {
+                _lastLoadedSecond = hoverSecond;
                 ImageSource = cached;
             }
             else
             {
-                var bmp = LoadJpeg(currentVideoPath, hoverSecond);
-                if (bmp != null)
-                {
-                    _thumbCache[hoverSecond] = bmp;
-                    ImageSource = bmp;
-
-                    if (_thumbCache.Count > 20)
-                    {
-                        var toRemove = _thumbCache.Keys.OrderBy(k => k).Take(_thumbCache.Count / 2).ToList();
-                        foreach (var k in toRemove) _thumbCache.Remove(k);
-                    }
-                }
-                else
-                {
-                    ImageSource = null;
-                }
+                _ = LoadJpegAsync(currentVideoPath, hoverSecond);
             }
         }
     }
@@ -179,6 +168,7 @@ public partial class ThumbnailPreviewController : ObservableObject
         _thumbVisible = false;
         _thumbHovering = false;
         _thumbClosing = false;
+        CancelImageLoad();
     }
 
     private void ShowThumbnail()
@@ -223,22 +213,71 @@ public partial class ThumbnailPreviewController : ObservableObject
         return t;
     }
 
-    private BitmapSource? LoadJpeg(string videoPath, int second)
+    private async Task LoadJpegAsync(string videoPath, int second)
     {
-        var path = _playbackFacade.GetThumbnailPath(videoPath, second);
-        if (path == null) return null;
+        CancelImageLoad();
+        _imageLoadCts = new CancellationTokenSource();
+        var cancellationToken = _imageLoadCts.Token;
+        int version = Interlocked.Increment(ref _imageLoadVersion);
+
         try
         {
-            var decoder = new JpegBitmapDecoder(new Uri(path), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
-            var frame = decoder.Frames[0];
-            frame.Freeze();
-            return frame;
+            var bmp = await Task.Run(() => DecodeJpeg(videoPath, second, cancellationToken), cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            if (version != _imageLoadVersion)
+                return;
+
+            if (_getCurrentVideoPath() != videoPath || _lastRequestedSecond != second)
+                return;
+
+            if (bmp == null)
+            {
+                if (_lastLoadedSecond != second)
+                    ImageSource = null;
+                return;
+            }
+
+            _thumbCache[second] = bmp;
+            _lastLoadedSecond = second;
+            ImageSource = bmp;
+
+            if (_thumbCache.Count > 20)
+            {
+                var toRemove = _thumbCache.Keys.OrderBy(k => k).Take(_thumbCache.Count / 2).ToList();
+                foreach (var key in toRemove)
+                    _thumbCache.Remove(key);
+            }
+        }
+        catch (OperationCanceledException)
+        {
         }
         catch (Exception ex)
         {
             Log.Error("Load thumbnail failed", ex);
-            return null;
         }
+    }
+
+    private BitmapSource? DecodeJpeg(string videoPath, int second, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var path = _playbackFacade.GetThumbnailPath(videoPath, second);
+        if (path == null)
+            return null;
+
+        cancellationToken.ThrowIfCancellationRequested();
+        var decoder = new JpegBitmapDecoder(new Uri(path), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+        var frame = decoder.Frames[0];
+        frame.Freeze();
+        return frame;
+    }
+
+    private void CancelImageLoad()
+    {
+        _imageLoadCts?.Cancel();
+        _imageLoadCts?.Dispose();
+        _imageLoadCts = null;
     }
 
     private static string FormatTime(long ms)
