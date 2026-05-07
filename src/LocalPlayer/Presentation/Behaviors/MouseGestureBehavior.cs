@@ -58,16 +58,34 @@ public static class MouseGestureBehavior
 
     private static void OnCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is FrameworkElement el && Subscribed.Add(el))
+        if (d is not FrameworkElement el)
+            return;
+
+        if (HasAnyCommand(el))
         {
-            el.SetValue(StateKey, new ButtonState());
-            el.PreviewMouseLeftButtonDown += OnLeftDown;
-            el.PreviewMouseLeftButtonUp += OnLeftUp;
-            el.PreviewMouseRightButtonDown += OnRightDown;
-            el.PreviewMouseRightButtonUp += OnRightUp;
-            el.PreviewMouseDown += OnXButton;
-            el.Unloaded += (_, _) => Subscribed.Remove(el);
+            if (Subscribed.Add(el))
+            {
+                el.SetValue(StateKey, new ButtonState());
+                el.PreviewMouseLeftButtonDown += OnLeftDown;
+                el.PreviewMouseLeftButtonUp += OnLeftUp;
+                el.PreviewMouseRightButtonDown += OnRightDown;
+                el.PreviewMouseRightButtonUp += OnRightUp;
+                el.PreviewMouseDown += OnXButton;
+                el.Unloaded += OnUnloaded;
+            }
+            return;
         }
+
+        if (Subscribed.Contains(el))
+            Detach(el);
+    }
+
+    private static void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement el)
+            return;
+
+        Detach(el);
     }
 
 
@@ -203,6 +221,39 @@ public static class MouseGestureBehavior
         var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(ms) };
         t.Tick += (_, _) => { t.Stop(); action(); };
         return t;
+    }
+
+    private static bool HasAnyCommand(FrameworkElement el)
+    {
+        return GetLeftClick(el) != null ||
+               GetLeftDoubleClick(el) != null ||
+               GetRightHold(el) != null ||
+               GetRightHoldRelease(el) != null ||
+               GetXButton1(el) != null;
+    }
+
+    private static void Detach(FrameworkElement el)
+    {
+        el.Unloaded -= OnUnloaded;
+        el.PreviewMouseLeftButtonDown -= OnLeftDown;
+        el.PreviewMouseLeftButtonUp -= OnLeftUp;
+        el.PreviewMouseRightButtonDown -= OnRightDown;
+        el.PreviewMouseRightButtonUp -= OnRightUp;
+        el.PreviewMouseDown -= OnXButton;
+
+        if (el.ReadLocalValue(StateKey) is ButtonState state)
+        {
+            state.ClickTimer?.Stop();
+            state.ClickTimer = null;
+            state.RightHoldTimer?.Stop();
+            state.RightHoldTimer = null;
+            state.RightDown = false;
+            state.RightHoldFired = false;
+            state.SkipNextUp = false;
+        }
+
+        Subscribed.Remove(el);
+        el.ClearValue(StateKey);
     }
 }
 

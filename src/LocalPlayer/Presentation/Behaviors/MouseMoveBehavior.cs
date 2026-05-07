@@ -17,14 +17,32 @@ public static class MouseMoveBehavior
 
     private static void OnMouseMoveCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is UIElement el && _subscribed.Add(el))
-        {
-            el.MouseMove += (_, args) =>
-            {
-                var cmd = GetMouseMoveCommand(el);
-                if (cmd?.CanExecute(args) == true) cmd.Execute(args);
-            };
-        }
+        if (d is not UIElement el || !_subscribed.Add(el))
+            return;
+
+        el.MouseMove += OnMouseMove;
+        if (el is FrameworkElement fe)
+            fe.Unloaded += OnUnloaded;
+    }
+
+    private static void OnMouseMove(object sender, MouseEventArgs e)
+    {
+        if (sender is not UIElement el)
+            return;
+
+        var cmd = GetMouseMoveCommand(el);
+        if (cmd?.CanExecute(e) == true)
+            cmd.Execute(e);
+    }
+
+    private static void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not UIElement el || !_subscribed.Remove(el))
+            return;
+
+        el.MouseMove -= OnMouseMove;
+        if (el is FrameworkElement fe)
+            fe.Unloaded -= OnUnloaded;
     }
 }
 

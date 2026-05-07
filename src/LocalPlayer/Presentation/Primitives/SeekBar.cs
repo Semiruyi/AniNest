@@ -115,6 +115,7 @@ public class SeekBar : ContentControl
         SnapsToDevicePixels = true;
         BuildVisualTree();
         Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -123,6 +124,17 @@ public class SeekBar : ContentControl
         Debug.WriteLine($"{LogTag} Loaded, ActualWidth={ActualWidth:F0}, ActualHeight={ActualHeight:F0}");
         LoadResources();
         UpdateVisuals();
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        HideTooltip();
+        if (_tooltip != null)
+        {
+            _tooltip.IsOpenAnimated = false;
+            _tooltip.IsOpen = false;
+            _tooltip.Child = null;
+        }
     }
 
     private void LoadResources()

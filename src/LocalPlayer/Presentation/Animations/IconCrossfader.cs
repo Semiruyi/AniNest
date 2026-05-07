@@ -48,6 +48,9 @@ public static class IconCrossfader
     {
         if (d is not Panel panel) return;
 
+        if (!_initialized.Contains(panel))
+            panel.Unloaded += OnPanelUnloaded;
+
         if (e.OldValue is Button oldBtn)
         {
             oldBtn.PreviewMouseLeftButtonDown -= OnButtonMouseDown;
@@ -62,6 +65,31 @@ public static class IconCrossfader
             newBtn.PreviewMouseLeftButtonDown += OnButtonMouseDown;
             newBtn.PreviewMouseLeftButtonUp += OnButtonMouseUp;
             newBtn.LostMouseCapture += OnButtonLostCapture;
+        }
+    }
+
+    private static void OnPanelUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Panel panel)
+            return;
+
+        panel.Unloaded -= OnPanelUnloaded;
+        _initialized.Remove(panel);
+        _clickOutDone.Remove(panel);
+
+        var buttons = new List<Button>();
+        foreach (var pair in _buttonToPanel)
+        {
+            if (pair.Value == panel)
+                buttons.Add(pair.Key);
+        }
+
+        foreach (var button in buttons)
+        {
+            button.PreviewMouseLeftButtonDown -= OnButtonMouseDown;
+            button.PreviewMouseLeftButtonUp -= OnButtonMouseUp;
+            button.LostMouseCapture -= OnButtonLostCapture;
+            _buttonToPanel.Remove(button);
         }
     }
 

@@ -13,12 +13,23 @@ public static class LoadedAnimator
 
     private static void OnEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is not FrameworkElement el || e.NewValue is not true) return;
-        el.Opacity = 0;
-        el.Loaded += (_, _) =>
+        if (d is not FrameworkElement el)
+            return;
+
+        el.Loaded -= OnLoaded;
+        if (e.NewValue is true)
         {
-            AnimationHelper.ApplyEntrance(el, EntranceEffect.Default);
-        };
+            el.Opacity = 0;
+            el.Loaded += OnLoaded;
+        }
+    }
+
+    private static void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement el)
+            return;
+
+        AnimationHelper.ApplyEntrance(el, EntranceEffect.Default);
     }
 }
 

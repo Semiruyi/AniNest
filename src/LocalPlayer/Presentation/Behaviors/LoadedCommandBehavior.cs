@@ -48,7 +48,11 @@ public static class LoadedCommandBehavior
 
     private static void OnUnloadedCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is FrameworkElement el && e.NewValue is ICommand)
+        if (d is not FrameworkElement el)
+            return;
+
+        el.Unloaded -= OnElementUnloaded;
+        if (e.NewValue is ICommand)
         {
             el.Unloaded += OnElementUnloaded;
         }

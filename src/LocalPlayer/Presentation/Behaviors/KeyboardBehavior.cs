@@ -17,15 +17,38 @@ public static class KeyboardBehavior
 
     private static void OnKeyDownCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is UIElement el && _subscribed.Add(el))
-        {
-            el.PreviewKeyDown += (_, args) => ExecuteCommand(el, args);
-            el.KeyDown += (_, args) =>
-            {
-                if (args.Handled) return;
-                ExecuteCommand(el, args);
-            };
-        }
+        if (d is not UIElement el || !_subscribed.Add(el))
+            return;
+
+        el.PreviewKeyDown += OnPreviewKeyDown;
+        el.KeyDown += OnKeyDown;
+        if (el is FrameworkElement fe)
+            fe.Unloaded += OnUnloaded;
+    }
+
+    private static void OnPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (sender is UIElement el)
+            ExecuteCommand(el, e);
+    }
+
+    private static void OnKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Handled || sender is not UIElement el)
+            return;
+
+        ExecuteCommand(el, e);
+    }
+
+    private static void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not UIElement el || !_subscribed.Remove(el))
+            return;
+
+        el.PreviewKeyDown -= OnPreviewKeyDown;
+        el.KeyDown -= OnKeyDown;
+        if (el is FrameworkElement fe)
+            fe.Unloaded -= OnUnloaded;
     }
 
     private static void ExecuteCommand(UIElement el, KeyEventArgs args)

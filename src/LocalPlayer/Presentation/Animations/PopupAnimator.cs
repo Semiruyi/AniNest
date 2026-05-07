@@ -8,6 +8,9 @@ namespace LocalPlayer.Presentation.Animations;
 
 public class PopupAnimator
 {
+    private static readonly DependencyProperty AnimatorProperty =
+        DependencyProperty.RegisterAttached("Animator", typeof(PopupAnimator), typeof(PopupAnimator));
+
     private readonly UIElement _element;
     private readonly Point _origin;
     private readonly ExitEffect _exitEffect;
@@ -67,7 +70,13 @@ public class PopupAnimator
     {
         if (d is not UIElement element) return;
 
-        var animator = new PopupAnimator(element);
+        var animator = (PopupAnimator?)element.GetValue(AnimatorProperty);
+        if (animator == null)
+        {
+            animator = new PopupAnimator(element);
+            element.SetValue(AnimatorProperty, animator);
+        }
+
         if ((bool)e.NewValue)
             animator.Show();
         else

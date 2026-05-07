@@ -10,6 +10,7 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <conv:NullToVisibilityConverter x:Key="NullToVis" NullValue="Collapsed" NotNullValue="Visible"/>
         <conv:NullToVisibilityConverter x:Key="NullToHidden"  NullValue="Visible"    NotNullValue="Collapsed"/>
+        <conv:CoverImageSourceConverter x:Key="CoverImageSource" DecodePixelWidth="380"/>
     </UserControl.Resources>
 
     <Grid>
@@ -47,7 +48,8 @@
                                                       Rect="0,0,190,253"/>
                                 </Grid.Clip>
 
-                                <Image Stretch="UniformToFill" Source="{Binding CoverPath}"
+                                <Image Stretch="UniformToFill"
+                                       Source="{Binding CoverPath, Converter={StaticResource CoverImageSource}}"
                                        Visibility="{Binding CoverPath, Converter={StaticResource NullToVis}}"/>
 
                                 <Rectangle Fill="#252525"

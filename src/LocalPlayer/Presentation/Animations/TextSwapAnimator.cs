@@ -28,6 +28,9 @@ public static class TextSwapAnimator
         if (d is not Panel panel || panel.Children.Count < 2) return;
         if (panel.Children[0] is not TextBlock oldBlock || panel.Children[1] is not TextBlock newBlock) return;
 
+        if (!_initialized.Contains(panel))
+            panel.Unloaded += OnPanelUnloaded;
+
         var newText = (string?)e.NewValue ?? "";
         var oldText = (string?)e.OldValue ?? "";
         int duration = GetDurationMs(panel);
@@ -60,6 +63,15 @@ public static class TextSwapAnimator
             (ScaleTransform)newBlock.RenderTransform, 1, duration, AnimationHelper.EaseOut);
         AnimationHelper.AnimateFromCurrent(
             newBlock, UIElement.OpacityProperty, 1, duration, AnimationHelper.EaseOut);
+    }
+
+    private static void OnPanelUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Panel panel)
+            return;
+
+        panel.Unloaded -= OnPanelUnloaded;
+        _initialized.Remove(panel);
     }
 
     private static void SetOpacity(UIElement element, double opacity)

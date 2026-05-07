@@ -162,6 +162,9 @@ public class TransitioningContentControl : ContentControl
 
     private void FinishTransition()
     {
+        string previousActive = GetContentName(_activePresenter.Content);
+        string previousInactive = GetContentName(_inactivePresenter.Content);
+
         // Swap so _activePresenter always holds the visible content.
         var temp = _activePresenter;
         _activePresenter = _inactivePresenter;

@@ -85,6 +85,7 @@ public class AnimatedPopup : Popup
             Child = _animationLayer
         };
         base.Child = _popupRoot;
+        Unloaded += OnUnloaded;
     }
 
     // ========== Open / Close orchestration ==========
@@ -175,6 +176,20 @@ public class AnimatedPopup : Popup
             PopupInputCoordinator.Instance.RegisterClosedPopup(popup);
             RemoveWindowSubs(popup);
         }
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        Opened -= OnOpened;
+        Closed -= OnClosed;
+
+        if (IsOpen)
+            IsOpen = false;
+
+        IsOpenAnimated = false;
+        PopupInputCoordinator.Instance.RegisterClosedPopup(this);
+        RemoveWindowSubs(this);
+        _animationLayer.Child = null;
     }
 
     private static void RemoveWindowSubs(AnimatedPopup popup)

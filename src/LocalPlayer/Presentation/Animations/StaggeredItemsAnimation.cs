@@ -33,25 +33,45 @@ public static class StaggeredItemsAnimation
         DependencyProperty.RegisterAttached("NextIndex", typeof(int), typeof(StaggeredItemsAnimation),
             new PropertyMetadata(0));
 
+    private static readonly DependencyProperty CollectionChangedHandlerProperty =
+        DependencyProperty.RegisterAttached("CollectionChangedHandler", typeof(NotifyCollectionChangedEventHandler), typeof(StaggeredItemsAnimation));
+
+    private static readonly DependencyProperty CollectionChangedSourceProperty =
+        DependencyProperty.RegisterAttached("CollectionChangedSource", typeof(INotifyCollectionChanged), typeof(StaggeredItemsAnimation));
+
+    private static readonly DependencyProperty StatusChangedHandlerProperty =
+        DependencyProperty.RegisterAttached("StatusChangedHandler", typeof(EventHandler), typeof(StaggeredItemsAnimation));
+
     private static void OnEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is not ItemsControl ic) return;
         ic.Loaded -= OnLoaded;
+        ic.Unloaded -= OnUnloaded;
         if (e.NewValue is true)
+        {
             ic.Loaded += OnLoaded;
+            ic.Unloaded += OnUnloaded;
+        }
+        else
+        {
+            Detach(ic);
+        }
     }
 
     private static void OnLoaded(object sender, RoutedEventArgs e)
     {
         var ic = (ItemsControl)sender;
-        ic.Loaded -= OnLoaded;
         ic.SetValue(NextIndexProperty, 0);
 
-        ic.ItemContainerGenerator.StatusChanged += (_, _) => AnimatePending(ic);
+        Detach(ic);
+
+        EventHandler statusChangedHandler = (_, _) => AnimatePending(ic);
+        ic.ItemContainerGenerator.StatusChanged += statusChangedHandler;
+        ic.SetValue(StatusChangedHandlerProperty, statusChangedHandler);
 
         if (ic.ItemsSource is INotifyCollectionChanged ncc)
         {
-            ncc.CollectionChanged += (_, args) =>
+            NotifyCollectionChangedEventHandler collectionChangedHandler = (_, args) =>
             {
                 if (args.Action == NotifyCollectionChangedAction.Add)
                 {
@@ -70,9 +90,43 @@ public static class StaggeredItemsAnimation
                     ic.SetValue(NextIndexProperty, 0);
                 }
             };
+            ncc.CollectionChanged += collectionChangedHandler;
+            ic.SetValue(CollectionChangedHandlerProperty, collectionChangedHandler);
+            ic.SetValue(CollectionChangedSourceProperty, ncc);
         }
 
         AnimatePending(ic);
+    }
+
+    private static void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is ItemsControl ic)
+            Detach(ic);
+    }
+
+    private static void Detach(ItemsControl ic)
+    {
+        var statusChangedValue = ic.ReadLocalValue(StatusChangedHandlerProperty);
+        if (!ReferenceEquals(statusChangedValue, DependencyProperty.UnsetValue) &&
+            statusChangedValue is EventHandler statusChangedHandler)
+        {
+            ic.ItemContainerGenerator.StatusChanged -= statusChangedHandler;
+            ic.ClearValue(StatusChangedHandlerProperty);
+        }
+
+        var collectionChangedValue = ic.ReadLocalValue(CollectionChangedHandlerProperty);
+        var collectionChangedSourceValue = ic.ReadLocalValue(CollectionChangedSourceProperty);
+        if (!ReferenceEquals(collectionChangedValue, DependencyProperty.UnsetValue) &&
+            !ReferenceEquals(collectionChangedSourceValue, DependencyProperty.UnsetValue) &&
+            collectionChangedValue is NotifyCollectionChangedEventHandler collectionChangedHandler &&
+            collectionChangedSourceValue is INotifyCollectionChanged collectionChangedSource)
+        {
+            collectionChangedSource.CollectionChanged -= collectionChangedHandler;
+            ic.ClearValue(CollectionChangedHandlerProperty);
+            ic.ClearValue(CollectionChangedSourceProperty);
+        }
+
+        ic.ClearValue(NextIndexProperty);
     }
 
     private static void AnimatePending(ItemsControl ic)

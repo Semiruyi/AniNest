@@ -29,20 +29,47 @@ public static class HoverBehavior
 
     private static void OnPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is UIElement el && _subscribed.Add(el))
-        {
-            el.MouseEnter += (_, _) =>
-            {
-                var cmd = GetMouseEnterCommand(el);
-                if (cmd?.CanExecute(null) == true) cmd.Execute(null);
-            };
-            el.MouseLeave += (_, _) =>
-            {
-                if (GetIgnoreChildLeave(el) && el.IsMouseOver) return;
-                var cmd = GetMouseLeaveCommand(el);
-                if (cmd?.CanExecute(null) == true) cmd.Execute(null);
-            };
-        }
+        if (d is not UIElement el || !_subscribed.Add(el))
+            return;
+
+        el.MouseEnter += OnMouseEnter;
+        el.MouseLeave += OnMouseLeave;
+        if (el is FrameworkElement fe)
+            fe.Unloaded += OnUnloaded;
+    }
+
+    private static void OnMouseEnter(object sender, MouseEventArgs e)
+    {
+        if (sender is not UIElement el)
+            return;
+
+        var cmd = GetMouseEnterCommand(el);
+        if (cmd?.CanExecute(null) == true)
+            cmd.Execute(null);
+    }
+
+    private static void OnMouseLeave(object sender, MouseEventArgs e)
+    {
+        if (sender is not UIElement el)
+            return;
+
+        if (GetIgnoreChildLeave(el) && el.IsMouseOver)
+            return;
+
+        var cmd = GetMouseLeaveCommand(el);
+        if (cmd?.CanExecute(null) == true)
+            cmd.Execute(null);
+    }
+
+    private static void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not UIElement el || !_subscribed.Remove(el))
+            return;
+
+        el.MouseEnter -= OnMouseEnter;
+        el.MouseLeave -= OnMouseLeave;
+        if (el is FrameworkElement fe)
+            fe.Unloaded -= OnUnloaded;
     }
 }
 

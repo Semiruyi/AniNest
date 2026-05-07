@@ -5,6 +5,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
+using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using LocalPlayer.Infrastructure.Logging;
 using LocalPlayer.Infrastructure.Paths;
 using LocalPlayer.Infrastructure.Persistence;
@@ -135,14 +137,23 @@ public static class CardAnimation
     private static bool GetIsExiting(DependencyObject o) => (bool)o.GetValue(IsExitingProperty);
     private static void SetIsExiting(DependencyObject o, bool v) => o.SetValue(IsExitingProperty, v);
 
+    private static readonly DependencyProperty DeleteButtonCommandProperty =
+        DependencyProperty.RegisterAttached("DeleteButtonCommand", typeof(ICommand), typeof(CardAnimation));
+
+    private static readonly DependencyProperty DeleteButtonCommandParameterProperty =
+        DependencyProperty.RegisterAttached("DeleteButtonCommandParameter", typeof(object), typeof(CardAnimation));
+
 
     private static void OnEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is not Border border) return;
-        Log.Debug($"OnEnabledChanged: {(bool)e.NewValue}");
         border.Loaded -= OnLoaded;
+        border.Unloaded -= OnUnloaded;
         if (e.NewValue is true)
+        {
             border.Loaded += OnLoaded;
+            border.Unloaded += OnUnloaded;
+        }
     }
 
     private static void OnLoaded(object sender, RoutedEventArgs e)
@@ -184,34 +195,69 @@ public static class CardAnimation
             deleteBtn.RenderTransform = new ScaleTransform(0, 0);
             deleteBtn.PreviewMouseDown += OnDeleteBtnDown;
             deleteBtn.PreviewMouseUp += OnDeleteBtnUp;
-
-            var savedCmd = deleteBtn.Command;
-            var savedParam = deleteBtn.CommandParameter;
-            deleteBtn.Command = null;
-            deleteBtn.Click += (s, ce) =>
+            if (deleteBtn.ReadLocalValue(DeleteButtonCommandProperty) == DependencyProperty.UnsetValue)
             {
-                border.SetValue(IsExitingProperty, true);
+                deleteBtn.SetValue(DeleteButtonCommandProperty, deleteBtn.Command);
+                deleteBtn.SetValue(DeleteButtonCommandParameterProperty, deleteBtn.CommandParameter);
+                deleteBtn.Command = null;
+            }
 
-                var container = FindAncestor<ContentPresenter>(deleteBtn);
-                if (container != null)
-                {
-                    AnimateContainerExit(container, 400, () =>
-                    {
-                        deleteBtn.Dispatcher.BeginInvoke(
-                            new Action(() =>
-                            {
-                                if (savedCmd?.CanExecute(savedParam) == true)
-                                    savedCmd.Execute(savedParam);
-                            }));
-                    });
-                }
-                else
-                {
-                    if (savedCmd?.CanExecute(savedParam) == true)
-                        savedCmd.Execute(savedParam);
-                }
-            };
+            deleteBtn.Click -= OnDeleteBtnClick;
+            deleteBtn.Click += OnDeleteBtnClick;
         }
+    }
+
+    private static void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        var border = (Border)sender;
+        border.MouseEnter -= OnMouseEnter;
+        border.MouseLeave -= OnMouseLeave;
+        border.PreviewMouseLeftButtonDown -= OnMouseDown;
+        border.PreviewMouseLeftButtonUp -= OnMouseUp;
+
+        var deleteBtn = FindChild<Button>(border);
+        if (deleteBtn != null)
+        {
+            deleteBtn.PreviewMouseDown -= OnDeleteBtnDown;
+            deleteBtn.PreviewMouseUp -= OnDeleteBtnUp;
+            deleteBtn.Click -= OnDeleteBtnClick;
+            deleteBtn.ClearValue(DeleteButtonCommandProperty);
+            deleteBtn.ClearValue(DeleteButtonCommandParameterProperty);
+        }
+
+        border.ClearValue(IsExitingProperty);
+    }
+
+    private static void OnDeleteBtnClick(object sender, RoutedEventArgs e)
+    {
+        var deleteBtn = (Button)sender;
+        var border = FindAncestor<Border>(deleteBtn);
+        if (border == null)
+            return;
+
+        border.SetValue(IsExitingProperty, true);
+
+        var savedCmd = deleteBtn.GetValue(DeleteButtonCommandProperty) as ICommand;
+        var savedParam = deleteBtn.GetValue(DeleteButtonCommandParameterProperty);
+        var container = FindAncestor<ContentPresenter>(deleteBtn);
+
+        if (container != null)
+        {
+            AnimateContainerExit(container, 400, () =>
+            {
+                deleteBtn.Dispatcher.BeginInvoke(
+                    new Action(() =>
+                    {
+                        if (savedCmd?.CanExecute(savedParam) == true)
+                            savedCmd.Execute(savedParam);
+                    }),
+                    DispatcherPriority.Background);
+            });
+            return;
+        }
+
+        if (savedCmd?.CanExecute(savedParam) == true)
+            savedCmd.Execute(savedParam);
     }
 
     private static void ResetVisualState(Border border)
@@ -274,13 +320,10 @@ public static class CardAnimation
         int coverMs = GetCoverDurationMs(border);
         var ease = AnimationHelper.EaseOut;
 
-        Log.Debug($"MouseEnter: hoverScale={hoverScale}, coverScale={coverScale}, coverShiftY={coverShiftY}");
-
         AnimationHelper.AnimateScaleTransform(
             (ScaleTransform)border.RenderTransform, hoverScale, hoverMs, ease);
 
         var g = EnsureImageTransform(border);
-        Log.Debug($"MouseEnter: ImageTransform={g != null}, CoverScale={coverScale}, CoverShiftY={coverShiftY}, CoverMs={coverMs}");
         if (g != null)
         {
             AnimationHelper.AnimateScaleTransform((ScaleTransform)g.Children[0], coverScale, coverMs, ease);
@@ -415,7 +458,6 @@ public static class CardAnimation
     private static TransformGroup? EnsureImageTransform(Border border)
     {
         var image = FindChild<Image>(border);
-        Log.Debug($"EnsureImageTransform: Image found={image != null}, Visibility={image?.Visibility}");
         if (image == null || image.Visibility != Visibility.Visible)
             return null;
         if (image.RenderTransform is TransformGroup g)

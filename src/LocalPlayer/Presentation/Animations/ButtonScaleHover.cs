@@ -43,6 +43,9 @@ public static class ButtonScaleHover
         DependencyProperty.RegisterAttached("Easing", typeof(IEasingFunction), typeof(ButtonScaleHover),
             new PropertyMetadata(null));
 
+    private static readonly DependencyProperty AttachedScaleProperty =
+        DependencyProperty.RegisterAttached("AttachedScale", typeof(ScaleTransform), typeof(ButtonScaleHover));
+
     // ---- getter / setter ----
 
     public static bool GetIsEnabled(DependencyObject obj) => (bool)obj.GetValue(IsEnabledProperty);
@@ -75,19 +78,47 @@ public static class ButtonScaleHover
 
     private static void OnIsEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is not Button btn || !(bool)e.NewValue) return;
-        btn.Loaded += (_, _) =>
+        if (d is not Button btn)
+            return;
+
+        btn.Loaded -= OnLoaded;
+        btn.Unloaded -= OnUnloaded;
+
+        if (e.NewValue is true)
         {
-            if (btn.Template.FindName("AnimScale", btn) is ScaleTransform st)
-                Attach(btn, st,
-                    GetHoverScale(btn), GetPressScale(btn),
-                    GetHoverScaleEnabled(btn),
-                    GetHoverEnterDurationMs(btn), GetHoverExitDurationMs(btn),
-                    GetPressDurationMs(btn), GetReleaseDurationMs(btn),
-                    GetEasing(btn));
-        };
+            btn.Loaded += OnLoaded;
+            btn.Unloaded += OnUnloaded;
+        }
+        else
+        {
+            Detach(btn);
+        }
     }
 
+    private static void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn)
+            return;
+
+        Detach(btn);
+
+        if (btn.Template.FindName("AnimScale", btn) is ScaleTransform st)
+        {
+            btn.SetValue(AttachedScaleProperty, st);
+            Attach(btn, st,
+                GetHoverScale(btn), GetPressScale(btn),
+                GetHoverScaleEnabled(btn),
+                GetHoverEnterDurationMs(btn), GetHoverExitDurationMs(btn),
+                GetPressDurationMs(btn), GetReleaseDurationMs(btn),
+                GetEasing(btn));
+        }
+    }
+
+    private static void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn)
+            Detach(btn);
+    }
 
     public static void Attach(Button button, ScaleTransform scale,
         double hoverScale = 1.2, double pressScale = 0.85,
@@ -96,30 +127,73 @@ public static class ButtonScaleHover
         int pressMs = 130, int releaseMs = 280,
         IEasingFunction? ease = null)
     {
-        var e = ease ?? DefaultEase();
+        var easing = ease ?? DefaultEase();
 
-        button.MouseEnter += (_, _) =>
-        {
-            if (!hoverScaleEnabled || button.IsPressed) return;
-            AnimationHelper.AnimateScaleTransform(scale, hoverScale, hoverEnterMs, e);
-        };
+        button.MouseEnter += OnMouseEnter;
+        button.MouseLeave += OnMouseLeave;
+        button.PreviewMouseDown += OnPreviewMouseDown;
+        button.PreviewMouseUp += OnPreviewMouseUp;
 
-        button.MouseLeave += (_, _) =>
-        {
-            if (!hoverScaleEnabled || button.IsPressed) return;
-            AnimationHelper.AnimateScaleTransform(scale, 1.0, hoverExitMs, e);
-        };
+        button.SetValue(HoverScaleProperty, hoverScale);
+        button.SetValue(PressScaleProperty, pressScale);
+        button.SetValue(HoverScaleEnabledProperty, hoverScaleEnabled);
+        button.SetValue(HoverEnterDurationMsProperty, hoverEnterMs);
+        button.SetValue(HoverExitDurationMsProperty, hoverExitMs);
+        button.SetValue(PressDurationMsProperty, pressMs);
+        button.SetValue(ReleaseDurationMsProperty, releaseMs);
+        button.SetValue(EasingProperty, easing);
+    }
 
-        button.PreviewMouseDown += (_, _) =>
-        {
-            AnimationHelper.AnimateScaleTransform(scale, pressScale, pressMs, e);
-        };
+    private static void OnMouseEnter(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            button.GetValue(AttachedScaleProperty) is not ScaleTransform scale)
+            return;
 
-        button.PreviewMouseUp += (_, _) =>
-        {
-            double target = (hoverScaleEnabled && button.IsMouseOver) ? hoverScale : 1.0;
-            AnimationHelper.AnimateScaleTransform(scale, target, releaseMs, e);
-        };
+        if (!GetHoverScaleEnabled(button) || button.IsPressed)
+            return;
+
+        AnimationHelper.AnimateScaleTransform(scale, GetHoverScale(button), GetHoverEnterDurationMs(button), GetEasing(button) ?? DefaultEase());
+    }
+
+    private static void OnMouseLeave(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            button.GetValue(AttachedScaleProperty) is not ScaleTransform scale)
+            return;
+
+        if (!GetHoverScaleEnabled(button) || button.IsPressed)
+            return;
+
+        AnimationHelper.AnimateScaleTransform(scale, 1.0, GetHoverExitDurationMs(button), GetEasing(button) ?? DefaultEase());
+    }
+
+    private static void OnPreviewMouseDown(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            button.GetValue(AttachedScaleProperty) is not ScaleTransform scale)
+            return;
+
+        AnimationHelper.AnimateScaleTransform(scale, GetPressScale(button), GetPressDurationMs(button), GetEasing(button) ?? DefaultEase());
+    }
+
+    private static void OnPreviewMouseUp(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            button.GetValue(AttachedScaleProperty) is not ScaleTransform scale)
+            return;
+
+        double target = (GetHoverScaleEnabled(button) && button.IsMouseOver) ? GetHoverScale(button) : 1.0;
+        AnimationHelper.AnimateScaleTransform(scale, target, GetReleaseDurationMs(button), GetEasing(button) ?? DefaultEase());
+    }
+
+    private static void Detach(Button button)
+    {
+        button.MouseEnter -= OnMouseEnter;
+        button.MouseLeave -= OnMouseLeave;
+        button.PreviewMouseDown -= OnPreviewMouseDown;
+        button.PreviewMouseUp -= OnPreviewMouseUp;
+        button.ClearValue(AttachedScaleProperty);
     }
 
     private static IEasingFunction DefaultEase() => new CubicBezierEase

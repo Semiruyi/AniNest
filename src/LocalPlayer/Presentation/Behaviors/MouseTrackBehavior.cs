@@ -23,21 +23,46 @@ public static class MouseTrackBehavior
 
     private static void OnPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is UIElement el && _subscribed.Add(el))
-        {
-            el.PreviewMouseMove += (_, args) =>
-            {
-                var cmd = GetMouseMoveCommand(el);
-                var pos = args.GetPosition(el);
-                var param = (pos.Y, el.RenderSize.Height);
-                if (cmd?.CanExecute(param) == true) cmd.Execute(param);
-            };
-            el.MouseLeave += (_, _) =>
-            {
-                var cmd = GetMouseLeaveCommand(el);
-                if (cmd?.CanExecute(null) == true) cmd.Execute(null);
-            };
-        }
+        if (d is not UIElement el || !_subscribed.Add(el))
+            return;
+
+        el.PreviewMouseMove += OnPreviewMouseMove;
+        el.MouseLeave += OnMouseLeave;
+        if (el is FrameworkElement fe)
+            fe.Unloaded += OnUnloaded;
+    }
+
+    private static void OnPreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (sender is not UIElement el)
+            return;
+
+        var cmd = GetMouseMoveCommand(el);
+        var pos = e.GetPosition(el);
+        var param = (pos.Y, el.RenderSize.Height);
+        if (cmd?.CanExecute(param) == true)
+            cmd.Execute(param);
+    }
+
+    private static void OnMouseLeave(object sender, MouseEventArgs e)
+    {
+        if (sender is not UIElement el)
+            return;
+
+        var cmd = GetMouseLeaveCommand(el);
+        if (cmd?.CanExecute(null) == true)
+            cmd.Execute(null);
+    }
+
+    private static void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not UIElement el || !_subscribed.Remove(el))
+            return;
+
+        el.PreviewMouseMove -= OnPreviewMouseMove;
+        el.MouseLeave -= OnMouseLeave;
+        if (el is FrameworkElement fe)
+            fe.Unloaded -= OnUnloaded;
     }
 }
 

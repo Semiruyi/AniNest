@@ -105,6 +105,7 @@ public sealed class PopupInputCoordinator
 
     public void RegisterOpenedPopup(AnimatedPopup popup)
     {
+        SweepStaleState();
         _openPopups.Add(popup);
 
         if (popup.Child is UIElement child)
@@ -130,6 +131,41 @@ public sealed class PopupInputCoordinator
             _popupRoots.Remove(root);
 
         popup.ParentPopup = null;
+        SweepStaleState();
+    }
+
+    private void SweepStaleState()
+    {
+        _openPopups.RemoveWhere(IsPopupStale);
+
+        var staleRoots = _popupRoots
+            .Where(entry => entry.Key is null || entry.Value is null || IsPopupStale(entry.Value))
+            .Select(entry => entry.Key)
+            .ToList();
+
+        foreach (var root in staleRoots)
+            _popupRoots.Remove(root);
+
+        foreach (var regions in _registeredRegions.Values)
+        {
+            regions.RemoveWhere(static element => element is null || !IsElementAlive(element));
+        }
+    }
+
+    private static bool IsPopupStale(AnimatedPopup popup)
+    {
+        return popup is null || (!popup.IsOpen && !popup.IsOpenAnimated && !IsElementAlive(popup));
+    }
+
+    private static bool IsElementAlive(DependencyObject element)
+    {
+        return element switch
+        {
+            FrameworkElement frameworkElement => frameworkElement.IsLoaded || PresentationSource.FromDependencyObject(frameworkElement) != null,
+            Visual visual => PresentationSource.FromVisual(visual) != null,
+            System.Windows.Media.Media3D.Visual3D visual3D => PresentationSource.FromDependencyObject(visual3D) != null,
+            _ => true,
+        };
     }
 
     public AnimatedPopup? FindParentPopup(AnimatedPopup popup)
