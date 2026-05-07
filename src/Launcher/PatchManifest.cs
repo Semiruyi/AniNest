@@ -5,7 +5,7 @@ namespace LocalPlayer.Launcher;
 public sealed class PatchManifest
 {
     [JsonPropertyName("appId")]
-    public string AppId { get; set; } = "LocalPlayer";
+    public string AppId { get; set; } = "AniNest";
 
     [JsonPropertyName("packageType")]
     public string PackageType { get; set; } = "patch";

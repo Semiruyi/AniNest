@@ -9,7 +9,7 @@
         xmlns:pagesLibrary="clr-namespace:LocalPlayer.Features.Library"
         xmlns:pagesPlayer="clr-namespace:LocalPlayer.Features.Player"
         xmlns:animations="clr-namespace:LocalPlayer.Presentation.Animations"
-        Title="LocalPlayer"
+        Title="AniNest"
         Height="{StaticResource WindowDefaultHeight}"
         Width="{StaticResource WindowDefaultWidth}"
         MinWidth="{StaticResource WindowMinWidth}"

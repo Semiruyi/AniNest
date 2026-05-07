@@ -119,7 +119,7 @@ foreach ($relativePath in $baseFiles.Keys | Sort-Object) {
 }
 
 $manifest = [ordered]@{
-    appId = "LocalPlayer"
+    appId = "AniNest"
     packageType = "patch"
     version = $Version
     baseVersion = $BaseVersion

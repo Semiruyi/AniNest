@@ -14,8 +14,8 @@ $launcherTempRoot = Join-Path $artifactsRoot "publish-temp\launcher"
 $appTempRoot = Join-Path $artifactsRoot "publish-temp\app"
 $appOut = Join-Path $publishRoot "app"
 $dataOut = Join-Path $publishRoot "data"
-$launcherOut = Join-Path $publishRoot "LocalPlayer.Launcher.exe"
-$zipOut = Join-Path $artifactsRoot "LocalPlayer-portable.zip"
+$launcherOut = Join-Path $publishRoot "AniNest.Launcher.exe"
+$zipOut = Join-Path $artifactsRoot "AniNest-portable.zip"
 
 if ([string]::IsNullOrWhiteSpace($Version)) {
     $Version = Get-Date -Format "yyyy.MM.dd.HHmmss"
@@ -46,7 +46,7 @@ function Copy-Folder([string]$source, [string]$destination) {
 function Write-AppManifest([string]$appDir, [string]$version) {
     $manifestPath = Join-Path $appDir "manifest.json"
     $manifest = @{
-        appId = "LocalPlayer"
+        appId = "AniNest"
         packageType = "full"
         version = $version
         baseVersion = ""
