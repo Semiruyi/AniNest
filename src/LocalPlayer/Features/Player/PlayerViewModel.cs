@@ -183,7 +183,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     private void Cleanup()
     {
         ControlBar.Cleanup();
-        _playback.Cleanup(_session);
+        _playback.Cleanup();
         _session.Cleanup();
     }
 

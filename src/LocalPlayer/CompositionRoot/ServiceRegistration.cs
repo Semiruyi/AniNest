@@ -31,6 +31,9 @@ public static class ServiceRegistration
         services.AddSingleton<IShellPreferencesService, ShellPreferencesService>();
         services.AddSingleton<IPlayerAppService, PlayerAppService>();
         services.AddSingleton<IPlayerPlaybackFacade, PlayerPlaybackFacade>();
+        services.AddSingleton<IPlayerPlaybackStateSyncService, PlayerPlaybackStateSyncService>();
+        services.AddSingleton<IPlayerPlaylistService, PlayerPlaylistService>();
+        services.AddSingleton<IPlayerThumbnailSyncService, PlayerThumbnailSyncService>();
         services.AddSingleton<PlayerSessionController>();
         services.AddSingleton<PlayerPlaybackStateController>();
         services.AddSingleton<IPlayerInputService, PlayerInputService>();

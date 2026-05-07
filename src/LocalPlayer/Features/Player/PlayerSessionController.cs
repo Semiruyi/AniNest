@@ -1,129 +1,71 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using LocalPlayer.Features.Player.Models;
-using LocalPlayer.Infrastructure.Diagnostics;
+using LocalPlayer.Features.Player.Services;
 using LocalPlayer.Infrastructure.Logging;
-using LocalPlayer.Infrastructure.Media;
-using LocalPlayer.Infrastructure.Persistence;
-using LocalPlayer.Infrastructure.Thumbnails;
-using LocalPlayer.Infrastructure.Interop;
-using LocalPlayer.Infrastructure.Localization;
-using System.Windows;
 
 namespace LocalPlayer.Features.Player;
 
 public partial class PlayerSessionController : ObservableObject
 {
     private static readonly Logger Log = AppLog.For<PlayerSessionController>();
-    private readonly IThumbnailGenerator _thumbnailGenerator;
-    private readonly Action<string> _videoReadyHandler;
-    private readonly Action<string, int> _videoProgressHandler;
-    private readonly PlaylistManager _playlistManager;
+    private readonly IPlayerThumbnailSyncService _thumbnailSyncService;
+    private readonly IPlayerPlaylistService _playlistService;
     private bool _isCleanedUp;
-    private CancellationTokenSource? _loadCts;
-    private long _loadGeneration;
-    private long _loadedGeneration;
-    private PerfSpan? _loadFolderSpan;
 
-    public PlaylistViewModel Playlist { get; }
+    public bool IsCleanedUp => _isCleanedUp;
+    public PlaylistViewModel Playlist => _playlistService.Playlist;
 
     [ObservableProperty]
     private int _currentIndex = -1;
 
-    public PlaylistItem? CurrentItem => _playlistManager.CurrentItem;
+    public PlaylistItem? CurrentItem => _playlistService.CurrentItem;
 
     [ObservableProperty]
     private string? _currentVideoPath;
 
-    public System.Collections.ObjectModel.ObservableCollection<PlaylistItem> PlaylistItems => _playlistManager.Items;
+    public System.Collections.ObjectModel.ObservableCollection<PlaylistItem> PlaylistItems => _playlistService.Items;
 
     public event Action<int>? CurrentIndexChanged;
     public event Action<string>? CurrentVideoPathChanged;
 
     public PlayerSessionController(
-        ISettingsService settings,
-        IThumbnailGenerator thumbnailGenerator,
-        IMediaPlayerController media,
-        IVideoScanner videoScanner,
-        ILocalizationService loc)
+        IPlayerThumbnailSyncService thumbnailSyncService,
+        IPlayerPlaylistService playlistService)
     {
-        _thumbnailGenerator = thumbnailGenerator;
-        _videoReadyHandler = OnVideoReady;
-        _videoProgressHandler = OnVideoProgress;
-
-        _playlistManager = new PlaylistManager(settings, media, videoScanner, path => thumbnailGenerator.GetState(path));
-        Playlist = new PlaylistViewModel(loc);
-        Playlist.SetPlaylistManager(_playlistManager);
+        _thumbnailSyncService = thumbnailSyncService;
+        _playlistService = playlistService;
         Playlist.CurrentIndexChanged += OnPlaylistCurrentIndexChanged;
         Playlist.VideoPlayed += OnPlaylistVideoPlayed;
-
-        _thumbnailGenerator.VideoReady += _videoReadyHandler;
-        _thumbnailGenerator.VideoProgress += _videoProgressHandler;
+        _thumbnailSyncService.Attach(Playlist);
     }
 
-    public async Task LoadFolderAsync(string folderPath, string folderName)
+    public Task LoadFolderSkeletonAsync(string folderPath, string folderName, CancellationToken cancellationToken)
+        => _playlistService.LoadFolderSkeletonAsync(folderPath, folderName, cancellationToken);
+
+    public async Task LoadFolderDataAsync(CancellationToken cancellationToken)
     {
-        if (_isCleanedUp)
-            return;
-
-        CancelAndDispose(ref _loadCts);
-        _loadCts = new CancellationTokenSource();
-        var cancellationToken = _loadCts.Token;
-
-        Log.Info($"LoadFolderSkeleton start: {folderName} | {folderPath}");
-        _loadGeneration++;
-        _loadFolderSpan?.Dispose();
-        _loadFolderSpan = PerfSpan.Begin("Player.LoadFolderSkeleton", new Dictionary<string, string>
-        {
-            ["folder"] = folderName
-        });
-
-        using var playlistSpan = PerfSpan.Begin("Player.Playlist.LoadFolderSkeleton", new Dictionary<string, string>
-        {
-            ["folder"] = folderName
-        });
-        await Playlist.LoadFolderSkeletonAsync(folderPath, folderName, cancellationToken);
-        Log.Info($"LoadFolderSkeleton done: generation={_loadGeneration}, items={PlaylistItems.Count}");
-
-        _loadFolderSpan?.Dispose();
-        _loadFolderSpan = null;
-
-        var generation = _loadGeneration;
-        if (generation == _loadedGeneration)
-        {
-            Log.Debug($"LoadFolderAsync skipped data load: generation already loaded ({generation})");
-            return;
-        }
-
-        Log.Info($"LoadFolderDataAsync start: generation={generation}, loaded={_loadedGeneration}, items={PlaylistItems.Count}");
-        using var dataSpan = PerfSpan.Begin("Player.LoadFolderData");
-        await Playlist.LoadFolderDataAsync(cancellationToken);
-
-        using var currentIndexSpan = PerfSpan.Begin("Player.CurrentIndexSync");
+        await _playlistService.LoadFolderDataAsync(cancellationToken);
         SyncCurrentIndex();
         Log.Info($"After LoadFolderDataAsync sync: CurrentIndex={CurrentIndex}, CurrentVideoPath={CurrentVideoPath ?? "null"}");
+    }
 
-        if (_isCleanedUp || generation != _loadGeneration)
-            return;
-
-        Playlist.ActivateCurrentVideo();
+    public void ActivateCurrentVideo()
+    {
+        _playlistService.ActivateCurrentVideo();
         SyncCurrentIndex();
-        _loadedGeneration = generation;
-        Log.Info($"LoadFolderDataAsync complete: CurrentIndex={CurrentIndex}, CurrentVideoPath={CurrentVideoPath ?? "null"}");
     }
 
     public bool PlayNext()
-        => Playlist.PlayNext();
+        => _playlistService.PlayNext();
 
     public bool PlayPrevious()
-        => Playlist.PlayPrevious();
+        => _playlistService.PlayPrevious();
 
     public void SaveProgress()
-        => Playlist.SaveProgress();
+        => _playlistService.SaveProgress();
 
     public void Cleanup()
     {
@@ -131,15 +73,11 @@ public partial class PlayerSessionController : ObservableObject
             return;
 
         _isCleanedUp = true;
-        _loadFolderSpan?.Dispose();
-        _loadFolderSpan = null;
-        CancelAndDispose(ref _loadCts);
 
         Playlist.CurrentIndexChanged -= OnPlaylistCurrentIndexChanged;
         Playlist.VideoPlayed -= OnPlaylistVideoPlayed;
-        Playlist.Cleanup();
-        _thumbnailGenerator.VideoReady -= _videoReadyHandler;
-        _thumbnailGenerator.VideoProgress -= _videoProgressHandler;
+        _thumbnailSyncService.Detach(Playlist);
+        _playlistService.Cleanup();
     }
 
     private void SyncCurrentIndex()
@@ -163,42 +101,5 @@ public partial class PlayerSessionController : ObservableObject
         Log.Info($"Playlist VideoPlayed -> {Path.GetFileName(filePath)}");
         CurrentVideoPath = filePath;
         CurrentVideoPathChanged?.Invoke(filePath);
-    }
-
-    private void OnVideoReady(string path)
-    {
-        Application.Current.Dispatcher.Invoke(() =>
-        {
-            if (_isCleanedUp)
-            {
-                Log.Debug($"VideoReady skipped (_isCleanedUp=true): {Path.GetFileName(path)}");
-                return;
-            }
-
-            Log.Debug($"VideoReady -> UpdateThumbnailReady: {Path.GetFileName(path)}");
-            _playlistManager.UpdateThumbnailReady(path);
-        });
-    }
-
-    private void OnVideoProgress(string path, int percent)
-    {
-        Application.Current.Dispatcher.Invoke(() =>
-        {
-            if (_isCleanedUp)
-            {
-                Log.Debug($"VideoProgress skipped (_isCleanedUp=true): {Path.GetFileName(path)}={percent}%");
-                return;
-            }
-
-            Log.Debug($"VideoProgress -> UpdateThumbnailProgress: {Path.GetFileName(path)}={percent}%");
-            _playlistManager.UpdateThumbnailProgress(path, percent);
-        });
-    }
-
-    private static void CancelAndDispose(ref CancellationTokenSource? cancellationTokenSource)
-    {
-        cancellationTokenSource?.Cancel();
-        cancellationTokenSource?.Dispose();
-        cancellationTokenSource = null;
     }
 }

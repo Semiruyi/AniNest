@@ -1,9 +1,8 @@
 using System;
-using System.ComponentModel;
-using System.Windows;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using LocalPlayer.Features.Player.Models;
+using LocalPlayer.Features.Player.Services;
 using LocalPlayer.Infrastructure.Media;
 
 namespace LocalPlayer.Features.Player;
@@ -11,11 +10,7 @@ namespace LocalPlayer.Features.Player;
 public partial class PlayerPlaybackStateController : ObservableObject
 {
     private readonly IMediaPlayerController _media;
-    private readonly Action<string> _videoPathChangedHandler;
-    private readonly EventHandler _playingHandler;
-    private readonly EventHandler _pausedHandler;
-    private readonly EventHandler _stoppedHandler;
-    private readonly EventHandler<ProgressUpdatedEventArgs> _progressUpdatedHandler;
+    private readonly IPlayerPlaybackStateSyncService _syncService;
     private bool _isCleanedUp;
 
     [ObservableProperty]
@@ -45,24 +40,13 @@ public partial class PlayerPlaybackStateController : ObservableObject
     public ImageSource? VideoSource => _media.VideoBitmap;
     public long MediaLength => _media.Length;
 
-    public PlayerPlaybackStateController(PlayerSessionController session, IMediaPlayerController media)
+    public PlayerPlaybackStateController(
+        IMediaPlayerController media,
+        IPlayerPlaybackStateSyncService syncService)
     {
         _media = media;
-        _videoPathChangedHandler = OnSessionCurrentVideoPathChanged;
-        _playingHandler = (_, _) => Application.Current.Dispatcher.Invoke(() => SetIsPlaying(true));
-        _pausedHandler = (_, _) => Application.Current.Dispatcher.Invoke(() => SetIsPlaying(false));
-        _stoppedHandler = (_, _) => Application.Current.Dispatcher.Invoke(() =>
-        {
-            SetIsPlaying(false);
-            RefreshVideoSource();
-        });
-        _progressUpdatedHandler = (_, args) => Application.Current.Dispatcher.Invoke(() => OnProgressUpdated(args));
-
-        session.CurrentVideoPathChanged += _videoPathChangedHandler;
-        _media.Playing += _playingHandler;
-        _media.Paused += _pausedHandler;
-        _media.Stopped += _stoppedHandler;
-        _media.ProgressUpdated += _progressUpdatedHandler;
+        _syncService = syncService;
+        _syncService.Attach(this);
 
         RefreshVideoSource();
     }
@@ -81,32 +65,28 @@ public partial class PlayerPlaybackStateController : ObservableObject
     public void NotifyStateChanged(string propertyName)
         => OnPropertyChanged(propertyName);
 
-    public void Cleanup(PlayerSessionController session)
+    public void Cleanup()
     {
         if (_isCleanedUp)
             return;
 
         _isCleanedUp = true;
-        session.CurrentVideoPathChanged -= _videoPathChangedHandler;
-        _media.Playing -= _playingHandler;
-        _media.Paused -= _pausedHandler;
-        _media.Stopped -= _stoppedHandler;
-        _media.ProgressUpdated -= _progressUpdatedHandler;
+        _syncService.Detach(this);
     }
 
-    private void OnSessionCurrentVideoPathChanged(string path)
+    public void SetCurrentVideoPath(string path)
     {
         CurrentVideoPath = path;
         RefreshVideoSource();
     }
 
-    private void SetIsPlaying(bool value)
+    public void SetPlayingState(bool value)
     {
         IsPlaying = value;
         RefreshVideoSource();
     }
 
-    private void OnProgressUpdated(ProgressUpdatedEventArgs args)
+    public void UpdateProgress(ProgressUpdatedEventArgs args)
     {
         if (IsSeeking)
             return;
