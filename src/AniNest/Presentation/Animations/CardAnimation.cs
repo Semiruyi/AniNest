@@ -161,26 +161,29 @@ public static class CardAnimation
         var border = (Border)sender;
         bool alreadySetUp = border.RenderTransform is ScaleTransform;
 
-        if (alreadySetUp)
+        if (!alreadySetUp)
         {
-            ResetVisualState(border);
-            return;
+            border.RenderTransformOrigin = new Point(0.5, 0.5);
+            border.RenderTransform = new ScaleTransform(1, 1);
+
+            var image = FindChild<Image>(border);
+
+            if (image != null)
+            {
+                var group = new TransformGroup();
+                group.Children.Add(new ScaleTransform(1, 1));
+                group.Children.Add(new TranslateTransform(0, 0));
+                image.RenderTransformOrigin = new Point(0.5, 0.5);
+                image.RenderTransform = group;
+            }
         }
 
-        border.RenderTransformOrigin = new Point(0.5, 0.5);
-        border.RenderTransform = new ScaleTransform(1, 1);
+        ResetVisualState(border);
 
-        var image = FindChild<Image>(border);
-
-        if (image != null)
-        {
-            var group = new TransformGroup();
-            group.Children.Add(new ScaleTransform(1, 1));
-            group.Children.Add(new TranslateTransform(0, 0));
-            image.RenderTransformOrigin = new Point(0.5, 0.5);
-            image.RenderTransform = group;
-        }
-
+        border.MouseEnter -= OnMouseEnter;
+        border.MouseLeave -= OnMouseLeave;
+        border.PreviewMouseLeftButtonDown -= OnMouseDown;
+        border.PreviewMouseLeftButtonUp -= OnMouseUp;
         border.MouseEnter += OnMouseEnter;
         border.MouseLeave += OnMouseLeave;
         border.PreviewMouseLeftButtonDown += OnMouseDown;
@@ -192,7 +195,11 @@ public static class CardAnimation
             deleteBtn.Opacity = 0;
             deleteBtn.IsHitTestVisible = false;
             deleteBtn.RenderTransformOrigin = new Point(0.5, 0.5);
-            deleteBtn.RenderTransform = new ScaleTransform(0, 0);
+            if (deleteBtn.RenderTransform is not ScaleTransform)
+                deleteBtn.RenderTransform = new ScaleTransform(0, 0);
+
+            deleteBtn.PreviewMouseDown -= OnDeleteBtnDown;
+            deleteBtn.PreviewMouseUp -= OnDeleteBtnUp;
             deleteBtn.PreviewMouseDown += OnDeleteBtnDown;
             deleteBtn.PreviewMouseUp += OnDeleteBtnUp;
             if (deleteBtn.ReadLocalValue(DeleteButtonCommandProperty) == DependencyProperty.UnsetValue)
@@ -205,6 +212,9 @@ public static class CardAnimation
             deleteBtn.Click -= OnDeleteBtnClick;
             deleteBtn.Click += OnDeleteBtnClick;
         }
+
+        if (border.IsMouseOver && !GetIsExiting(border))
+            ApplyHoverState(border);
     }
 
     private static void OnUnloaded(object sender, RoutedEventArgs e)
@@ -311,11 +321,14 @@ public static class CardAnimation
     {
         var border = (Border)sender;
         if (GetIsExiting(border)) return;
+        ApplyHoverState(border);
+    }
+
+    private static void ApplyHoverState(Border border)
+    {
         double hoverScale = GetHoverScale(border);
         double coverScale = GetCoverScale(border);
         double coverShiftY = GetCoverShiftY(border);
-        double blurHover = GetShadowBlurHover(border);
-        double opHover = GetShadowOpacityHover(border);
         int hoverMs = GetHoverDurationMs(border);
         int coverMs = GetCoverDurationMs(border);
         var ease = AnimationHelper.EaseOut;
@@ -344,8 +357,11 @@ public static class CardAnimation
     {
         var border = (Border)sender;
         if (GetIsExiting(border)) return;
-        double blurNormal = GetShadowBlurNormal(border);
-        double opNormal = GetShadowOpacityNormal(border);
+        ApplyRestingState(border, e);
+    }
+
+    private static void ApplyRestingState(Border border, MouseEventArgs? e = null)
+    {
         int leaveMs = GetLeaveDurationMs(border);
         int coverMs = GetCoverDurationMs(border);
         var ease = AnimationHelper.EaseInOut;
@@ -363,9 +379,12 @@ public static class CardAnimation
         var deleteBtn = FindChild<Button>(border);
         if (deleteBtn != null && deleteBtn.RenderTransform is ScaleTransform btnScale)
         {
-            var pos = e.GetPosition(border);
-            if (pos.X >= 0 && pos.Y >= 0 && pos.X <= border.ActualWidth && pos.Y <= border.ActualHeight)
-                return;
+            if (e != null)
+            {
+                var pos = e.GetPosition(border);
+                if (pos.X >= 0 && pos.Y >= 0 && pos.X <= border.ActualWidth && pos.Y <= border.ActualHeight)
+                    return;
+            }
             deleteBtn.IsHitTestVisible = false;
             double curX = btnScale.ScaleX;
             double curY = btnScale.ScaleY;

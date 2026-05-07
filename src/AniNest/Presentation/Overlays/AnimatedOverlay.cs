@@ -1,0 +1,529 @@
+using System;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using AniNest.Infrastructure.Logging;
+using AniNest.Presentation.Animations;
+using Point = System.Windows.Point;
+
+namespace AniNest.Presentation.Overlays;
+
+public class AnimatedOverlay : ContentControl
+{
+    private static readonly Logger Log = AppLog.For(nameof(AnimatedOverlay));
+    private FrameworkElement? _surface;
+    private FrameworkElement? _positionHost;
+    private FrameworkElement? _host;
+    private OverlayState _state = OverlayState.Closed;
+    private bool _isRepositioning;
+    private bool _repositionQueued;
+    private bool _isOpenRetryPending;
+    private int _transitionVersion;
+
+    public static readonly DependencyProperty IsOpenProperty =
+        DependencyProperty.Register(nameof(IsOpen), typeof(bool), typeof(AnimatedOverlay),
+            new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnIsOpenChanged));
+
+    public static readonly DependencyProperty AnchorElementProperty =
+        DependencyProperty.Register(nameof(AnchorElement), typeof(FrameworkElement), typeof(AnimatedOverlay),
+            new PropertyMetadata(null, OnAnchorElementChanged));
+
+    public static readonly DependencyProperty PlacementProperty =
+        DependencyProperty.Register(nameof(Placement), typeof(OverlayPlacement), typeof(AnimatedOverlay),
+            new PropertyMetadata(OverlayPlacement.RightTop));
+
+    public static readonly DependencyProperty HorizontalOffsetProperty =
+        DependencyProperty.Register(nameof(HorizontalOffset), typeof(double), typeof(AnimatedOverlay),
+            new PropertyMetadata(0d));
+
+    public static readonly DependencyProperty VerticalOffsetProperty =
+        DependencyProperty.Register(nameof(VerticalOffset), typeof(double), typeof(AnimatedOverlay),
+            new PropertyMetadata(0d));
+
+    public static readonly DependencyProperty OpenDurationMsProperty =
+        DependencyProperty.Register(nameof(OpenDurationMs), typeof(int), typeof(AnimatedOverlay),
+            new PropertyMetadata(140));
+
+    public static readonly DependencyProperty CloseDurationMsProperty =
+        DependencyProperty.Register(nameof(CloseDurationMs), typeof(int), typeof(AnimatedOverlay),
+            new PropertyMetadata(120));
+
+    public static readonly DependencyProperty AnimationOriginProperty =
+        DependencyProperty.Register(nameof(AnimationOrigin), typeof(Point), typeof(AnimatedOverlay),
+            new PropertyMetadata(new Point(0, 0)));
+
+    private static readonly DependencyPropertyKey SurfaceMarginPropertyKey =
+        DependencyProperty.RegisterReadOnly(nameof(SurfaceMargin), typeof(Thickness), typeof(AnimatedOverlay),
+            new PropertyMetadata(new Thickness()));
+
+    public static readonly DependencyProperty SurfaceMarginProperty = SurfaceMarginPropertyKey.DependencyProperty;
+
+    public bool IsOpen
+    {
+        get => (bool)GetValue(IsOpenProperty);
+        set => SetValue(IsOpenProperty, value);
+    }
+
+    public FrameworkElement? AnchorElement
+    {
+        get => (FrameworkElement?)GetValue(AnchorElementProperty);
+        set => SetValue(AnchorElementProperty, value);
+    }
+
+    public OverlayPlacement Placement
+    {
+        get => (OverlayPlacement)GetValue(PlacementProperty);
+        set => SetValue(PlacementProperty, value);
+    }
+
+    public double HorizontalOffset
+    {
+        get => (double)GetValue(HorizontalOffsetProperty);
+        set => SetValue(HorizontalOffsetProperty, value);
+    }
+
+    public double VerticalOffset
+    {
+        get => (double)GetValue(VerticalOffsetProperty);
+        set => SetValue(VerticalOffsetProperty, value);
+    }
+
+    public int OpenDurationMs
+    {
+        get => (int)GetValue(OpenDurationMsProperty);
+        set => SetValue(OpenDurationMsProperty, value);
+    }
+
+    public int CloseDurationMs
+    {
+        get => (int)GetValue(CloseDurationMsProperty);
+        set => SetValue(CloseDurationMsProperty, value);
+    }
+
+    public Point AnimationOrigin
+    {
+        get => (Point)GetValue(AnimationOriginProperty);
+        set => SetValue(AnimationOriginProperty, value);
+    }
+
+    public Thickness SurfaceMargin
+    {
+        get => (Thickness)GetValue(SurfaceMarginProperty);
+        private set => SetValue(SurfaceMarginPropertyKey, value);
+    }
+
+    public AnimatedOverlay()
+    {
+        Visibility = Visibility.Collapsed;
+        HorizontalAlignment = HorizontalAlignment.Stretch;
+        VerticalAlignment = VerticalAlignment.Stretch;
+        IsHitTestVisible = false;
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+    }
+
+    public override void OnApplyTemplate()
+    {
+        base.OnApplyTemplate();
+        _positionHost = GetTemplateChild("PART_PositionHost") as FrameworkElement;
+        _surface = GetTemplateChild("PART_Surface") as FrameworkElement;
+        Log.Debug($"OnApplyTemplate: hasPositionHost={_positionHost != null} hasSurface={_surface != null}");
+        UpdateSurfaceInteractiveState();
+    }
+
+    public bool ContainsSurfaceTarget(DependencyObject? target)
+    {
+        if (target == null)
+            return false;
+
+        DependencyObject? current = target;
+        while (current != null)
+        {
+            if ((_surface != null && ReferenceEquals(current, _surface)) ||
+                (_positionHost != null && ReferenceEquals(current, _positionHost)))
+                return true;
+
+            current = current switch
+            {
+                Visual visual => VisualTreeHelper.GetParent(visual),
+                System.Windows.Media.Media3D.Visual3D visual3D => VisualTreeHelper.GetParent(visual3D),
+                _ => LogicalTreeHelper.GetParent(current),
+            };
+        }
+
+        return false;
+    }
+
+    public void Close(OverlayCloseReason reason = OverlayCloseReason.Programmatic)
+    {
+        if (!IsOpen && _state == OverlayState.Closed)
+            return;
+
+        Log.Debug($"Close: reason={reason} state={_state}");
+        IsOpen = false;
+    }
+
+    public void SwitchAnchor(FrameworkElement? anchor)
+    {
+        Log.Debug($"SwitchAnchor: anchor={(anchor == null ? "null" : anchor.Name)} isOpen={IsOpen} state={_state}");
+        var shouldTemporarilyHide = IsOpen && anchor != null && (_state == OverlayState.Open || _state == OverlayState.Opening);
+        if (shouldTemporarilyHide)
+            SetSurfaceVisibility(Visibility.Hidden);
+
+        AnchorElement = anchor;
+
+        if (IsOpen && anchor != null)
+        {
+            Reposition();
+            UpdateLayout();
+            if (shouldTemporarilyHide)
+                SetSurfaceVisibility(Visibility.Visible);
+        }
+    }
+
+    public void Reposition()
+    {
+        if (!IsLoaded || _surface == null || _positionHost == null || AnchorElement == null)
+            return;
+
+        if (_isRepositioning)
+        {
+            _repositionQueued = true;
+            return;
+        }
+
+        _host ??= Parent as FrameworkElement;
+        if (_host == null || !AnchorElement.IsLoaded)
+            return;
+
+        _isRepositioning = true;
+        try
+        {
+            _surface.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            var desired = _surface.DesiredSize;
+            if (desired.Width <= 0 || desired.Height <= 0)
+                return;
+
+            var transform = AnchorElement.TransformToAncestor(_host);
+            var anchorTopLeft = transform.Transform(new Point(0, 0));
+            var anchorRect = new Rect(anchorTopLeft, new Size(AnchorElement.ActualWidth, AnchorElement.ActualHeight));
+
+            double hostWidth = _host.ActualWidth;
+            double hostHeight = _host.ActualHeight;
+            double left;
+            double top;
+            var requestedPlacement = Placement;
+            var actualPlacement = requestedPlacement;
+
+            switch (requestedPlacement)
+            {
+                case OverlayPlacement.LeftTop:
+                    left = anchorRect.Left - desired.Width - HorizontalOffset;
+                    top = anchorRect.Top + VerticalOffset;
+                    break;
+                case OverlayPlacement.BottomLeft:
+                    left = anchorRect.Left + HorizontalOffset;
+                    top = anchorRect.Bottom + VerticalOffset;
+                    break;
+                case OverlayPlacement.BottomCenter:
+                    left = anchorRect.Left + (anchorRect.Width - desired.Width) / 2 + HorizontalOffset;
+                    top = anchorRect.Bottom + VerticalOffset;
+                    break;
+                case OverlayPlacement.TopLeft:
+                    left = anchorRect.Left + HorizontalOffset;
+                    top = anchorRect.Top - desired.Height - VerticalOffset;
+                    break;
+                case OverlayPlacement.TopCenter:
+                    left = anchorRect.Left + (anchorRect.Width - desired.Width) / 2 + HorizontalOffset;
+                    top = anchorRect.Top - desired.Height - VerticalOffset;
+                    break;
+                case OverlayPlacement.RightTop:
+                default:
+                    left = anchorRect.Right + HorizontalOffset;
+                    top = anchorRect.Top + VerticalOffset;
+                    break;
+            }
+
+            if (requestedPlacement == OverlayPlacement.RightTop && left + desired.Width > hostWidth)
+            {
+                left = anchorRect.Left - desired.Width - HorizontalOffset;
+                actualPlacement = OverlayPlacement.LeftTop;
+            }
+
+            if (requestedPlacement == OverlayPlacement.LeftTop && left < 0)
+            {
+                left = anchorRect.Right + HorizontalOffset;
+                actualPlacement = OverlayPlacement.RightTop;
+            }
+
+            left = Math.Max(0, Math.Min(left, Math.Max(0, hostWidth - desired.Width)));
+            top = Math.Max(0, Math.Min(top, Math.Max(0, hostHeight - desired.Height)));
+
+            var nextMargin = new Thickness(left, top, 0, 0);
+            if (!AreClose(SurfaceMargin, nextMargin))
+            {
+                Log.Debug(
+                    $"Reposition: state={_state} requested={requestedPlacement} actual={actualPlacement} " +
+                    $"anchorLeft={anchorRect.Left:F1} anchorTop={anchorRect.Top:F1} anchorWidth={anchorRect.Width:F1} anchorHeight={anchorRect.Height:F1} " +
+                    $"hostWidth={hostWidth:F1} hostHeight={hostHeight:F1} desiredWidth={desired.Width:F1} desiredHeight={desired.Height:F1} " +
+                    $"positionHostWidth={_positionHost.ActualWidth:F1} positionHostHeight={_positionHost.ActualHeight:F1} " +
+                    $"left={left:F1} top={top:F1}");
+                SurfaceMargin = nextMargin;
+            }
+        }
+        finally
+        {
+            _isRepositioning = false;
+        }
+
+        if (_repositionQueued)
+        {
+            _repositionQueued = false;
+            Dispatcher.BeginInvoke(new Action(Reposition));
+        }
+    }
+
+    private static void OnIsOpenChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var overlay = (AnimatedOverlay)d;
+        Log.Debug($"OnIsOpenChanged: newValue={e.NewValue}");
+        if ((bool)e.NewValue)
+            overlay.BeginOpen();
+        else
+            overlay.BeginClose();
+    }
+
+    private static void OnAnchorElementChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var overlay = (AnimatedOverlay)d;
+        overlay.DetachAnchor(e.OldValue as FrameworkElement);
+        overlay.AttachAnchor(e.NewValue as FrameworkElement);
+        overlay.Reposition();
+    }
+
+    private void BeginOpen()
+    {
+        var version = ++_transitionVersion;
+        Log.Debug($"BeginOpen: state={_state} version={version}");
+
+        ResetSurfaceAnimations();
+        SetSurfaceVisibility(Visibility.Hidden);
+        if (_surface != null)
+            _surface.Opacity = 0;
+
+        Visibility = Visibility.Visible;
+        ApplyTemplate();
+
+        if (_positionHost == null)
+        {
+            _positionHost ??= GetTemplateChild("PART_PositionHost") as FrameworkElement;
+        }
+
+        if (_surface == null)
+        {
+            _surface ??= GetTemplateChild("PART_Surface") as FrameworkElement;
+        }
+
+        if (_positionHost == null || _surface == null)
+        {
+            if (_isOpenRetryPending)
+                return;
+
+            _isOpenRetryPending = true;
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                _isOpenRetryPending = false;
+                if (IsOpen)
+                    BeginOpen();
+            }), System.Windows.Threading.DispatcherPriority.Loaded);
+            return;
+        }
+
+        _isOpenRetryPending = false;
+        _host ??= Parent as FrameworkElement;
+        if (_host == null || AnchorElement == null)
+        {
+            IsOpen = false;
+            return;
+        }
+
+        _state = OverlayState.Opening;
+        Reposition();
+        UpdateLayout();
+        UpdateSurfaceInteractiveState();
+        Log.Debug($"BeginOpen.AfterLayout: version={version} marginLeft={SurfaceMargin.Left:F1} marginTop={SurfaceMargin.Top:F1}");
+        SetSurfaceVisibility(Visibility.Visible);
+
+        var entrance = new EntranceEffect
+        {
+            Scale = new AnimationEffect { From = 0.92, To = 1.0, DurationMs = OpenDurationMs, Easing = AnimationHelper.EaseOut },
+            Opacity = new AnimationEffect { From = 0, To = 1, DurationMs = OpenDurationMs, Easing = AnimationHelper.EaseOut },
+            Origin = AnimationOrigin,
+        };
+
+        AnimationHelper.ApplyEntrance(_surface, entrance, onCompleted: () =>
+        {
+            if (version != _transitionVersion)
+            {
+                Log.Debug($"BeginOpen.Completed ignored: staleVersion={version} currentVersion={_transitionVersion}");
+                return;
+            }
+
+            if (!IsOpen)
+                return;
+
+            _state = OverlayState.Open;
+            UpdateSurfaceInteractiveState();
+            Reposition();
+            Log.Debug($"BeginOpen.Completed: version={version} marginLeft={SurfaceMargin.Left:F1} marginTop={SurfaceMargin.Top:F1}");
+        });
+    }
+
+    private void BeginClose()
+    {
+        var version = ++_transitionVersion;
+        Log.Debug($"BeginClose: state={_state} version={version}");
+        if (_surface == null)
+        {
+            Visibility = Visibility.Collapsed;
+            _state = OverlayState.Closed;
+            return;
+        }
+
+        if (_state == OverlayState.Closed)
+        {
+            Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        _state = OverlayState.Closing;
+        UpdateSurfaceInteractiveState();
+        ResetSurfaceAnimations();
+
+        var exit = new ExitEffect
+        {
+            Scale = new AnimationEffect { From = 1.0, To = 0.96, DurationMs = CloseDurationMs, Easing = AnimationHelper.EaseIn },
+            Opacity = new AnimationEffect { From = 1, To = 0, DurationMs = CloseDurationMs, Easing = AnimationHelper.EaseIn },
+            Origin = AnimationOrigin,
+        };
+
+        AnimationHelper.ApplyExit(_surface, exit, () =>
+        {
+            if (version != _transitionVersion)
+            {
+                Log.Debug($"BeginClose.Completed ignored: staleVersion={version} currentVersion={_transitionVersion}");
+                return;
+            }
+
+            if (IsOpen)
+                return;
+
+            SetSurfaceVisibility(Visibility.Visible);
+            Visibility = Visibility.Collapsed;
+            _state = OverlayState.Closed;
+            UpdateSurfaceInteractiveState();
+            Log.Debug($"BeginClose.Completed: version={version}");
+        });
+    }
+
+    private void UpdateSurfaceInteractiveState()
+    {
+        if (_surface != null)
+            _surface.IsHitTestVisible = _state == OverlayState.Open;
+
+        if (_positionHost != null)
+            _positionHost.IsHitTestVisible = _state == OverlayState.Open;
+
+        IsHitTestVisible = _state == OverlayState.Open;
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        _host = Parent as FrameworkElement;
+        if (_host != null)
+            _host.SizeChanged += OnHostSizeChanged;
+        Reposition();
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        DetachAnchor(AnchorElement);
+        if (_host != null)
+            _host.SizeChanged -= OnHostSizeChanged;
+        _host = null;
+    }
+
+    private void AttachAnchor(FrameworkElement? anchor)
+    {
+        if (anchor == null)
+            return;
+
+        anchor.SizeChanged += OnAnchorSizeChanged;
+        anchor.Unloaded += OnAnchorUnloaded;
+    }
+
+    private void DetachAnchor(FrameworkElement? anchor)
+    {
+        if (anchor == null)
+            return;
+
+        anchor.SizeChanged -= OnAnchorSizeChanged;
+        anchor.Unloaded -= OnAnchorUnloaded;
+    }
+
+    private void OnAnchorSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (IsOpen)
+            Reposition();
+    }
+
+    private void OnHostSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (IsOpen)
+            Reposition();
+    }
+
+    private void OnAnchorUnloaded(object sender, RoutedEventArgs e)
+    {
+        Close(OverlayCloseReason.AnchorUnavailable);
+    }
+
+    private void SetSurfaceVisibility(Visibility visibility)
+    {
+        if (_positionHost != null)
+            _positionHost.Visibility = visibility;
+
+        if (_surface != null)
+            _surface.Visibility = visibility;
+    }
+
+    private void ResetSurfaceAnimations()
+    {
+        if (_surface == null)
+            return;
+
+        _surface.BeginAnimation(UIElement.OpacityProperty, null);
+        if (_surface.RenderTransform is ScaleTransform scale)
+        {
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        }
+    }
+
+    private enum OverlayState
+    {
+        Closed,
+        Opening,
+        Open,
+        Closing,
+    }
+
+    private static bool AreClose(Thickness a, Thickness b)
+    {
+        const double epsilon = 0.5;
+        return Math.Abs(a.Left - b.Left) < epsilon &&
+               Math.Abs(a.Top - b.Top) < epsilon &&
+               Math.Abs(a.Right - b.Right) < epsilon &&
+               Math.Abs(a.Bottom - b.Bottom) < epsilon;
+    }
+}

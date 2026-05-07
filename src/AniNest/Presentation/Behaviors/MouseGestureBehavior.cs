@@ -67,21 +67,29 @@ public static class MouseGestureBehavior
 
         if (HasAnyCommand(el))
         {
-            if (Subscribed.Add(el))
-            {
-                el.SetValue(StateKey, new ButtonState());
-                el.PreviewMouseLeftButtonDown += OnLeftDown;
-                el.PreviewMouseLeftButtonUp += OnLeftUp;
-                el.PreviewMouseRightButtonDown += OnRightDown;
-                el.PreviewMouseRightButtonUp += OnRightUp;
-                el.PreviewMouseDown += OnXButton;
-                el.Unloaded += OnUnloaded;
-            }
+            el.Loaded -= OnLoaded;
+            el.Loaded += OnLoaded;
+            el.Unloaded -= OnUnloaded;
+            el.Unloaded += OnUnloaded;
+            AttachInteraction(el);
             return;
         }
 
-        if (Subscribed.Contains(el))
-            Detach(el);
+        Detach(el, preserveLifecycle: false);
+        el.Loaded -= OnLoaded;
+        el.Unloaded -= OnUnloaded;
+    }
+
+    private static void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement el)
+            return;
+
+        if (!HasAnyCommand(el))
+            return;
+
+        Log.Debug($"Loaded: element={DescribeFrameworkElement(el)}");
+        AttachInteraction(el);
     }
 
     private static void OnUnloaded(object sender, RoutedEventArgs e)
@@ -89,7 +97,8 @@ public static class MouseGestureBehavior
         if (sender is not FrameworkElement el)
             return;
 
-        Detach(el);
+        Log.Debug($"Unloaded: element={DescribeFrameworkElement(el)}");
+        Detach(el, preserveLifecycle: true);
     }
 
 
@@ -115,12 +124,16 @@ public static class MouseGestureBehavior
     {
         if (sender is not UIElement el || PassThrough(el, e)) return;
         var s = GetState(el);
+        Log.Debug(
+            $"LDown: element={DescribeElement(el)} handled={e.Handled} clicks={(s.ClickTimer != null ? 1 : 0)} " +
+            $"skipNextUp={s.SkipNextUp} original={DescribeSource(e.OriginalSource as DependencyObject)}");
 
         if (s.ClickTimer != null)
         {
             s.ClickTimer.Stop();
             s.ClickTimer = null;
             s.SkipNextUp = true;
+            Log.Debug($"LDown -> DoubleClick: element={DescribeElement(el)}");
             Execute(GetLeftDoubleClick(el), GetCommandParameter(el));
             e.Handled = true;
         }
@@ -130,19 +143,25 @@ public static class MouseGestureBehavior
     {
         if (sender is not UIElement el || PassThrough(el, e)) return;
         var s = GetState(el);
+        Log.Debug(
+            $"LUp: element={DescribeElement(el)} handled={e.Handled} skipNextUp={s.SkipNextUp} " +
+            $"original={DescribeSource(e.OriginalSource as DependencyObject)}");
 
         if (s.SkipNextUp)
         {
             s.SkipNextUp = false;
+            Log.Debug($"LUp skipped: element={DescribeElement(el)}");
             return;
         }
 
         s.ClickTimer = NewTimer(ClickDelay, () =>
         {
             s.ClickTimer = null;
+            Log.Debug($"LUp -> ClickTimerFired: element={DescribeElement(el)}");
             Execute(GetLeftClick(el), GetCommandParameter(el));
         });
         s.ClickTimer.Start();
+        Log.Debug($"LUp -> ClickTimerStart: element={DescribeElement(el)} delay={ClickDelay}");
     }
 
 
@@ -150,11 +169,18 @@ public static class MouseGestureBehavior
     {
         if (sender is not UIElement el || PassThrough(el, e)) return;
         var s = GetState(el);
-        Log.Debug("RDown");
+        Log.Debug(
+            $"RDown: element={DescribeElement(el)} handled={e.Handled} rightDown={s.RightDown} " +
+            $"holdFired={s.RightHoldFired} original={DescribeSource(e.OriginalSource as DependencyObject)}");
+
+        if (s.RightDown || s.RightHoldFired)
+        {
+            Log.Debug($"RDown -> ResetStaleState: element={DescribeElement(el)}");
+            ResetRightState(s);
+        }
 
         s.RightDown = true;
         s.RightHoldFired = false;
-        s.RightHoldTimer?.Stop();
 
         var dur = GetHoldDuration(el);
         s.RightHoldTimer = NewTimer(dur, () =>
@@ -162,18 +188,21 @@ public static class MouseGestureBehavior
             if (s.RightDown && !s.RightHoldFired)
             {
                 s.RightHoldFired = true;
-                Log.Debug($"RDown -> Hold ({dur}ms)");
+                Log.Debug($"RDown -> Hold: element={DescribeElement(el)} duration={dur}");
                 Execute(GetRightHold(el), GetCommandParameter(el));
             }
         });
         s.RightHoldTimer.Start();
+        Log.Debug($"RDown -> HoldTimerStart: element={DescribeElement(el)} duration={dur}");
     }
 
     private static void OnRightUp(object sender, MouseButtonEventArgs e)
     {
         if (sender is not UIElement el || PassThrough(el, e)) return;
         var s = GetState(el);
-        Log.Debug("RUp");
+        Log.Debug(
+            $"RUp: element={DescribeElement(el)} handled={e.Handled} rightDown={s.RightDown} holdFired={s.RightHoldFired} " +
+            $"original={DescribeSource(e.OriginalSource as DependencyObject)}");
 
         s.RightDown = false;
         s.RightHoldTimer?.Stop();
@@ -181,7 +210,7 @@ public static class MouseGestureBehavior
         if (s.RightHoldFired)
         {
             s.RightHoldFired = false;
-            Log.Debug("RDown -> HoldRelease");
+            Log.Debug($"RDown -> HoldRelease: element={DescribeElement(el)}");
             Execute(GetRightHoldRelease(el), GetCommandParameter(el));
             e.Handled = true;
             return;
@@ -191,14 +220,16 @@ public static class MouseGestureBehavior
         var param = GetCommandParameter(el);
         if (cmd?.CanExecute(param) == true)
         {
-            Log.Debug($"RDown -> Click ({cmd.GetType().Name})");
+            Log.Debug($"RDown -> Click: element={DescribeElement(el)} command={cmd.GetType().Name}");
             cmd.Execute(param);
             e.Handled = true;
         }
         else
         {
-            Log.Debug("RDown -> Click skipped");
+            Log.Debug($"RDown -> Click skipped: element={DescribeElement(el)} command={(cmd == null ? "null" : cmd.GetType().Name)}");
         }
+
+        ResetRightState(s);
     }
 
     private static void OnXButton(object sender, MouseButtonEventArgs e)
@@ -252,9 +283,25 @@ public static class MouseGestureBehavior
                GetXButton1(el) != null;
     }
 
-    private static void Detach(FrameworkElement el)
+    private static void AttachInteraction(FrameworkElement el)
     {
-        el.Unloaded -= OnUnloaded;
+        if (!Subscribed.Add(el))
+            return;
+
+        if (el.ReadLocalValue(StateKey) is not ButtonState)
+            el.SetValue(StateKey, new ButtonState());
+
+        Log.Debug($"Attach: element={DescribeFrameworkElement(el)}");
+        el.PreviewMouseLeftButtonDown += OnLeftDown;
+        el.PreviewMouseLeftButtonUp += OnLeftUp;
+        el.PreviewMouseRightButtonDown += OnRightDown;
+        el.PreviewMouseRightButtonUp += OnRightUp;
+        el.PreviewMouseDown += OnXButton;
+    }
+
+    private static void Detach(FrameworkElement el, bool preserveLifecycle)
+    {
+        Log.Debug($"Detach: element={DescribeElement(el)}");
         el.PreviewMouseLeftButtonDown -= OnLeftDown;
         el.PreviewMouseLeftButtonUp -= OnLeftUp;
         el.PreviewMouseRightButtonDown -= OnRightDown;
@@ -265,15 +312,62 @@ public static class MouseGestureBehavior
         {
             state.ClickTimer?.Stop();
             state.ClickTimer = null;
-            state.RightHoldTimer?.Stop();
-            state.RightHoldTimer = null;
-            state.RightDown = false;
-            state.RightHoldFired = false;
+            ResetRightState(state);
             state.SkipNextUp = false;
         }
 
         Subscribed.Remove(el);
-        el.ClearValue(StateKey);
+
+        if (!preserveLifecycle)
+            el.ClearValue(StateKey);
+    }
+
+    private static string DescribeElement(UIElement element)
+    {
+        if (element is FrameworkElement frameworkElement)
+            return DescribeFrameworkElement(frameworkElement);
+
+        return element.GetType().Name;
+    }
+
+    private static string DescribeFrameworkElement(FrameworkElement frameworkElement)
+    {
+        var name = string.IsNullOrWhiteSpace(frameworkElement.Name) ? "-" : frameworkElement.Name;
+        return $"{frameworkElement.GetType().Name}({name})";
+    }
+
+    private static string DescribeSource(DependencyObject? source)
+    {
+        if (source == null)
+            return "null";
+
+        if (source is FrameworkElement frameworkElement)
+        {
+            var name = string.IsNullOrWhiteSpace(frameworkElement.Name) ? "-" : frameworkElement.Name;
+            return $"{frameworkElement.GetType().Name}({name})";
+        }
+
+        return source.GetType().Name;
+    }
+
+    public static void ResetRightState(DependencyObject element)
+    {
+        if (element is not UIElement uiElement)
+            return;
+
+        if (uiElement.ReadLocalValue(StateKey) is not ButtonState state)
+            return;
+
+        Log.Debug($"ResetRightState: element={DescribeElement(uiElement)}");
+        ResetRightState(state);
+    }
+
+    private static void ResetRightState(ButtonState state)
+    {
+        state.RightHoldTimer?.Stop();
+        state.RightHoldTimer = null;
+        state.RightDown = false;
+        state.RightHoldFired = false;
     }
 }
 
