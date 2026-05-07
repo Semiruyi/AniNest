@@ -105,6 +105,10 @@ public class AnimatedOverlay : ContentControl
         DependencyProperty.Register(nameof(OutsidePointerBehavior), typeof(OverlayPointerBehavior), typeof(AnimatedOverlay),
             new PropertyMetadata(OverlayPointerBehavior.CloseAndPassThrough));
 
+    public static readonly DependencyProperty OutsidePassthroughTargetsProperty =
+        DependencyProperty.Register(nameof(OutsidePassthroughTargets), typeof(OverlayOutsidePassthroughTargets), typeof(AnimatedOverlay),
+            new PropertyMetadata(OverlayOutsidePassthroughTargets.None));
+
     private static readonly DependencyPropertyKey SurfaceMarginPropertyKey =
         DependencyProperty.RegisterReadOnly(nameof(SurfaceMargin), typeof(Thickness), typeof(AnimatedOverlay),
             new PropertyMetadata(new Thickness()));
@@ -222,6 +226,12 @@ public class AnimatedOverlay : ContentControl
     {
         get => (OverlayPointerBehavior)GetValue(OutsidePointerBehaviorProperty);
         set => SetValue(OutsidePointerBehaviorProperty, value);
+    }
+
+    public OverlayOutsidePassthroughTargets OutsidePassthroughTargets
+    {
+        get => (OverlayOutsidePassthroughTargets)GetValue(OutsidePassthroughTargetsProperty);
+        set => SetValue(OutsidePassthroughTargetsProperty, value);
     }
 
     public Thickness SurfaceMargin

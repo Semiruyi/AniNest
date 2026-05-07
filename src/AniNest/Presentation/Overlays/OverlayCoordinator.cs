@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using AniNest.Infrastructure.Logging;
@@ -26,6 +28,13 @@ public sealed class OverlayCoordinator
     private static readonly Logger Log = AppLog.For(nameof(OverlayCoordinator));
     private readonly HashSet<AnimatedOverlay> _openOverlays = new();
     private readonly HashSet<Window> _attachedWindows = new();
+    private readonly Dictionary<OverlayOutsideHitKind, HashSet<DependencyObject>> _registeredRegions = new()
+    {
+        [OverlayOutsideHitKind.TitleBarInteractive] = new(),
+        [OverlayOutsideHitKind.TitleBarDragZone] = new(),
+        [OverlayOutsideHitKind.ContentInteractive] = new(),
+        [OverlayOutsideHitKind.ContentBackground] = new(),
+    };
     private bool _consumeCurrentLeftClickSequence;
     private bool _consumeCurrentRightClickSequence;
 
@@ -44,6 +53,14 @@ public sealed class OverlayCoordinator
         window.PreviewMouseRightButtonDown += OnPreviewMouseButtonDown;
         window.PreviewMouseLeftButtonUp += OnPreviewMouseButtonUp;
         window.PreviewMouseRightButtonUp += OnPreviewMouseButtonUp;
+    }
+
+    public void RegisterRegion(DependencyObject element, OverlayOutsideHitKind kind)
+    {
+        if (!_registeredRegions.TryGetValue(kind, out var regions))
+            throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported overlay hit region.");
+
+        regions.Add(element);
     }
 
     public void RegisterOpenedOverlay(AnimatedOverlay overlay)
@@ -178,6 +195,9 @@ public sealed class OverlayCoordinator
             default:
                 foreach (var overlay in closeSet)
                 {
+                    if (ShouldPassThroughOutsideHit(overlay, hit.OutsideKind))
+                        continue;
+
                     if (overlay.OutsidePointerBehavior == OverlayPointerBehavior.CloseAndConsume)
                         return OverlayPointerBehavior.CloseAndConsume;
                 }
@@ -196,7 +216,13 @@ public sealed class OverlayCoordinator
             .ToArray();
 
         if (direct.Length == 0)
-            return new OverlayHitResult { Kind = OverlayHitKind.Outside };
+        {
+            return new OverlayHitResult
+            {
+                Kind = OverlayHitKind.Outside,
+                OutsideKind = ResolveOutsideHitKind(target),
+            };
+        }
 
         var primary = direct
             .OrderByDescending(GetOverlayDepth)
@@ -254,6 +280,9 @@ public sealed class OverlayCoordinator
     private void SweepStaleState()
     {
         _openOverlays.RemoveWhere(static overlay => overlay is null || (!overlay.IsOpen && overlay.CurrentState == "Closed"));
+
+        foreach (var regions in _registeredRegions.Values)
+            regions.RemoveWhere(static element => element is null || !IsElementAlive(element));
     }
 
     private static string DescribeOverlay(AnimatedOverlay? overlay)
@@ -286,4 +315,107 @@ public sealed class OverlayCoordinator
     }
 
     private void ResetConsumeFlag(MouseButton button) => SetConsumeFlag(button, value: false);
+
+    private OverlayOutsideHitKind ResolveOutsideHitKind(DependencyObject? target)
+    {
+        if (target == null)
+            return OverlayOutsideHitKind.None;
+
+        if (IsInsideRegisteredRegion(target, OverlayOutsideHitKind.TitleBarInteractive))
+            return OverlayOutsideHitKind.TitleBarInteractive;
+
+        if (IsInsideRegisteredRegion(target, OverlayOutsideHitKind.TitleBarDragZone))
+            return OverlayOutsideHitKind.TitleBarDragZone;
+
+        if (IsInsideRegisteredRegion(target, OverlayOutsideHitKind.ContentInteractive))
+            return OverlayOutsideHitKind.ContentInteractive;
+
+        if (IsInsideRegisteredRegion(target, OverlayOutsideHitKind.ContentBackground))
+            return OverlayOutsideHitKind.ContentBackground;
+
+        if (IsInsideLikelyInteractiveElement(target))
+            return OverlayOutsideHitKind.ContentInteractive;
+
+        return OverlayOutsideHitKind.ContentBackground;
+    }
+
+    private bool IsInsideRegisteredRegion(DependencyObject target, OverlayOutsideHitKind kind)
+    {
+        if (!_registeredRegions.TryGetValue(kind, out var regions) || regions.Count == 0)
+            return false;
+
+        DependencyObject? current = target;
+        while (current != null)
+        {
+            if (regions.Contains(current))
+                return true;
+
+            current = current switch
+            {
+                Visual visual => VisualTreeHelper.GetParent(visual),
+                System.Windows.Media.Media3D.Visual3D visual3D => VisualTreeHelper.GetParent(visual3D),
+                _ => LogicalTreeHelper.GetParent(current),
+            };
+        }
+
+        return false;
+    }
+
+    private static bool IsElementAlive(DependencyObject element)
+    {
+        return element switch
+        {
+            FrameworkElement frameworkElement => frameworkElement.IsLoaded || PresentationSource.FromDependencyObject(frameworkElement) != null,
+            Visual visual => PresentationSource.FromVisual(visual) != null,
+            System.Windows.Media.Media3D.Visual3D visual3D => PresentationSource.FromDependencyObject(visual3D) != null,
+            _ => true,
+        };
+    }
+
+    private static bool ShouldPassThroughOutsideHit(AnimatedOverlay overlay, OverlayOutsideHitKind outsideKind)
+    {
+        return outsideKind switch
+        {
+            OverlayOutsideHitKind.TitleBarInteractive =>
+                overlay.OutsidePassthroughTargets.HasFlag(OverlayOutsidePassthroughTargets.TitleBarInteractive),
+            OverlayOutsideHitKind.TitleBarDragZone =>
+                overlay.OutsidePassthroughTargets.HasFlag(OverlayOutsidePassthroughTargets.TitleBarDragZone),
+            OverlayOutsideHitKind.ContentInteractive =>
+                overlay.OutsidePassthroughTargets.HasFlag(OverlayOutsidePassthroughTargets.ContentInteractive),
+            OverlayOutsideHitKind.ContentBackground =>
+                overlay.OutsidePassthroughTargets.HasFlag(OverlayOutsidePassthroughTargets.ContentBackground),
+            _ => false,
+        };
+    }
+
+    private static bool IsInsideLikelyInteractiveElement(DependencyObject target)
+    {
+        DependencyObject? current = target;
+        while (current != null)
+        {
+            if (current is ButtonBase or TextBoxBase or PasswordBox or ComboBox or Slider or ScrollBar or Thumb)
+                return true;
+
+            if (current is ListBoxItem or TreeViewItem or TabItem)
+                return true;
+
+            if (current is FrameworkElement frameworkElement)
+            {
+                if (frameworkElement.Cursor != null && frameworkElement.Cursor != Cursors.Arrow)
+                    return true;
+
+                if (frameworkElement is Control control && control.Focusable)
+                    return true;
+            }
+
+            current = current switch
+            {
+                Visual visual => VisualTreeHelper.GetParent(visual),
+                System.Windows.Media.Media3D.Visual3D visual3D => VisualTreeHelper.GetParent(visual3D),
+                _ => LogicalTreeHelper.GetParent(current),
+            };
+        }
+
+        return false;
+    }
 }

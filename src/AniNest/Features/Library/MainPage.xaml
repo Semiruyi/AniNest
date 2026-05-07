@@ -16,6 +16,7 @@
 
     <Grid x:Name="RootGrid">
         <ScrollViewer x:Name="LibraryScrollViewer"
+                      Background="Transparent"
                       VerticalScrollBarVisibility="Auto"
                       ScrollChanged="OnLibraryScrollChanged">
             <ItemsControl Margin="{StaticResource LibraryPageMargin}"

@@ -31,7 +31,15 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     private void OnInitialized(object? sender, EventArgs e)
     {
+        OverlayInteractionPresets.ApplyContextLike(CardContextMenuOverlay);
         CardContextMenuOverlay.Closed += OnCardContextMenuClosed;
+        RegisterOverlayRegions();
+    }
+
+    private void RegisterOverlayRegions()
+    {
+        var coordinator = OverlayCoordinator.Instance;
+        coordinator.RegisterRegion(LibraryScrollViewer, OverlayOutsideHitKind.ContentBackground);
     }
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -116,6 +124,8 @@ public partial class MainPage : System.Windows.Controls.UserControl
     {
         if (sender is not Border border || border.DataContext is not FolderListItem item)
             return;
+
+        OverlayCoordinator.Instance.RegisterRegion(border, OverlayOutsideHitKind.ContentInteractive);
 
         Log.Debug(
             $"OnCardPreviewMouseRightButtonUp: name={item.Name} handled={e.Handled} " +

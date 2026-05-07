@@ -28,6 +28,7 @@ public partial class MainWindow : Window
         _settingsService = settingsService;
         DataContext = vm;
         InitializeComponent();
+        ConfigureOverlayInteractions();
         PopupInputCoordinator.Instance.Attach(this);
         RegisterPopupRegions();
         FileOverlay.Closed += OnFileOverlayClosed;
@@ -60,6 +61,15 @@ public partial class MainWindow : Window
         };
     }
 
+    private void ConfigureOverlayInteractions()
+    {
+        OverlayInteractionPresets.ApplyMenuLike(FileOverlay);
+        OverlayInteractionPresets.ApplyMenuLike(SettingsOverlay);
+        OverlayInteractionPresets.ApplyMenuLike(LanguageOverlay);
+        OverlayInteractionPresets.ApplyMenuLike(FullscreenAnimationOverlay);
+        OverlayInteractionPresets.ApplyCaptureLike(PlayerInputOverlay);
+    }
+
     private void OnToggleFullscreenRequested()
     {
         if (!_isTrueFullscreen && TitleBarRow.Height.Value > 0)
@@ -83,6 +93,15 @@ public partial class MainWindow : Window
         coordinator.RegisterRegion(MaximizeButton, PopupHitKind.TitleBarInteractive);
         coordinator.RegisterRegion(CloseButton, PopupHitKind.TitleBarInteractive);
         coordinator.RegisterRegion(TitleBarDragZone, PopupHitKind.TitleBarDragZone);
+
+        var overlayCoordinator = OverlayCoordinator.Instance;
+        overlayCoordinator.RegisterRegion(FileButton, OverlayOutsideHitKind.TitleBarInteractive);
+        overlayCoordinator.RegisterRegion(SettingsButton, OverlayOutsideHitKind.TitleBarInteractive);
+        overlayCoordinator.RegisterRegion(MinimizeButton, OverlayOutsideHitKind.TitleBarInteractive);
+        overlayCoordinator.RegisterRegion(MaximizeButton, OverlayOutsideHitKind.TitleBarInteractive);
+        overlayCoordinator.RegisterRegion(CloseButton, OverlayOutsideHitKind.TitleBarInteractive);
+        overlayCoordinator.RegisterRegion(TitleBarDragZone, OverlayOutsideHitKind.TitleBarDragZone);
+        overlayCoordinator.RegisterRegion(PageTransition, OverlayOutsideHitKind.ContentBackground);
     }
 
     private void EnterFullscreen()
