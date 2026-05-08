@@ -75,11 +75,26 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     public event EventHandler<ThumbnailProgressEventArgs>? ProgressChanged;
     public event Action<string, int>? VideoProgress; // videoPath, percent 0-100
     public event Action<string>? VideoReady; // videoPath
+    public event Action? StatusChanged;
 
     // Detection
     private bool _ffmpegAvailable;
 
     public bool IsFfmpegAvailable => _ffmpegAvailable;
+
+    public ThumbnailGenerationStatusSnapshot GetStatusSnapshot()
+    {
+        lock (_taskLock)
+        {
+            return new ThumbnailGenerationStatusSnapshot(
+                _isGenerationPaused,
+                _isPlayerActive,
+                _activeWorkers.Count,
+                _readyCount,
+                _totalCount,
+                CountTasksByStateUnsafe(ThumbnailState.Pending));
+        }
+    }
 
     public ThumbnailGenerator(
         ISettingsService settings,
@@ -199,6 +214,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         if (added > 0)
             SortQueue();
         EnsureLoopRunning();
+        NotifyStatusChanged();
 
         sw.Stop();
     }
@@ -241,6 +257,8 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
                 t.VideoPath.StartsWith(folderPath, StringComparison.OrdinalIgnoreCase))
                 .Select(t => t.VideoPath);
         }
+
+        NotifyStatusChanged();
     }
 
     public void SetPlayerActive(bool isActive)
@@ -259,6 +277,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             return;
 
         Log.Info($"Thumbnail player activity changed: isActive={isActive}, {snapshot}");
+        NotifyStatusChanged();
         EnsureLoopRunning();
     }
 
@@ -280,6 +299,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
         Log.Info($"Thumbnail performance mode changed: selectedMode={mode}, {snapshot}");
         RequeueActiveWorkers("performance-mode-changed");
+        NotifyStatusChanged();
         EnsureLoopRunning();
     }
 
@@ -302,6 +322,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         Log.Info($"Thumbnail generation paused changed: paused={paused}, {snapshot}");
         if (paused)
             RequeueActiveWorkers("generation-paused");
+        NotifyStatusChanged();
         EnsureLoopRunning();
     }
 
@@ -317,6 +338,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
         Log.Info($"Thumbnail decode strategy refreshed: {snapshot}");
         RequeueActiveWorkers("decode-strategy-changed");
+        NotifyStatusChanged();
         EnsureLoopRunning();
     }
 
@@ -514,6 +536,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
         Log.Info(
             $"Thumbnail worker start: file={Path.GetFileName(task.VideoPath)}, priority={task.Priority}, {snapshot}");
+        NotifyStatusChanged();
     }
 
     private async Task RunWorkerAsync(ThumbnailGeneratorWorker worker, CancellationToken ct)
@@ -543,6 +566,8 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private void DrainCompletedWorkers()
     {
+        bool changed = false;
+
         lock (_taskLock)
         {
             for (int i = _activeWorkers.Count - 1; i >= 0; i--)
@@ -552,8 +577,12 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
                 _activeWorkers[i].Cancellation.Dispose();
                 _activeWorkers.RemoveAt(i);
+                changed = true;
             }
         }
+
+        if (changed)
+            NotifyStatusChanged();
     }
 
     private int GetActiveWorkerCount()
@@ -637,6 +666,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         Log.Info(
             $"Thumbnail worker end: file={Path.GetFileName(task.VideoPath)}, outcome={outcome}, " +
             $"state={task.State}, frames={task.TotalFrames}, {snapshot}");
+        NotifyStatusChanged();
     }
 
     private void RequeueActiveWorkers(string reason)
@@ -905,7 +935,11 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
 
         ProgressChanged?.Invoke(this, new ThumbnailProgressEventArgs { Ready = ready, Total = total });
+        NotifyStatusChanged();
     }
+
+    private void NotifyStatusChanged()
+        => StatusChanged?.Invoke();
 
 
     private static double GetVideoDuration(string videoPath)

@@ -31,6 +31,7 @@ public partial class ShellViewModel : ObservableObject
     private readonly IThumbnailDecodeStrategyService _thumbnailDecodeStrategyService;
     private readonly MainPageViewModel _mainPage;
     private readonly PlayerViewModel _playerPage;
+    private string? _lastThumbnailGenerationStatusLog;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsOnMainPage))]
@@ -95,6 +96,27 @@ public partial class ShellViewModel : ObservableObject
     [ObservableProperty]
     private string _thumbnailGenerationToggleText = string.Empty;
 
+    [ObservableProperty]
+    private string _thumbnailGenerationStatusText = string.Empty;
+
+    [ObservableProperty]
+    private string _thumbnailGenerationStatusCode = "idle";
+
+    [ObservableProperty]
+    private string _thumbnailGenerationStatusColor = "#8E8E93";
+
+    [ObservableProperty]
+    private string _thumbnailGenerationCountText = string.Empty;
+
+    [ObservableProperty]
+    private string _thumbnailGenerationDetailText = string.Empty;
+
+    [ObservableProperty]
+    private double _thumbnailGenerationProgressPercent;
+
+    [ObservableProperty]
+    private string _thumbnailGenerationTooltipText = string.Empty;
+
     public event Action? ToggleFullscreenRequested;
 
     public ILocalizationService Localization => _loc;
@@ -131,6 +153,7 @@ public partial class ShellViewModel : ObservableObject
         _mainPage.FolderSelected += OnMainPageFolderSelected;
         _playerPage.ToggleFullscreenRequested += OnPlayerToggleFullscreenRequested;
         _playerPage.GoBackRequested += OnPlayerGoBackRequested;
+        _thumbnailGenerator.StatusChanged += OnThumbnailGeneratorStatusChanged;
 
         Application.Current.Exit += (_, _) => _taskbarAutoHide.RestoreIfNeeded();
         RefreshThumbnailSettingsStatus();
@@ -264,6 +287,62 @@ public partial class ShellViewModel : ObservableObject
         ThumbnailDetectedHardwareSummary = BuildHardwareSummary(status);
         ThumbnailCurrentDecoderSummary = BuildCurrentDecoderSummary(status);
         ThumbnailFallbackChainSummary = string.Join(" -> ", status.StrategyChain.Select(FormatStrategyName));
+        RefreshThumbnailGenerationStatus();
+    }
+
+    private void RefreshThumbnailGenerationStatus()
+    {
+        var snapshot = _thumbnailGenerator.GetStatusSnapshot();
+
+        ThumbnailGenerationStatusCode = snapshot.IsPaused
+            ? "paused"
+            : snapshot.ActiveWorkers > 0
+                ? "generating"
+                : snapshot.PendingCount > 0
+                    ? "waiting"
+                : snapshot.ReadyCount >= snapshot.TotalCount && snapshot.TotalCount > 0
+                    ? "complete"
+                    : "idle";
+
+        ThumbnailGenerationStatusText = _loc[$"Settings.ThumbnailGeneration.Status.{CapitalizeCode(ThumbnailGenerationStatusCode)}"];
+        ThumbnailGenerationStatusColor = ThumbnailGenerationStatusCode switch
+        {
+            "paused" => "#C62828",
+            "generating" => "#007AFF",
+            "waiting" => "#F39C12",
+            "complete" => "#2E7D32",
+            _ => "#8E8E93"
+        };
+
+        ThumbnailGenerationCountText = $"{snapshot.ReadyCount} / {snapshot.TotalCount}";
+        ThumbnailGenerationDetailText = string.Format(
+            _loc["Settings.ThumbnailGeneration.Detail"],
+            snapshot.ActiveWorkers,
+            snapshot.PendingCount);
+        ThumbnailGenerationProgressPercent = snapshot.TotalCount > 0
+            ? (double)snapshot.ReadyCount / snapshot.TotalCount * 100
+            : 0;
+        ThumbnailGenerationTooltipText = string.Format(
+            _loc["Settings.ThumbnailGeneration.Tooltip"],
+            ThumbnailGenerationStatusText,
+            snapshot.ReadyCount,
+            snapshot.TotalCount,
+            snapshot.ActiveWorkers,
+            snapshot.PendingCount);
+
+        string statusLog =
+            $"code={ThumbnailGenerationStatusCode}, ready={snapshot.ReadyCount}, total={snapshot.TotalCount}, " +
+            $"active={snapshot.ActiveWorkers}, pending={snapshot.PendingCount}, paused={snapshot.IsPaused}, playerActive={snapshot.IsPlayerActive}";
+        if (!string.Equals(_lastThumbnailGenerationStatusLog, statusLog, StringComparison.Ordinal))
+        {
+            _lastThumbnailGenerationStatusLog = statusLog;
+            Log.Debug($"Thumbnail generation UI status updated: {statusLog}");
+        }
+    }
+
+    private void OnThumbnailGeneratorStatusChanged()
+    {
+        Application.Current.Dispatcher.BeginInvoke((Action)RefreshThumbnailGenerationStatus);
     }
 
     private string BuildHardwareSummary(ThumbnailDecodeStatusSnapshot status)

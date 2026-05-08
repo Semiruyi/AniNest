@@ -11,6 +11,7 @@ namespace AniNest.Infrastructure.Thumbnails;
 public interface IThumbnailGenerator
 {
     bool IsFfmpegAvailable { get; }
+    ThumbnailGenerationStatusSnapshot GetStatusSnapshot();
 
     ThumbnailState GetState(string videoPath);
     string? GetThumbnailPath(string videoPath, int second);
@@ -28,7 +29,16 @@ public interface IThumbnailGenerator
     event EventHandler<ThumbnailProgressEventArgs>? ProgressChanged;
     event Action<string, int>? VideoProgress;
     event Action<string>? VideoReady;
+    event Action? StatusChanged;
 }
+
+public sealed record ThumbnailGenerationStatusSnapshot(
+    bool IsPaused,
+    bool IsPlayerActive,
+    int ActiveWorkers,
+    int ReadyCount,
+    int TotalCount,
+    int PendingCount);
 
 
 
