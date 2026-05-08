@@ -2,6 +2,7 @@ using AniNest.Infrastructure.Interop;
 using AniNest.Infrastructure.Diagnostics;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Media;
+using AniNest.Infrastructure.Thumbnails;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Threading;
@@ -16,6 +17,7 @@ public sealed class PlayerAppService : IPlayerAppService
     private readonly PlayerSessionController _session;
     private readonly PlayerPlaybackStateController _playback;
     private readonly IMediaPlayerController _media;
+    private readonly IThumbnailGenerator _thumbnailGenerator;
     private CancellationTokenSource? _loadCts;
     private long _loadGeneration;
     private long _loadedGeneration;
@@ -29,16 +31,19 @@ public sealed class PlayerAppService : IPlayerAppService
         ITaskbarAutoHideCoordinator taskbarAutoHide,
         PlayerSessionController session,
         PlayerPlaybackStateController playback,
-        IMediaPlayerController media)
+        IMediaPlayerController media,
+        IThumbnailGenerator thumbnailGenerator)
     {
         _taskbarAutoHide = taskbarAutoHide;
         _session = session;
         _playback = playback;
         _media = media;
+        _thumbnailGenerator = thumbnailGenerator;
     }
 
     public async Task EnterPlayerAsync(string animationCode, string path, string name)
     {
+        _thumbnailGenerator.SetPlayerActive(true);
         _ = _taskbarAutoHide.EnterPlayerPageAsync(animationCode);
         if (_session.IsCleanedUp)
             return;
@@ -106,6 +111,7 @@ public sealed class PlayerAppService : IPlayerAppService
 
     public Task BeginLeavePlayerAsync()
     {
+        _thumbnailGenerator.SetPlayerActive(false);
         Log.Info(
             $"BeginLeavePlayer: loadGeneration={_loadGeneration}, loadedGeneration={_loadedGeneration}, " +
             $"activatedGeneration={_activatedGeneration}, pendingGeneration={_pendingActivationGeneration}, " +

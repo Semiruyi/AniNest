@@ -56,13 +56,17 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private readonly List<ThumbnailTask> _tasks = new();
     private readonly object _taskLock = new();
     private readonly Dictionary<string, ThumbnailTask> _videoToTask = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<ThumbnailGeneratorWorker> _activeWorkers = new();
     private CancellationTokenSource? _loopCts;
     private Task? _loopTask;
     private TaskCompletionSource _initTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly ThumbnailRenderer _renderer;
     private bool _isShuttingDown;
+    private bool _isPlayerActive;
     private int _readyCount;
     private int _totalCount;
+    private ThumbnailPerformanceMode _performanceMode;
+    private string? _lastSchedulerState;
 
     // Events
     public event EventHandler<ThumbnailProgressEventArgs>? ProgressChanged;
@@ -77,6 +81,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     public ThumbnailGenerator(ISettingsService settings)
     {
         _settings = settings;
+        _performanceMode = _settings.GetThumbnailPerformanceMode();
         _thumbBaseDir = AppPaths.ThumbnailDirectory;
         _indexPath = Path.Combine(_thumbBaseDir, "index.json");
         _ffmpegPath = AppPaths.FfmpegPath;
@@ -231,6 +236,45 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
     }
 
+    public void SetPlayerActive(bool isActive)
+    {
+        bool changed;
+        string snapshot;
+
+        lock (_taskLock)
+        {
+            changed = _isPlayerActive != isActive;
+            _isPlayerActive = isActive;
+            snapshot = BuildSchedulerSnapshotUnsafe();
+        }
+
+        if (!changed)
+            return;
+
+        Log.Info($"Thumbnail player activity changed: isActive={isActive}, {snapshot}");
+        EnsureLoopRunning();
+    }
+
+    public void RefreshPerformanceMode()
+    {
+        ThumbnailPerformanceMode mode = _settings.GetThumbnailPerformanceMode();
+        string snapshot;
+        bool changed;
+
+        lock (_taskLock)
+        {
+            changed = _performanceMode != mode;
+            _performanceMode = mode;
+            snapshot = BuildSchedulerSnapshotUnsafe();
+        }
+
+        if (!changed)
+            return;
+
+        Log.Info($"Thumbnail performance mode changed: mode={mode}, {snapshot}");
+        EnsureLoopRunning();
+    }
+
     private void MarkForDeletion(string videoPath)
     {
         lock (_taskLock)
@@ -303,6 +347,9 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     {
         lock (_taskLock)
         {
+            if (!CanStartMoreWorkersUnsafe())
+                return null;
+
             foreach (var t in _tasks)
             {
                 if (t.State == ThumbnailState.Pending)
@@ -317,29 +364,37 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         await _initTcs.Task;
         while (!ct.IsCancellationRequested && !_isShuttingDown)
         {
-            var task = DequeueNext();
-            if (task == null)
+            DrainCompletedWorkers();
+
+            bool hasPending;
+            bool canStartWorkers;
+            lock (_taskLock)
             {
+                hasPending = _tasks.Any(static t => t.State == ThumbnailState.Pending);
+                canStartWorkers = CanStartMoreWorkersUnsafe();
+            }
+
+            var task = DequeueNext();
+            if (task != null)
+            {
+                ReportSchedulerState("starting-workers");
+                StartWorker(task, ct);
+                continue;
+            }
+
+            if (!hasPending && GetActiveWorkerCount() == 0)
+            {
+                ReportSchedulerState("idle");
                 try { await Task.Delay(2000, ct); } catch { break; }
                 continue;
             }
 
-            try
-            {
-                await GenerateForTask(task, ct);
-            }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Generate thumbnail failed", ex);
-                task.State = ThumbnailState.Failed;
-                SaveIndex();
-                UpdateProgress();
-            }
+            ReportSchedulerState(canStartWorkers ? "waiting-for-pending-selection" : GetBlockedSchedulerReason());
+            int waitDelayMs = canStartWorkers ? 200 : 500;
+            try { await Task.Delay(waitDelayMs, ct); } catch { break; }
         }
+
+        await WaitForWorkersAsync();
     }
 
     private async Task GenerateForTask(ThumbnailTask task, CancellationToken ct)
@@ -379,6 +434,156 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             UpdateProgress();
             finallySw.Stop();
             Log.Info($"[GenerateForTask] finally completed in {finallySw.ElapsedMilliseconds}ms");
+        }
+    }
+
+    private void StartWorker(ThumbnailTask task, CancellationToken ct)
+    {
+        Task execution = RunWorkerAsync(task, ct);
+        int activeWorkers;
+        int pendingTasks;
+        string snapshot;
+        lock (_taskLock)
+        {
+            _activeWorkers.Add(new ThumbnailGeneratorWorker
+            {
+                Task = task,
+                Execution = execution
+            });
+
+            activeWorkers = _activeWorkers.Count;
+            pendingTasks = CountTasksByStateUnsafe(ThumbnailState.Pending);
+            snapshot = BuildSchedulerSnapshotUnsafe();
+        }
+
+        Log.Info(
+            $"Thumbnail worker start: file={Path.GetFileName(task.VideoPath)}, priority={task.Priority}, " +
+            $"activeWorkers={activeWorkers}, pendingTasks={pendingTasks}, {snapshot}");
+    }
+
+    private async Task RunWorkerAsync(ThumbnailTask task, CancellationToken ct)
+    {
+        try
+        {
+            await GenerateForTask(task, ct);
+            LogWorkerCompletion(task, "completed");
+        }
+        catch (OperationCanceledException)
+        {
+            LogWorkerCompletion(task, "canceled");
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Generate thumbnail failed", ex);
+            task.State = ThumbnailState.Failed;
+            SaveIndex();
+            UpdateProgress();
+            LogWorkerCompletion(task, "faulted");
+        }
+    }
+
+    private void DrainCompletedWorkers()
+    {
+        lock (_taskLock)
+        {
+            _activeWorkers.RemoveAll(static worker => worker.Execution.IsCompleted);
+        }
+    }
+
+    private int GetActiveWorkerCount()
+    {
+        lock (_taskLock)
+        {
+            return _activeWorkers.Count;
+        }
+    }
+
+    private bool CanStartMoreWorkersUnsafe()
+    {
+        ThumbnailExecutionPolicy policy = GetExecutionPolicyUnsafe();
+        if (!policy.AllowStartNewJobs)
+            return false;
+
+        return _activeWorkers.Count < policy.MaxConcurrency;
+    }
+
+    private ThumbnailExecutionPolicy GetExecutionPolicyUnsafe()
+        => ThumbnailPerformancePolicy.Create(_performanceMode, _isPlayerActive);
+
+    private string BuildSchedulerSnapshotUnsafe()
+    {
+        ThumbnailExecutionPolicy policy = GetExecutionPolicyUnsafe();
+        return
+            $"playerActive={_isPlayerActive}, mode={_performanceMode}, maxConcurrency={policy.MaxConcurrency}, " +
+            $"allowStartNewJobs={policy.AllowStartNewJobs}, activeWorkers={_activeWorkers.Count}, " +
+            $"pendingTasks={CountTasksByStateUnsafe(ThumbnailState.Pending)}, ready={_readyCount}, total={_totalCount}";
+    }
+
+    private void ReportSchedulerState(string state)
+    {
+        string snapshot;
+        string message;
+
+        lock (_taskLock)
+        {
+            snapshot = BuildSchedulerSnapshotUnsafe();
+            message = $"{state} | {snapshot}";
+            if (string.Equals(_lastSchedulerState, message, StringComparison.Ordinal))
+                return;
+
+            _lastSchedulerState = message;
+        }
+
+        Log.Info($"Thumbnail scheduler state: {message}");
+    }
+
+    private string GetBlockedSchedulerReason()
+    {
+        lock (_taskLock)
+        {
+            ThumbnailExecutionPolicy policy = GetExecutionPolicyUnsafe();
+            if (!policy.AllowStartNewJobs)
+                return _isPlayerActive
+                    ? "blocked-player-active-no-new-jobs"
+                    : "blocked-policy-no-new-jobs";
+
+            if (_activeWorkers.Count >= policy.MaxConcurrency)
+                return "blocked-max-concurrency";
+
+            return "blocked-unknown";
+        }
+    }
+
+    private void LogWorkerCompletion(ThumbnailTask task, string outcome)
+    {
+        string snapshot;
+        lock (_taskLock)
+        {
+            snapshot = BuildSchedulerSnapshotUnsafe();
+        }
+
+        Log.Info(
+            $"Thumbnail worker end: file={Path.GetFileName(task.VideoPath)}, outcome={outcome}, " +
+            $"state={task.State}, frames={task.TotalFrames}, {snapshot}");
+    }
+
+    private async Task WaitForWorkersAsync()
+    {
+        Task[] workers;
+        lock (_taskLock)
+        {
+            workers = _activeWorkers.Select(static worker => worker.Execution).ToArray();
+        }
+
+        if (workers.Length == 0)
+            return;
+
+        try
+        {
+            await Task.WhenAll(workers);
+        }
+        catch
+        {
         }
     }
 
@@ -622,15 +827,20 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     {
         lock (_taskLock)
         {
-            int count = 0;
-            foreach (var task in _tasks)
-            {
-                if (task.State == state)
-                    count++;
-            }
-
-            return count;
+            return CountTasksByStateUnsafe(state);
         }
+    }
+
+    private int CountTasksByStateUnsafe(ThumbnailState state)
+    {
+        int count = 0;
+        foreach (var task in _tasks)
+        {
+            if (task.State == state)
+                count++;
+        }
+
+        return count;
     }
 }
 

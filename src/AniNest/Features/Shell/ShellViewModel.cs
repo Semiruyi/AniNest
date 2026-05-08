@@ -12,6 +12,7 @@ using AniNest.Features.Shell.Services;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Localization;
 using AniNest.Infrastructure.Interop;
+using AniNest.Infrastructure.Thumbnails;
 
 namespace AniNest.Features.Shell;
 
@@ -24,6 +25,7 @@ public partial class ShellViewModel : ObservableObject
     private readonly ITaskbarAutoHideCoordinator _taskbarAutoHide;
     private readonly IPlayerAppService _playerAppService;
     private readonly IShellPreferencesService _preferencesService;
+    private readonly IThumbnailGenerator _thumbnailGenerator;
     private readonly MainPageViewModel _mainPage;
     private readonly PlayerViewModel _playerPage;
 
@@ -46,6 +48,9 @@ public partial class ShellViewModel : ObservableObject
     private bool _isFullscreenAnimationSubmenuOpen;
 
     [ObservableProperty]
+    private bool _isThumbnailPerformanceSubmenuOpen;
+
+    [ObservableProperty]
     private bool _isPlayerInputSubmenuOpen;
 
     [ObservableProperty]
@@ -53,6 +58,9 @@ public partial class ShellViewModel : ObservableObject
 
     [ObservableProperty]
     private string _currentAnimationCode = "continuous";
+
+    [ObservableProperty]
+    private string _currentThumbnailPerformanceModeCode = "balanced";
 
     public event Action? ToggleFullscreenRequested;
 
@@ -66,6 +74,7 @@ public partial class ShellViewModel : ObservableObject
         ITaskbarAutoHideCoordinator taskbarAutoHide,
         IPlayerAppService playerAppService,
         IShellPreferencesService preferencesService,
+        IThumbnailGenerator thumbnailGenerator,
         MainPageViewModel mainPage,
         PlayerViewModel playerPage,
         PlayerInputSettingsViewModel playerInputSettings)
@@ -75,8 +84,10 @@ public partial class ShellViewModel : ObservableObject
         _taskbarAutoHide = taskbarAutoHide;
         _playerAppService = playerAppService;
         _preferencesService = preferencesService;
+        _thumbnailGenerator = thumbnailGenerator;
         _currentLanguageCode = _loc.CurrentLanguage;
         _currentAnimationCode = _preferencesService.CurrentFullscreenAnimationCode;
+        _currentThumbnailPerformanceModeCode = _preferencesService.CurrentThumbnailPerformanceModeCode;
         _mainPage = mainPage;
         _playerPage = playerPage;
         PlayerInputSettings = playerInputSettings;
@@ -143,6 +154,7 @@ public partial class ShellViewModel : ObservableObject
         {
             IsLanguageSubmenuOpen = false;
             IsFullscreenAnimationSubmenuOpen = false;
+            IsThumbnailPerformanceSubmenuOpen = false;
             IsPlayerInputSubmenuOpen = false;
             PlayerInputSettings.CancelCapture();
         }
@@ -167,6 +179,14 @@ public partial class ShellViewModel : ObservableObject
     {
         CurrentAnimationCode = code;
         _preferencesService.SetFullscreenAnimation(code);
+    }
+
+    [RelayCommand]
+    private void SelectThumbnailPerformanceMode(string code)
+    {
+        _preferencesService.SetThumbnailPerformanceMode(code);
+        CurrentThumbnailPerformanceModeCode = _preferencesService.CurrentThumbnailPerformanceModeCode;
+        _thumbnailGenerator.RefreshPerformanceMode();
     }
 
     [RelayCommand]

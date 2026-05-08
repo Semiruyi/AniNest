@@ -1,6 +1,7 @@
 using System.IO;
 using FluentAssertions;
 using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Thumbnails;
 using Xunit;
 
 namespace AniNest.Tests.Model;
@@ -30,6 +31,7 @@ public class SettingsServiceTests : IDisposable
         _service.AddFolder("/test", "TestFolder");
         _service.SetVideoProgress("/test/video.mp4", 1000, 5000);
         _service.SetThumbnailExpiryDays(7);
+        _service.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Fast);
 
         _service.Reload();
         var folders = _service.GetFolders();
@@ -37,6 +39,13 @@ public class SettingsServiceTests : IDisposable
         folders.Should().ContainSingle();
         folders[0].Name.Should().Be("TestFolder");
         _service.GetThumbnailExpiryDays().Should().Be(7);
+        _service.GetThumbnailPerformanceMode().Should().Be(ThumbnailPerformanceMode.Fast);
+    }
+
+    [Fact]
+    public void GetThumbnailPerformanceMode_DefaultsToBalanced()
+    {
+        _service.GetThumbnailPerformanceMode().Should().Be(ThumbnailPerformanceMode.Balanced);
     }
 
     [Fact]

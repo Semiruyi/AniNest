@@ -18,6 +18,8 @@ public interface IThumbnailGenerator
     void EnqueueFolder(string folderPath, IReadOnlyCollection<string> videoFiles, int cardOrder,
         string? lastPlayedPath, HashSet<string> playedPaths);
     void DeleteForFolder(string folderPath, IReadOnlyCollection<string>? videoFiles = null);
+    void SetPlayerActive(bool isActive);
+    void RefreshPerformanceMode();
 
     void Shutdown();
 

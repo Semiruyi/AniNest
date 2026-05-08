@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using AniNest.Features.Player.Input;
+using AniNest.Infrastructure.Thumbnails;
 namespace AniNest.Infrastructure.Persistence;
 
 public class AppSettings
@@ -8,6 +9,7 @@ public class AppSettings
     public Dictionary<string, VideoProgress> VideoProgress { get; set; } = new();
     public Dictionary<string, FolderProgress> FolderProgress { get; set; } = new();
     public int ThumbnailExpiryDays { get; set; } = 30;
+    public ThumbnailPerformanceMode ThumbnailPerformanceMode { get; set; } = ThumbnailPerformanceMode.Balanced;
     public string Language { get; set; } = "zh-CN";
     public string FullscreenAnimation { get; set; } = "none";
     public PlayerInputProfile PlayerInput { get; set; } = new();

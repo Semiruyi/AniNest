@@ -1,5 +1,6 @@
 using AniNest.Infrastructure.Localization;
 using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Thumbnails;
 
 namespace AniNest.Features.Shell.Services;
 
@@ -18,6 +19,7 @@ public sealed class ShellPreferencesService : IShellPreferencesService
 
     public string CurrentLanguageCode => _localization.CurrentLanguage;
     public string CurrentFullscreenAnimationCode => _settings.Load().FullscreenAnimation;
+    public string CurrentThumbnailPerformanceModeCode => _settings.GetThumbnailPerformanceMode().ToString().ToLowerInvariant();
 
     public void SetLanguage(string code)
     {
@@ -32,5 +34,17 @@ public sealed class ShellPreferencesService : IShellPreferencesService
         var settings = _settings.Load();
         settings.FullscreenAnimation = code;
         _settings.Save();
+    }
+
+    public void SetThumbnailPerformanceMode(string code)
+    {
+        ThumbnailPerformanceMode mode = code.ToLowerInvariant() switch
+        {
+            "quiet" => ThumbnailPerformanceMode.Quiet,
+            "fast" => ThumbnailPerformanceMode.Fast,
+            _ => ThumbnailPerformanceMode.Balanced
+        };
+
+        _settings.SetThumbnailPerformanceMode(mode);
     }
 }

@@ -295,6 +295,19 @@ public class SettingsService : ISettingsService, IDisposable
         Save();
     }
 
+    public ThumbnailPerformanceMode GetThumbnailPerformanceMode()
+        => Load().ThumbnailPerformanceMode;
+
+    public void SetThumbnailPerformanceMode(ThumbnailPerformanceMode mode)
+    {
+        var current = Load();
+        if (current.ThumbnailPerformanceMode == mode)
+            return;
+
+        current.ThumbnailPerformanceMode = mode;
+        Save();
+    }
+
     private void ScheduleDeferredSave()
     {
         if (_isDisposed)
