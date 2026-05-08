@@ -407,6 +407,7 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Text="{Binding ActionDisplayName}"
                                                        VerticalAlignment="Center"
+                                                       Foreground="White"
                                                        Margin="8,0,10,0"
                                                        TextTrimming="CharacterEllipsis"/>
                                             <Button Grid.Column="1"
