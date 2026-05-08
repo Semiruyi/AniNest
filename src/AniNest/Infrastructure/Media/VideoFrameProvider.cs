@@ -49,6 +49,7 @@ public class VideoFrameProvider : IDisposable
 
     public void AttachToPlayer(LibVLCSharp.Shared.MediaPlayer player)
     {
+        Log.Info($"AttachToPlayer: width={_width}, height={_height}, stride={_stride}");
         player.SetVideoFormat("BGRA", (uint)_width, (uint)_height, (uint)_stride);
         player.SetVideoCallbacks(VideoLock, VideoUnlock, VideoDisplay);
     }
@@ -180,7 +181,10 @@ public class VideoFrameProvider : IDisposable
             {
                 var wb = _bitmap;
                 if (wb == null)
+                {
+                    Log.Warning("VideoDisplay skipped: bitmap is null");
                     return;
+                }
                 wb.WritePixels(new Int32Rect(0, 0, w, h), readyBuf, stride, 0);
                 if (isFirstDisplay && !_firstPresentedObserved)
                 {
@@ -188,7 +192,10 @@ public class VideoFrameProvider : IDisposable
                 }
                 FramePresented?.Invoke(this, EventArgs.Empty);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Error("VideoDisplay dispatcher callback failed", ex);
+            }
             finally
             {
                 dispatchSpan?.Dispose();

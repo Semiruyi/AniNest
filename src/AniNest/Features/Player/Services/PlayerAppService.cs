@@ -43,6 +43,13 @@ public sealed class PlayerAppService : IPlayerAppService
 
     public async Task EnterPlayerAsync(string animationCode, string path, string name)
     {
+        if (_isLeavingPlayer)
+        {
+            Log.Warning(
+                $"EnterPlayer requested while leave transition is still in progress: folder={name}, path={path}, " +
+                $"loadGeneration={_loadGeneration}, loadedGeneration={_loadedGeneration}, activatedGeneration={_activatedGeneration}");
+        }
+
         _thumbnailGenerator.SetPlayerActive(true);
         _ = _taskbarAutoHide.EnterPlayerPageAsync(animationCode);
         if (_session.IsCleanedUp)
@@ -111,6 +118,14 @@ public sealed class PlayerAppService : IPlayerAppService
 
     public Task BeginLeavePlayerAsync()
     {
+        if (_isLeavingPlayer)
+        {
+            Log.Warning(
+                $"BeginLeavePlayer ignored: already leaving. loadGeneration={_loadGeneration}, loadedGeneration={_loadedGeneration}, " +
+                $"activatedGeneration={_activatedGeneration}, pendingGeneration={_pendingActivationGeneration}");
+            return Task.CompletedTask;
+        }
+
         _thumbnailGenerator.SetPlayerActive(false);
         Log.Info(
             $"BeginLeavePlayer: loadGeneration={_loadGeneration}, loadedGeneration={_loadedGeneration}, " +

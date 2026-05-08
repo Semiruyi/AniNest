@@ -32,6 +32,8 @@ public partial class ShellViewModel : ObservableObject
     private readonly MainPageViewModel _mainPage;
     private readonly PlayerViewModel _playerPage;
     private string? _lastThumbnailGenerationStatusLog;
+    private bool _isPageTransitionPending;
+    private string? _pendingTransitionTarget;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsOnMainPage))]
@@ -166,6 +168,8 @@ public partial class ShellViewModel : ObservableObject
     {
         var sw = Stopwatch.StartNew();
         Log.Info($"OnPageTransitionCompleted. CurrentPage={CurrentPage?.GetType().Name ?? "null"}");
+        _isPageTransitionPending = false;
+        _pendingTransitionTarget = null;
 
         if (CurrentPage is PlayerViewModel)
         {
@@ -188,7 +192,17 @@ public partial class ShellViewModel : ObservableObject
 
     private void OnMainPageFolderSelected(string path, string name)
     {
+        if (_isPageTransitionPending || !ReferenceEquals(CurrentPage, _mainPage))
+        {
+            Log.Warning(
+                $"Ignore folder selection during pending transition: name={name}, path={path}, " +
+                $"currentPage={CurrentPage?.GetType().Name ?? "null"}, pendingTarget={_pendingTransitionTarget ?? "null"}");
+            return;
+        }
+
         Log.Info($"Folder selected: {name} | {path}");
+        _isPageTransitionPending = true;
+        _pendingTransitionTarget = nameof(PlayerViewModel);
         CurrentPage = _playerPage;
         _ = _playerAppService.EnterPlayerAsync(CurrentAnimationCode, path, name);
     }
@@ -198,6 +212,17 @@ public partial class ShellViewModel : ObservableObject
 
     private void OnPlayerGoBackRequested()
     {
+        if (_isPageTransitionPending || !ReferenceEquals(CurrentPage, _playerPage))
+        {
+            Log.Warning(
+                $"Ignore player go-back during pending transition: currentPage={CurrentPage?.GetType().Name ?? "null"}, " +
+                $"pendingTarget={_pendingTransitionTarget ?? "null"}");
+            return;
+        }
+
+        Log.Info("Player go-back requested");
+        _isPageTransitionPending = true;
+        _pendingTransitionTarget = nameof(MainPageViewModel);
         _ = _playerAppService.BeginLeavePlayerAsync();
         CurrentPage = _mainPage;
     }

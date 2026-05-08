@@ -86,7 +86,9 @@ public static class AppLog
 
     public static void Error(string category, string message, Exception? ex)
     {
-        string detail = ex != null ? $" | {ex.GetType().Name}: {ex.Message}" : "";
+        string detail = ex != null
+            ? $" | {ex.GetType().Name}: {ex.Message}{Environment.NewLine}{ex}"
+            : "";
         Write(DefaultLogFile, category, LogLevel.Error, $"{message}{detail}");
     }
 
