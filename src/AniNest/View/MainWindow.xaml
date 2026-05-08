@@ -87,11 +87,38 @@
                                VerticalAlignment="Center"
                                Margin="0,0,8,0"
                                SnapsToDevicePixels="True"/>
-                        <Grid animations:VisibilityAnimator.BindVisible="{Binding IsOnMainPage}">
+                        <Grid>
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsOnMainPage}" Value="False">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
                             <Button x:Name="FileButton"
                                     Style="{StaticResource TitleBarTextButton}"
                                     Content="{Binding DataContext.Localization[App.File], RelativeSource={RelativeSource AncestorType=Window}}"
                                     Click="FileButton_Click"
+                                    shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        </Grid>
+                        <Grid>
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsOnPlayerPage}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <Button x:Name="BackButton"
+                                    Style="{StaticResource TitleBarTextButton}"
+                                    Command="{Binding GoBackFromPlayerTitleBarCommand}"
+                                    Content="{Binding DataContext.Localization[KeyBinding.Back], RelativeSource={RelativeSource AncestorType=Window}}"
                                     shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
                         </Grid>
                         <Grid>

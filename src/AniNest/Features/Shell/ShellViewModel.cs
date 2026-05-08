@@ -37,9 +37,11 @@ public partial class ShellViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsOnMainPage))]
+    [NotifyPropertyChangedFor(nameof(IsOnPlayerPage))]
     private object? _currentPage;
 
     public bool IsOnMainPage => CurrentPage is MainPageViewModel;
+    public bool IsOnPlayerPage => CurrentPage is PlayerViewModel;
 
     [ObservableProperty]
     private bool _isFilePopupOpen;
@@ -225,6 +227,12 @@ public partial class ShellViewModel : ObservableObject
         _pendingTransitionTarget = nameof(MainPageViewModel);
         _ = _playerAppService.BeginLeavePlayerAsync();
         CurrentPage = _mainPage;
+    }
+
+    [RelayCommand]
+    private void GoBackFromPlayerTitleBar()
+    {
+        OnPlayerGoBackRequested();
     }
 
     [RelayCommand]

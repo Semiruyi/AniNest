@@ -81,6 +81,7 @@ public partial class MainWindow : Window
     private void RegisterPopupRegions()
     {
         var coordinator = PopupInputCoordinator.Instance;
+        coordinator.RegisterRegion(BackButton, PopupHitKind.TitleBarInteractive);
         coordinator.RegisterRegion(FileButton, PopupHitKind.TitleBarInteractive);
         coordinator.RegisterRegion(SettingsButton, PopupHitKind.TitleBarInteractive);
         coordinator.RegisterRegion(MinimizeButton, PopupHitKind.TitleBarInteractive);
@@ -89,6 +90,7 @@ public partial class MainWindow : Window
         coordinator.RegisterRegion(TitleBarDragZone, PopupHitKind.TitleBarDragZone);
 
         var overlayCoordinator = OverlayCoordinator.Instance;
+        overlayCoordinator.RegisterRegion(BackButton, OverlayOutsideHitKind.TitleBarInteractive);
         overlayCoordinator.RegisterRegion(FileButton, OverlayOutsideHitKind.TitleBarInteractive);
         overlayCoordinator.RegisterRegion(SettingsButton, OverlayOutsideHitKind.TitleBarInteractive);
         overlayCoordinator.RegisterRegion(MinimizeButton, OverlayOutsideHitKind.TitleBarInteractive);
