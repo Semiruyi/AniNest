@@ -60,6 +60,7 @@
     <system:Double x:Key="FolderCardWidth">190</system:Double>
     <system:Double x:Key="FolderCardHeight">253</system:Double>
     <system:Double x:Key="FolderCardGradientHeight">100</system:Double>
+    <system:Double x:Key="FolderCardSummaryFontSize">12</system:Double>
     <system:Double x:Key="ToolbarHeight">64</system:Double>
     <system:Double x:Key="AddFolderButtonHeight">38</system:Double>
 

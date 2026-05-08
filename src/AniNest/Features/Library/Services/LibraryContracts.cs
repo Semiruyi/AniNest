@@ -4,7 +4,8 @@ public sealed record LibraryFolderDto(
     string Name,
     string Path,
     int VideoCount,
-    string? CoverPath);
+    string? CoverPath,
+    int PlayedCount = 0);
 
 public enum OpenFolderFailure
 {

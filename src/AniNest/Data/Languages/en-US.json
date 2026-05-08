@@ -41,6 +41,9 @@
 
   "Library.NoCover": "No Cover",
   "Library.VideoCount": "{0} video(s)",
+  "Library.PlayedSummary.Prefix": "Watched ",
+  "Library.PlayedSummary.Total": " Total ",
+  "Library.PlayedSummary.Suffix": "",
   "Library.FolderCount": "{0} folder(s)",
   "Library.MoveToFront": "Move to Front",
   "Library.RemoveFromLibrary": "Remove from Library",

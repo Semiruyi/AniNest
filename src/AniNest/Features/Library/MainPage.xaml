@@ -12,6 +12,7 @@
         <conv:NullToVisibilityConverter x:Key="NullToVis" NullValue="Collapsed" NotNullValue="Visible"/>
         <conv:NullToVisibilityConverter x:Key="NullToHidden"  NullValue="Visible"    NotNullValue="Collapsed"/>
         <conv:CoverImageSourceConverter x:Key="CoverImageSource" DecodePixelWidth="380"/>
+        <conv:PercentToWidthConverter x:Key="PercentToWidthConverter"/>
     </UserControl.Resources>
 
     <Grid x:Name="RootGrid">
@@ -35,7 +36,7 @@
                                 Width="{StaticResource FolderCardWidth}"
                                 Height="{StaticResource FolderCardHeight}"
                                 Margin="{StaticResource FolderCardMargin}"
-                                Background="{StaticResource SurfaceDark}"
+                                Background="{StaticResource SurfaceOverlayDark}"
                                 CornerRadius="{StaticResource FolderCardCornerRadius}"
                                 Cursor="Hand"
                                 behaviors:MouseGestureBehavior.LeftClick="{Binding DataContext.SelectFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -66,20 +67,70 @@
                                            HorizontalAlignment="Center" VerticalAlignment="Center"
                                            Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
 
-                                <Border VerticalAlignment="Bottom" Height="{StaticResource FolderCardGradientHeight}">
+                                <Border x:Name="CardInfoRoot"
+                                        VerticalAlignment="Bottom"
+                                        Height="{StaticResource FolderCardGradientHeight}"
+                                        Padding="0,12,0,0">
                                     <Border.Background>
-                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                            <GradientStop Color="Transparent" Offset="0"/>
-                                            <GradientStop Color="#E6000000" Offset="1"/>
-                                        </LinearGradientBrush>
+                                        <StaticResource ResourceKey="SurfaceOverlayDarkGradient"/>
                                     </Border.Background>
-                                    <StackPanel Margin="{StaticResource CardInfoMargin}">
-                                        <TextBlock Text="{Binding Name}" Foreground="White"
-                                                   FontSize="14" FontWeight="SemiBold"
+                                        <Grid Margin="{StaticResource CardInfoMargin}">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Text="{Binding Name}"
+                                                   Foreground="White"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
                                                    TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="{Binding VideoCountText}"
-                                                   Foreground="#BBBBBB" FontSize="11" Margin="0,4,0,0"/>
-                                    </StackPanel>
+                                        <StackPanel Grid.Row="1"
+                                                    Orientation="Horizontal"
+                                                    Margin="0,4,0,0">
+                                            <TextBlock Text="{Binding DataContext.PlayedSummaryPrefix, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                       Foreground="#BFC7D5"
+                                                       FontSize="{StaticResource FolderCardSummaryFontSize}"
+                                                       FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding PlayedCount}"
+                                                       Foreground="{StaticResource AccentBlue}"
+                                                       FontSize="{StaticResource FolderCardSummaryFontSize}"
+                                                       FontWeight="SemiBold"/>
+                                            <TextBlock Text=" / "
+                                                       Foreground="#BFC7D5"
+                                                       FontSize="{StaticResource FolderCardSummaryFontSize}"
+                                                       FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding DataContext.PlayedSummaryTotal, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                       Foreground="#BFC7D5"
+                                                       FontSize="{StaticResource FolderCardSummaryFontSize}"
+                                                       FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding VideoCount}"
+                                                       Foreground="#8A93A3"
+                                                       FontSize="{StaticResource FolderCardSummaryFontSize}"
+                                                       FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding DataContext.PlayedSummarySuffix, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                       Foreground="#BFC7D5"
+                                                       FontSize="{StaticResource FolderCardSummaryFontSize}"
+                                                       FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                            <Grid Grid.Row="2"
+                                                  Margin="0,8,0,0"
+                                                  Height="14"
+                                                  Background="Transparent">
+                                                <Border Height="3"
+                                                        VerticalAlignment="Center"
+                                                        Background="#33FFFFFF"
+                                                        CornerRadius="1.5"/>
+                                                <Grid HorizontalAlignment="Left"
+                                                      Width="{Binding PlayedPercent, Converter={StaticResource PercentToWidthConverter}, ConverterParameter=166}"
+                                                      ClipToBounds="True">
+                                                    <Border Height="3"
+                                                            VerticalAlignment="Center"
+                                                            Background="{StaticResource AccentBlue}"
+                                                            CornerRadius="1.5"/>
+                                                </Grid>
+                                            </Grid>
+                                        </Grid>
                                 </Border>
                             </Grid>
                         </Border>

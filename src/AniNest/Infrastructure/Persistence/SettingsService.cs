@@ -279,6 +279,12 @@ public class SettingsService : ISettingsService, IDisposable
         return (double)playedCount / videoFiles.Length * 100;
     }
 
+    public int GetFolderPlayedCount(string folderPath, string[] videoFiles)
+    {
+        var current = Load();
+        return videoFiles.Count(f => current.VideoProgress.TryGetValue(f, out var p) && p.IsPlayed);
+    }
+
     public int GetThumbnailExpiryDays()
         => Load().ThumbnailExpiryDays;
 

@@ -18,7 +18,10 @@ public partial class FolderListItem : ObservableObject
     public string? CoverPath { get; }
 
     [ObservableProperty]
-    private string _videoCountText = "";
+    private double _playedPercent;
+
+    [ObservableProperty]
+    private int _playedCount;
 
     [ObservableProperty]
     private bool _isPopupOpen;
@@ -26,5 +29,3 @@ public partial class FolderListItem : ObservableObject
     [ObservableProperty]
     private bool _canMoveToFront;
 }
-
-

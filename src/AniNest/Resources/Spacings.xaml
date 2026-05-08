@@ -26,7 +26,7 @@
     <Thickness x:Key="LibraryPageMargin">24</Thickness>
     <Thickness x:Key="FolderCardMargin">12</Thickness>
     <Thickness x:Key="ToolbarHorizontalMargin">24,0</Thickness>
-    <Thickness x:Key="CardInfoMargin">12,44,12,12</Thickness>
+    <Thickness x:Key="CardInfoMargin">12,16,12,12</Thickness>
 
     <system:Double x:Key="ThumbnailPopupOffset">-120</system:Double>
     <system:Double x:Key="SpeedPopupOffset">-140</system:Double>

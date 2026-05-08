@@ -25,6 +25,7 @@ public interface ISettingsService
     FolderProgress? GetFolderProgress(string folderPath);
     void SetFolderProgress(string folderPath, string lastVideoPath);
     double GetFolderPlayedPercent(string folderPath, string[] videoFiles);
+    int GetFolderPlayedCount(string folderPath, string[] videoFiles);
 
     int GetThumbnailExpiryDays();
     void SetThumbnailExpiryDays(int days);

@@ -21,6 +21,7 @@ public partial class MainPageViewModel : ObservableObject
     private readonly ILibraryAppService _libraryService;
     private readonly ILocalizationService _loc;
     private readonly EventHandler<ThumbnailProgressEventArgs> _thumbnailProgressChangedHandler;
+    private readonly PropertyChangedEventHandler _localizationChangedHandler;
     private CancellationTokenSource? _loadDataCts;
     private CancellationTokenSource? _selectFolderCts;
     private FolderListItem? _activePopupItem;
@@ -31,6 +32,9 @@ public partial class MainPageViewModel : ObservableObject
     public event Action<string, string>? FolderSelected;
 
     public ILocalizationService Localization => _loc;
+    public string PlayedSummaryPrefix => _loc["Library.PlayedSummary.Prefix"];
+    public string PlayedSummaryTotal => _loc["Library.PlayedSummary.Total"];
+    public string PlayedSummarySuffix => _loc["Library.PlayedSummary.Suffix"];
     public ObservableCollection<FolderListItem> FolderItems { get; } = new();
 
     [ObservableProperty]
@@ -52,10 +56,12 @@ public partial class MainPageViewModel : ObservableObject
         _libraryService = libraryService;
         _loc = loc;
         _thumbnailProgressChangedHandler = OnThumbnailProgressChanged;
+        _localizationChangedHandler = OnLocalizationChanged;
 
         FolderItems.CollectionChanged += OnFolderItemsCollectionChanged;
 
         _libraryService.ThumbnailProgressChanged += _thumbnailProgressChangedHandler;
+        _loc.PropertyChanged += _localizationChangedHandler;
     }
 
     public void AddFolderItem(string name, string path, int videoCount, string? coverPath)
@@ -222,6 +228,7 @@ public partial class MainPageViewModel : ObservableObject
         CancelAndDispose(ref _loadDataCts);
         CancelAndDispose(ref _selectFolderCts);
         _libraryService.ThumbnailProgressChanged -= _thumbnailProgressChangedHandler;
+        _loc.PropertyChanged -= _localizationChangedHandler;
     }
 
     private void UpdateToolbarState()
@@ -251,10 +258,23 @@ public partial class MainPageViewModel : ObservableObject
 
     private FolderListItem CreateFolderItem(LibraryFolderDto item)
     {
+        Log.Info($"Folder card data: name={item.Name} played={item.PlayedCount}/{item.VideoCount} percent={(item.VideoCount > 0 ? (double)item.PlayedCount / item.VideoCount * 100 : 0):F1}");
         return new FolderListItem(item.Name, item.Path, item.VideoCount, item.CoverPath)
         {
-            VideoCountText = string.Format(_loc["Library.VideoCount"], item.VideoCount)
+            PlayedPercent = item.VideoCount > 0 ? (double)item.PlayedCount / item.VideoCount * 100 : 0,
+            PlayedCount = item.PlayedCount
         };
+    }
+
+    private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is not nameof(ILocalizationService.CurrentLanguage) and not "Item[]")
+            return;
+
+        OnPropertyChanged(nameof(Localization));
+        OnPropertyChanged(nameof(PlayedSummaryPrefix));
+        OnPropertyChanged(nameof(PlayedSummaryTotal));
+        OnPropertyChanged(nameof(PlayedSummarySuffix));
     }
 
     private void OnFolderItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)

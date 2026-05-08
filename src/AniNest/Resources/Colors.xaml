@@ -9,6 +9,12 @@
     <SolidColorBrush x:Key="BackgroundDark" Color="#FF1E1E1E"/>
     <SolidColorBrush x:Key="SurfaceDark" Color="#FF141414"/>
     <SolidColorBrush x:Key="SurfaceLight" Color="#FF1E1E1E"/>
+    <SolidColorBrush x:Key="SurfaceOverlayDark" Color="#B8000000"/>
+    <LinearGradientBrush x:Key="SurfaceOverlayDarkGradient" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#00000000" Offset="0"/>
+        <GradientStop Color="#B8000000" Offset="0.55"/>
+        <GradientStop Color="#E6000000" Offset="1"/>
+    </LinearGradientBrush>
 
     <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFFFF"/>
     <SolidColorBrush x:Key="TextSecondary" Color="#AAFFFFFF"/>

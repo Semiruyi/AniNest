@@ -1,4 +1,5 @@
 using System.IO;
+using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Persistence;
 using AniNest.Infrastructure.Thumbnails;
 
@@ -6,6 +7,7 @@ namespace AniNest.Features.Library.Services;
 
 public sealed class LibraryAppService : ILibraryAppService
 {
+    private static readonly Logger Log = AppLog.For<LibraryAppService>();
     private readonly ISettingsService _settings;
     private readonly IThumbnailGenerator _thumbnailGenerator;
     private readonly IVideoScanner _videoScanner;
@@ -40,7 +42,7 @@ public sealed class LibraryAppService : ILibraryAppService
             if (Directory.Exists(folder.Path))
             {
                 var result = await _videoScanner.ScanFolderAsync(folder.Path, cancellationToken);
-                loadedItems.Add((new LibraryFolderDto(folder.Name, folder.Path, result.VideoCount, result.CoverPath), result.VideoFiles));
+                loadedItems.Add((CreateFolderDto(folder.Name, folder.Path, result.VideoCount, result.CoverPath, result.VideoFiles), result.VideoFiles));
                 continue;
             }
 
@@ -87,7 +89,7 @@ public sealed class LibraryAppService : ILibraryAppService
             return new AddFolderResult(false, null, failure, error);
         }
 
-        var folder = new LibraryFolderDto(name, path, scanResult.VideoCount, scanResult.CoverPath);
+        var folder = CreateFolderDto(name, path, scanResult.VideoCount, scanResult.CoverPath, scanResult.VideoFiles);
         EnqueueFolderForThumbnails(path, scanResult.VideoFiles);
         return new AddFolderResult(true, folder);
     }
@@ -112,11 +114,12 @@ public sealed class LibraryAppService : ILibraryAppService
             if (scanResult.VideoCount == 0)
                 continue;
 
-            addedFolders.Add(new LibraryFolderDto(
+            addedFolders.Add(CreateFolderDto(
                 Path.GetFileName(path),
                 path,
                 scanResult.VideoCount,
-                scanResult.CoverPath));
+                scanResult.CoverPath,
+                scanResult.VideoFiles));
 
             EnqueueFolderForThumbnails(path, scanResult.VideoFiles);
         }
@@ -179,5 +182,16 @@ public sealed class LibraryAppService : ILibraryAppService
         }
 
         _thumbnailGenerator.EnqueueFolder(folderPath, videoFiles, cardOrder, lastPlayed, playedPaths);
+    }
+
+    private LibraryFolderDto CreateFolderDto(
+        string name,
+        string path,
+        int videoCount,
+        string? coverPath,
+        string[] videoFiles)
+    {
+        int playedCount = _settings.GetFolderPlayedCount(path, videoFiles);
+        return new LibraryFolderDto(name, path, videoCount, coverPath, playedCount);
     }
 }
