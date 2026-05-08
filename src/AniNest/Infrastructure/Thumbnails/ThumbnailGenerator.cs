@@ -46,6 +46,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     // Dependencies
     private readonly ISettingsService _settings;
+    private readonly IThumbnailDecodeStrategyService _decodeStrategyService;
 
     // Paths
     private readonly string _thumbBaseDir;
@@ -78,9 +79,12 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     public bool IsFfmpegAvailable => _ffmpegAvailable;
 
-    public ThumbnailGenerator(ISettingsService settings)
+    public ThumbnailGenerator(
+        ISettingsService settings,
+        IThumbnailDecodeStrategyService decodeStrategyService)
     {
         _settings = settings;
+        _decodeStrategyService = decodeStrategyService;
         _performanceMode = _settings.GetThumbnailPerformanceMode();
         _thumbBaseDir = AppPaths.ThumbnailDirectory;
         _indexPath = Path.Combine(_thumbBaseDir, "index.json");
@@ -271,7 +275,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         if (!changed)
             return;
 
-        Log.Info($"Thumbnail performance mode changed: mode={mode}, {snapshot}");
+        Log.Info($"Thumbnail performance mode changed: selectedMode={mode}, {snapshot}");
         EnsureLoopRunning();
     }
 
@@ -404,7 +408,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
         try
         {
-            var result = await _renderer.GenerateAsync(task, ct, (p, v) => VideoProgress?.Invoke(p, v));
+            var result = await GenerateWithStrategyFallback(task, ct);
 
             if (result.State == ThumbnailState.Ready)
             {
@@ -457,8 +461,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
 
         Log.Info(
-            $"Thumbnail worker start: file={Path.GetFileName(task.VideoPath)}, priority={task.Priority}, " +
-            $"activeWorkers={activeWorkers}, pendingTasks={pendingTasks}, {snapshot}");
+            $"Thumbnail worker start: file={Path.GetFileName(task.VideoPath)}, priority={task.Priority}, {snapshot}");
     }
 
     private async Task RunWorkerAsync(ThumbnailTask task, CancellationToken ct)
@@ -841,6 +844,29 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
 
         return count;
+    }
+
+    private async Task<RenderResult> GenerateWithStrategyFallback(ThumbnailTask task, CancellationToken ct)
+    {
+        IReadOnlyList<ThumbnailDecodeStrategy> strategies = _decodeStrategyService.GetStrategyChain();
+        RenderResult lastResult = new(ThumbnailState.Failed);
+
+        foreach (ThumbnailDecodeStrategy strategy in strategies)
+        {
+            ct.ThrowIfCancellationRequested();
+            Log.Info($"Thumbnail render attempt: file={Path.GetFileName(task.VideoPath)}, strategy={strategy}");
+            lastResult = await _renderer.GenerateAsync(task, strategy, ct, (p, v) => VideoProgress?.Invoke(p, v));
+
+            if (lastResult.State == ThumbnailState.Ready)
+            {
+                _decodeStrategyService.RecordSuccess(strategy);
+                return lastResult;
+            }
+
+            Log.Info($"Thumbnail render fallback: file={Path.GetFileName(task.VideoPath)}, strategy={strategy}, result={lastResult.State}");
+        }
+
+        return lastResult;
     }
 }
 

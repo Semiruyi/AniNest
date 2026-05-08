@@ -10,6 +10,8 @@ public class AppSettings
     public Dictionary<string, FolderProgress> FolderProgress { get; set; } = new();
     public int ThumbnailExpiryDays { get; set; } = 30;
     public ThumbnailPerformanceMode ThumbnailPerformanceMode { get; set; } = ThumbnailPerformanceMode.Balanced;
+    public string ThumbnailDecoderMachineId { get; set; } = "";
+    public string ThumbnailPreferredDecoder { get; set; } = "";
     public string Language { get; set; } = "zh-CN";
     public string FullscreenAnimation { get; set; } = "none";
     public PlayerInputProfile PlayerInput { get; set; } = new();

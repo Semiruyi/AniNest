@@ -26,6 +26,7 @@ public static class ServiceRegistration
         services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<ITaskbarAutoHideCoordinator, TaskbarAutoHideCoordinator>();
         services.AddSingleton<IVideoScanner, VideoScanner>();
+        services.AddSingleton<IThumbnailDecodeStrategyService, ThumbnailDecodeStrategyService>();
         services.AddSingleton<IThumbnailGenerator, ThumbnailGenerator>();
         services.AddSingleton<ILibraryAppService, LibraryAppService>();
         services.AddSingleton<IShellPreferencesService, ShellPreferencesService>();

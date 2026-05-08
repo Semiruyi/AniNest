@@ -39,7 +39,9 @@ internal class ThumbnailRenderer
     }
 
     public async Task<RenderResult> GenerateAsync(
-        ThumbnailTask task, CancellationToken ct,
+        ThumbnailTask task,
+        ThumbnailDecodeStrategy strategy,
+        CancellationToken ct,
         Action<string, int>? onProgress = null)
     {
         string tmpDir = Path.Combine(_thumbBaseDir, $".tmp_{task.Md5Dir}");
@@ -60,7 +62,7 @@ internal class ThumbnailRenderer
         Log.Info(
             $"寮€濮? {Path.GetFileName(task.VideoPath)}, 鏃堕暱={totalSec:F1}s, tmpDir={tmpDir}");
 
-        string args = $"-y -i \"{task.VideoPath}\" " +
+        string args = $"{BuildInputArguments(strategy)}-y -i \"{task.VideoPath}\" " +
             "-vf \"fps=1,scale='min(300,iw)':'min(300,ih)':force_original_aspect_ratio=decrease\" " +
             $"-q:v 5 \"{tmpDir}\\%04d.jpg\"";
 
@@ -83,6 +85,7 @@ internal class ThumbnailRenderer
             Log.Info(MemorySnapshot.Capture("ThumbnailRenderer.GenerateAsync.process-start",
                 ("file", Path.GetFileName(task.VideoPath)),
                 ("pid", process.Id),
+                ("strategy", strategy.ToString()),
                 ("tmpDir", Path.GetFileName(tmpDir))));
 
             int lastPercent = -1;
@@ -125,6 +128,7 @@ internal class ThumbnailRenderer
             Log.Info(MemorySnapshot.Capture("ThumbnailRenderer.GenerateAsync.process-exit",
                 ("file", Path.GetFileName(task.VideoPath)),
                 ("pid", process.Id),
+                ("strategy", strategy.ToString()),
                 ("exitCode", exitCode)));
             Log.Info(
                 $"ffmpeg 閫€鍑? ExitCode={exitCode}, 瑙嗛={Path.GetFileName(task.VideoPath)}");
@@ -144,6 +148,7 @@ internal class ThumbnailRenderer
                 Log.Info(MemorySnapshot.Capture("ThumbnailRenderer.GenerateAsync.completed",
                     ("file", Path.GetFileName(task.VideoPath)),
                     ("pid", process.Id),
+                    ("strategy", strategy.ToString()),
                     ("frames", frameCount)));
                 return new RenderResult(ThumbnailState.Ready, frameCount);
             }
@@ -190,6 +195,16 @@ internal class ThumbnailRenderer
             return 0;
         }
     }
+
+    private static string BuildInputArguments(ThumbnailDecodeStrategy strategy)
+        => strategy switch
+        {
+            ThumbnailDecodeStrategy.NvidiaCuda => "-hwaccel cuda ",
+            ThumbnailDecodeStrategy.IntelQsv => "-hwaccel qsv ",
+            ThumbnailDecodeStrategy.D3D11VA => "-hwaccel d3d11va ",
+            ThumbnailDecodeStrategy.AutoHardware => "-hwaccel auto ",
+            _ => string.Empty
+        };
 }
 
 
