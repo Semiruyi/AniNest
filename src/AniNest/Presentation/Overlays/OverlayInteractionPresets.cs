@@ -9,43 +9,80 @@ namespace AniNest.Presentation.Overlays;
 public static class OverlayInteractionPresets
 {
     private static readonly Logger Log = AppLog.For(nameof(OverlayInteractionPresets));
+    private static readonly OverlayInteractionProfile MenuLikeProfile = new(
+        LeftAnchorBehavior: OverlayPointerBehavior.CloseAndPassThrough,
+        RightAnchorBehavior: OverlayPointerBehavior.CloseAndPassThrough,
+        SurfaceBehaviorWhenClosingOthers: OverlayPointerBehavior.CloseAndPassThrough,
+        SurfaceBehaviorWhenStable: OverlayPointerBehavior.KeepOpen,
+        ChildOverlayBehaviorWhenClosingOthers: OverlayPointerBehavior.CloseAndPassThrough,
+        ChildOverlayBehaviorWhenStable: OverlayPointerBehavior.KeepOpen,
+        TitleBarInteractiveOutsideBehavior: OverlayPointerBehavior.CloseAndPassThrough,
+        TitleBarDragZoneOutsideBehavior: OverlayPointerBehavior.CloseAndPassThrough,
+        ContentInteractiveOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        ContentBackgroundOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        DefaultOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        OutsidePassthroughTargets:
+            OverlayOutsidePassthroughTargets.TitleBarInteractive |
+            OverlayOutsidePassthroughTargets.TitleBarDragZone,
+        CloseOnOutsideClick: true,
+        CloseOnEscape: true,
+        ResetAnchorOnClose: true,
+        EscapeReservedWhileCapturing: false,
+        KeepAncestorChainWhenChildInterceptsClose: true,
+        CloseDescendantsOnParentClose: true,
+        CloseDescendantsOnAncestorSurfaceHit: true,
+        CloseSiblingBranchesOnChainInteraction: true);
+    private static readonly OverlayInteractionProfile CaptureLikeProfile = new(
+        LeftAnchorBehavior: OverlayPointerBehavior.CloseAndPassThrough,
+        RightAnchorBehavior: OverlayPointerBehavior.CloseAndPassThrough,
+        SurfaceBehaviorWhenClosingOthers: OverlayPointerBehavior.CloseAndPassThrough,
+        SurfaceBehaviorWhenStable: OverlayPointerBehavior.KeepOpen,
+        ChildOverlayBehaviorWhenClosingOthers: OverlayPointerBehavior.CloseAndPassThrough,
+        ChildOverlayBehaviorWhenStable: OverlayPointerBehavior.KeepOpen,
+        TitleBarInteractiveOutsideBehavior: OverlayPointerBehavior.CloseAndPassThrough,
+        TitleBarDragZoneOutsideBehavior: OverlayPointerBehavior.CloseAndPassThrough,
+        ContentInteractiveOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        ContentBackgroundOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        DefaultOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        OutsidePassthroughTargets:
+            OverlayOutsidePassthroughTargets.TitleBarInteractive |
+            OverlayOutsidePassthroughTargets.TitleBarDragZone,
+        CloseOnOutsideClick: true,
+        CloseOnEscape: true,
+        ResetAnchorOnClose: true,
+        EscapeReservedWhileCapturing: true,
+        KeepAncestorChainWhenChildInterceptsClose: true,
+        CloseDescendantsOnParentClose: true,
+        CloseDescendantsOnAncestorSurfaceHit: true,
+        CloseSiblingBranchesOnChainInteraction: true);
+    private static readonly OverlayInteractionProfile ContextLikeProfile = new(
+        LeftAnchorBehavior: OverlayPointerBehavior.CloseAndConsume,
+        RightAnchorBehavior: OverlayPointerBehavior.CloseAndConsume,
+        SurfaceBehaviorWhenClosingOthers: OverlayPointerBehavior.CloseAndPassThrough,
+        SurfaceBehaviorWhenStable: OverlayPointerBehavior.KeepOpen,
+        ChildOverlayBehaviorWhenClosingOthers: OverlayPointerBehavior.CloseAndPassThrough,
+        ChildOverlayBehaviorWhenStable: OverlayPointerBehavior.KeepOpen,
+        TitleBarInteractiveOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        TitleBarDragZoneOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        ContentInteractiveOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        ContentBackgroundOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        DefaultOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        OutsidePassthroughTargets: OverlayOutsidePassthroughTargets.None,
+        CloseOnOutsideClick: true,
+        CloseOnEscape: true,
+        ResetAnchorOnClose: true,
+        EscapeReservedWhileCapturing: false,
+        KeepAncestorChainWhenChildInterceptsClose: true,
+        CloseDescendantsOnParentClose: true,
+        CloseDescendantsOnAncestorSurfaceHit: true,
+        CloseSiblingBranchesOnChainInteraction: true);
 
     internal static void ApplyPreset(AnimatedOverlay overlay, OverlayInteractionPreset preset)
     {
-        switch (preset)
-        {
-            case OverlayInteractionPreset.MenuLike:
-                Apply(
-                    overlay,
-                    leftAnchor: OverlayPointerBehavior.CloseAndPassThrough,
-                    rightAnchor: OverlayPointerBehavior.CloseAndPassThrough,
-                    outside: OverlayPointerBehavior.CloseAndConsume,
-                    passthroughTargets:
-                        OverlayOutsidePassthroughTargets.TitleBarInteractive |
-                        OverlayOutsidePassthroughTargets.TitleBarDragZone);
-                break;
-            case OverlayInteractionPreset.CaptureLike:
-                Apply(
-                    overlay,
-                    leftAnchor: OverlayPointerBehavior.CloseAndPassThrough,
-                    rightAnchor: OverlayPointerBehavior.CloseAndPassThrough,
-                    outside: OverlayPointerBehavior.CloseAndConsume,
-                    passthroughTargets:
-                        OverlayOutsidePassthroughTargets.TitleBarInteractive |
-                        OverlayOutsidePassthroughTargets.TitleBarDragZone);
-                break;
-            case OverlayInteractionPreset.ContextLike:
-                Apply(
-                    overlay,
-                    leftAnchor: OverlayPointerBehavior.CloseAndConsume,
-                    rightAnchor: OverlayPointerBehavior.CloseAndConsume,
-                    outside: OverlayPointerBehavior.CloseAndConsume,
-                    passthroughTargets: OverlayOutsidePassthroughTargets.None);
-                break;
-            case OverlayInteractionPreset.None:
-            default:
-                break;
-        }
+        if (preset == OverlayInteractionPreset.None)
+            return;
+
+        Apply(overlay, GetProfile(preset));
     }
 
     internal static OverlayPointerBehavior ResolveAnchorBehavior(AnimatedOverlay overlay, MouseButton button)
@@ -57,19 +94,66 @@ public static class OverlayInteractionPresets
         OverlayPointerBehavior leftAnchorBehavior,
         OverlayPointerBehavior rightAnchorBehavior)
     {
-        return preset switch
+        if (TryGetProfile(preset, out var profile))
         {
-            OverlayInteractionPreset.MenuLike => OverlayPointerBehavior.CloseAndPassThrough,
-            OverlayInteractionPreset.CaptureLike => OverlayPointerBehavior.CloseAndPassThrough,
-            OverlayInteractionPreset.ContextLike => OverlayPointerBehavior.CloseAndConsume,
-            _ => button == MouseButton.Right
-                ? rightAnchorBehavior
-                : leftAnchorBehavior,
-        };
+            return button == MouseButton.Right
+                ? profile.RightAnchorBehavior
+                : profile.LeftAnchorBehavior;
+        }
+
+        return button == MouseButton.Right
+            ? rightAnchorBehavior
+            : leftAnchorBehavior;
     }
 
     internal static OverlayPointerBehavior ResolveOutsideBehavior(AnimatedOverlay overlay, OverlayOutsideHitKind outsideKind)
         => ResolveOutsideBehavior(overlay.InteractionPreset, IsCaptureActive(overlay), outsideKind, overlay.OutsidePointerBehavior, overlay.OutsidePassthroughTargets);
+
+    internal static OverlayPointerBehavior ResolveChainBehavior(
+        OverlayInteractionPreset preset,
+        OverlayHitKind hitKind,
+        bool hasClosingOverlays)
+    {
+        if (!TryGetProfile(preset, out var profile))
+        {
+            return hasClosingOverlays
+                ? OverlayPointerBehavior.CloseAndPassThrough
+                : OverlayPointerBehavior.KeepOpen;
+        }
+
+        return hitKind switch
+        {
+            OverlayHitKind.Surface => hasClosingOverlays
+                ? profile.SurfaceBehaviorWhenClosingOthers
+                : profile.SurfaceBehaviorWhenStable,
+            OverlayHitKind.ChildOverlay => hasClosingOverlays
+                ? profile.ChildOverlayBehaviorWhenClosingOthers
+                : profile.ChildOverlayBehaviorWhenStable,
+            _ => hasClosingOverlays
+                ? OverlayPointerBehavior.CloseAndPassThrough
+                : OverlayPointerBehavior.KeepOpen,
+        };
+    }
+
+    internal static bool ShouldKeepAncestorChainWhenChildInterceptsClose(OverlayInteractionPreset preset)
+        => TryGetProfile(preset, out var profile)
+            ? profile.KeepAncestorChainWhenChildInterceptsClose
+            : true;
+
+    internal static bool ShouldCloseDescendantsOnParentClose(OverlayInteractionPreset preset)
+        => TryGetProfile(preset, out var profile)
+            ? profile.CloseDescendantsOnParentClose
+            : true;
+
+    internal static bool ShouldCloseDescendantsOnAncestorSurfaceHit(OverlayInteractionPreset preset)
+        => TryGetProfile(preset, out var profile)
+            ? profile.CloseDescendantsOnAncestorSurfaceHit
+            : true;
+
+    internal static bool ShouldCloseSiblingBranchesOnChainInteraction(OverlayInteractionPreset preset)
+        => TryGetProfile(preset, out var profile)
+            ? profile.CloseSiblingBranchesOnChainInteraction
+            : true;
 
     internal static OverlayPointerBehavior ResolveOutsideBehavior(
         OverlayInteractionPreset preset,
@@ -78,13 +162,13 @@ public static class OverlayInteractionPresets
         OverlayPointerBehavior outsidePointerBehavior,
         OverlayOutsidePassthroughTargets outsidePassthroughTargets)
     {
-        return preset switch
-        {
-            OverlayInteractionPreset.MenuLike => ResolveMenuLikeOutsideBehavior(outsideKind),
-            OverlayInteractionPreset.CaptureLike => ResolveCaptureLikeOutsideBehavior(isCaptureActive, outsideKind),
-            OverlayInteractionPreset.ContextLike => OverlayPointerBehavior.CloseAndConsume,
-            _ => ResolvePropertyDrivenOutsideBehavior(outsideKind, outsidePointerBehavior, outsidePassthroughTargets),
-        };
+        if (preset == OverlayInteractionPreset.CaptureLike && isCaptureActive)
+            return OverlayPointerBehavior.CloseAndConsume;
+
+        if (TryGetProfile(preset, out var profile))
+            return ResolveProfileOutsideBehavior(profile, outsideKind);
+
+        return ResolvePropertyDrivenOutsideBehavior(outsideKind, outsidePointerBehavior, outsidePassthroughTargets);
     }
 
     internal static bool ShouldCloseOnEscape(AnimatedOverlay overlay)
@@ -94,8 +178,14 @@ public static class OverlayInteractionPresets
         OverlayInteractionPreset preset,
         bool isCaptureActive,
         bool closeOnEscape)
-        => ResolveCloseRequest(preset, isCaptureActive, OverlayCloseReason.EscapeKey).ShouldClose &&
-           (preset == OverlayInteractionPreset.CaptureLike || closeOnEscape);
+    {
+        var effectiveCloseOnEscape = TryGetProfile(preset, out var profile)
+            ? profile.CloseOnEscape
+            : closeOnEscape;
+
+        return ResolveCloseRequest(preset, isCaptureActive, OverlayCloseReason.EscapeKey).ShouldClose &&
+               effectiveCloseOnEscape;
+    }
 
     internal static OverlayCloseRequestDecision ResolveCloseRequest(AnimatedOverlay overlay, OverlayCloseReason reason)
     {
@@ -124,7 +214,7 @@ public static class OverlayInteractionPresets
 
         if (reason == OverlayCloseReason.EscapeKey)
         {
-            return isCaptureActive
+            return GetProfile(preset).EscapeReservedWhileCapturing && isCaptureActive
                 ? OverlayCloseRequestDecision.Ignore("escape-reserved-for-capture")
                 : OverlayCloseRequestDecision.Close("escape-close");
         }
@@ -154,50 +244,56 @@ public static class OverlayInteractionPresets
         return true;
     }
 
-    private static void Apply(
-        AnimatedOverlay overlay,
-        OverlayPointerBehavior leftAnchor,
-        OverlayPointerBehavior rightAnchor,
-        OverlayPointerBehavior outside,
-        OverlayOutsidePassthroughTargets passthroughTargets)
-    {
-        overlay.CloseOnOutsideClick = true;
-        overlay.CloseOnEscape = true;
-        overlay.ResetAnchorOnClose = true;
-        overlay.LeftAnchorClickBehavior = leftAnchor;
-        overlay.RightAnchorClickBehavior = rightAnchor;
-        overlay.OutsidePointerBehavior = outside;
-        overlay.OutsidePassthroughTargets = passthroughTargets;
-    }
-
-    private static OverlayPointerBehavior ResolveMenuLikeOutsideBehavior(OverlayOutsideHitKind outsideKind)
-    {
-        return outsideKind switch
+    internal static OverlayInteractionProfile GetProfile(OverlayInteractionPreset preset)
+        => preset switch
         {
-            OverlayOutsideHitKind.TitleBarInteractive => OverlayPointerBehavior.CloseAndPassThrough,
-            OverlayOutsideHitKind.TitleBarDragZone => OverlayPointerBehavior.CloseAndPassThrough,
-            OverlayOutsideHitKind.ContentInteractive => OverlayPointerBehavior.CloseAndConsume,
-            OverlayOutsideHitKind.ContentBackground => OverlayPointerBehavior.CloseAndConsume,
-            _ => OverlayPointerBehavior.CloseAndConsume,
+            OverlayInteractionPreset.MenuLike => MenuLikeProfile,
+            OverlayInteractionPreset.CaptureLike => CaptureLikeProfile,
+            OverlayInteractionPreset.ContextLike => ContextLikeProfile,
+            _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, "Unknown overlay interaction preset."),
         };
+
+    internal static bool TryGetProfile(OverlayInteractionPreset preset, out OverlayInteractionProfile profile)
+    {
+        switch (preset)
+        {
+            case OverlayInteractionPreset.MenuLike:
+                profile = MenuLikeProfile;
+                return true;
+            case OverlayInteractionPreset.CaptureLike:
+                profile = CaptureLikeProfile;
+                return true;
+            case OverlayInteractionPreset.ContextLike:
+                profile = ContextLikeProfile;
+                return true;
+            default:
+                profile = default;
+                return false;
+        }
     }
 
-    private static OverlayPointerBehavior ResolveCaptureLikeOutsideBehavior(bool isCaptureActive, OverlayOutsideHitKind outsideKind)
+    private static void Apply(AnimatedOverlay overlay, OverlayInteractionProfile profile)
     {
-        Log.Debug(
-            $"ResolveCaptureLikeOutsideBehavior: outsideKind={outsideKind} " +
-            $"isCaptureActive={isCaptureActive}");
+        overlay.CloseOnOutsideClick = profile.CloseOnOutsideClick;
+        overlay.CloseOnEscape = profile.CloseOnEscape;
+        overlay.ResetAnchorOnClose = profile.ResetAnchorOnClose;
+        overlay.LeftAnchorClickBehavior = profile.LeftAnchorBehavior;
+        overlay.RightAnchorClickBehavior = profile.RightAnchorBehavior;
+        overlay.OutsidePointerBehavior = profile.DefaultOutsideBehavior;
+        overlay.OutsidePassthroughTargets = profile.OutsidePassthroughTargets;
+    }
 
-        if (isCaptureActive)
-            return OverlayPointerBehavior.CloseAndConsume;
-
+    private static OverlayPointerBehavior ResolveProfileOutsideBehavior(
+        OverlayInteractionProfile profile,
+        OverlayOutsideHitKind outsideKind)
+    {
         return outsideKind switch
         {
-            OverlayOutsideHitKind.TitleBarInteractive => OverlayPointerBehavior.CloseAndPassThrough,
-            OverlayOutsideHitKind.TitleBarDragZone => OverlayPointerBehavior.CloseAndPassThrough,
-            OverlayOutsideHitKind.ContentInteractive => OverlayPointerBehavior.CloseAndConsume,
-            OverlayOutsideHitKind.ContentBackground => OverlayPointerBehavior.CloseAndConsume,
-            _ => OverlayPointerBehavior.CloseAndConsume,
+            OverlayOutsideHitKind.TitleBarInteractive => profile.TitleBarInteractiveOutsideBehavior,
+            OverlayOutsideHitKind.TitleBarDragZone => profile.TitleBarDragZoneOutsideBehavior,
+            OverlayOutsideHitKind.ContentInteractive => profile.ContentInteractiveOutsideBehavior,
+            OverlayOutsideHitKind.ContentBackground => profile.ContentBackgroundOutsideBehavior,
+            _ => profile.DefaultOutsideBehavior,
         };
     }
 

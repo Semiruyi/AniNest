@@ -76,10 +76,12 @@ public sealed class OverlayCoordinator
     {
         _openOverlays.Remove(overlay);
 
+        var closeDescendants = OverlayInteractionPresets.ShouldCloseDescendantsOnParentClose(overlay.InteractionPreset);
         foreach (var child in _openOverlays.Where(candidate => ReferenceEquals(candidate.ParentOverlay, overlay)).ToArray())
         {
             child.ParentOverlay = null;
-            child.Close(OverlayCloseReason.ParentClosed);
+            if (closeDescendants)
+                child.Close(OverlayCloseReason.ParentClosed);
         }
 
         overlay.ParentOverlay = null;
@@ -94,35 +96,24 @@ public sealed class OverlayCoordinator
             return;
 
         var target = e.OriginalSource as DependencyObject;
-        var hit = AnalyzeHit(target);
-        var keepSet = ComputeKeepSet(hit);
-        var closeSet = _openOverlays
-            .Where(overlay => overlay.IsOpen && overlay.CloseOnOutsideClick && !keepSet.Contains(overlay))
-            .ToArray();
-
-        if (closeSet.Length == 0)
+        var decision = BuildPointerDecision(target, e.ChangedButton);
+        if (decision == null || decision.CloseSet.Count == 0)
             return;
 
-        var behavior = ResolveBehavior(hit, e.ChangedButton, closeSet);
-        var closeReason = ResolveCloseReason(hit);
-        var interceptedKeepSet = ComputeInterceptedKeepSet(closeSet, closeReason);
-        if (interceptedKeepSet.Count > 0)
-            closeSet = closeSet.Where(overlay => !interceptedKeepSet.Contains(overlay)).ToArray();
-
         Log.Debug(
-            $"OnPreviewMouseButtonDown: button={e.ChangedButton} hit={hit.Kind} " +
-            $"outsideKind={hit.OutsideKind} primary={DescribeOverlay(hit.PrimaryOverlay)} " +
-            $"keep={keepSet.Count} interceptedKeep={interceptedKeepSet.Count} close={closeSet.Length} " +
-            $"behavior={behavior} reason={closeReason}");
+            $"OnPreviewMouseButtonDown: button={e.ChangedButton} hit={decision.Hit.Kind} " +
+            $"outsideKind={decision.Hit.OutsideKind} primary={DescribeOverlay(decision.Hit.PrimaryOverlay)} " +
+            $"keep={decision.KeepSet.Count} interceptedKeep={decision.InterceptedKeepSet.Count} close={decision.CloseSet.Count} " +
+            $"behavior={decision.PointerBehavior} reason={decision.CloseReason}");
 
-        if (behavior == OverlayPointerBehavior.CloseAndConsume)
+        if (decision.PointerBehavior == OverlayPointerBehavior.CloseAndConsume)
         {
             e.Handled = true;
             SetConsumeFlag(e.ChangedButton, value: true);
         }
 
-        foreach (var overlay in closeSet)
-            overlay.Close(closeReason);
+        foreach (var overlay in decision.CloseSet)
+            overlay.Close(decision.CloseReason);
     }
 
     private void OnPreviewMouseButtonUp(object sender, MouseButtonEventArgs e)
@@ -176,6 +167,45 @@ public sealed class OverlayCoordinator
         return keep;
     }
 
+    private OverlayPointerDecision? BuildPointerDecision(DependencyObject? target, MouseButton button)
+    {
+        var hit = AnalyzeHit(target);
+        var keepSet = ComputeKeepSet(hit);
+        keepSet = ExpandKeepSetForChainPolicy(hit, keepSet);
+        var initialCloseSet = _openOverlays
+            .Where(overlay => overlay.IsOpen && overlay.CloseOnOutsideClick && !keepSet.Contains(overlay))
+            .ToArray();
+
+        if (initialCloseSet.Length == 0)
+            return null;
+
+        var closeReason = ResolveCloseReason(hit);
+        if (closeReason == OverlayCloseReason.ChainSwitch &&
+            hit.PrimaryOverlay != null &&
+            !OverlayInteractionPresets.ShouldCloseSiblingBranchesOnChainInteraction(hit.PrimaryOverlay.InteractionPreset))
+        {
+            initialCloseSet = [];
+        }
+
+        if (initialCloseSet.Length == 0)
+            return null;
+
+        var interceptedKeepSet = ComputeInterceptedKeepSet(initialCloseSet, closeReason);
+        var closeSet = interceptedKeepSet.Count > 0
+            ? initialCloseSet.Where(overlay => !interceptedKeepSet.Contains(overlay)).ToArray()
+            : initialCloseSet;
+
+        return new OverlayPointerDecision
+        {
+            Hit = hit,
+            CloseReason = closeReason,
+            PointerBehavior = ResolveBehavior(hit, button, closeSet),
+            KeepSet = keepSet,
+            InterceptedKeepSet = interceptedKeepSet,
+            CloseSet = closeSet,
+        };
+    }
+
     private OverlayPointerBehavior ResolveBehavior(OverlayHitResult hit, MouseButton button, IReadOnlyCollection<AnimatedOverlay> closeSet)
     {
         switch (hit.Kind)
@@ -191,9 +221,10 @@ public sealed class OverlayCoordinator
 
             case OverlayHitKind.Surface:
             case OverlayHitKind.ChildOverlay:
-                return closeSet.Count > 0
-                    ? OverlayPointerBehavior.CloseAndPassThrough
-                    : OverlayPointerBehavior.KeepOpen;
+                return OverlayInteractionPresets.ResolveChainBehavior(
+                    hit.PrimaryOverlay?.InteractionPreset ?? OverlayInteractionPreset.None,
+                    hit.Kind,
+                    closeSet.Count > 0);
 
             case OverlayHitKind.None:
             case OverlayHitKind.Outside:
@@ -279,6 +310,40 @@ public sealed class OverlayCoordinator
         return depth;
     }
 
+    private HashSet<AnimatedOverlay> ExpandKeepSetForChainPolicy(
+        OverlayHitResult hit,
+        HashSet<AnimatedOverlay> keepSet)
+    {
+        if (hit.Kind != OverlayHitKind.Surface || hit.PrimaryOverlay == null)
+            return keepSet;
+
+        if (OverlayInteractionPresets.ShouldCloseDescendantsOnAncestorSurfaceHit(hit.PrimaryOverlay.InteractionPreset))
+            return keepSet;
+
+        foreach (var descendant in EnumerateDescendants(hit.PrimaryOverlay))
+            keepSet.Add(descendant);
+
+        return keepSet;
+    }
+
+    private IEnumerable<AnimatedOverlay> EnumerateDescendants(AnimatedOverlay overlay)
+    {
+        foreach (var candidate in _openOverlays)
+        {
+            var current = candidate.ParentOverlay;
+            while (current != null)
+            {
+                if (ReferenceEquals(current, overlay))
+                {
+                    yield return candidate;
+                    break;
+                }
+
+                current = current.ParentOverlay;
+            }
+        }
+    }
+
     private static HashSet<AnimatedOverlay> ComputeInterceptedKeepSet(
         IReadOnlyCollection<AnimatedOverlay> closeSet,
         OverlayCloseReason reason)
@@ -294,9 +359,13 @@ public sealed class OverlayCoordinator
             OverlayInteractionPresets.TryHandleCloseRequest(overlay, reason);
 
             var current = overlay;
+            var keepAncestors = OverlayInteractionPresets.ShouldKeepAncestorChainWhenChildInterceptsClose(overlay.InteractionPreset);
             while (current != null)
             {
                 keep.Add(current);
+                if (!keepAncestors)
+                    break;
+
                 current = current.ParentOverlay;
             }
         }
