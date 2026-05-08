@@ -36,8 +36,21 @@ internal static class ThumbnailIndex
                 MarkedForDeletionAt = t.MarkedForDeletionAt
             };
         }
+
         string json = JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(indexPath, json);
+        string directory = Path.GetDirectoryName(indexPath) ?? AppPaths.ThumbnailDirectory;
+        Directory.CreateDirectory(directory);
+
+        string tempPath = indexPath + ".tmp";
+        File.WriteAllText(tempPath, json);
+
+        if (File.Exists(indexPath))
+            File.Copy(tempPath, indexPath, overwrite: true);
+        else
+            File.Move(tempPath, indexPath);
+
+        if (File.Exists(tempPath))
+            File.Delete(tempPath);
     }
 
     public static List<ThumbnailTask> Load(string indexPath, string thumbBaseDir,
@@ -76,14 +89,14 @@ internal static class ThumbnailIndex
                 {
                     state = ThumbnailState.Ready;
                     Log.Info(
-                        $"纾佺洏鐩綍宸插瓨鍦?{files.Length} 甯э紝鏍囪 Ready: {Path.GetFileName(kv.Key)}");
+                        $"Thumbnail directory already contains {files.Length} frames; marked Ready: {Path.GetFileName(kv.Key)}");
                 }
             }
             else if (state == ThumbnailState.Ready && !Directory.Exists(fullDir))
             {
                 state = ThumbnailState.Pending;
                 Log.Info(
-                    $"鐩綍缂哄け锛岄噸缃负 Pending: {kv.Key}");
+                    $"Thumbnail directory missing; reset to Pending: {kv.Key}");
             }
 
             int totalFrames = state == ThumbnailState.Ready

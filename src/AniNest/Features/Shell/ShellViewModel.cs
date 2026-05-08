@@ -229,7 +229,7 @@ public partial class ShellViewModel : ObservableObject
     {
         _preferencesService.SetThumbnailAccelerationMode(code);
         CurrentThumbnailAccelerationModeCode = _preferencesService.CurrentThumbnailAccelerationModeCode;
-        _thumbnailDecodeStrategyService.RefreshAccelerationMode();
+        _thumbnailGenerator.RefreshDecodeStrategy();
         RefreshThumbnailSettingsStatus();
     }
 

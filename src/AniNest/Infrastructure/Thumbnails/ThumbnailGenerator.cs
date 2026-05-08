@@ -56,6 +56,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     // Queue & state
     private readonly List<ThumbnailTask> _tasks = new();
     private readonly object _taskLock = new();
+    private readonly object _indexIoLock = new();
     private readonly Dictionary<string, ThumbnailTask> _videoToTask = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<ThumbnailGeneratorWorker> _activeWorkers = new();
     private CancellationTokenSource? _loopCts;
@@ -276,6 +277,22 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             return;
 
         Log.Info($"Thumbnail performance mode changed: selectedMode={mode}, {snapshot}");
+        RequeueActiveWorkers("performance-mode-changed");
+        EnsureLoopRunning();
+    }
+
+    public void RefreshDecodeStrategy()
+    {
+        _decodeStrategyService.RefreshAccelerationMode();
+
+        string snapshot;
+        lock (_taskLock)
+        {
+            snapshot = BuildSchedulerSnapshotUnsafe();
+        }
+
+        Log.Info($"Thumbnail decode strategy refreshed: {snapshot}");
+        RequeueActiveWorkers("decode-strategy-changed");
         EnsureLoopRunning();
     }
 
@@ -405,6 +422,12 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     {
         task.State = ThumbnailState.Generating;
         SaveIndex();
+        string startSnapshot;
+        lock (_taskLock)
+        {
+            startSnapshot = BuildSchedulerSnapshotUnsafe();
+        }
+        Log.Info($"Thumbnail task generating: file={Path.GetFileName(task.VideoPath)}, {startSnapshot}");
 
         try
         {
@@ -426,9 +449,10 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         catch (OperationCanceledException)
         {
             var cancelSw = Stopwatch.StartNew();
-            task.State = ThumbnailState.Pending;
+            if (task.State == ThumbnailState.Generating)
+                task.State = ThumbnailState.Pending;
             cancelSw.Stop();
-            Log.Info($"[GenerateForTask] canceled in {cancelSw.ElapsedMilliseconds}ms, will retry");
+            Log.Info($"Thumbnail task canceled: file={Path.GetFileName(task.VideoPath)}, elapsed={cancelSw.ElapsedMilliseconds}ms, newState={task.State}");
             throw;
         }
         finally
@@ -437,23 +461,27 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             SaveIndex();
             UpdateProgress();
             finallySw.Stop();
-            Log.Info($"[GenerateForTask] finally completed in {finallySw.ElapsedMilliseconds}ms");
+            Log.Info($"Thumbnail task finalize: file={Path.GetFileName(task.VideoPath)}, elapsed={finallySw.ElapsedMilliseconds}ms, state={task.State}");
         }
     }
 
     private void StartWorker(ThumbnailTask task, CancellationToken ct)
     {
-        Task execution = RunWorkerAsync(task, ct);
+        var workerCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var worker = new ThumbnailGeneratorWorker
+        {
+            Task = task,
+            Execution = Task.CompletedTask,
+            Cancellation = workerCts
+        };
+        Task execution = RunWorkerAsync(worker, workerCts.Token);
+        worker.Execution = execution;
         int activeWorkers;
         int pendingTasks;
         string snapshot;
         lock (_taskLock)
         {
-            _activeWorkers.Add(new ThumbnailGeneratorWorker
-            {
-                Task = task,
-                Execution = execution
-            });
+            _activeWorkers.Add(worker);
 
             activeWorkers = _activeWorkers.Count;
             pendingTasks = CountTasksByStateUnsafe(ThumbnailState.Pending);
@@ -464,8 +492,9 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             $"Thumbnail worker start: file={Path.GetFileName(task.VideoPath)}, priority={task.Priority}, {snapshot}");
     }
 
-    private async Task RunWorkerAsync(ThumbnailTask task, CancellationToken ct)
+    private async Task RunWorkerAsync(ThumbnailGeneratorWorker worker, CancellationToken ct)
     {
+        var task = worker.Task;
         try
         {
             await GenerateForTask(task, ct);
@@ -473,7 +502,10 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
         catch (OperationCanceledException)
         {
-            LogWorkerCompletion(task, "canceled");
+            string cancelReason = string.IsNullOrWhiteSpace(worker.CancellationReason)
+                ? "unspecified"
+                : worker.CancellationReason;
+            LogWorkerCompletion(task, $"canceled({cancelReason})");
         }
         catch (Exception ex)
         {
@@ -489,7 +521,14 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     {
         lock (_taskLock)
         {
-            _activeWorkers.RemoveAll(static worker => worker.Execution.IsCompleted);
+            for (int i = _activeWorkers.Count - 1; i >= 0; i--)
+            {
+                if (!_activeWorkers[i].Execution.IsCompleted)
+                    continue;
+
+                _activeWorkers[i].Cancellation.Dispose();
+                _activeWorkers.RemoveAt(i);
+            }
         }
     }
 
@@ -570,6 +609,54 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             $"state={task.State}, frames={task.TotalFrames}, {snapshot}");
     }
 
+    private void RequeueActiveWorkers(string reason)
+    {
+        List<ThumbnailGeneratorWorker> workersToCancel;
+        int requeued = 0;
+        string snapshot;
+        string files;
+
+        lock (_taskLock)
+        {
+            workersToCancel = _activeWorkers
+                .Where(static worker => !worker.Execution.IsCompleted)
+                .ToList();
+
+            foreach (var worker in workersToCancel)
+            {
+                worker.CancellationReason = reason;
+                if (worker.Task.State == ThumbnailState.Generating)
+                {
+                    worker.Task.State = ThumbnailState.Pending;
+                    requeued++;
+                }
+            }
+
+            if (requeued > 0)
+                SortQueue();
+
+            snapshot = BuildSchedulerSnapshotUnsafe();
+            files = string.Join(", ", workersToCancel.Select(worker => Path.GetFileName(worker.Task.VideoPath)));
+        }
+
+        if (workersToCancel.Count == 0)
+            return;
+
+        Log.Info(
+            $"Thumbnail active worker requeue: reason={reason}, workers={workersToCancel.Count}, requeued={requeued}, files=[{files}], {snapshot}");
+
+        foreach (var worker in workersToCancel)
+        {
+            try
+            {
+                worker.Cancellation.Cancel();
+            }
+            catch
+            {
+            }
+        }
+    }
+
     private async Task WaitForWorkersAsync()
     {
         Task[] workers;
@@ -590,6 +677,30 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
     }
 
+    private void CancelActiveWorkersForShutdown()
+    {
+        List<ThumbnailGeneratorWorker> workers;
+        lock (_taskLock)
+        {
+            workers = _activeWorkers.ToList();
+            foreach (var worker in workers)
+            {
+                worker.CancellationReason ??= "shutdown";
+            }
+        }
+
+        foreach (var worker in workers)
+        {
+            try
+            {
+                worker.Cancellation.Cancel();
+            }
+            catch
+            {
+            }
+        }
+    }
+
 
     public void Shutdown()
     {
@@ -600,6 +711,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
         _loopCts?.Cancel();
         _expiryCts?.Cancel();
+        CancelActiveWorkersForShutdown();
 
         if (_loopTask != null)
         {
@@ -741,7 +853,10 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         {
             ThumbnailTask[] snapshot;
             lock (_taskLock) { snapshot = _tasks.ToArray(); }
-            ThumbnailIndex.Save(_indexPath, snapshot);
+            lock (_indexIoLock)
+            {
+                ThumbnailIndex.Save(_indexPath, snapshot);
+            }
         }
         catch (Exception ex)
         {

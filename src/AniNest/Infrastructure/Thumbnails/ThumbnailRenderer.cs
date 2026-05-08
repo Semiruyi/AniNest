@@ -52,7 +52,7 @@ internal class ThumbnailRenderer
         if (!File.Exists(task.VideoPath))
         {
             Log.Info(
-                $"瑙嗛鏂囦欢涓嶅瓨鍦? {task.VideoPath}");
+                $"Video file missing: {task.VideoPath}");
             return new RenderResult(ThumbnailState.Failed);
         }
 
@@ -60,7 +60,7 @@ internal class ThumbnailRenderer
 
         double totalSec = GetVideoDuration(task.VideoPath);
         Log.Info(
-            $"寮€濮? {Path.GetFileName(task.VideoPath)}, 鏃堕暱={totalSec:F1}s, tmpDir={tmpDir}");
+            $"Thumbnail render begin: file={Path.GetFileName(task.VideoPath)}, duration={totalSec:F1}s, tmpDir={tmpDir}");
 
         string args = $"{BuildInputArguments(strategy)}-y -i \"{task.VideoPath}\" " +
             "-vf \"fps=1,scale='min(300,iw)':'min(300,ih)':force_original_aspect_ratio=decrease\" " +
@@ -119,10 +119,10 @@ internal class ThumbnailRenderer
 
             await process.WaitForExitAsync(ct);
             Log.Info(
-                $"WaitForExit 瀹屾垚, 绛夊緟 stderrTask, PID={process.Id}");
+                $"Thumbnail renderer wait-exit completed; waiting stderr task, pid={process.Id}");
             await stderrTask;
             Log.Info(
-                $"stderrTask 瀹屾垚, PID={process.Id}");
+                $"Thumbnail renderer stderr task completed, pid={process.Id}");
 
             int exitCode = process.ExitCode;
             Log.Info(MemorySnapshot.Capture("ThumbnailRenderer.GenerateAsync.process-exit",
@@ -131,7 +131,7 @@ internal class ThumbnailRenderer
                 ("strategy", strategy.ToString()),
                 ("exitCode", exitCode)));
             Log.Info(
-                $"ffmpeg 閫€鍑? ExitCode={exitCode}, 瑙嗛={Path.GetFileName(task.VideoPath)}");
+                $"Thumbnail renderer process exited: exitCode={exitCode}, file={Path.GetFileName(task.VideoPath)}");
 
             if (exitCode == 0)
             {
@@ -167,7 +167,7 @@ internal class ThumbnailRenderer
             try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch { }
             killSw.Stop();
             Log.Info(
-                $"Kill 杩涚▼瀹屾垚, 鑰楁椂 {killSw.ElapsedMilliseconds}ms, PID={process.Id}");
+                $"Thumbnail renderer process kill completed: elapsed={killSw.ElapsedMilliseconds}ms, pid={process.Id}");
             throw;
         }
         finally
@@ -176,7 +176,7 @@ internal class ThumbnailRenderer
             try { if (Directory.Exists(tmpDir)) Directory.Delete(tmpDir, true); } catch { }
             cleanSw.Stop();
             Log.Info(
-                $"finally 瀹屾垚, 娓呯悊 tmp 鑰楁椂 {cleanSw.ElapsedMilliseconds}ms, PID={process.Id}");
+                $"Thumbnail renderer cleanup completed: elapsed={cleanSw.ElapsedMilliseconds}ms, pid={process.Id}");
         }
     }
 
