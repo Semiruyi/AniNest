@@ -24,6 +24,8 @@ namespace AniNest.Presentation.Overlays;
 /// </summary>
 public class AnimatedOverlay : ContentControl
 {
+    public const int DefaultAnimationDurationMs = 240;
+
     public sealed class OverlayClosedEventArgs : EventArgs
     {
         public OverlayClosedEventArgs(OverlayCloseReason reason) => Reason = reason;
@@ -63,11 +65,11 @@ public class AnimatedOverlay : ContentControl
 
     public static readonly DependencyProperty OpenDurationMsProperty =
         DependencyProperty.Register(nameof(OpenDurationMs), typeof(int), typeof(AnimatedOverlay),
-            new PropertyMetadata(140));
+            new PropertyMetadata(DefaultAnimationDurationMs));
 
     public static readonly DependencyProperty CloseDurationMsProperty =
         DependencyProperty.Register(nameof(CloseDurationMs), typeof(int), typeof(AnimatedOverlay),
-            new PropertyMetadata(120));
+            new PropertyMetadata(DefaultAnimationDurationMs));
 
     public static readonly DependencyProperty AnimationOriginProperty =
         DependencyProperty.Register(nameof(AnimationOrigin), typeof(Point), typeof(AnimatedOverlay),
@@ -75,11 +77,11 @@ public class AnimatedOverlay : ContentControl
 
     public static readonly DependencyProperty OpenScaleFromProperty =
         DependencyProperty.Register(nameof(OpenScaleFrom), typeof(double), typeof(AnimatedOverlay),
-            new PropertyMetadata(0.96d));
+            new PropertyMetadata(0d));
 
     public static readonly DependencyProperty CloseScaleToProperty =
         DependencyProperty.Register(nameof(CloseScaleTo), typeof(double), typeof(AnimatedOverlay),
-            new PropertyMetadata(0.96d));
+            new PropertyMetadata(0d));
 
     public static readonly DependencyProperty CloseOnOutsideClickProperty =
         DependencyProperty.Register(nameof(CloseOnOutsideClick), typeof(bool), typeof(AnimatedOverlay),
@@ -628,7 +630,6 @@ public class AnimatedOverlay : ContentControl
 
         SetState(OverlayState.Closing);
         UpdateSurfaceInteractiveState();
-        ResetSurfaceAnimations();
 
         var exit = new ExitEffect
         {
