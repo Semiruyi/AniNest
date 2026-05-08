@@ -65,6 +65,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private readonly ThumbnailRenderer _renderer;
     private bool _isShuttingDown;
     private bool _isPlayerActive;
+    private bool _isGenerationPaused;
     private int _readyCount;
     private int _totalCount;
     private ThumbnailPerformanceMode _performanceMode;
@@ -87,6 +88,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         _settings = settings;
         _decodeStrategyService = decodeStrategyService;
         _performanceMode = _settings.GetThumbnailPerformanceMode();
+        _isGenerationPaused = _settings.IsThumbnailGenerationPaused();
         _thumbBaseDir = AppPaths.ThumbnailDirectory;
         _indexPath = Path.Combine(_thumbBaseDir, "index.json");
         _ffmpegPath = AppPaths.FfmpegPath;
@@ -278,6 +280,28 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
         Log.Info($"Thumbnail performance mode changed: selectedMode={mode}, {snapshot}");
         RequeueActiveWorkers("performance-mode-changed");
+        EnsureLoopRunning();
+    }
+
+    public void RefreshGenerationPaused()
+    {
+        bool paused = _settings.IsThumbnailGenerationPaused();
+        bool changed;
+        string snapshot;
+
+        lock (_taskLock)
+        {
+            changed = _isGenerationPaused != paused;
+            _isGenerationPaused = paused;
+            snapshot = BuildSchedulerSnapshotUnsafe();
+        }
+
+        if (!changed)
+            return;
+
+        Log.Info($"Thumbnail generation paused changed: paused={paused}, {snapshot}");
+        if (paused)
+            RequeueActiveWorkers("generation-paused");
         EnsureLoopRunning();
     }
 
@@ -542,6 +566,9 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private bool CanStartMoreWorkersUnsafe()
     {
+        if (_isGenerationPaused)
+            return false;
+
         ThumbnailExecutionPolicy policy = GetExecutionPolicyUnsafe();
         if (!policy.AllowStartNewJobs)
             return false;
@@ -556,7 +583,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     {
         ThumbnailExecutionPolicy policy = GetExecutionPolicyUnsafe();
         return
-            $"playerActive={_isPlayerActive}, mode={_performanceMode}, maxConcurrency={policy.MaxConcurrency}, " +
+            $"playerActive={_isPlayerActive}, mode={_performanceMode}, paused={_isGenerationPaused}, maxConcurrency={policy.MaxConcurrency}, " +
             $"allowStartNewJobs={policy.AllowStartNewJobs}, activeWorkers={_activeWorkers.Count}, " +
             $"pendingTasks={CountTasksByStateUnsafe(ThumbnailState.Pending)}, ready={_readyCount}, total={_totalCount}";
     }
@@ -583,6 +610,9 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     {
         lock (_taskLock)
         {
+            if (_isGenerationPaused)
+                return "blocked-generation-paused";
+
             ThumbnailExecutionPolicy policy = GetExecutionPolicyUnsafe();
             if (!policy.AllowStartNewJobs)
                 return _isPlayerActive

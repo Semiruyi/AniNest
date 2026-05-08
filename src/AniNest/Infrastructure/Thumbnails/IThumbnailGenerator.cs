@@ -20,6 +20,7 @@ public interface IThumbnailGenerator
     void DeleteForFolder(string folderPath, IReadOnlyCollection<string>? videoFiles = null);
     void SetPlayerActive(bool isActive);
     void RefreshPerformanceMode();
+    void RefreshGenerationPaused();
     void RefreshDecodeStrategy();
 
     void Shutdown();

@@ -24,6 +24,7 @@ public sealed class ShellPreferencesService : IShellPreferencesService
     public string CurrentFullscreenAnimationCode => _settings.Load().FullscreenAnimation;
     public string CurrentThumbnailPerformanceModeCode => _settings.GetThumbnailPerformanceMode().ToString().ToLowerInvariant();
     public string CurrentThumbnailAccelerationModeCode => _settings.GetThumbnailAccelerationMode().ToString().ToLowerInvariant();
+    public bool IsThumbnailGenerationPaused => _settings.IsThumbnailGenerationPaused();
     public ThumbnailDecodeStatusSnapshot CurrentThumbnailDecodeStatus => _thumbnailDecodeStrategyService.GetStatusSnapshot();
 
     public void SetLanguage(string code)
@@ -63,4 +64,7 @@ public sealed class ShellPreferencesService : IShellPreferencesService
 
         _settings.SetThumbnailAccelerationMode(mode);
     }
+
+    public void SetThumbnailGenerationPaused(bool paused)
+        => _settings.SetThumbnailGenerationPaused(paused);
 }

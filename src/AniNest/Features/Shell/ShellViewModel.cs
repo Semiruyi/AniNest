@@ -89,6 +89,12 @@ public partial class ShellViewModel : ObservableObject
     [ObservableProperty]
     private string _thumbnailFallbackChainSummary = string.Empty;
 
+    [ObservableProperty]
+    private bool _isThumbnailGenerationPaused;
+
+    [ObservableProperty]
+    private string _thumbnailGenerationToggleText = string.Empty;
+
     public event Action? ToggleFullscreenRequested;
 
     public ILocalizationService Localization => _loc;
@@ -118,6 +124,7 @@ public partial class ShellViewModel : ObservableObject
         _currentAnimationCode = _preferencesService.CurrentFullscreenAnimationCode;
         _currentThumbnailPerformanceModeCode = _preferencesService.CurrentThumbnailPerformanceModeCode;
         _currentThumbnailAccelerationModeCode = _preferencesService.CurrentThumbnailAccelerationModeCode;
+        _isThumbnailGenerationPaused = _preferencesService.IsThumbnailGenerationPaused;
         _mainPage = mainPage;
         _playerPage = playerPage;
         PlayerInputSettings = playerInputSettings;
@@ -225,6 +232,15 @@ public partial class ShellViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void ToggleThumbnailGenerationPaused()
+    {
+        bool paused = !_preferencesService.IsThumbnailGenerationPaused;
+        _preferencesService.SetThumbnailGenerationPaused(paused);
+        _thumbnailGenerator.RefreshGenerationPaused();
+        RefreshThumbnailSettingsStatus();
+    }
+
+    [RelayCommand]
     private void SelectThumbnailAccelerationMode(string code)
     {
         _preferencesService.SetThumbnailAccelerationMode(code);
@@ -235,8 +251,14 @@ public partial class ShellViewModel : ObservableObject
 
     private void RefreshThumbnailSettingsStatus()
     {
-        ThumbnailPerformanceSummary = _loc[$"Settings.ThumbnailPerformance.{CapitalizeCode(CurrentThumbnailPerformanceModeCode)}"];
+        IsThumbnailGenerationPaused = _preferencesService.IsThumbnailGenerationPaused;
+        ThumbnailPerformanceSummary = IsThumbnailGenerationPaused
+            ? _loc["Settings.ThumbnailGeneration.Paused"]
+            : _loc[$"Settings.ThumbnailPerformance.{CapitalizeCode(CurrentThumbnailPerformanceModeCode)}"];
         ThumbnailAccelerationSummary = _loc[$"Settings.ThumbnailAcceleration.{CapitalizeCode(CurrentThumbnailAccelerationModeCode)}"];
+        ThumbnailGenerationToggleText = _loc[IsThumbnailGenerationPaused
+            ? "Settings.ThumbnailGeneration.Resume"
+            : "Settings.ThumbnailGeneration.Stop"];
 
         var status = _preferencesService.CurrentThumbnailDecodeStatus;
         ThumbnailDetectedHardwareSummary = BuildHardwareSummary(status);

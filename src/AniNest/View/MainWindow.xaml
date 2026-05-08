@@ -468,63 +468,97 @@
                 <Border Background="{StaticResource PopupMenuBackground}"
                         CornerRadius="{StaticResource SpeedPopupCornerRadius}"
                         Padding="{StaticResource PopupMenuPadding}"
-                        MinWidth="{StaticResource PopupSubmenuMinWidth}"
+                        MinWidth="220"
                         shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                    <Grid>
-                        <Border CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
-                                Background="{StaticResource AccentBlue}"
-                                Height="{StaticResource SpeedOptionHeight}"
-                                VerticalAlignment="Top">
-                            <Border.Style>
-                                <Style TargetType="Border">
-                                    <Setter Property="RenderTransform">
-                                        <Setter.Value>
-                                            <TranslateTransform Y="34"/>
-                                        </Setter.Value>
-                                    </Setter>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding DataContext.CurrentThumbnailPerformanceModeCode, RelativeSource={RelativeSource AncestorType=Window}}" Value="quiet">
-                                            <Setter Property="RenderTransform">
-                                                <Setter.Value>
-                                                    <TranslateTransform Y="0"/>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding DataContext.CurrentThumbnailPerformanceModeCode, RelativeSource={RelativeSource AncestorType=Window}}" Value="fast">
-                                            <Setter Property="RenderTransform">
-                                                <Setter.Value>
-                                                    <TranslateTransform Y="68"/>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Border.Style>
-                        </Border>
-                        <StackPanel>
-                            <Button Style="{StaticResource PopupMenuButton}"
-                                    Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                    CommandParameter="quiet"
-                                    Click="OnThumbnailPerformanceOverlayActionClick"
-                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                                <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Quiet], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
-                            </Button>
-                            <Button Style="{StaticResource PopupMenuButton}"
-                                    Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                    CommandParameter="balanced"
-                                    Click="OnThumbnailPerformanceOverlayActionClick"
-                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                                <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Balanced], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
-                            </Button>
-                            <Button Style="{StaticResource PopupMenuButton}"
-                                    Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                    CommandParameter="fast"
-                                    Click="OnThumbnailPerformanceOverlayActionClick"
-                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                                <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Fast], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
-                            </Button>
-                        </StackPanel>
-                    </Grid>
+                    <StackPanel>
+                        <Grid>
+                            <Border CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
+                                    Height="{StaticResource SpeedOptionHeight}"
+                                    VerticalAlignment="Top"
+                                    Visibility="{Binding DataContext.IsThumbnailGenerationPaused, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background" Value="#2E7D32"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding DataContext.IsThumbnailGenerationPaused, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                <Setter Property="Background" Value="#4a9219"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <Border.RenderTransform>
+                                    <TranslateTransform Y="0"/>
+                                </Border.RenderTransform>
+                            </Border>
+                            <Border CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
+                                    Background="{StaticResource AccentBlue}"
+                                    Height="{StaticResource SpeedOptionHeight}"
+                                    VerticalAlignment="Top">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="RenderTransform">
+                                            <Setter.Value>
+                                                <TranslateTransform Y="68"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding DataContext.IsThumbnailGenerationPaused, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding DataContext.CurrentThumbnailPerformanceModeCode, RelativeSource={RelativeSource AncestorType=Window}}" Value="quiet">
+                                                <Setter Property="RenderTransform">
+                                                    <Setter.Value>
+                                                        <TranslateTransform Y="34"/>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding DataContext.CurrentThumbnailPerformanceModeCode, RelativeSource={RelativeSource AncestorType=Window}}" Value="fast">
+                                                <Setter Property="RenderTransform">
+                                                    <Setter.Value>
+                                                        <TranslateTransform Y="102"/>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                            </Border>
+                            <StackPanel>
+                                <Button Style="{StaticResource PopupMenuButton}"
+                                        Command="{Binding DataContext.ToggleThumbnailGenerationPausedCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        Click="OnThumbnailPerformanceOverlayActionClick"
+                                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                    <TextBlock Text="{Binding DataContext.ThumbnailGenerationToggleText, RelativeSource={RelativeSource AncestorType=Window}}"
+                                               VerticalAlignment="Center"/>
+                                </Button>
+                                <Button Style="{StaticResource PopupMenuButton}"
+                                        Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="quiet"
+                                        Click="OnThumbnailPerformanceOverlayActionClick"
+                                        ToolTip="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Quiet.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"
+                                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                    <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Quiet], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
+                                </Button>
+                                <Button Style="{StaticResource PopupMenuButton}"
+                                        Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="balanced"
+                                        Click="OnThumbnailPerformanceOverlayActionClick"
+                                        ToolTip="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Balanced.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"
+                                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                    <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Balanced], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
+                                </Button>
+                                <Button Style="{StaticResource PopupMenuButton}"
+                                        Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="fast"
+                                        Click="OnThumbnailPerformanceOverlayActionClick"
+                                        ToolTip="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Fast.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"
+                                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                    <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Fast], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
                 </Border>
             </overlays:AnimatedOverlay>
 
