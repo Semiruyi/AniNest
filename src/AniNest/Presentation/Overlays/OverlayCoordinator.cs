@@ -231,7 +231,7 @@ public sealed class OverlayCoordinator
             default:
                 foreach (var overlay in closeSet)
                 {
-                    if (OverlayInteractionPresets.ResolveOutsideBehavior(overlay, hit.OutsideKind) == OverlayPointerBehavior.CloseAndConsume)
+                    if (OverlayInteractionPresets.ResolveOutsideBehavior(overlay, button, hit.OutsideKind) == OverlayPointerBehavior.CloseAndConsume)
                         return OverlayPointerBehavior.CloseAndConsume;
                 }
 

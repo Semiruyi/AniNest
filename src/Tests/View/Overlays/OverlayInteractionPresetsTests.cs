@@ -61,6 +61,17 @@ public class OverlayInteractionPresetsTests
     }
 
     [Fact]
+    public void GetProfile_CardContextLike_AllowsRightClickPassThroughOnContentInteractive()
+    {
+        var profile = OverlayInteractionPresets.GetProfile(OverlayInteractionPreset.CardContextLike);
+
+        profile.TitleBarInteractiveOutsideBehavior.Should().Be(OverlayPointerBehavior.CloseAndPassThrough);
+        profile.TitleBarDragZoneOutsideBehavior.Should().Be(OverlayPointerBehavior.CloseAndPassThrough);
+        profile.ContentInteractiveOutsideBehavior.Should().Be(OverlayPointerBehavior.CloseAndConsume);
+        profile.RightButtonContentInteractiveOutsideBehavior.Should().Be(OverlayPointerBehavior.CloseAndPassThrough);
+    }
+
+    [Fact]
     public void ResolveAnchorBehavior_ContextLike_ConsumesAnchorClick()
     {
         var result = OverlayInteractionPresets.ResolveAnchorBehavior(
@@ -78,6 +89,7 @@ public class OverlayInteractionPresetsTests
         var result = OverlayInteractionPresets.ResolveOutsideBehavior(
             OverlayInteractionPreset.MenuLike,
             isCaptureActive: false,
+            MouseButton.Left,
             OverlayOutsideHitKind.TitleBarInteractive,
             OverlayPointerBehavior.CloseAndConsume,
             OverlayOutsidePassthroughTargets.None);
@@ -91,6 +103,7 @@ public class OverlayInteractionPresetsTests
         var result = OverlayInteractionPresets.ResolveOutsideBehavior(
             OverlayInteractionPreset.ContextLike,
             isCaptureActive: false,
+            MouseButton.Left,
             OverlayOutsideHitKind.ContentInteractive,
             OverlayPointerBehavior.CloseAndPassThrough,
             OverlayOutsidePassthroughTargets.TitleBarInteractive);
@@ -126,6 +139,7 @@ public class OverlayInteractionPresetsTests
         var result = OverlayInteractionPresets.ResolveOutsideBehavior(
             OverlayInteractionPreset.CaptureLike,
             isCaptureActive: true,
+            MouseButton.Left,
             OverlayOutsideHitKind.TitleBarInteractive,
             OverlayPointerBehavior.CloseAndPassThrough,
             OverlayOutsidePassthroughTargets.TitleBarInteractive);
@@ -187,11 +201,40 @@ public class OverlayInteractionPresetsTests
         var result = OverlayInteractionPresets.ResolveOutsideBehavior(
             OverlayInteractionPreset.None,
             isCaptureActive: false,
+            MouseButton.Left,
             OverlayOutsideHitKind.TitleBarDragZone,
             OverlayPointerBehavior.CloseAndConsume,
             OverlayOutsidePassthroughTargets.TitleBarDragZone);
 
         result.Should().Be(OverlayPointerBehavior.CloseAndPassThrough);
+    }
+
+    [Fact]
+    public void ResolveOutsideBehavior_CardContextLike_RightClickContentInteractive_PassesThrough()
+    {
+        var result = OverlayInteractionPresets.ResolveOutsideBehavior(
+            OverlayInteractionPreset.CardContextLike,
+            isCaptureActive: false,
+            MouseButton.Right,
+            OverlayOutsideHitKind.ContentInteractive,
+            OverlayPointerBehavior.CloseAndConsume,
+            OverlayOutsidePassthroughTargets.None);
+
+        result.Should().Be(OverlayPointerBehavior.CloseAndPassThrough);
+    }
+
+    [Fact]
+    public void ResolveOutsideBehavior_CardContextLike_LeftClickContentInteractive_Consumes()
+    {
+        var result = OverlayInteractionPresets.ResolveOutsideBehavior(
+            OverlayInteractionPreset.CardContextLike,
+            isCaptureActive: false,
+            MouseButton.Left,
+            OverlayOutsideHitKind.ContentInteractive,
+            OverlayPointerBehavior.CloseAndConsume,
+            OverlayOutsidePassthroughTargets.None);
+
+        result.Should().Be(OverlayPointerBehavior.CloseAndConsume);
     }
 
     [Fact]
@@ -210,6 +253,10 @@ public class OverlayInteractionPresetsTests
         profile.TitleBarDragZoneOutsideBehavior.Should().Be(OverlayPointerBehavior.KeepOpen);
         profile.ContentInteractiveOutsideBehavior.Should().Be(OverlayPointerBehavior.KeepOpen);
         profile.ContentBackgroundOutsideBehavior.Should().Be(OverlayPointerBehavior.KeepOpen);
+        profile.RightButtonTitleBarInteractiveOutsideBehavior.Should().BeNull();
+        profile.RightButtonTitleBarDragZoneOutsideBehavior.Should().BeNull();
+        profile.RightButtonContentInteractiveOutsideBehavior.Should().BeNull();
+        profile.RightButtonContentBackgroundOutsideBehavior.Should().BeNull();
         profile.DefaultOutsideBehavior.Should().Be(OverlayPointerBehavior.KeepOpen);
         profile.OutsidePassthroughTargets.Should().Be(OverlayOutsidePassthroughTargets.None);
         profile.CloseOnOutsideClick.Should().BeFalse();

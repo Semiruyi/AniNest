@@ -170,7 +170,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
             Log.Debug(
                 $"OnLibraryScrollChanged: h={e.HorizontalOffset:F1} v={e.VerticalOffset:F1} " +
                 $"dh={e.HorizontalChange:F1} dv={e.VerticalChange:F1}");
-            CardContextMenuOverlay.Reposition();
+            CloseCardContextMenu(OverlayCloseReason.ChainSwitch);
         }
     }
 

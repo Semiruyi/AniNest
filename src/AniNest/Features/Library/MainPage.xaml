@@ -90,7 +90,7 @@
 
         <overlays:AnimatedOverlay x:Name="CardContextMenuOverlay"
                                   DataContext="{x:Null}"
-                                  InteractionPreset="ContextLike"
+                                  InteractionPreset="CardContextLike"
                                   Placement="RightTop"
                                   HorizontalOffset="8"
                                   VerticalOffset="8"

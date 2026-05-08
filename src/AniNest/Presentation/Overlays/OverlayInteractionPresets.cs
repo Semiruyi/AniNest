@@ -20,6 +20,10 @@ public static class OverlayInteractionPresets
         TitleBarDragZoneOutsideBehavior: OverlayPointerBehavior.CloseAndPassThrough,
         ContentInteractiveOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
         ContentBackgroundOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        RightButtonTitleBarInteractiveOutsideBehavior: null,
+        RightButtonTitleBarDragZoneOutsideBehavior: null,
+        RightButtonContentInteractiveOutsideBehavior: null,
+        RightButtonContentBackgroundOutsideBehavior: null,
         DefaultOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
         OutsidePassthroughTargets:
             OverlayOutsidePassthroughTargets.TitleBarInteractive |
@@ -43,6 +47,10 @@ public static class OverlayInteractionPresets
         TitleBarDragZoneOutsideBehavior: OverlayPointerBehavior.CloseAndPassThrough,
         ContentInteractiveOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
         ContentBackgroundOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        RightButtonTitleBarInteractiveOutsideBehavior: null,
+        RightButtonTitleBarDragZoneOutsideBehavior: null,
+        RightButtonContentInteractiveOutsideBehavior: null,
+        RightButtonContentBackgroundOutsideBehavior: null,
         DefaultOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
         OutsidePassthroughTargets:
             OverlayOutsidePassthroughTargets.TitleBarInteractive |
@@ -66,8 +74,39 @@ public static class OverlayInteractionPresets
         TitleBarDragZoneOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
         ContentInteractiveOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
         ContentBackgroundOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        RightButtonTitleBarInteractiveOutsideBehavior: null,
+        RightButtonTitleBarDragZoneOutsideBehavior: null,
+        RightButtonContentInteractiveOutsideBehavior: null,
+        RightButtonContentBackgroundOutsideBehavior: null,
         DefaultOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
         OutsidePassthroughTargets: OverlayOutsidePassthroughTargets.None,
+        CloseOnOutsideClick: true,
+        CloseOnEscape: true,
+        ResetAnchorOnClose: true,
+        EscapeReservedWhileCapturing: false,
+        KeepAncestorChainWhenChildInterceptsClose: true,
+        CloseDescendantsOnParentClose: true,
+        CloseDescendantsOnAncestorSurfaceHit: true,
+        CloseSiblingBranchesOnChainInteraction: true);
+    private static readonly OverlayInteractionProfile CardContextLikeProfile = new(
+        LeftAnchorBehavior: OverlayPointerBehavior.CloseAndConsume,
+        RightAnchorBehavior: OverlayPointerBehavior.CloseAndConsume,
+        SurfaceBehaviorWhenClosingOthers: OverlayPointerBehavior.CloseAndPassThrough,
+        SurfaceBehaviorWhenStable: OverlayPointerBehavior.KeepOpen,
+        ChildOverlayBehaviorWhenClosingOthers: OverlayPointerBehavior.CloseAndPassThrough,
+        ChildOverlayBehaviorWhenStable: OverlayPointerBehavior.KeepOpen,
+        TitleBarInteractiveOutsideBehavior: OverlayPointerBehavior.CloseAndPassThrough,
+        TitleBarDragZoneOutsideBehavior: OverlayPointerBehavior.CloseAndPassThrough,
+        ContentInteractiveOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        ContentBackgroundOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        RightButtonTitleBarInteractiveOutsideBehavior: null,
+        RightButtonTitleBarDragZoneOutsideBehavior: null,
+        RightButtonContentInteractiveOutsideBehavior: OverlayPointerBehavior.CloseAndPassThrough,
+        RightButtonContentBackgroundOutsideBehavior: null,
+        DefaultOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        OutsidePassthroughTargets:
+            OverlayOutsidePassthroughTargets.TitleBarInteractive |
+            OverlayOutsidePassthroughTargets.TitleBarDragZone,
         CloseOnOutsideClick: true,
         CloseOnEscape: true,
         ResetAnchorOnClose: true,
@@ -106,8 +145,8 @@ public static class OverlayInteractionPresets
             : leftAnchorBehavior;
     }
 
-    internal static OverlayPointerBehavior ResolveOutsideBehavior(AnimatedOverlay overlay, OverlayOutsideHitKind outsideKind)
-        => ResolveOutsideBehavior(overlay.InteractionPreset, IsCaptureActive(overlay), outsideKind, overlay.OutsidePointerBehavior, overlay.OutsidePassthroughTargets);
+    internal static OverlayPointerBehavior ResolveOutsideBehavior(AnimatedOverlay overlay, MouseButton button, OverlayOutsideHitKind outsideKind)
+        => ResolveOutsideBehavior(overlay.InteractionPreset, IsCaptureActive(overlay), button, outsideKind, overlay.OutsidePointerBehavior, overlay.OutsidePassthroughTargets);
 
     internal static OverlayPointerBehavior ResolveChainBehavior(
         OverlayInteractionPreset preset,
@@ -158,6 +197,7 @@ public static class OverlayInteractionPresets
     internal static OverlayPointerBehavior ResolveOutsideBehavior(
         OverlayInteractionPreset preset,
         bool isCaptureActive,
+        MouseButton button,
         OverlayOutsideHitKind outsideKind,
         OverlayPointerBehavior outsidePointerBehavior,
         OverlayOutsidePassthroughTargets outsidePassthroughTargets)
@@ -166,7 +206,7 @@ public static class OverlayInteractionPresets
             return OverlayPointerBehavior.CloseAndConsume;
 
         if (TryGetProfile(preset, out var profile))
-            return ResolveProfileOutsideBehavior(profile, outsideKind);
+            return ResolveProfileOutsideBehavior(profile, button, outsideKind);
 
         return ResolvePropertyDrivenOutsideBehavior(outsideKind, outsidePointerBehavior, outsidePassthroughTargets);
     }
@@ -250,6 +290,7 @@ public static class OverlayInteractionPresets
             OverlayInteractionPreset.MenuLike => MenuLikeProfile,
             OverlayInteractionPreset.CaptureLike => CaptureLikeProfile,
             OverlayInteractionPreset.ContextLike => ContextLikeProfile,
+            OverlayInteractionPreset.CardContextLike => CardContextLikeProfile,
             _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, "Unknown overlay interaction preset."),
         };
 
@@ -265,6 +306,9 @@ public static class OverlayInteractionPresets
                 return true;
             case OverlayInteractionPreset.ContextLike:
                 profile = ContextLikeProfile;
+                return true;
+            case OverlayInteractionPreset.CardContextLike:
+                profile = CardContextLikeProfile;
                 return true;
             default:
                 profile = default;
@@ -285,8 +329,24 @@ public static class OverlayInteractionPresets
 
     private static OverlayPointerBehavior ResolveProfileOutsideBehavior(
         OverlayInteractionProfile profile,
+        MouseButton button,
         OverlayOutsideHitKind outsideKind)
     {
+        if (button == MouseButton.Right)
+        {
+            var overrideBehavior = outsideKind switch
+            {
+                OverlayOutsideHitKind.TitleBarInteractive => profile.RightButtonTitleBarInteractiveOutsideBehavior,
+                OverlayOutsideHitKind.TitleBarDragZone => profile.RightButtonTitleBarDragZoneOutsideBehavior,
+                OverlayOutsideHitKind.ContentInteractive => profile.RightButtonContentInteractiveOutsideBehavior,
+                OverlayOutsideHitKind.ContentBackground => profile.RightButtonContentBackgroundOutsideBehavior,
+                _ => null,
+            };
+
+            if (overrideBehavior.HasValue)
+                return overrideBehavior.Value;
+        }
+
         return outsideKind switch
         {
             OverlayOutsideHitKind.TitleBarInteractive => profile.TitleBarInteractiveOutsideBehavior,
