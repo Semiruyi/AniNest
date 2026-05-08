@@ -105,9 +105,14 @@ public sealed class OverlayCoordinator
 
         var behavior = ResolveBehavior(hit, e.ChangedButton, closeSet);
         var closeReason = ResolveCloseReason(hit);
+        var interceptedKeepSet = ComputeInterceptedKeepSet(closeSet, closeReason);
+        if (interceptedKeepSet.Count > 0)
+            closeSet = closeSet.Where(overlay => !interceptedKeepSet.Contains(overlay)).ToArray();
+
         Log.Debug(
             $"OnPreviewMouseButtonDown: button={e.ChangedButton} hit={hit.Kind} " +
-            $"primary={DescribeOverlay(hit.PrimaryOverlay)} keep={keepSet.Count} close={closeSet.Length} " +
+            $"outsideKind={hit.OutsideKind} primary={DescribeOverlay(hit.PrimaryOverlay)} " +
+            $"keep={keepSet.Count} interceptedKeep={interceptedKeepSet.Count} close={closeSet.Length} " +
             $"behavior={behavior} reason={closeReason}");
 
         if (behavior == OverlayPointerBehavior.CloseAndConsume)
@@ -179,7 +184,7 @@ public sealed class OverlayCoordinator
                 foreach (var overlay in closeSet)
                 {
                     if (hit.OverlayPath.Contains(overlay))
-                        return overlay.GetAnchorClickBehavior(button);
+                        return OverlayInteractionPresets.ResolveAnchorBehavior(overlay, button);
                 }
 
                 return OverlayPointerBehavior.CloseAndPassThrough;
@@ -195,10 +200,7 @@ public sealed class OverlayCoordinator
             default:
                 foreach (var overlay in closeSet)
                 {
-                    if (ShouldPassThroughOutsideHit(overlay, hit.OutsideKind))
-                        continue;
-
-                    if (overlay.OutsidePointerBehavior == OverlayPointerBehavior.CloseAndConsume)
+                    if (OverlayInteractionPresets.ResolveOutsideBehavior(overlay, hit.OutsideKind) == OverlayPointerBehavior.CloseAndConsume)
                         return OverlayPointerBehavior.CloseAndConsume;
                 }
 
@@ -275,6 +277,31 @@ public sealed class OverlayCoordinator
         }
 
         return depth;
+    }
+
+    private static HashSet<AnimatedOverlay> ComputeInterceptedKeepSet(
+        IReadOnlyCollection<AnimatedOverlay> closeSet,
+        OverlayCloseReason reason)
+    {
+        var keep = new HashSet<AnimatedOverlay>();
+
+        foreach (var overlay in closeSet.OrderByDescending(GetOverlayDepth))
+        {
+            var decision = OverlayInteractionPresets.ResolveCloseRequest(overlay, reason);
+            if (!decision.IsHandled || decision.ShouldClose)
+                continue;
+
+            OverlayInteractionPresets.TryHandleCloseRequest(overlay, reason);
+
+            var current = overlay;
+            while (current != null)
+            {
+                keep.Add(current);
+                current = current.ParentOverlay;
+            }
+        }
+
+        return keep;
     }
 
     private void SweepStaleState()
@@ -369,22 +396,6 @@ public sealed class OverlayCoordinator
             Visual visual => PresentationSource.FromVisual(visual) != null,
             System.Windows.Media.Media3D.Visual3D visual3D => PresentationSource.FromDependencyObject(visual3D) != null,
             _ => true,
-        };
-    }
-
-    private static bool ShouldPassThroughOutsideHit(AnimatedOverlay overlay, OverlayOutsideHitKind outsideKind)
-    {
-        return outsideKind switch
-        {
-            OverlayOutsideHitKind.TitleBarInteractive =>
-                overlay.OutsidePassthroughTargets.HasFlag(OverlayOutsidePassthroughTargets.TitleBarInteractive),
-            OverlayOutsideHitKind.TitleBarDragZone =>
-                overlay.OutsidePassthroughTargets.HasFlag(OverlayOutsidePassthroughTargets.TitleBarDragZone),
-            OverlayOutsideHitKind.ContentInteractive =>
-                overlay.OutsidePassthroughTargets.HasFlag(OverlayOutsidePassthroughTargets.ContentInteractive),
-            OverlayOutsideHitKind.ContentBackground =>
-                overlay.OutsidePassthroughTargets.HasFlag(OverlayOutsidePassthroughTargets.ContentBackground),
-            _ => false,
         };
     }
 

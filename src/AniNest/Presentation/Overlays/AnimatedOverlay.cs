@@ -16,9 +16,9 @@ namespace AniNest.Presentation.Overlays;
 /// - Anchor and placement define where the overlay lives.
 /// - <see cref="ToggleForAnchor"/> and <see cref="OpenOrRetarget"/> are the main
 ///   interaction entry points for feature code.
-/// - Dismissal policy is configured with CloseOnOutsideClick / CloseOnEscape and
-///   pointer behavior properties, while actual pointer arbitration is delegated to
-///   <see cref="OverlayCoordinator"/>.
+/// - Dismissal policy is primarily driven by <see cref="InteractionPreset"/>, with
+///   the raw close/pointer properties available for advanced cases.
+/// - Actual pointer arbitration is delegated to <see cref="OverlayCoordinator"/>.
 /// - <see cref="Closed"/> and <see cref="LastCloseReason"/> provide the feature layer
 ///   with a single cleanup hook.
 /// </summary>
@@ -110,6 +110,10 @@ public class AnimatedOverlay : ContentControl
     public static readonly DependencyProperty OutsidePassthroughTargetsProperty =
         DependencyProperty.Register(nameof(OutsidePassthroughTargets), typeof(OverlayOutsidePassthroughTargets), typeof(AnimatedOverlay),
             new PropertyMetadata(OverlayOutsidePassthroughTargets.None));
+
+    public static readonly DependencyProperty InteractionPresetProperty =
+        DependencyProperty.Register(nameof(InteractionPreset), typeof(OverlayInteractionPreset), typeof(AnimatedOverlay),
+            new PropertyMetadata(OverlayInteractionPreset.None, OnInteractionPresetChanged));
 
     private static readonly DependencyPropertyKey SurfaceMarginPropertyKey =
         DependencyProperty.RegisterReadOnly(nameof(SurfaceMargin), typeof(Thickness), typeof(AnimatedOverlay),
@@ -236,6 +240,12 @@ public class AnimatedOverlay : ContentControl
         set => SetValue(OutsidePassthroughTargetsProperty, value);
     }
 
+    public OverlayInteractionPreset InteractionPreset
+    {
+        get => (OverlayInteractionPreset)GetValue(InteractionPresetProperty);
+        set => SetValue(InteractionPresetProperty, value);
+    }
+
     public Thickness SurfaceMargin
     {
         get => (Thickness)GetValue(SurfaceMarginProperty);
@@ -323,6 +333,22 @@ public class AnimatedOverlay : ContentControl
         if (!IsOpen && _state == OverlayState.Closed)
             return;
 
+        Log.Debug(
+            $"Close.Request: overlay={Name} preset={InteractionPreset} reason={reason} " +
+            $"state={_state} isOpen={IsOpen}");
+
+        var closeDecision = OverlayInteractionPresets.ResolveCloseRequest(this, reason);
+        if (closeDecision.IsHandled || !closeDecision.ShouldClose)
+        {
+            if (closeDecision.IsHandled)
+                OverlayInteractionPresets.TryHandleCloseRequest(this, reason);
+
+            Log.Debug(
+                $"Close decision prevented dismissal: preset={InteractionPreset} reason={reason} " +
+                $"state={_state} handled={closeDecision.IsHandled} detail={closeDecision.Detail}");
+            return;
+        }
+
         Log.Debug($"Close: reason={reason} state={_state}");
         LastCloseReason = reason;
         IsOpen = false;
@@ -384,7 +410,27 @@ public class AnimatedOverlay : ContentControl
 
     public bool HandleKeyDown(KeyEventArgs? args, OverlayCloseReason reason = OverlayCloseReason.EscapeKey)
     {
-        if (args == null || !IsOpen || !CloseOnEscape || args.Key != Key.Escape)
+        if (args == null || !IsOpen || args.Key != Key.Escape)
+            return false;
+
+        var closeDecision = OverlayInteractionPresets.ResolveCloseRequest(this, reason);
+        if (closeDecision.IsHandled)
+        {
+            Log.Debug(
+                $"HandleKeyDown intercepted by preset: key={args.Key} preset={InteractionPreset} " +
+                $"state={_state} detail={closeDecision.Detail}");
+            return true;
+        }
+
+        if (!closeDecision.ShouldClose || !OverlayInteractionPresets.ShouldCloseOnEscape(this))
+        {
+            Log.Debug(
+                $"HandleKeyDown ignored by preset: key={args.Key} preset={InteractionPreset} " +
+                $"state={_state} detail={closeDecision.Detail}");
+            return false;
+        }
+
+        if (!CloseOnEscape)
             return false;
 
         Log.Debug($"HandleKeyDown: key={args.Key} state={_state} closeOnEscape={CloseOnEscape}");
@@ -531,6 +577,11 @@ public class AnimatedOverlay : ContentControl
         overlay.DetachAnchor(e.OldValue as FrameworkElement);
         overlay.AttachAnchor(e.NewValue as FrameworkElement);
         overlay.Reposition();
+    }
+
+    private static void OnInteractionPresetChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        OverlayInteractionPresets.ApplyPreset((AnimatedOverlay)d, (OverlayInteractionPreset)e.NewValue);
     }
 
     private void BeginOpen()

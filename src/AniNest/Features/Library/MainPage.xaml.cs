@@ -31,7 +31,6 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     private void OnInitialized(object? sender, EventArgs e)
     {
-        OverlayInteractionPresets.ApplyContextLike(CardContextMenuOverlay);
         CardContextMenuOverlay.Closed += OnCardContextMenuClosed;
         RegisterOverlayRegions();
     }

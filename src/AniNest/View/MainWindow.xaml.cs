@@ -28,7 +28,6 @@ public partial class MainWindow : Window
         _settingsService = settingsService;
         DataContext = vm;
         InitializeComponent();
-        ConfigureOverlayInteractions();
         PopupInputCoordinator.Instance.Attach(this);
         RegisterPopupRegions();
         FileOverlay.Closed += OnFileOverlayClosed;
@@ -59,15 +58,6 @@ public partial class MainWindow : Window
             settings.Window.Maximized = WindowState == WindowState.Maximized;
             _settingsService.Save();
         };
-    }
-
-    private void ConfigureOverlayInteractions()
-    {
-        OverlayInteractionPresets.ApplyMenuLike(FileOverlay);
-        OverlayInteractionPresets.ApplyMenuLike(SettingsOverlay);
-        OverlayInteractionPresets.ApplyMenuLike(LanguageOverlay);
-        OverlayInteractionPresets.ApplyMenuLike(FullscreenAnimationOverlay);
-        OverlayInteractionPresets.ApplyCaptureLike(PlayerInputOverlay);
     }
 
     private void OnToggleFullscreenRequested()

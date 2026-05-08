@@ -46,6 +46,7 @@ public partial class PlayerInputSettingsViewModel : ObservableObject
     public string CapturingButtonText => _localization["Settings.PlayerInput.Capturing"];
     public string ClearButtonText => _localization["Settings.PlayerInput.Clear"];
     public string HintText => _localization["Settings.PlayerInput.Hint"];
+    public bool IsCapturing => _capturingIndex >= 0;
 
     public bool TryCaptureKey(KeyEventArgs args)
     {
@@ -217,6 +218,7 @@ public partial class PlayerInputSettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(CapturingButtonText));
         OnPropertyChanged(nameof(ClearButtonText));
         OnPropertyChanged(nameof(HintText));
+        OnPropertyChanged(nameof(IsCapturing));
     }
 
     private void RefreshDisplay()
@@ -233,6 +235,7 @@ public partial class PlayerInputSettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(CapturingButtonText));
         OnPropertyChanged(nameof(ClearButtonText));
         OnPropertyChanged(nameof(HintText));
+        OnPropertyChanged(nameof(IsCapturing));
     }
 
     private void UpdateCapturingState(int index)
@@ -240,5 +243,6 @@ public partial class PlayerInputSettingsViewModel : ObservableObject
         _capturingIndex = index;
         for (int i = 0; i < Items.Count; i++)
             Items[i].IsCapturing = i == index;
+        OnPropertyChanged(nameof(IsCapturing));
     }
 }
