@@ -110,6 +110,21 @@ public class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void ReorderFolders_MoveToFront_PersistsAfterReload()
+    {
+        _service.AddFolder("/a", "A");
+        _service.AddFolder("/b", "B");
+        _service.AddFolder("/c", "C");
+
+        _service.ReorderFolders(new List<string> { "/c", "/a", "/b" });
+
+        _service.Reload();
+        var ordered = _service.GetFolders();
+
+        ordered.Select(f => f.Path).Should().Equal("/c", "/a", "/b");
+    }
+
+    [Fact]
     public void SetVideoProgress_SavesCorrectly()
     {
         _service.SetVideoProgress("/v.mp4", 3000, 9000);

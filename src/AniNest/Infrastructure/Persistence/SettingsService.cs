@@ -181,11 +181,13 @@ public class SettingsService : ISettingsService, IDisposable
     public List<FolderInfo> GetFolders()
     {
         var folders = Load().Folders;
-        for (int i = 0; i < folders.Count; i++)
+
+        if (NeedsLegacyOrderNormalization(folders))
         {
-            if (folders[i].OrderIndex == 0 && i > 0)
-                folders[i].OrderIndex = folders[i - 1].OrderIndex + 1;
+            for (int i = 0; i < folders.Count; i++)
+                folders[i].OrderIndex = i;
         }
+
         return folders.OrderBy(f => f.OrderIndex).ThenBy(f => f.AddedTime).ToList();
     }
 
@@ -199,6 +201,14 @@ public class SettingsService : ISettingsService, IDisposable
                 folder.OrderIndex = i;
         }
         Save();
+    }
+
+    private static bool NeedsLegacyOrderNormalization(List<FolderInfo> folders)
+    {
+        if (folders.Count <= 1)
+            return false;
+
+        return folders.All(f => f.OrderIndex == 0);
     }
 
     public VideoProgress? GetVideoProgress(string filePath)
