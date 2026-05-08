@@ -115,8 +115,14 @@ public sealed class PlayerInputService : IPlayerInputService
         if (args.Handled || ShouldSkipMouse(args.OriginalSource as DependencyObject))
             return false;
 
+        var isVideoSurface = args.OriginalSource is DependencyObject source &&
+            IsInsideVideoSurface(source);
+
         if (args.ChangedButton == MouseButton.Left)
         {
+            if (!isVideoSurface)
+                return false;
+
             if (args.ClickCount > 1 || _leftClickTimer != null)
             {
                 CancelPendingLeftClick();
@@ -157,8 +163,14 @@ public sealed class PlayerInputService : IPlayerInputService
         if (args.Handled || ShouldSkipMouse(args.OriginalSource as DependencyObject))
             return false;
 
+        var isVideoSurface = args.OriginalSource is DependencyObject source &&
+            IsInsideVideoSurface(source);
+
         if (args.ChangedButton == MouseButton.Left)
         {
+            if (!isVideoSurface)
+                return false;
+
             if (_skipNextLeftUp)
             {
                 _skipNextLeftUp = false;
@@ -271,6 +283,9 @@ public sealed class PlayerInputService : IPlayerInputService
             || HasAncestor<ComboBox>(source)
             || HasAncestor<ListBoxItem>(source);
 
+    private static bool IsInsideVideoSurface(DependencyObject source)
+        => HasAncestorNamed(source, "VideoContainer");
+
     private bool HasMouseBinding(MouseButton button, PlayerInputTriggerKind kind)
     {
         foreach (var binding in _profile.Bindings)
@@ -345,6 +360,25 @@ public sealed class PlayerInputService : IPlayerInputService
         while (current != null)
         {
             if (current is T)
+                return true;
+
+            current = current switch
+            {
+                Visual visual => System.Windows.Media.VisualTreeHelper.GetParent(visual),
+                System.Windows.Media.Media3D.Visual3D visual3D => System.Windows.Media.VisualTreeHelper.GetParent(visual3D),
+                _ => LogicalTreeHelper.GetParent(current)
+            };
+        }
+
+        return false;
+    }
+
+    private static bool HasAncestorNamed(DependencyObject? source, string name)
+    {
+        var current = source;
+        while (current != null)
+        {
+            if (current is FrameworkElement fe && fe.Name == name)
                 return true;
 
             current = current switch
