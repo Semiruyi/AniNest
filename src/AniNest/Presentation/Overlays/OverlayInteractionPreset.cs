@@ -7,4 +7,5 @@ public enum OverlayInteractionPreset
     CaptureLike,
     ContextLike,
     CardContextLike,
+    ToolPanelLike,
 }

@@ -63,6 +63,10 @@ public class AnimatedOverlay : ContentControl
         DependencyProperty.Register(nameof(VerticalOffset), typeof(double), typeof(AnimatedOverlay),
             new PropertyMetadata(0d));
 
+    public static readonly DependencyProperty ConstrainToHostBoundsProperty =
+        DependencyProperty.Register(nameof(ConstrainToHostBounds), typeof(bool), typeof(AnimatedOverlay),
+            new PropertyMetadata(true));
+
     public static readonly DependencyProperty OpenDurationMsProperty =
         DependencyProperty.Register(nameof(OpenDurationMs), typeof(int), typeof(AnimatedOverlay),
             new PropertyMetadata(DefaultAnimationDurationMs));
@@ -166,6 +170,12 @@ public class AnimatedOverlay : ContentControl
     {
         get => (double)GetValue(VerticalOffsetProperty);
         set => SetValue(VerticalOffsetProperty, value);
+    }
+
+    public bool ConstrainToHostBounds
+    {
+        get => (bool)GetValue(ConstrainToHostBoundsProperty);
+        set => SetValue(ConstrainToHostBoundsProperty, value);
     }
 
     public int OpenDurationMs
@@ -534,8 +544,11 @@ public class AnimatedOverlay : ContentControl
                 actualPlacement = OverlayPlacement.RightTop;
             }
 
-            left = Math.Max(0, Math.Min(left, Math.Max(0, hostWidth - desired.Width)));
-            top = Math.Max(0, Math.Min(top, Math.Max(0, hostHeight - desired.Height)));
+            if (ConstrainToHostBounds)
+            {
+                left = Math.Max(0, Math.Min(left, Math.Max(0, hostWidth - desired.Width)));
+                top = Math.Max(0, Math.Min(top, Math.Max(0, hostHeight - desired.Height)));
+            }
 
             var nextMargin = new Thickness(left, top, 0, 0);
             if (!AreClose(SurfaceMargin, nextMargin))

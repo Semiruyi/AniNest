@@ -47,9 +47,6 @@ public partial class ControlBarViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSpeedPopupOpen;
 
-    [RelayCommand]
-    private void ToggleSpeedPopup() => IsSpeedPopupOpen = !IsSpeedPopupOpen;
-
     public string? CurrentVideoPath => _playback.CurrentVideoPath;
 
     public long MediaLength => _playback.MediaLength;

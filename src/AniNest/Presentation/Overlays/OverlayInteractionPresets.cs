@@ -115,6 +115,33 @@ public static class OverlayInteractionPresets
         CloseDescendantsOnParentClose: true,
         CloseDescendantsOnAncestorSurfaceHit: true,
         CloseSiblingBranchesOnChainInteraction: true);
+    private static readonly OverlayInteractionProfile ToolPanelLikeProfile = new(
+        LeftAnchorBehavior: OverlayPointerBehavior.CloseAndPassThrough,
+        RightAnchorBehavior: OverlayPointerBehavior.CloseAndPassThrough,
+        SurfaceBehaviorWhenClosingOthers: OverlayPointerBehavior.CloseAndPassThrough,
+        SurfaceBehaviorWhenStable: OverlayPointerBehavior.KeepOpen,
+        ChildOverlayBehaviorWhenClosingOthers: OverlayPointerBehavior.CloseAndPassThrough,
+        ChildOverlayBehaviorWhenStable: OverlayPointerBehavior.KeepOpen,
+        TitleBarInteractiveOutsideBehavior: OverlayPointerBehavior.CloseAndPassThrough,
+        TitleBarDragZoneOutsideBehavior: OverlayPointerBehavior.CloseAndPassThrough,
+        ContentInteractiveOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        ContentBackgroundOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        RightButtonTitleBarInteractiveOutsideBehavior: null,
+        RightButtonTitleBarDragZoneOutsideBehavior: null,
+        RightButtonContentInteractiveOutsideBehavior: null,
+        RightButtonContentBackgroundOutsideBehavior: null,
+        DefaultOutsideBehavior: OverlayPointerBehavior.CloseAndConsume,
+        OutsidePassthroughTargets:
+            OverlayOutsidePassthroughTargets.TitleBarInteractive |
+            OverlayOutsidePassthroughTargets.TitleBarDragZone,
+        CloseOnOutsideClick: true,
+        CloseOnEscape: true,
+        ResetAnchorOnClose: true,
+        EscapeReservedWhileCapturing: false,
+        KeepAncestorChainWhenChildInterceptsClose: true,
+        CloseDescendantsOnParentClose: true,
+        CloseDescendantsOnAncestorSurfaceHit: true,
+        CloseSiblingBranchesOnChainInteraction: true);
 
     internal static void ApplyPreset(AnimatedOverlay overlay, OverlayInteractionPreset preset)
     {
@@ -291,6 +318,7 @@ public static class OverlayInteractionPresets
             OverlayInteractionPreset.CaptureLike => CaptureLikeProfile,
             OverlayInteractionPreset.ContextLike => ContextLikeProfile,
             OverlayInteractionPreset.CardContextLike => CardContextLikeProfile,
+            OverlayInteractionPreset.ToolPanelLike => ToolPanelLikeProfile,
             _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, "Unknown overlay interaction preset."),
         };
 
@@ -309,6 +337,9 @@ public static class OverlayInteractionPresets
                 return true;
             case OverlayInteractionPreset.CardContextLike:
                 profile = CardContextLikeProfile;
+                return true;
+            case OverlayInteractionPreset.ToolPanelLike:
+                profile = ToolPanelLikeProfile;
                 return true;
             default:
                 profile = default;

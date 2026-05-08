@@ -4,6 +4,7 @@
              xmlns:converters="clr-namespace:AniNest.Presentation.Converters"
              xmlns:animations="clr-namespace:AniNest.Presentation.Animations"
              xmlns:behaviors="clr-namespace:AniNest.Presentation.Behaviors"
+             xmlns:overlays="clr-namespace:AniNest.Presentation.Overlays"
              xmlns:primitives="clr-namespace:AniNest.Presentation.Primitives"
              Focusable="True">
     <UserControl.Resources>
@@ -144,7 +145,7 @@
                             FontSize="11" FontWeight="SemiBold"
                             Foreground="White" Focusable="False"
                             Margin="{StaticResource ButtonGapRight}"
-                            Command="{Binding ToggleSpeedPopupCommand}"
+                            Click="SpeedBtn_Click"
                             animations:ButtonScaleHover.IsEnabled="True">
                         <Grid animations:TextSwapAnimator.Text="{Binding Rate, StringFormat={}{0:0.0#}x}">
                             <TextBlock Text="" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -161,44 +162,6 @@
                             </TextBlock>
                         </Grid>
                     </Button>
-                    <primitives:AnimatedPopup x:Name="SpeedPopup"
-                           StaysOpen="True"
-                           IsOpenAnimated="{Binding IsSpeedPopupOpen}"
-                           OpenAnimationOrigin="0.5,1"
-                           OutsideClickPassthroughTargets="ControlBarGesture"
-                           PlacementTarget="{Binding ElementName=SpeedBtn}"
-                           Placement="Center"
-                           VerticalOffset="{StaticResource SpeedPopupOffset}"
-                           AllowsTransparency="True">
-                        <Border Background="{StaticResource PopupMenuBackground}"
-                                CornerRadius="{StaticResource SpeedPopupCornerRadius}"
-                                Padding="{StaticResource PopupMenuPadding}"
-                                MinWidth="{StaticResource SpeedPopupMinWidth}">
-                            <Grid>
-                                <Border CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
-                                        Background="{StaticResource AccentBlue}"
-                                        Height="{StaticResource SpeedOptionHeight}"
-                                        VerticalAlignment="Top"
-                                        animations:SlideAnimator.TargetY="{Binding Rate, Converter={StaticResource RateToOffsetConverter}}">
-                                    <Border.RenderTransform>
-                                        <TranslateTransform Y="0"/>
-                                    </Border.RenderTransform>
-                                </Border>
-                                <ItemsControl ItemsSource="{Binding SpeedOptions}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Button Style="{StaticResource PopupMenuButton}"
-                                                    HorizontalContentAlignment="Center"
-                                                    Command="{Binding DataContext.ChangeSpeedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding}">
-                                                <TextBlock Text="{Binding StringFormat={}{0:0.0#}x}"/>
-                                            </Button>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </Grid>
-                        </Border>
-                    </primitives:AnimatedPopup>
                 </Grid>
 
                 <Button x:Name="PlaylistToggleBtn" Style="{StaticResource IconButton}"
@@ -239,6 +202,44 @@
                 </Button>
             </StackPanel>
         </Grid>
+
+        <overlays:AnimatedOverlay x:Name="SpeedOverlay"
+                                  InteractionPreset="ToolPanelLike"
+                                  Placement="TopCenter"
+                                  ConstrainToHostBounds="False"
+                                  VerticalOffset="12"
+                                  AnimationOrigin="0.5,1"
+                                  Panel.ZIndex="1000">
+            <Border Background="{StaticResource PopupMenuBackground}"
+                    CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                    Padding="{StaticResource PopupMenuPadding}"
+                    MinWidth="{StaticResource SpeedPopupMinWidth}">
+                <Grid>
+                    <Border CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
+                            Background="{StaticResource AccentBlue}"
+                            Height="{StaticResource SpeedOptionHeight}"
+                            VerticalAlignment="Top"
+                            animations:SlideAnimator.TargetY="{Binding Rate, Converter={StaticResource RateToOffsetConverter}}">
+                        <Border.RenderTransform>
+                            <TranslateTransform Y="0"/>
+                        </Border.RenderTransform>
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding SpeedOptions}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource PopupMenuButton}"
+                                        HorizontalContentAlignment="Center"
+                                        Command="{Binding DataContext.ChangeSpeedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}"
+                                        Click="SpeedOption_Click">
+                                    <TextBlock Text="{Binding StringFormat={}{0:0.0#}x}"/>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Border>
+        </overlays:AnimatedOverlay>
     </Grid>
 </UserControl>
 

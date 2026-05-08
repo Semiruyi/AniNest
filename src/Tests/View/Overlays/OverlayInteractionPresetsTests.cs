@@ -72,6 +72,23 @@ public class OverlayInteractionPresetsTests
     }
 
     [Fact]
+    public void GetProfile_ToolPanelLike_PassesThroughOutsideInteraction()
+    {
+        var profile = OverlayInteractionPresets.GetProfile(OverlayInteractionPreset.ToolPanelLike);
+
+        profile.LeftAnchorBehavior.Should().Be(OverlayPointerBehavior.CloseAndPassThrough);
+        profile.RightAnchorBehavior.Should().Be(OverlayPointerBehavior.CloseAndPassThrough);
+        profile.TitleBarInteractiveOutsideBehavior.Should().Be(OverlayPointerBehavior.CloseAndPassThrough);
+        profile.TitleBarDragZoneOutsideBehavior.Should().Be(OverlayPointerBehavior.CloseAndPassThrough);
+        profile.ContentInteractiveOutsideBehavior.Should().Be(OverlayPointerBehavior.CloseAndConsume);
+        profile.ContentBackgroundOutsideBehavior.Should().Be(OverlayPointerBehavior.CloseAndConsume);
+        profile.DefaultOutsideBehavior.Should().Be(OverlayPointerBehavior.CloseAndConsume);
+        profile.OutsidePassthroughTargets.Should().Be(
+            OverlayOutsidePassthroughTargets.TitleBarInteractive |
+            OverlayOutsidePassthroughTargets.TitleBarDragZone);
+    }
+
+    [Fact]
     public void ResolveAnchorBehavior_ContextLike_ConsumesAnchorClick()
     {
         var result = OverlayInteractionPresets.ResolveAnchorBehavior(
@@ -235,6 +252,34 @@ public class OverlayInteractionPresetsTests
             OverlayOutsidePassthroughTargets.None);
 
         result.Should().Be(OverlayPointerBehavior.CloseAndConsume);
+    }
+
+    [Fact]
+    public void ResolveOutsideBehavior_ToolPanelLike_LeftClickContentInteractive_PassesThrough()
+    {
+        var result = OverlayInteractionPresets.ResolveOutsideBehavior(
+            OverlayInteractionPreset.ToolPanelLike,
+            isCaptureActive: false,
+            MouseButton.Left,
+            OverlayOutsideHitKind.ContentInteractive,
+            OverlayPointerBehavior.CloseAndConsume,
+            OverlayOutsidePassthroughTargets.None);
+
+        result.Should().Be(OverlayPointerBehavior.CloseAndConsume);
+    }
+
+    [Fact]
+    public void ResolveOutsideBehavior_ToolPanelLike_LeftClickTitleBarInteractive_PassesThrough()
+    {
+        var result = OverlayInteractionPresets.ResolveOutsideBehavior(
+            OverlayInteractionPreset.ToolPanelLike,
+            isCaptureActive: false,
+            MouseButton.Left,
+            OverlayOutsideHitKind.TitleBarInteractive,
+            OverlayPointerBehavior.CloseAndConsume,
+            OverlayOutsidePassthroughTargets.None);
+
+        result.Should().Be(OverlayPointerBehavior.CloseAndPassThrough);
     }
 
     [Fact]
