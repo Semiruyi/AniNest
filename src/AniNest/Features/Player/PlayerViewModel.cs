@@ -16,6 +16,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     private readonly PlayerSessionController _session;
     private readonly PlayerPlaybackStateController _playback;
     private readonly IPlayerPlaybackFacade _playbackFacade;
+    private readonly System.ComponentModel.PropertyChangedEventHandler _playbackPropertyChangedHandler;
     private bool _isMediaInitialized;
 
     private float _savedRate = 1.0f;
@@ -27,6 +28,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     public event Action? GoBackRequested;
     public IPlayerInputService InputService { get; }
 
+    public bool IsPlaying => _playback.IsPlaying;
     public ImageSource? VideoSource => _playback.VideoSource;
     public PlaylistItem? CurrentItem => _session.CurrentItem;
     public System.Collections.ObjectModel.ObservableCollection<PlaylistItem> PlaylistItems => _session.PlaylistItems;
@@ -52,6 +54,11 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
         _playback = playback;
         _playbackFacade = playbackFacade;
         InputService = inputService;
+        _playbackPropertyChangedHandler = (_, args) =>
+        {
+            if (args.PropertyName is null || args.PropertyName == nameof(PlayerPlaybackStateController.IsPlaying))
+                OnPropertyChanged(nameof(IsPlaying));
+        };
 
         ControlBar = new ControlBarViewModel(playbackFacade, loc, playback);
 
@@ -62,6 +69,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
         ControlBar.ToggleFullscreenRequested += () => ToggleFullscreenRequested?.Invoke();
 
         _session.CurrentIndexChanged += value => CurrentIndex = value;
+        _playback.PropertyChanged += _playbackPropertyChangedHandler;
     }
 
     partial void OnCurrentIndexChanged(int value)
@@ -182,6 +190,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     [RelayCommand]
     private void Cleanup()
     {
+        _playback.PropertyChanged -= _playbackPropertyChangedHandler;
         ControlBar.Cleanup();
         _playback.Cleanup();
         _session.Cleanup();

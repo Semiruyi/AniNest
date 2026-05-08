@@ -50,7 +50,8 @@
                             GlassFrameThickness="0" UseAeroCaptionButtons="False"/>
     </shell:WindowChrome.WindowChrome>
 
-    <Border ClipToBounds="True"
+    <Border x:Name="RootBorder"
+            ClipToBounds="True"
             Background="{StaticResource BackgroundDark}">
         <Border.Style>
             <Style TargetType="Border">

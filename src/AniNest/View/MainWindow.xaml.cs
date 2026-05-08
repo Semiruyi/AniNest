@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     private WindowState _savedWindowState;
     private bool _savedTopmost;
     private double _savedLeft, _savedTop, _savedWidth, _savedHeight;
+    private CornerRadius _savedCornerRadius;
 
     private readonly ISettingsService _settingsService;
 
@@ -99,6 +100,7 @@ public partial class MainWindow : Window
         var vm = (ShellViewModel)DataContext;
         if (vm.CurrentAnimationCode == "none")
         {
+            _savedCornerRadius = RootBorder.CornerRadius;
             _savedWindowStyle = WindowStyle;
             _savedWindowState = WindowState;
             _savedTopmost = Topmost;
@@ -106,6 +108,7 @@ public partial class MainWindow : Window
             _savedTop = Top;
             _savedWidth = Width;
             _savedHeight = Height;
+            RootBorder.CornerRadius = default;
             TitleBarRow.Height = new GridLength(0);
             WindowStyle = WindowStyle.None;
             Topmost = true;
@@ -118,6 +121,7 @@ public partial class MainWindow : Window
                 mi.rcMonitor.Left, mi.rcMonitor.Top,
                 mi.rcMonitor.Right - mi.rcMonitor.Left, mi.rcMonitor.Bottom - mi.rcMonitor.Top,
                 SWP_FRAMECHANGED);
+            ApplyWindowCornerPreference(hwnd, DWMWCP_DONOTROUND);
             _isTrueFullscreen = true;
         }
         else
@@ -132,6 +136,7 @@ public partial class MainWindow : Window
     {
         if (_isTrueFullscreen)
         {
+            var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
             Left = _savedLeft;
             Top = _savedTop;
             Width = _savedWidth;
@@ -139,7 +144,9 @@ public partial class MainWindow : Window
             Topmost = _savedTopmost;
             WindowStyle = _savedWindowStyle;
             WindowState = _savedWindowState;
+            RootBorder.CornerRadius = _savedCornerRadius;
             TitleBarRow.Height = (GridLength)FindResource("TitleBarRowHeight");
+            ApplyWindowCornerPreference(hwnd, DWMWCP_ROUND);
             _isTrueFullscreen = false;
         }
         else
@@ -200,11 +207,16 @@ public partial class MainWindow : Window
     }
 
     private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+    private const int DWMWCP_DEFAULT = 0;
     private const int DWMWCP_ROUND = 2;
+    private const int DWMWCP_DONOTROUND = 1;
 
     [DllImport("dwmapi.dll", CharSet = CharSet.Unicode)]
     private static extern int DwmSetWindowAttribute(
         nint hwnd, int attr, ref int attrValue, int attrSize);
+
+    private static void ApplyWindowCornerPreference(nint hwnd, int preference)
+        => DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref preference, sizeof(int));
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e)
     {
