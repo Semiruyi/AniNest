@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -32,6 +33,10 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     public ImageSource? VideoSource => _playback.VideoSource;
     public PlaylistItem? CurrentItem => _session.CurrentItem;
     public System.Collections.ObjectModel.ObservableCollection<PlaylistItem> PlaylistItems => _session.PlaylistItems;
+    public string? CurrentVideoPath => _playback.CurrentVideoPath;
+    public string CurrentVideoFileName => string.IsNullOrWhiteSpace(CurrentVideoPath)
+        ? string.Empty
+        : Path.GetFileName(CurrentVideoPath);
 
     [ObservableProperty]
     private bool _isFullscreen;
@@ -56,8 +61,17 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
         InputService = inputService;
         _playbackPropertyChangedHandler = (_, args) =>
         {
-            if (args.PropertyName is null || args.PropertyName == nameof(PlayerPlaybackStateController.IsPlaying))
+            if (args.PropertyName is null)
+                return;
+
+            if (args.PropertyName == nameof(PlayerPlaybackStateController.IsPlaying))
                 OnPropertyChanged(nameof(IsPlaying));
+
+            if (args.PropertyName == nameof(PlayerPlaybackStateController.CurrentVideoPath))
+            {
+                OnPropertyChanged(nameof(CurrentVideoPath));
+                OnPropertyChanged(nameof(CurrentVideoFileName));
+            }
         };
 
         ControlBar = new ControlBarViewModel(playbackFacade, loc, playback);

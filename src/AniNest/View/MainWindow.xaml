@@ -130,7 +130,53 @@
                         </Grid>
                     </StackPanel>
 
-                    <Grid x:Name="TitleBarDragZone" Grid.Column="1"/>
+                    <Grid x:Name="TitleBarDragZone"
+                          Grid.Column="1">
+                        <Grid x:Name="TitleBarFileNameHost"
+                              HorizontalAlignment="Left"
+                              VerticalAlignment="Center"
+                              Margin="12,0,46,0"
+                              Opacity="0"
+                              Visibility="Collapsed"
+                              PreviewMouseLeftButtonDown="TitleBarFileNameHost_PreviewMouseLeftButtonDown"
+                              shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                              animations:FadeVisibilityAnimator.BindVisible="{Binding IsOnPlayerPage}"
+                              animations:FadeVisibilityAnimator.DurationMs="420">
+                            <Grid.ToolTip>
+                                <ToolTip Placement="Bottom"
+                                         HorizontalOffset="0"
+                                         VerticalOffset="8"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         Padding="0">
+                                    <Border Background="{StaticResource PopupMenuBackground}"
+                                            BorderBrush="#38383A"
+                                            BorderThickness="1"
+                                            CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                                            Padding="10,8"
+                                            MaxWidth="560">
+                                        <TextBlock Text="{Binding CurrentPlayerTitleBarToolTip}"
+                                                   Foreground="{StaticResource TextSecondary}"
+                                                   FontSize="12"
+                                                   TextWrapping="Wrap"/>
+                                    </Border>
+                                </ToolTip>
+                            </Grid.ToolTip>
+                            <Grid animations:FadeTextSwapAnimator.Text="{Binding CurrentPlayerTitleBarText}"
+                                  animations:FadeTextSwapAnimator.DurationMs="420">
+                                <TextBlock Text=""
+                                           Foreground="{StaticResource TextSecondary}"
+                                           FontSize="{StaticResource TitleBarTextFontSize}"
+                                           Opacity="0"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text=""
+                                           Foreground="{StaticResource TextSecondary}"
+                                           FontSize="{StaticResource TitleBarTextFontSize}"
+                                           Opacity="{StaticResource TitleBarTextOpacity}"
+                                           TextTrimming="CharacterEllipsis"/>
+                            </Grid>
+                        </Grid>
+                    </Grid>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal"
                                 VerticalAlignment="Center">

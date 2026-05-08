@@ -100,6 +100,15 @@ public partial class MainWindow : Window
         overlayCoordinator.RegisterRegion(PageTransition, OverlayOutsideHitKind.ContentBackground);
     }
 
+    private void TitleBarFileNameHost_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ButtonState != MouseButtonState.Pressed)
+            return;
+
+        DragMove();
+        e.Handled = true;
+    }
+
     private void EnterFullscreen()
     {
         var vm = (ShellViewModel)DataContext;

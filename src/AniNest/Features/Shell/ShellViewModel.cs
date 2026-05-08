@@ -3,6 +3,7 @@ using System.Windows.Input;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using AniNest.Features.Library;
@@ -42,6 +43,8 @@ public partial class ShellViewModel : ObservableObject
 
     public bool IsOnMainPage => CurrentPage is MainPageViewModel;
     public bool IsOnPlayerPage => CurrentPage is PlayerViewModel;
+    public string CurrentPlayerTitleBarText => _playerPage.CurrentVideoFileName;
+    public string? CurrentPlayerTitleBarToolTip => _playerPage.CurrentVideoPath;
 
     [ObservableProperty]
     private bool _isFilePopupOpen;
@@ -157,6 +160,7 @@ public partial class ShellViewModel : ObservableObject
         _mainPage.FolderSelected += OnMainPageFolderSelected;
         _playerPage.ToggleFullscreenRequested += OnPlayerToggleFullscreenRequested;
         _playerPage.GoBackRequested += OnPlayerGoBackRequested;
+        _playerPage.PropertyChanged += OnPlayerPagePropertyChanged;
         _thumbnailGenerator.StatusChanged += OnThumbnailGeneratorStatusChanged;
 
         Application.Current.Exit += (_, _) => _taskbarAutoHide.RestoreIfNeeded();
@@ -192,6 +196,12 @@ public partial class ShellViewModel : ObservableObject
     public void SetPlayerFullscreen(bool value)
         => _playerPage.SetFullscreen(value);
 
+    partial void OnCurrentPageChanged(object? value)
+    {
+        OnPropertyChanged(nameof(CurrentPlayerTitleBarText));
+        OnPropertyChanged(nameof(CurrentPlayerTitleBarToolTip));
+    }
+
     private void OnMainPageFolderSelected(string path, string name)
     {
         if (_isPageTransitionPending || !ReferenceEquals(CurrentPage, _mainPage))
@@ -211,6 +221,16 @@ public partial class ShellViewModel : ObservableObject
 
     private void OnPlayerToggleFullscreenRequested()
         => ToggleFullscreenRequested?.Invoke();
+
+    private void OnPlayerPagePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(PlayerViewModel.CurrentVideoPath) ||
+            e.PropertyName == nameof(PlayerViewModel.CurrentVideoFileName))
+        {
+            OnPropertyChanged(nameof(CurrentPlayerTitleBarText));
+            OnPropertyChanged(nameof(CurrentPlayerTitleBarToolTip));
+        }
+    }
 
     private void OnPlayerGoBackRequested()
     {
