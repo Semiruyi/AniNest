@@ -230,12 +230,12 @@
                                             </Button>
                                         </Grid>
                                         <Grid>
-                                            <Button x:Name="ThumbnailPerformanceMenuButton"
+                                            <Button x:Name="ThumbnailSettingsMenuButton"
                                                     Style="{StaticResource PopupMenuButton}"
-                                                    Click="ThumbnailPerformanceMenuButton_Click"
+                                                    Click="ThumbnailSettingsMenuButton_Click"
                                                     shell:WindowChrome.IsHitTestVisibleInChrome="True">
                                                 <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance], RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    <TextBlock Text="{Binding DataContext.Localization[Settings.Thumbnails], RelativeSource={RelativeSource AncestorType=Window}}"
                                                                VerticalAlignment="Center"/>
                                                     <Path Data="{StaticResource ChevronRightGeometry}"
                                                           Fill="{StaticResource IconSecondary}"
@@ -383,7 +383,7 @@
                 </Border>
             </overlays:AnimatedOverlay>
 
-            <overlays:AnimatedOverlay x:Name="ThumbnailPerformanceOverlay"
+            <overlays:AnimatedOverlay x:Name="ThumbnailSettingsOverlay"
                                       Grid.RowSpan="2"
                                       InteractionPreset="MenuLike"
                                       Placement="RightTop"
@@ -391,6 +391,79 @@
                                       VerticalOffset="0"
                                       AnimationOrigin="0,0"
                                       Panel.ZIndex="2004"
+                                      shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                <Border Background="{StaticResource PopupMenuBackground}"
+                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                        Padding="{StaticResource PopupMenuPadding}"
+                        MinWidth="{StaticResource PopupSubmenuMinWidth}"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <StackPanel>
+                        <Button x:Name="ThumbnailPerformanceMenuButton"
+                                Style="{StaticResource PopupMenuButton}"
+                                Click="ThumbnailPerformanceMenuButton_Click"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance], RelativeSource={RelativeSource AncestorType=Window}}"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding DataContext.ThumbnailPerformanceSummary, RelativeSource={RelativeSource AncestorType=Window}}"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextSecondary}"
+                                           Margin="12,0,6,0"/>
+                                <Path Data="{StaticResource ChevronRightGeometry}"
+                                      Grid.Column="2"
+                                      Fill="{StaticResource IconSecondary}"
+                                      Stretch="Uniform"
+                                      VerticalAlignment="Center"
+                                      Width="{StaticResource SubmenuChevronWidth}"
+                                      Height="{StaticResource SubmenuChevronHeight}"
+                                      Margin="{StaticResource SubmenuChevronLeftMargin}"/>
+                            </Grid>
+                        </Button>
+                        <Button x:Name="ThumbnailAccelerationMenuButton"
+                                Style="{StaticResource PopupMenuButton}"
+                                Click="ThumbnailAccelerationMenuButton_Click"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailAcceleration], RelativeSource={RelativeSource AncestorType=Window}}"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding DataContext.ThumbnailAccelerationSummary, RelativeSource={RelativeSource AncestorType=Window}}"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextSecondary}"
+                                           Margin="12,0,6,0"/>
+                                <Path Data="{StaticResource ChevronRightGeometry}"
+                                      Grid.Column="2"
+                                      Fill="{StaticResource IconSecondary}"
+                                      Stretch="Uniform"
+                                      VerticalAlignment="Center"
+                                      Width="{StaticResource SubmenuChevronWidth}"
+                                      Height="{StaticResource SubmenuChevronHeight}"
+                                      Margin="{StaticResource SubmenuChevronLeftMargin}"/>
+                            </Grid>
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </overlays:AnimatedOverlay>
+
+            <overlays:AnimatedOverlay x:Name="ThumbnailPerformanceOverlay"
+                                      Grid.RowSpan="2"
+                                      InteractionPreset="MenuLike"
+                                      Placement="RightTop"
+                                      HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
+                                      VerticalOffset="0"
+                                      AnimationOrigin="0,0"
+                                      Panel.ZIndex="2005"
                                       shell:WindowChrome.IsHitTestVisibleInChrome="True">
                 <Border Background="{StaticResource PopupMenuBackground}"
                         CornerRadius="{StaticResource SpeedPopupCornerRadius}"
@@ -455,6 +528,96 @@
                 </Border>
             </overlays:AnimatedOverlay>
 
+            <overlays:AnimatedOverlay x:Name="ThumbnailAccelerationOverlay"
+                                      Grid.RowSpan="2"
+                                      InteractionPreset="MenuLike"
+                                      Placement="RightTop"
+                                      HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
+                                      VerticalOffset="0"
+                                      AnimationOrigin="0,0"
+                                      Panel.ZIndex="2006"
+                                      shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                <Border Background="{StaticResource PopupMenuBackground}"
+                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                        Padding="{StaticResource PopupMenuPadding}"
+                        MinWidth="320"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <StackPanel>
+                        <Grid>
+                            <Border CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
+                                    Background="{StaticResource AccentBlue}"
+                                    Height="{StaticResource SpeedOptionHeight}"
+                                    VerticalAlignment="Top">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="RenderTransform">
+                                            <Setter.Value>
+                                                <TranslateTransform Y="0"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding DataContext.CurrentThumbnailAccelerationModeCode, RelativeSource={RelativeSource AncestorType=Window}}" Value="compatible">
+                                                <Setter Property="RenderTransform">
+                                                    <Setter.Value>
+                                                        <TranslateTransform Y="34"/>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                            </Border>
+                            <StackPanel>
+                                <Button Style="{StaticResource PopupMenuButton}"
+                                        Command="{Binding DataContext.SelectThumbnailAccelerationModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="auto"
+                                        Click="OnThumbnailAccelerationOverlayActionClick"
+                                        ToolTip="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Auto.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"
+                                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                    <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Auto], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
+                                </Button>
+                                <Button Style="{StaticResource PopupMenuButton}"
+                                        Command="{Binding DataContext.SelectThumbnailAccelerationModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="compatible"
+                                        Click="OnThumbnailAccelerationOverlayActionClick"
+                                        ToolTip="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Compatible.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"
+                                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                    <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Compatible], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+
+                        <Border Margin="0,10,0,0"
+                                Padding="12,10"
+                                Background="{StaticResource SurfaceOverlayDark}"
+                                CornerRadius="{StaticResource PopupMenuButtonCornerRadius}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Status], RelativeSource={RelativeSource AncestorType=Window}}"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextPrimary}"
+                                           Margin="0,0,0,8"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,4">
+                                    <Run Text="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Hardware], RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"/>
+                                    <Run Text=": "/>
+                                    <Run Text="{Binding DataContext.ThumbnailDetectedHardwareSummary, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                </TextBlock>
+                                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,0,0,4">
+                                    <Run Text="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.CurrentDecoder], RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"/>
+                                    <Run Text=": "/>
+                                    <Run Text="{Binding DataContext.ThumbnailCurrentDecoderSummary, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                </TextBlock>
+                                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}" FontSize="12">
+                                    <Run Text="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.FallbackChain], RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"/>
+                                    <Run Text=": "/>
+                                    <Run Text="{Binding DataContext.ThumbnailFallbackChainSummary, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </overlays:AnimatedOverlay>
+
             <overlays:AnimatedOverlay x:Name="PlayerInputOverlay"
                                       Grid.RowSpan="2"
                                       InteractionPreset="CaptureLike"
@@ -462,7 +625,7 @@
                                       HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
                                       VerticalOffset="0"
                                       AnimationOrigin="0,0"
-                                      Panel.ZIndex="2005"
+                                      Panel.ZIndex="2007"
                                       shell:WindowChrome.IsHitTestVisibleInChrome="True">
                 <Border Background="{StaticResource PopupMenuBackground}"
                         CornerRadius="{StaticResource SpeedPopupCornerRadius}"

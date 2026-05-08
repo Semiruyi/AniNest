@@ -1,6 +1,8 @@
 using System.Windows;
 using System.Windows.Input;
 using System.Diagnostics;
+using System.Collections.Generic;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using AniNest.Features.Library;
@@ -26,6 +28,7 @@ public partial class ShellViewModel : ObservableObject
     private readonly IPlayerAppService _playerAppService;
     private readonly IShellPreferencesService _preferencesService;
     private readonly IThumbnailGenerator _thumbnailGenerator;
+    private readonly IThumbnailDecodeStrategyService _thumbnailDecodeStrategyService;
     private readonly MainPageViewModel _mainPage;
     private readonly PlayerViewModel _playerPage;
 
@@ -48,7 +51,13 @@ public partial class ShellViewModel : ObservableObject
     private bool _isFullscreenAnimationSubmenuOpen;
 
     [ObservableProperty]
+    private bool _isThumbnailSettingsSubmenuOpen;
+
+    [ObservableProperty]
     private bool _isThumbnailPerformanceSubmenuOpen;
+
+    [ObservableProperty]
+    private bool _isThumbnailAccelerationSubmenuOpen;
 
     [ObservableProperty]
     private bool _isPlayerInputSubmenuOpen;
@@ -61,6 +70,24 @@ public partial class ShellViewModel : ObservableObject
 
     [ObservableProperty]
     private string _currentThumbnailPerformanceModeCode = "balanced";
+
+    [ObservableProperty]
+    private string _currentThumbnailAccelerationModeCode = "auto";
+
+    [ObservableProperty]
+    private string _thumbnailPerformanceSummary = string.Empty;
+
+    [ObservableProperty]
+    private string _thumbnailAccelerationSummary = string.Empty;
+
+    [ObservableProperty]
+    private string _thumbnailDetectedHardwareSummary = string.Empty;
+
+    [ObservableProperty]
+    private string _thumbnailCurrentDecoderSummary = string.Empty;
+
+    [ObservableProperty]
+    private string _thumbnailFallbackChainSummary = string.Empty;
 
     public event Action? ToggleFullscreenRequested;
 
@@ -75,6 +102,7 @@ public partial class ShellViewModel : ObservableObject
         IPlayerAppService playerAppService,
         IShellPreferencesService preferencesService,
         IThumbnailGenerator thumbnailGenerator,
+        IThumbnailDecodeStrategyService thumbnailDecodeStrategyService,
         MainPageViewModel mainPage,
         PlayerViewModel playerPage,
         PlayerInputSettingsViewModel playerInputSettings)
@@ -85,9 +113,11 @@ public partial class ShellViewModel : ObservableObject
         _playerAppService = playerAppService;
         _preferencesService = preferencesService;
         _thumbnailGenerator = thumbnailGenerator;
+        _thumbnailDecodeStrategyService = thumbnailDecodeStrategyService;
         _currentLanguageCode = _loc.CurrentLanguage;
         _currentAnimationCode = _preferencesService.CurrentFullscreenAnimationCode;
         _currentThumbnailPerformanceModeCode = _preferencesService.CurrentThumbnailPerformanceModeCode;
+        _currentThumbnailAccelerationModeCode = _preferencesService.CurrentThumbnailAccelerationModeCode;
         _mainPage = mainPage;
         _playerPage = playerPage;
         PlayerInputSettings = playerInputSettings;
@@ -96,6 +126,7 @@ public partial class ShellViewModel : ObservableObject
         _playerPage.GoBackRequested += OnPlayerGoBackRequested;
 
         Application.Current.Exit += (_, _) => _taskbarAutoHide.RestoreIfNeeded();
+        RefreshThumbnailSettingsStatus();
 
         Log.Info($"ShellViewModel initialized. CurrentAnimation={_currentAnimationCode}, CurrentLanguage={_currentLanguageCode}");
         CurrentPage = _mainPage;
@@ -154,7 +185,9 @@ public partial class ShellViewModel : ObservableObject
         {
             IsLanguageSubmenuOpen = false;
             IsFullscreenAnimationSubmenuOpen = false;
+            IsThumbnailSettingsSubmenuOpen = false;
             IsThumbnailPerformanceSubmenuOpen = false;
+            IsThumbnailAccelerationSubmenuOpen = false;
             IsPlayerInputSubmenuOpen = false;
             PlayerInputSettings.CancelCapture();
         }
@@ -172,6 +205,7 @@ public partial class ShellViewModel : ObservableObject
     {
         _preferencesService.SetLanguage(code);
         CurrentLanguageCode = _preferencesService.CurrentLanguageCode;
+        RefreshThumbnailSettingsStatus();
     }
 
     [RelayCommand]
@@ -187,7 +221,65 @@ public partial class ShellViewModel : ObservableObject
         _preferencesService.SetThumbnailPerformanceMode(code);
         CurrentThumbnailPerformanceModeCode = _preferencesService.CurrentThumbnailPerformanceModeCode;
         _thumbnailGenerator.RefreshPerformanceMode();
+        RefreshThumbnailSettingsStatus();
     }
+
+    [RelayCommand]
+    private void SelectThumbnailAccelerationMode(string code)
+    {
+        _preferencesService.SetThumbnailAccelerationMode(code);
+        CurrentThumbnailAccelerationModeCode = _preferencesService.CurrentThumbnailAccelerationModeCode;
+        _thumbnailDecodeStrategyService.RefreshAccelerationMode();
+        RefreshThumbnailSettingsStatus();
+    }
+
+    private void RefreshThumbnailSettingsStatus()
+    {
+        ThumbnailPerformanceSummary = _loc[$"Settings.ThumbnailPerformance.{CapitalizeCode(CurrentThumbnailPerformanceModeCode)}"];
+        ThumbnailAccelerationSummary = _loc[$"Settings.ThumbnailAcceleration.{CapitalizeCode(CurrentThumbnailAccelerationModeCode)}"];
+
+        var status = _preferencesService.CurrentThumbnailDecodeStatus;
+        ThumbnailDetectedHardwareSummary = BuildHardwareSummary(status);
+        ThumbnailCurrentDecoderSummary = BuildCurrentDecoderSummary(status);
+        ThumbnailFallbackChainSummary = string.Join(" -> ", status.StrategyChain.Select(FormatStrategyName));
+    }
+
+    private string BuildHardwareSummary(ThumbnailDecodeStatusSnapshot status)
+    {
+        List<string> items = [];
+        if (status.SupportsCuda)
+            items.Add("CUDA");
+        if (status.SupportsQsv)
+            items.Add("QSV");
+        if (status.SupportsD3D11VA)
+            items.Add("D3D11VA");
+
+        return items.Count > 0 ? string.Join(", ", items) : _loc["Settings.ThumbnailAcceleration.Hardware.None"];
+    }
+
+    private string BuildCurrentDecoderSummary(ThumbnailDecodeStatusSnapshot status)
+    {
+        if (status.PreferredStrategy is not null)
+            return FormatStrategyName(status.PreferredStrategy.Value);
+
+        if (status.StrategyChain.Count > 0)
+            return FormatStrategyName(status.StrategyChain[0]);
+
+        return FormatStrategyName(ThumbnailDecodeStrategy.Software);
+    }
+
+    private static string CapitalizeCode(string code)
+        => string.IsNullOrWhiteSpace(code) ? string.Empty : char.ToUpperInvariant(code[0]) + code[1..];
+
+    private static string FormatStrategyName(ThumbnailDecodeStrategy strategy)
+        => strategy switch
+        {
+            ThumbnailDecodeStrategy.NvidiaCuda => "NVIDIA CUDA",
+            ThumbnailDecodeStrategy.IntelQsv => "Intel QSV",
+            ThumbnailDecodeStrategy.D3D11VA => "D3D11VA",
+            ThumbnailDecodeStrategy.AutoHardware => "Auto Hardware",
+            _ => "Software"
+        };
 
     [RelayCommand]
     private async Task AddFolder()

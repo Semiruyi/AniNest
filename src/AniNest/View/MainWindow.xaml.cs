@@ -35,7 +35,9 @@ public partial class MainWindow : Window
         SettingsOverlay.Closed += OnSettingsOverlayClosed;
         LanguageOverlay.Closed += OnLanguageOverlayClosed;
         FullscreenAnimationOverlay.Closed += OnFullscreenAnimationOverlayClosed;
+        ThumbnailSettingsOverlay.Closed += OnThumbnailSettingsOverlayClosed;
         ThumbnailPerformanceOverlay.Closed += OnThumbnailPerformanceOverlayClosed;
+        ThumbnailAccelerationOverlay.Closed += OnThumbnailAccelerationOverlayClosed;
         PlayerInputOverlay.Closed += OnPlayerInputOverlayClosed;
         _fps = new FpsMonitor(this);
         _fps.Attach();
@@ -288,7 +290,9 @@ public partial class MainWindow : Window
     {
         CloseOverlay(LanguageOverlay, shell => shell.IsLanguageSubmenuOpen = false, reason);
         CloseOverlay(FullscreenAnimationOverlay, shell => shell.IsFullscreenAnimationSubmenuOpen = false, reason);
+        CloseOverlay(ThumbnailSettingsOverlay, shell => shell.IsThumbnailSettingsSubmenuOpen = false, reason);
         CloseOverlay(ThumbnailPerformanceOverlay, shell => shell.IsThumbnailPerformanceSubmenuOpen = false, reason);
+        CloseOverlay(ThumbnailAccelerationOverlay, shell => shell.IsThumbnailAccelerationSubmenuOpen = false, reason);
         CloseOverlay(
             PlayerInputOverlay,
             shell => shell.IsPlayerInputSubmenuOpen = false,
@@ -346,7 +350,9 @@ public partial class MainWindow : Window
             PlayerInputOverlay,
             shell => shell.IsPlayerInputSubmenuOpen = false,
             afterClose: shell => shell.PlayerInputSettings.CancelCapture());
+        CloseOverlay(ThumbnailSettingsOverlay, shell => shell.IsThumbnailSettingsSubmenuOpen = false);
         CloseOverlay(ThumbnailPerformanceOverlay, shell => shell.IsThumbnailPerformanceSubmenuOpen = false);
+        CloseOverlay(ThumbnailAccelerationOverlay, shell => shell.IsThumbnailAccelerationSubmenuOpen = false);
         ToggleAnchoredOverlay(
             LanguageOverlay,
             LanguageMenuButton,
@@ -357,7 +363,9 @@ public partial class MainWindow : Window
     private void FullscreenAnimationMenuButton_Click(object sender, RoutedEventArgs e)
     {
         CloseOverlay(LanguageOverlay, shell => shell.IsLanguageSubmenuOpen = false);
+        CloseOverlay(ThumbnailSettingsOverlay, shell => shell.IsThumbnailSettingsSubmenuOpen = false);
         CloseOverlay(ThumbnailPerformanceOverlay, shell => shell.IsThumbnailPerformanceSubmenuOpen = false);
+        CloseOverlay(ThumbnailAccelerationOverlay, shell => shell.IsThumbnailAccelerationSubmenuOpen = false);
         CloseOverlay(
             PlayerInputOverlay,
             shell => shell.IsPlayerInputSubmenuOpen = false,
@@ -369,10 +377,26 @@ public partial class MainWindow : Window
             nameof(FullscreenAnimationMenuButton_Click));
     }
 
+    private void ThumbnailSettingsMenuButton_Click(object sender, RoutedEventArgs e)
+    {
+        CloseOverlay(LanguageOverlay, shell => shell.IsLanguageSubmenuOpen = false);
+        CloseOverlay(FullscreenAnimationOverlay, shell => shell.IsFullscreenAnimationSubmenuOpen = false);
+        CloseOverlay(
+            PlayerInputOverlay,
+            shell => shell.IsPlayerInputSubmenuOpen = false,
+            afterClose: shell => shell.PlayerInputSettings.CancelCapture());
+        ToggleAnchoredOverlay(
+            ThumbnailSettingsOverlay,
+            ThumbnailSettingsMenuButton,
+            static (shell, opened) => shell.IsThumbnailSettingsSubmenuOpen = opened,
+            nameof(ThumbnailSettingsMenuButton_Click));
+    }
+
     private void ThumbnailPerformanceMenuButton_Click(object sender, RoutedEventArgs e)
     {
         CloseOverlay(LanguageOverlay, shell => shell.IsLanguageSubmenuOpen = false);
         CloseOverlay(FullscreenAnimationOverlay, shell => shell.IsFullscreenAnimationSubmenuOpen = false);
+        CloseOverlay(ThumbnailAccelerationOverlay, shell => shell.IsThumbnailAccelerationSubmenuOpen = false);
         CloseOverlay(
             PlayerInputOverlay,
             shell => shell.IsPlayerInputSubmenuOpen = false,
@@ -384,11 +408,29 @@ public partial class MainWindow : Window
             nameof(ThumbnailPerformanceMenuButton_Click));
     }
 
-    private void PlayerInputMenuButton_Click(object sender, RoutedEventArgs e)
+    private void ThumbnailAccelerationMenuButton_Click(object sender, RoutedEventArgs e)
     {
         CloseOverlay(LanguageOverlay, shell => shell.IsLanguageSubmenuOpen = false);
         CloseOverlay(FullscreenAnimationOverlay, shell => shell.IsFullscreenAnimationSubmenuOpen = false);
         CloseOverlay(ThumbnailPerformanceOverlay, shell => shell.IsThumbnailPerformanceSubmenuOpen = false);
+        CloseOverlay(
+            PlayerInputOverlay,
+            shell => shell.IsPlayerInputSubmenuOpen = false,
+            afterClose: shell => shell.PlayerInputSettings.CancelCapture());
+        ToggleAnchoredOverlay(
+            ThumbnailAccelerationOverlay,
+            ThumbnailAccelerationMenuButton,
+            static (shell, opened) => shell.IsThumbnailAccelerationSubmenuOpen = opened,
+            nameof(ThumbnailAccelerationMenuButton_Click));
+    }
+
+    private void PlayerInputMenuButton_Click(object sender, RoutedEventArgs e)
+    {
+        CloseOverlay(LanguageOverlay, shell => shell.IsLanguageSubmenuOpen = false);
+        CloseOverlay(FullscreenAnimationOverlay, shell => shell.IsFullscreenAnimationSubmenuOpen = false);
+        CloseOverlay(ThumbnailSettingsOverlay, shell => shell.IsThumbnailSettingsSubmenuOpen = false);
+        CloseOverlay(ThumbnailPerformanceOverlay, shell => shell.IsThumbnailPerformanceSubmenuOpen = false);
+        CloseOverlay(ThumbnailAccelerationOverlay, shell => shell.IsThumbnailAccelerationSubmenuOpen = false);
         ToggleAnchoredOverlay(
             PlayerInputOverlay,
             PlayerInputMenuButton,
@@ -420,6 +462,14 @@ public partial class MainWindow : Window
         MainWindowLog.Debug($"OnFullscreenAnimationOverlayClosed: reason={e.Reason}");
     }
 
+    private void OnThumbnailSettingsOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
+    {
+        Shell.IsThumbnailSettingsSubmenuOpen = false;
+        CloseOverlay(ThumbnailPerformanceOverlay, shell => shell.IsThumbnailPerformanceSubmenuOpen = false, OverlayCloseReason.ParentClosed);
+        CloseOverlay(ThumbnailAccelerationOverlay, shell => shell.IsThumbnailAccelerationSubmenuOpen = false, OverlayCloseReason.ParentClosed);
+        MainWindowLog.Debug($"OnThumbnailSettingsOverlayClosed: reason={e.Reason}");
+    }
+
     private void OnThumbnailPerformanceOverlayActionClick(object sender, RoutedEventArgs e)
     {
         MainWindowLog.Debug("OnThumbnailPerformanceOverlayActionClick");
@@ -429,6 +479,17 @@ public partial class MainWindow : Window
     {
         Shell.IsThumbnailPerformanceSubmenuOpen = false;
         MainWindowLog.Debug($"OnThumbnailPerformanceOverlayClosed: reason={e.Reason}");
+    }
+
+    private void OnThumbnailAccelerationOverlayActionClick(object sender, RoutedEventArgs e)
+    {
+        MainWindowLog.Debug("OnThumbnailAccelerationOverlayActionClick");
+    }
+
+    private void OnThumbnailAccelerationOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
+    {
+        Shell.IsThumbnailAccelerationSubmenuOpen = false;
+        MainWindowLog.Debug($"OnThumbnailAccelerationOverlayClosed: reason={e.Reason}");
     }
 
     private void OnPlayerInputOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)

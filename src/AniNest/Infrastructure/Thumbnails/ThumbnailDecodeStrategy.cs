@@ -20,10 +20,20 @@ public enum ThumbnailDecodeStrategy
 public interface IThumbnailDecodeStrategyService
 {
     IReadOnlyList<ThumbnailDecodeStrategy> GetStrategyChain();
+    ThumbnailDecodeStatusSnapshot GetStatusSnapshot();
     void RecordSuccess(ThumbnailDecodeStrategy strategy);
+    void RefreshAccelerationMode();
 }
 
 internal sealed record ThumbnailHardwareProbeResult(
+    bool SupportsCuda,
+    bool SupportsQsv,
+    bool SupportsD3D11VA);
+
+public sealed record ThumbnailDecodeStatusSnapshot(
+    ThumbnailAccelerationMode AccelerationMode,
+    IReadOnlyList<ThumbnailDecodeStrategy> StrategyChain,
+    ThumbnailDecodeStrategy? PreferredStrategy,
     bool SupportsCuda,
     bool SupportsQsv,
     bool SupportsD3D11VA);
@@ -39,6 +49,7 @@ public sealed class ThumbnailDecodeStrategyService : IThumbnailDecodeStrategySer
 
     private bool _probeInitialized;
     private ThumbnailHardwareProbeResult _probe = new(false, false, false);
+    private ThumbnailAccelerationMode _accelerationMode;
 
     public ThumbnailDecodeStrategyService(ISettingsService settings)
         : this(settings, ComputeMachineId, ProbeHardwareCapabilities)
@@ -53,34 +64,27 @@ public sealed class ThumbnailDecodeStrategyService : IThumbnailDecodeStrategySer
         _settings = settings;
         _machineIdProvider = machineIdProvider;
         _probeFactory = probeFactory;
+        _accelerationMode = _settings.GetThumbnailAccelerationMode();
     }
 
     public IReadOnlyList<ThumbnailDecodeStrategy> GetStrategyChain()
     {
         lock (_sync)
         {
-            EnsureMachineBinding();
-            EnsureProbe();
-
-            var strategies = new List<ThumbnailDecodeStrategy>(5);
-            AddIfDistinct(strategies, ParseStrategy(_settings.Load().ThumbnailPreferredDecoder));
-
-            if (_probe.SupportsCuda)
-                AddIfDistinct(strategies, ThumbnailDecodeStrategy.NvidiaCuda);
-
-            if (_probe.SupportsQsv)
-                AddIfDistinct(strategies, ThumbnailDecodeStrategy.IntelQsv);
-
-            if (_probe.SupportsD3D11VA)
-                AddIfDistinct(strategies, ThumbnailDecodeStrategy.D3D11VA);
-
-            AddIfDistinct(strategies, ThumbnailDecodeStrategy.AutoHardware);
-            AddIfDistinct(strategies, ThumbnailDecodeStrategy.Software);
+            var snapshot = BuildStatusSnapshot();
 
             Log.Info(
                 $"Thumbnail decode strategy chain: machine={_settings.Load().ThumbnailDecoderMachineId}, " +
-                $"preferred={_settings.Load().ThumbnailPreferredDecoder}, chain={string.Join(" -> ", strategies)}");
-            return strategies;
+                $"preferred={_settings.Load().ThumbnailPreferredDecoder}, acceleration={_accelerationMode}, chain={string.Join(" -> ", snapshot.StrategyChain)}");
+            return snapshot.StrategyChain;
+        }
+    }
+
+    public ThumbnailDecodeStatusSnapshot GetStatusSnapshot()
+    {
+        lock (_sync)
+        {
+            return BuildStatusSnapshot();
         }
     }
 
@@ -97,6 +101,19 @@ public sealed class ThumbnailDecodeStrategyService : IThumbnailDecodeStrategySer
             settings.ThumbnailPreferredDecoder = code;
             _settings.Save();
             Log.Info($"Thumbnail decode preferred strategy updated: {code}");
+        }
+    }
+
+    public void RefreshAccelerationMode()
+    {
+        lock (_sync)
+        {
+            ThumbnailAccelerationMode mode = _settings.GetThumbnailAccelerationMode();
+            if (_accelerationMode == mode)
+                return;
+
+            _accelerationMode = mode;
+            Log.Info($"Thumbnail acceleration mode changed: mode={mode}");
         }
     }
 
@@ -182,6 +199,50 @@ public sealed class ThumbnailDecodeStrategyService : IThumbnailDecodeStrategySer
         _probeInitialized = true;
         Log.Info(
             $"Thumbnail hardware probe: cuda={_probe.SupportsCuda}, qsv={_probe.SupportsQsv}, d3d11va={_probe.SupportsD3D11VA}");
+    }
+
+    private ThumbnailDecodeStatusSnapshot BuildStatusSnapshot()
+    {
+        EnsureMachineBinding();
+        EnsureProbe();
+
+        var settings = _settings.Load();
+        var strategies = new List<ThumbnailDecodeStrategy>(5);
+        AddStrategiesForMode(strategies);
+        AddIfDistinct(strategies, ThumbnailDecodeStrategy.Software);
+
+        return new ThumbnailDecodeStatusSnapshot(
+            _accelerationMode,
+            strategies,
+            ParseStrategy(settings.ThumbnailPreferredDecoder),
+            _probe.SupportsCuda,
+            _probe.SupportsQsv,
+            _probe.SupportsD3D11VA);
+    }
+
+    private void AddStrategiesForMode(ICollection<ThumbnailDecodeStrategy> strategies)
+    {
+        if (_accelerationMode == ThumbnailAccelerationMode.Compatible)
+        {
+            if (_probe.SupportsD3D11VA)
+                AddIfDistinct(strategies, ThumbnailDecodeStrategy.D3D11VA);
+
+            AddIfDistinct(strategies, ThumbnailDecodeStrategy.AutoHardware);
+            return;
+        }
+
+        AddIfDistinct(strategies, ParseStrategy(_settings.Load().ThumbnailPreferredDecoder));
+
+        if (_probe.SupportsCuda)
+            AddIfDistinct(strategies, ThumbnailDecodeStrategy.NvidiaCuda);
+
+        if (_probe.SupportsQsv)
+            AddIfDistinct(strategies, ThumbnailDecodeStrategy.IntelQsv);
+
+        if (_probe.SupportsD3D11VA)
+            AddIfDistinct(strategies, ThumbnailDecodeStrategy.D3D11VA);
+
+        AddIfDistinct(strategies, ThumbnailDecodeStrategy.AutoHardware);
     }
 
     private static void AddIfDistinct(ICollection<ThumbnailDecodeStrategy> strategies, ThumbnailDecodeStrategy? strategy)

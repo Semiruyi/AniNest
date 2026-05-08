@@ -860,12 +860,18 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             if (lastResult.State == ThumbnailState.Ready)
             {
                 _decodeStrategyService.RecordSuccess(strategy);
+                Log.Info(
+                    $"Thumbnail render success: file={Path.GetFileName(task.VideoPath)}, " +
+                    $"strategy={strategy}, frames={lastResult.FrameCount}");
                 return lastResult;
             }
 
             Log.Info($"Thumbnail render fallback: file={Path.GetFileName(task.VideoPath)}, strategy={strategy}, result={lastResult.State}");
         }
 
+        Log.Warning(
+            $"Thumbnail render failed all strategies: file={Path.GetFileName(task.VideoPath)}, " +
+            $"attempts={string.Join(" -> ", strategies)}");
         return lastResult;
     }
 }

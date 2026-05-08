@@ -31,6 +31,8 @@ public interface ISettingsService
     void SetThumbnailExpiryDays(int days);
     ThumbnailPerformanceMode GetThumbnailPerformanceMode();
     void SetThumbnailPerformanceMode(ThumbnailPerformanceMode mode);
+    ThumbnailAccelerationMode GetThumbnailAccelerationMode();
+    void SetThumbnailAccelerationMode(ThumbnailAccelerationMode mode);
 
 }
 

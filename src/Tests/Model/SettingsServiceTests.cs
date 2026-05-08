@@ -32,6 +32,7 @@ public class SettingsServiceTests : IDisposable
         _service.SetVideoProgress("/test/video.mp4", 1000, 5000);
         _service.SetThumbnailExpiryDays(7);
         _service.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Fast);
+        _service.SetThumbnailAccelerationMode(ThumbnailAccelerationMode.Compatible);
 
         _service.Reload();
         var folders = _service.GetFolders();
@@ -40,12 +41,19 @@ public class SettingsServiceTests : IDisposable
         folders[0].Name.Should().Be("TestFolder");
         _service.GetThumbnailExpiryDays().Should().Be(7);
         _service.GetThumbnailPerformanceMode().Should().Be(ThumbnailPerformanceMode.Fast);
+        _service.GetThumbnailAccelerationMode().Should().Be(ThumbnailAccelerationMode.Compatible);
     }
 
     [Fact]
     public void GetThumbnailPerformanceMode_DefaultsToBalanced()
     {
         _service.GetThumbnailPerformanceMode().Should().Be(ThumbnailPerformanceMode.Balanced);
+    }
+
+    [Fact]
+    public void GetThumbnailAccelerationMode_DefaultsToAuto()
+    {
+        _service.GetThumbnailAccelerationMode().Should().Be(ThumbnailAccelerationMode.Auto);
     }
 
     [Fact]

@@ -308,6 +308,19 @@ public class SettingsService : ISettingsService, IDisposable
         Save();
     }
 
+    public ThumbnailAccelerationMode GetThumbnailAccelerationMode()
+        => Load().ThumbnailAccelerationMode;
+
+    public void SetThumbnailAccelerationMode(ThumbnailAccelerationMode mode)
+    {
+        var current = Load();
+        if (current.ThumbnailAccelerationMode == mode)
+            return;
+
+        current.ThumbnailAccelerationMode = mode;
+        Save();
+    }
+
     private void ScheduleDeferredSave()
     {
         if (_isDisposed)
