@@ -21,6 +21,9 @@ namespace AniNest.Presentation.Overlays;
 /// - Actual pointer arbitration is delegated to <see cref="OverlayCoordinator"/>.
 /// - <see cref="Closed"/> and <see cref="LastCloseReason"/> provide the feature layer
 ///   with a single cleanup hook.
+///
+/// Use this type for interaction-heavy floating UI such as menus, context menus,
+/// settings surfaces, and tool panels.
 /// </summary>
 public class AnimatedOverlay : ContentControl
 {

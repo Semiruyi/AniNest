@@ -17,9 +17,6 @@ public enum PopupHitKind
     TitleBarInteractive,
     TitleBarDragZone,
     VideoSurface,
-    ControlBarInteractive,
-    ControlBarGesture,
-    DismissBackground,
 }
 
 public enum PopupInputAction
@@ -34,8 +31,6 @@ public enum PopupPassthroughTargets
 {
     None = 0,
     VideoSurface = 1 << 0,
-    ControlBarGesture = 1 << 1,
-    DismissBackground = 1 << 2,
 }
 
 public enum PopupCloseReason
@@ -55,7 +50,16 @@ public sealed class PopupHitResult
 }
 
 /// <summary>
-/// Coordinates popup dismissal and click routing across the app.
+/// Coordinates dismissal and click routing for legacy presentation popups.
+///
+/// Intended scope:
+/// - title-bar-adjacent popup behavior that still depends on WPF Popup hosting
+/// - preview/tooltip-style popup visuals such as video-surface hover previews
+///
+/// This coordinator is intentionally narrower than
+/// <see cref="AniNest.Presentation.Overlays.OverlayCoordinator"/>.
+/// New interaction-heavy floating UI should prefer the overlay stack instead of
+/// extending this popup coordinator.
 /// </summary>
 public sealed class PopupInputCoordinator
 {
@@ -69,9 +73,6 @@ public sealed class PopupInputCoordinator
         [PopupHitKind.TitleBarInteractive] = new(),
         [PopupHitKind.TitleBarDragZone] = new(),
         [PopupHitKind.VideoSurface] = new(),
-        [PopupHitKind.ControlBarInteractive] = new(),
-        [PopupHitKind.ControlBarGesture] = new(),
-        [PopupHitKind.DismissBackground] = new(),
     };
     private readonly HashSet<Window> _attachedWindows = new();
     private bool _consumeCurrentLeftClickSequence;
@@ -315,16 +316,6 @@ public sealed class PopupInputCoordinator
             };
         }
 
-        if (IsInsideRegisteredRegion(target, PopupHitKind.ControlBarInteractive))
-        {
-            return new PopupHitResult
-            {
-                Kind = PopupHitKind.ControlBarInteractive,
-                OriginalTarget = target,
-                Action = PopupInputAction.CloseAndHandle,
-            };
-        }
-
         if (IsInsideRegisteredRegion(target, PopupHitKind.VideoSurface))
         {
             return new PopupHitResult
@@ -335,29 +326,9 @@ public sealed class PopupInputCoordinator
             };
         }
 
-        if (IsInsideRegisteredRegion(target, PopupHitKind.ControlBarGesture))
-        {
-            return new PopupHitResult
-            {
-                Kind = PopupHitKind.ControlBarGesture,
-                OriginalTarget = target,
-                Action = PopupInputAction.CloseAndConsume,
-            };
-        }
-
-        if (IsInsideRegisteredRegion(target, PopupHitKind.DismissBackground))
-        {
-            return new PopupHitResult
-            {
-                Kind = PopupHitKind.DismissBackground,
-                OriginalTarget = target,
-                Action = PopupInputAction.CloseAndConsume,
-            };
-        }
-
         return new PopupHitResult
         {
-            Kind = PopupHitKind.DismissBackground,
+            Kind = PopupHitKind.None,
             OriginalTarget = target,
             Action = PopupInputAction.CloseAndConsume,
         };

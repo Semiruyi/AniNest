@@ -25,8 +25,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
         _loadToFirstRenderSpan = PerfSpan.Begin("PlayerPage.LoadToFirstRender");
         var coordinator = PopupInputCoordinator.Instance;
         coordinator.RegisterRegion(VideoContainer, PopupHitKind.VideoSurface);
-        coordinator.RegisterRegion(PlaylistPanel, PopupHitKind.ControlBarInteractive);
-        coordinator.RegisterRegion(PageRoot, PopupHitKind.DismissBackground);
 
         AttachLayoutProbe(PageRoot, "PlayerPage.PageRootLayout");
         AttachLayoutProbe(VideoContainer, "PlayerPage.VideoContainerLayout");
@@ -53,8 +51,6 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
         CompositionTarget.Rendering -= OnRendering;
         var coordinator = PopupInputCoordinator.Instance;
         coordinator.UnregisterRegion(VideoContainer, PopupHitKind.VideoSurface);
-        coordinator.UnregisterRegion(PlaylistPanel, PopupHitKind.ControlBarInteractive);
-        coordinator.UnregisterRegion(PageRoot, PopupHitKind.DismissBackground);
         _loadToFirstRenderSpan?.Dispose();
         _loadToFirstRenderSpan = null;
         _renderedOnce = false;

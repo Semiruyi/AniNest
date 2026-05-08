@@ -15,8 +15,23 @@ using Point = System.Windows.Point;
 namespace AniNest.Presentation.Primitives;
 
 /// <summary>
-/// Popup with built-in scale+opacity entrance/exit animation,
-/// outside-click-to-close, window-move tracking, and z-order fix.
+/// Presentation-focused popup with built-in scale+opacity entrance/exit animation.
+///
+/// Intended scope:
+/// - lightweight non-interactive popup visuals such as hover previews and tooltips
+/// - popup-hosted content that should continue using WPF Popup semantics
+/// - presentation-first surfaces where native popup behavior is more important than
+///   unified interaction semantics
+///
+/// Not intended for:
+/// - command menus
+/// - settings panels
+/// - context menus
+/// - other interaction-heavy floating surfaces
+///
+/// Those interaction-heavy surfaces should use <see cref="AniNest.Presentation.Overlays.AnimatedOverlay"/>
+/// and <see cref="AniNest.Presentation.Overlays.OverlayCoordinator"/>.
+///
 /// Bind <see cref="IsOpenAnimated"/> instead of Popup.IsOpen.
 /// </summary>
 [ContentProperty(nameof(Content))]
@@ -221,8 +236,6 @@ public class AnimatedPopup : Popup
     public bool AllowsPassthrough(PopupHitKind hitKind) => hitKind switch
     {
         PopupHitKind.VideoSurface => OutsideClickPassthroughTargets.HasFlag(PopupPassthroughTargets.VideoSurface),
-        PopupHitKind.ControlBarGesture => OutsideClickPassthroughTargets.HasFlag(PopupPassthroughTargets.ControlBarGesture),
-        PopupHitKind.DismissBackground => OutsideClickPassthroughTargets.HasFlag(PopupPassthroughTargets.DismissBackground),
         _ => false,
     };
 
