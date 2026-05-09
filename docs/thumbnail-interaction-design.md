@@ -576,8 +576,8 @@ Infrastructure/Thumbnails/
     ThumbnailPlaybackWindowUpdate.cs
     ThumbnailTaskStore.cs
     ThumbnailWorkIntentPriority.cs
-    ThumbnailWorkerPreemption.cs
     ThumbnailWorkerPool.cs
+    ThumbnailWorkerPreemption.cs
 
   Execution/
     ThumbnailDecodeStrategy.cs

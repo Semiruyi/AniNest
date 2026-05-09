@@ -64,12 +64,12 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     // Queue & state
     private readonly ThumbnailTaskStore _taskStore = new();
-    private readonly List<ThumbnailGeneratorWorker> _activeWorkers = new();
+    private readonly ThumbnailWorkerPool _workerPool = new();
     private CancellationTokenSource? _loopCts;
     private Task? _loopTask;
     private TaskCompletionSource _initTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly ThumbnailIndexRepository _indexRepository;
-    private readonly ThumbnailRenderer _renderer;
+    private readonly ThumbnailGenerationRunner _generationRunner;
     private bool _isShuttingDown;
     private bool _isPlayerActive;
     private bool _isGenerationPaused;
@@ -88,7 +88,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     public bool IsFfmpegAvailable => _ffmpegAvailable;
 
     public ThumbnailGenerationStatusSnapshot GetStatusSnapshot()
-        => _taskStore.CreateSnapshot(_isGenerationPaused, _isPlayerActive, _activeWorkers.Count);
+        => _taskStore.CreateSnapshot(_isGenerationPaused, _isPlayerActive, _workerPool.Count);
 
     public ThumbnailGenerator(
         ISettingsService settings,
@@ -101,7 +101,8 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         _thumbBaseDir = AppPaths.ThumbnailDirectory;
         _ffmpegPath = AppPaths.FfmpegPath;
         _indexRepository = new ThumbnailIndexRepository(_thumbBaseDir);
-        _renderer = new ThumbnailRenderer(_ffmpegPath, _thumbBaseDir, GetVideoDuration);
+        var renderer = new ThumbnailRenderer(_ffmpegPath, _thumbBaseDir, GetVideoDuration);
+        _generationRunner = new ThumbnailGenerationRunner(_decodeStrategyService, renderer);
 
         Directory.CreateDirectory(_thumbBaseDir);
 
@@ -176,7 +177,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     {
         int promotedCount = _taskStore.ApplyIntentToCollection(collectionId, ThumbnailWorkIntent.FocusedCollection);
         bool shouldPreempt = ThumbnailWorkerPreemption.ShouldPreemptForIncomingIntent(
-            _activeWorkers,
+            _workerPool.SnapshotWorkers(),
             ThumbnailWorkIntent.FocusedCollection);
 
         Log.Info($"Thumbnail collection focused: id={collectionId}, promoted={promotedCount}, shouldPreempt={shouldPreempt}");
@@ -190,7 +191,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     {
         int promotedCount = _taskStore.ApplyIntentToCollection(collectionId, ThumbnailWorkIntent.ManualCollection);
         bool shouldPreempt = ThumbnailWorkerPreemption.ShouldPreemptForIncomingIntent(
-            _activeWorkers,
+            _workerPool.SnapshotWorkers(),
             ThumbnailWorkIntent.ManualCollection);
 
         Log.Info($"Thumbnail collection boosted: id={collectionId}, promoted={promotedCount}, shouldPreempt={shouldPreempt}");
@@ -210,7 +211,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             _taskStore.CurrentForegroundTargetVideoPath = task.VideoPath;
             _taskStore.CurrentForegroundTargetIntent = task.Intent.ToString();
             shouldPreempt = ThumbnailWorkerPreemption.ShouldPreemptForIncomingIntent(
-                _activeWorkers,
+                _workerPool.SnapshotWorkers(),
                 ThumbnailWorkIntent.ManualSingle);
         }
 
@@ -227,16 +228,13 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             return;
 
         ThumbnailPlaybackWindowUpdate update;
-        lock (_activeWorkers)
-        {
-            update = ThumbnailPlaybackWindowCoordinator.Apply(
-                _taskStore,
-                _activeWorkers,
-                orderedVideoPaths,
-                currentIndex,
-                lookaheadCount,
-                DateTime.UtcNow.Ticks);
-        }
+        update = ThumbnailPlaybackWindowCoordinator.Apply(
+            _taskStore,
+            _workerPool.SnapshotWorkers(),
+            orderedVideoPaths,
+            currentIndex,
+            lookaheadCount,
+            DateTime.UtcNow.Ticks);
 
         Log.Info(
             $"Thumbnail playback window boost: currentIndex={currentIndex}, lookahead={lookaheadCount}, currentFile={Path.GetFileName(update.CurrentVideoPath)}, keepFile={Path.GetFileName(update.KeepPlaybackWorkerVideoPath ?? string.Empty)}, " +
@@ -292,30 +290,27 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         List<ThumbnailGeneratorWorker> playbackWorkersToCancel = [];
         string playbackWorkerFiles = string.Empty;
 
-        lock (_activeWorkers)
+        changed = _isPlayerActive != isActive;
+        _isPlayerActive = isActive;
+
+        if (!isActive)
         {
-            changed = _isPlayerActive != isActive;
-            _isPlayerActive = isActive;
+            demotedPlaybackTasks = DemotePlaybackIntentsUnsafe();
+            ClearPlaybackForegroundTargetUnsafe();
 
-            if (!isActive)
-            {
-                demotedPlaybackTasks = DemotePlaybackIntentsUnsafe();
-                ClearPlaybackForegroundTargetUnsafe();
+            playbackWorkersToCancel = _workerPool.SnapshotWorkers()
+                .Where(static worker => !worker.Execution.IsCompleted)
+                .Where(worker => ThumbnailWorkIntentPriority.IsPlaybackIntent(worker.Task.Intent))
+                .ToList();
 
-                playbackWorkersToCancel = _activeWorkers
-                    .Where(static worker => !worker.Execution.IsCompleted)
-                    .Where(worker => ThumbnailWorkIntentPriority.IsPlaybackIntent(worker.Task.Intent))
-                    .ToList();
+            foreach (var worker in playbackWorkersToCancel)
+                worker.CancellationReason = "player-inactive";
 
-                foreach (var worker in playbackWorkersToCancel)
-                    worker.CancellationReason = "player-inactive";
-
-                playbackWorkerFiles = string.Join(", ",
-                    playbackWorkersToCancel.Select(worker => Path.GetFileName(worker.Task.VideoPath)));
-            }
-
-            snapshot = BuildSchedulerSnapshotUnsafe();
+            playbackWorkerFiles = string.Join(", ",
+                playbackWorkersToCancel.Select(worker => Path.GetFileName(worker.Task.VideoPath)));
         }
+
+        snapshot = BuildSchedulerSnapshotUnsafe();
 
         if (!changed && demotedPlaybackTasks == 0 && playbackWorkersToCancel.Count == 0)
             return;
@@ -345,12 +340,9 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         string snapshot;
         bool changed;
 
-        lock (_activeWorkers)
-        {
-            changed = _performanceMode != mode;
-            _performanceMode = mode;
-            snapshot = BuildSchedulerSnapshotUnsafe();
-        }
+        changed = _performanceMode != mode;
+        _performanceMode = mode;
+        snapshot = BuildSchedulerSnapshotUnsafe();
 
         if (!changed)
             return;
@@ -367,12 +359,9 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         bool changed;
         string snapshot;
 
-        lock (_activeWorkers)
-        {
-            changed = _isGenerationPaused != paused;
-            _isGenerationPaused = paused;
-            snapshot = BuildSchedulerSnapshotUnsafe();
-        }
+        changed = _isGenerationPaused != paused;
+        _isGenerationPaused = paused;
+        snapshot = BuildSchedulerSnapshotUnsafe();
 
         if (!changed)
             return;
@@ -388,11 +377,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     {
         _decodeStrategyService.RefreshAccelerationMode();
 
-        string snapshot;
-        lock (_activeWorkers)
-        {
-            snapshot = BuildSchedulerSnapshotUnsafe();
-        }
+        string snapshot = BuildSchedulerSnapshotUnsafe();
 
         Log.Info($"Thumbnail decode strategy refreshed: {snapshot}");
         RequeueActiveWorkers("decode-strategy-changed");
@@ -438,18 +423,15 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private ThumbnailTask? DequeueNext()
     {
-        lock (_activeWorkers)
-        {
-            if (!CanStartMoreWorkersUnsafe())
-                return null;
+        if (!CanStartMoreWorkersUnsafe())
+            return null;
 
-            return _taskStore.SnapshotTasks()
-                .Where(static task => task.State == ThumbnailState.Pending)
-                .OrderByDescending(static task => ThumbnailWorkIntentPriority.GetRank(task.Intent))
-                .ThenByDescending(static task => task.IntentUpdatedAtUtcTicks)
-                .ThenBy(static task => task.VideoPath, StringComparer.OrdinalIgnoreCase)
-                .FirstOrDefault();
-        }
+        return _taskStore.SnapshotTasks()
+            .Where(static task => task.State == ThumbnailState.Pending)
+            .OrderByDescending(static task => ThumbnailWorkIntentPriority.GetRank(task.Intent))
+            .ThenByDescending(static task => task.IntentUpdatedAtUtcTicks)
+            .ThenBy(static task => task.VideoPath, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault();
     }
 
     private async Task ProcessQueueLoop(CancellationToken ct)
@@ -459,13 +441,8 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         {
             DrainCompletedWorkers();
 
-            bool hasPending;
-            bool canStartWorkers;
-            lock (_activeWorkers)
-            {
-                hasPending = _taskStore.CountTasksByState(ThumbnailState.Pending) > 0;
-                canStartWorkers = CanStartMoreWorkersUnsafe();
-            }
+            bool hasPending = _taskStore.CountTasksByState(ThumbnailState.Pending) > 0;
+            bool canStartWorkers = CanStartMoreWorkersUnsafe();
 
             var task = DequeueNext();
             if (task != null)
@@ -494,24 +471,17 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     {
         SetTaskState(task, ThumbnailState.Generating);
         SaveIndex();
-        string startSnapshot;
-        lock (_activeWorkers)
-        {
-            startSnapshot = BuildSchedulerSnapshotUnsafe();
-        }
+        string startSnapshot = BuildSchedulerSnapshotUnsafe();
         Log.Info($"Thumbnail task generating: file={Path.GetFileName(task.VideoPath)}, {startSnapshot}");
 
         try
         {
-            var result = await GenerateWithStrategyFallback(task, ct);
+            var result = await _generationRunner.GenerateAsync(task, ct, (p, v) => VideoProgress?.Invoke(p, v));
 
             if (result.State == ThumbnailState.Ready)
             {
-                lock (_activeWorkers)
-                {
-                    task.TotalFrames = result.FrameCount;
-                    SetTaskState(task, ThumbnailState.Ready);
-                }
+                task.TotalFrames = result.FrameCount;
+                SetTaskState(task, ThumbnailState.Ready);
                 VideoProgress?.Invoke(task.VideoPath, 100);
                 VideoReady?.Invoke(task.VideoPath);
             }
@@ -541,13 +511,8 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         };
         Task execution = RunWorkerAsync(worker, workerCts.Token);
         worker.Execution = execution;
-        string snapshot;
-        lock (_activeWorkers)
-        {
-            _activeWorkers.Add(worker);
-
-            snapshot = BuildSchedulerSnapshotUnsafe();
-        }
+        _workerPool.Add(worker);
+        string snapshot = BuildSchedulerSnapshotUnsafe();
 
         Log.Info(
             $"Thumbnail worker start: file={Path.GetFileName(task.VideoPath)}, intent={task.Intent}, {snapshot}");
@@ -587,32 +552,13 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private void DrainCompletedWorkers()
     {
-        bool changed = false;
-
-        lock (_activeWorkers)
-        {
-            for (int i = _activeWorkers.Count - 1; i >= 0; i--)
-            {
-                if (!_activeWorkers[i].Execution.IsCompleted)
-                    continue;
-
-                _activeWorkers[i].Cancellation.Dispose();
-                _activeWorkers.RemoveAt(i);
-                changed = true;
-            }
-        }
+        bool changed = _workerPool.DrainCompletedWorkers();
 
         if (changed)
             NotifyStatusChanged();
     }
 
-    private int GetActiveWorkerCount()
-    {
-        lock (_activeWorkers)
-        {
-            return _activeWorkers.Count;
-        }
-    }
+    private int GetActiveWorkerCount() => _workerPool.Count;
 
     private bool CanStartMoreWorkersUnsafe()
     {
@@ -623,7 +569,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         if (!policy.AllowStartNewJobs)
             return false;
 
-        return _activeWorkers.Count < policy.MaxConcurrency;
+        return _workerPool.Count < policy.MaxConcurrency;
     }
 
     private ThumbnailExecutionPolicy GetExecutionPolicyUnsafe()
@@ -634,7 +580,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         ThumbnailExecutionPolicy policy = GetExecutionPolicyUnsafe();
         return
             $"playerActive={_isPlayerActive}, mode={_performanceMode}, paused={_isGenerationPaused}, maxConcurrency={policy.MaxConcurrency}, " +
-            $"allowStartNewJobs={policy.AllowStartNewJobs}, activeWorkers={_activeWorkers.Count}, " +
+            $"allowStartNewJobs={policy.AllowStartNewJobs}, activeWorkers={_workerPool.Count}, " +
             $"pendingTasks={_taskStore.CountTasksByState(ThumbnailState.Pending)}, ready={_taskStore.ReadyCount}, total={_taskStore.TotalCount}, " +
             $"foregroundPending={_taskStore.CountForegroundPending()}";
     }
@@ -644,46 +590,36 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         string snapshot;
         string message;
 
-        lock (_activeWorkers)
-        {
-            snapshot = BuildSchedulerSnapshotUnsafe();
-            message = $"{state} | {snapshot}";
-            if (string.Equals(_lastSchedulerState, message, StringComparison.Ordinal))
-                return;
+        snapshot = BuildSchedulerSnapshotUnsafe();
+        message = $"{state} | {snapshot}";
+        if (string.Equals(_lastSchedulerState, message, StringComparison.Ordinal))
+            return;
 
-            _lastSchedulerState = message;
-        }
+        _lastSchedulerState = message;
 
         Log.Info($"Thumbnail scheduler state: {message}");
     }
 
     private string GetBlockedSchedulerReason()
     {
-        lock (_activeWorkers)
-        {
-            if (_isGenerationPaused)
-                return "blocked-generation-paused";
+        if (_isGenerationPaused)
+            return "blocked-generation-paused";
 
-            ThumbnailExecutionPolicy policy = GetExecutionPolicyUnsafe();
-            if (!policy.AllowStartNewJobs)
-                return _isPlayerActive
-                    ? "blocked-player-active-no-new-jobs"
-                    : "blocked-policy-no-new-jobs";
+        ThumbnailExecutionPolicy policy = GetExecutionPolicyUnsafe();
+        if (!policy.AllowStartNewJobs)
+            return _isPlayerActive
+                ? "blocked-player-active-no-new-jobs"
+                : "blocked-policy-no-new-jobs";
 
-            if (_activeWorkers.Count >= policy.MaxConcurrency)
-                return "blocked-max-concurrency";
+        if (_workerPool.Count >= policy.MaxConcurrency)
+            return "blocked-max-concurrency";
 
-            return "blocked-unknown";
-        }
+        return "blocked-unknown";
     }
 
     private void LogWorkerCompletion(ThumbnailTask task, string outcome)
     {
-        string snapshot;
-        lock (_activeWorkers)
-        {
-            snapshot = BuildSchedulerSnapshotUnsafe();
-        }
+        string snapshot = BuildSchedulerSnapshotUnsafe();
 
         Log.Info(
             $"Thumbnail worker end: file={Path.GetFileName(task.VideoPath)}, outcome={outcome}, " +
@@ -697,20 +633,9 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         string snapshot;
         string files;
 
-        lock (_activeWorkers)
-        {
-            workersToCancel = _activeWorkers
-                .Where(static worker => !worker.Execution.IsCompleted)
-                .ToList();
-
-            foreach (var worker in workersToCancel)
-            {
-                worker.CancellationReason = reason;
-            }
-
-            snapshot = BuildSchedulerSnapshotUnsafe();
-            files = string.Join(", ", workersToCancel.Select(worker => Path.GetFileName(worker.Task.VideoPath)));
-        }
+        workersToCancel = _workerPool.MarkAllActiveForCancellation(reason);
+        snapshot = BuildSchedulerSnapshotUnsafe();
+        files = string.Join(", ", workersToCancel.Select(worker => Path.GetFileName(worker.Task.VideoPath)));
 
         if (workersToCancel.Count == 0)
             return;
@@ -736,16 +661,11 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         string snapshot;
         string files;
 
-        lock (_activeWorkers)
-        {
-            workersToCancel = ThumbnailWorkerPreemption.SelectLowerPriorityWorkers(_activeWorkers, incomingIntent);
-
-            foreach (var worker in workersToCancel)
-                worker.CancellationReason = $"preempted-by-{incomingIntent}";
-
-            snapshot = BuildSchedulerSnapshotUnsafe();
-            files = string.Join(", ", workersToCancel.Select(worker => $"{Path.GetFileName(worker.Task.VideoPath)}:{worker.Task.Intent}"));
-        }
+        workersToCancel = _workerPool.MarkForCancellation(
+            workers => ThumbnailWorkerPreemption.SelectLowerPriorityWorkers(workers, incomingIntent),
+            worker => $"preempted-by-{incomingIntent}");
+        snapshot = BuildSchedulerSnapshotUnsafe();
+        files = string.Join(", ", workersToCancel.Select(worker => $"{Path.GetFileName(worker.Task.VideoPath)}:{worker.Task.Intent}"));
 
         if (workersToCancel.Count == 0)
             return;
@@ -771,19 +691,14 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         string snapshot;
         string files;
 
-        lock (_activeWorkers)
-        {
-            workersToCancel = ThumbnailWorkerPreemption.SelectStalePlaybackWorkers(
-                _activeWorkers,
+        workersToCancel = _workerPool.MarkForCancellation(
+            workers => ThumbnailWorkerPreemption.SelectStalePlaybackWorkers(
+                workers,
                 currentVideoPath,
-                keepPlaybackWorkerVideoPath);
-
-            foreach (var worker in workersToCancel)
-                worker.CancellationReason = $"stale-playback-target:{Path.GetFileName(currentVideoPath)}";
-
-            snapshot = BuildSchedulerSnapshotUnsafe();
-            files = string.Join(", ", workersToCancel.Select(worker => $"{Path.GetFileName(worker.Task.VideoPath)}:{worker.Task.Intent}"));
-        }
+                keepPlaybackWorkerVideoPath),
+            worker => $"stale-playback-target:{Path.GetFileName(currentVideoPath)}");
+        snapshot = BuildSchedulerSnapshotUnsafe();
+        files = string.Join(", ", workersToCancel.Select(worker => $"{Path.GetFileName(worker.Task.VideoPath)}:{worker.Task.Intent}"));
 
         if (workersToCancel.Count == 0)
             return;
@@ -805,11 +720,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private async Task WaitForWorkersAsync()
     {
-        Task[] workers;
-        lock (_activeWorkers)
-        {
-            workers = _activeWorkers.Select(static worker => worker.Execution).ToArray();
-        }
+        Task[] workers = _workerPool.SnapshotExecutionTasks();
 
         if (workers.Length == 0)
             return;
@@ -825,15 +736,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private void CancelActiveWorkersForShutdown()
     {
-        List<ThumbnailGeneratorWorker> workers;
-        lock (_activeWorkers)
-        {
-            workers = _activeWorkers.ToList();
-            foreach (var worker in workers)
-            {
-                worker.CancellationReason ??= "shutdown";
-            }
-        }
+        List<ThumbnailGeneratorWorker> workers = _workerPool.MarkAllForShutdown();
 
         foreach (var worker in workers)
         {
@@ -1052,27 +955,11 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             return;
 
         task.State = ThumbnailState.Generating;
-        lock (_activeWorkers)
-        {
-            _activeWorkers.Add(new ThumbnailGeneratorWorker
-            {
-                Task = task,
-                Execution = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously).Task,
-                Cancellation = new CancellationTokenSource(),
-                CancellationReason = cancellationReason
-            });
-        }
+        _workerPool.AddTestWorker(task, cancellationReason);
     }
 
     internal bool IsActiveWorkerCancellationRequestedForTest(string videoPath)
-    {
-        lock (_activeWorkers)
-        {
-            var worker = _activeWorkers.FirstOrDefault(activeWorker =>
-                string.Equals(activeWorker.Task.VideoPath, videoPath, StringComparison.OrdinalIgnoreCase));
-            return worker?.Cancellation.IsCancellationRequested ?? false;
-        }
-    }
+        => _workerPool.IsCancellationRequested(videoPath);
 
     internal void SimulateCanceledActiveWorkerForTest(string videoPath)
     {
@@ -1081,35 +968,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private void SetTaskState(ThumbnailTask task, ThumbnailState newState)
         => _taskStore.SetTaskState(task, newState);
-
-    private async Task<RenderResult> GenerateWithStrategyFallback(ThumbnailTask task, CancellationToken ct)
-    {
-        IReadOnlyList<ThumbnailDecodeStrategy> strategies = _decodeStrategyService.GetStrategyChain();
-        RenderResult lastResult = new(ThumbnailState.Failed);
-
-        foreach (ThumbnailDecodeStrategy strategy in strategies)
-        {
-            ct.ThrowIfCancellationRequested();
-            Log.Info($"Thumbnail render attempt: file={Path.GetFileName(task.VideoPath)}, strategy={strategy}");
-            lastResult = await _renderer.GenerateAsync(task, strategy, ct, (p, v) => VideoProgress?.Invoke(p, v));
-
-            if (lastResult.State == ThumbnailState.Ready)
-            {
-                _decodeStrategyService.RecordSuccess(strategy);
-                Log.Info(
-                    $"Thumbnail render success: file={Path.GetFileName(task.VideoPath)}, " +
-                    $"strategy={strategy}, frames={lastResult.FrameCount}");
-                return lastResult;
-            }
-
-            Log.Info($"Thumbnail render fallback: file={Path.GetFileName(task.VideoPath)}, strategy={strategy}, result={lastResult.State}");
-        }
-
-        Log.Warning(
-            $"Thumbnail render failed all strategies: file={Path.GetFileName(task.VideoPath)}, " +
-            $"attempts={string.Join(" -> ", strategies)}");
-        return lastResult;
-    }
 
     private int CountForegroundPendingUnsafe()
         => _taskStore.CountForegroundPending();
