@@ -573,11 +573,14 @@ Infrastructure/Thumbnails/
 
   Models/
     LibraryCollectionRef.cs
+    IntentApplyOutcome.cs
     ThumbnailAccelerationMode.cs
     ThumbnailGenerationStatusSnapshot.cs
+    ThumbnailProgressEventArgs.cs
     ThumbnailGeneratorWorker.cs
     ThumbnailPerformanceMode.cs
     ThumbnailState.cs
+    ThumbnailTask.cs
     ThumbnailWorkIntent.cs
 
   Scheduling/

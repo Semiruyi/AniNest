@@ -16,40 +16,6 @@ using AniNest.Infrastructure.Thumbnails;
 using AniNest.Infrastructure.Interop;
 namespace AniNest.Infrastructure.Thumbnails;
 
-public enum ThumbnailState
-{
-    Pending,
-    Generating,
-    Ready,
-    Failed
-}
-
-public class ThumbnailTask
-{
-    public string VideoPath { get; init; } = "";
-    public string Md5Dir { get; set; } = "";
-    public ThumbnailState State { get; set; } = ThumbnailState.Pending;
-    public int TotalFrames { get; set; }
-    public long MarkedForDeletionAt { get; set; }
-    public ThumbnailWorkIntent Intent { get; set; } = ThumbnailWorkIntent.BackgroundFill;
-    public string? SourceCollectionId { get; set; }
-    public long IntentUpdatedAtUtcTicks { get; set; }
-}
-
-public class ThumbnailProgressEventArgs : EventArgs
-{
-    public int Ready { get; init; }
-    public int Total { get; init; }
-}
-
-internal enum IntentApplyOutcome
-{
-    Applied,
-    AlreadyReady,
-    HigherIntentAlreadyPresent,
-    MissingTask
-}
-
 public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 {
     private static readonly Logger Log = AppLog.For<ThumbnailGenerator>();
