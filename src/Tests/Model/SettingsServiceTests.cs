@@ -200,6 +200,34 @@ public class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void ClearFolderWatchHistory_RemovesVideoAndFolderProgressForFolder()
+    {
+        _service.MarkVideoPlayed("/f/a.mp4");
+        _service.MarkVideoPlayed("/f/sub/b.mp4");
+        _service.MarkVideoPlayed("/other/c.mp4");
+        _service.SetFolderProgress("/f", "/f/a.mp4");
+
+        _service.ClearFolderWatchHistory("/f");
+
+        _service.IsVideoPlayed("/f/a.mp4").Should().BeFalse();
+        _service.IsVideoPlayed("/f/sub/b.mp4").Should().BeFalse();
+        _service.IsVideoPlayed("/other/c.mp4").Should().BeTrue();
+        _service.GetFolderProgress("/f").Should().BeNull();
+    }
+
+    [Fact]
+    public void ClearFolderWatchHistory_DoesNotMatchSiblingFolderPrefixes()
+    {
+        _service.MarkVideoPlayed("/folder/a.mp4");
+        _service.MarkVideoPlayed("/folder-2/b.mp4");
+
+        _service.ClearFolderWatchHistory("/folder");
+
+        _service.IsVideoPlayed("/folder/a.mp4").Should().BeFalse();
+        _service.IsVideoPlayed("/folder-2/b.mp4").Should().BeTrue();
+    }
+
+    [Fact]
     public void Load_NewInstance_ReturnsDefaults()
     {
         // Empty settings file (just created)

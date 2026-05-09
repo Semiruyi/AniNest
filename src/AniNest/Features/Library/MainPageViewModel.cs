@@ -12,10 +12,11 @@ using AniNest.Features.Library.Services;
 using AniNest.Infrastructure.Diagnostics;
 using AniNest.Infrastructure.Localization;
 using AniNest.Infrastructure.Thumbnails;
+using AniNest.Presentation.Primitives;
 
 namespace AniNest.Features.Library;
 
-public partial class MainPageViewModel : ObservableObject
+public partial class MainPageViewModel : ObservableObject, ITransitioningContentLifecycle
 {
     private static readonly Infrastructure.Logging.Logger Log = Infrastructure.Logging.AppLog.For<MainPageViewModel>();
     private readonly ILibraryAppService _libraryService;
@@ -72,7 +73,27 @@ public partial class MainPageViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadDataAsync()
     {
-        if (_dataLoaded)
+        await LoadDataCoreAsync(forceReload: false);
+    }
+
+    public Task RefreshLibraryAsync()
+        => LoadDataCoreAsync(forceReload: true);
+
+    public void OnAppearing()
+    {
+        if (!_dataLoaded)
+            return;
+
+        _ = RefreshLibraryAsync();
+    }
+
+    public void OnDisappearing()
+    {
+    }
+
+    private async Task LoadDataCoreAsync(bool forceReload)
+    {
+        if (_dataLoaded && !forceReload)
         {
             LoadDataCompleted?.Invoke(this, EventArgs.Empty);
             return;
@@ -89,9 +110,6 @@ public partial class MainPageViewModel : ObservableObject
             foreach (var item in loadedItems)
                 FolderItems.Add(CreateFolderItem(item));
 
-            Log.Info(MemorySnapshot.Capture("MainPageViewModel.LoadDataAsync.loaded",
-                ("items", FolderItems.Count),
-                ("withCover", CountItemsWithCover())));
             _dataLoaded = true;
             LoadDataCompleted?.Invoke(this, EventArgs.Empty);
         }
@@ -170,6 +188,24 @@ public partial class MainPageViewModel : ObservableObject
         Log.Info($"DeleteFolder: name={item.Name} path={item.Path}");
         await _libraryService.DeleteFolderAsync(item.Path);
         FolderItems.Remove(item);
+    }
+
+    [RelayCommand]
+    private async Task ClearFolderWatchHistory(FolderListItem? item)
+    {
+        if (item == null)
+            return;
+
+        CloseFolderPopup();
+        Log.Info($"ClearFolderWatchHistory: name={item.Name} path={item.Path}");
+        var updated = await _libraryService.ClearFolderWatchHistoryAsync(item.Path);
+        if (updated == null)
+            return;
+
+        item.PlayedCount = updated.PlayedCount;
+        item.PlayedPercent = updated.VideoCount > 0
+            ? (double)updated.PlayedCount / updated.VideoCount * 100
+            : 0;
     }
 
     [RelayCommand]
@@ -258,7 +294,6 @@ public partial class MainPageViewModel : ObservableObject
 
     private FolderListItem CreateFolderItem(LibraryFolderDto item)
     {
-        Log.Info($"Folder card data: name={item.Name} played={item.PlayedCount}/{item.VideoCount} percent={(item.VideoCount > 0 ? (double)item.PlayedCount / item.VideoCount * 100 : 0):F1}");
         return new FolderListItem(item.Name, item.Path, item.VideoCount, item.CoverPath)
         {
             PlayedPercent = item.VideoCount > 0 ? (double)item.PlayedCount / item.VideoCount * 100 : 0,

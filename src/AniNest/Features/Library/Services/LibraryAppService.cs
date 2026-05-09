@@ -141,6 +141,23 @@ public sealed class LibraryAppService : ILibraryAppService
         return Task.CompletedTask;
     }
 
+    public async Task<LibraryFolderDto?> ClearFolderWatchHistoryAsync(string path, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!Directory.Exists(path))
+            return null;
+
+        var scanResult = await _videoScanner.ScanFolderAsync(path, cancellationToken);
+        _settings.ClearFolderWatchHistory(path);
+        return CreateFolderDto(
+            Path.GetFileName(path),
+            path,
+            scanResult.VideoCount,
+            scanResult.CoverPath,
+            scanResult.VideoFiles);
+    }
+
     public Task DeleteFolderAsync(string path, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();

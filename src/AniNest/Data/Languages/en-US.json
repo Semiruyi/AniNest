@@ -46,6 +46,7 @@
   "Library.PlayedSummary.Suffix": "",
   "Library.FolderCount": "{0} folder(s)",
   "Library.MoveToFront": "Move to Front",
+  "Library.ClearWatchHistory": "Clear Watch History",
   "Library.RemoveFromLibrary": "Remove from Library",
   "Library.ThumbnailProgress": "Thumbnails {0}/{1}",
   "TitleBar.ThumbnailBackgroundTask": "Thumbnail Background Task",

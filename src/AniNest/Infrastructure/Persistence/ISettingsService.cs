@@ -24,6 +24,7 @@ public interface ISettingsService
     bool IsVideoPlayed(string filePath);
     FolderProgress? GetFolderProgress(string folderPath);
     void SetFolderProgress(string folderPath, string lastVideoPath);
+    void ClearFolderWatchHistory(string folderPath);
     double GetFolderPlayedPercent(string folderPath, string[] videoFiles);
     int GetFolderPlayedCount(string folderPath, string[] videoFiles);
 

@@ -281,6 +281,21 @@ public class SettingsService : ISettingsService, IDisposable
         ScheduleDeferredSave();
     }
 
+    public void ClearFolderWatchHistory(string folderPath)
+    {
+        var current = Load();
+        var videoPaths = current.VideoProgress.Keys
+            .Where(path => IsPathInFolder(path, folderPath))
+            .ToArray();
+
+        Log.Info($"ClearFolderWatchHistory: folder={folderPath} matchedVideos={videoPaths.Length}");
+        foreach (var videoPath in videoPaths)
+            current.VideoProgress.Remove(videoPath);
+
+        current.FolderProgress.Remove(folderPath);
+        Save();
+    }
+
     public double GetFolderPlayedPercent(string folderPath, string[] videoFiles)
     {
         var current = Load();
@@ -293,6 +308,25 @@ public class SettingsService : ISettingsService, IDisposable
     {
         var current = Load();
         return videoFiles.Count(f => current.VideoProgress.TryGetValue(f, out var p) && p.IsPlayed);
+    }
+
+    private static bool IsPathInFolder(string filePath, string folderPath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath) || string.IsNullOrWhiteSpace(folderPath))
+            return false;
+
+        if (string.Equals(filePath, folderPath, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var normalizedFolder = folderPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        if (filePath.Length <= normalizedFolder.Length)
+            return false;
+
+        if (!filePath.StartsWith(normalizedFolder, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        char separator = filePath[normalizedFolder.Length];
+        return separator == Path.DirectorySeparatorChar || separator == Path.AltDirectorySeparatorChar;
     }
 
     public int GetThumbnailExpiryDays()

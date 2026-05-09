@@ -161,6 +161,13 @@
                                    VerticalAlignment="Center"/>
                     </Button>
                     <Button Style="{StaticResource PopupMenuButton}"
+                            Command="{Binding DataContext.ClearFolderWatchHistoryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding DataContext, ElementName=CardContextMenuOverlay}"
+                            Click="OnOverlayActionClick">
+                        <TextBlock Text="{Binding DataContext.Localization[Library.ClearWatchHistory], RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                   VerticalAlignment="Center"/>
+                    </Button>
+                    <Button Style="{StaticResource PopupMenuButton}"
                             Command="{Binding DataContext.DeleteFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             CommandParameter="{Binding DataContext, ElementName=CardContextMenuOverlay}"
                             Click="OnOverlayActionClick">
