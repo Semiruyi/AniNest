@@ -75,6 +75,8 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private int _totalCount;
     private ThumbnailPerformanceMode _performanceMode;
     private string? _lastSchedulerState;
+    private string? _currentForegroundTargetVideoPath;
+    private string? _currentForegroundTargetIntent;
 
     // Events
     public event EventHandler<ThumbnailProgressEventArgs>? ProgressChanged;
@@ -97,7 +99,10 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
                 _activeWorkers.Count,
                 _readyCount,
                 _totalCount,
-                CountTasksByStateUnsafe(ThumbnailState.Pending));
+                CountTasksByStateUnsafe(ThumbnailState.Pending),
+                CountForegroundPendingUnsafe(),
+                GetCurrentForegroundTargetNameUnsafe(),
+                GetCurrentForegroundTargetIntentUnsafe());
         }
     }
 
@@ -229,7 +234,38 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         lock (_taskLock)
         {
             if (_videoToTask.TryGetValue(videoPath, out var task))
+            {
                 ApplyIntentUnsafe(task, ThumbnailWorkIntent.ManualSingle, task.SourceCollectionId, DateTime.UtcNow.Ticks);
+                _currentForegroundTargetVideoPath = task.VideoPath;
+                _currentForegroundTargetIntent = task.Intent.ToString();
+            }
+        }
+
+        EnsureLoopRunning();
+        NotifyStatusChanged();
+    }
+
+    public void BoostPlaybackWindow(IReadOnlyList<string> orderedVideoPaths, int currentIndex, int lookaheadCount)
+    {
+        if (orderedVideoPaths.Count == 0 || currentIndex < 0 || currentIndex >= orderedVideoPaths.Count)
+            return;
+
+        long updatedAtTicks = DateTime.UtcNow.Ticks;
+        lock (_taskLock)
+        {
+            ApplyPlaybackIntentUnsafe(orderedVideoPaths[currentIndex], ThumbnailWorkIntent.PlaybackCurrent, updatedAtTicks);
+            _currentForegroundTargetVideoPath = orderedVideoPaths[currentIndex];
+            _currentForegroundTargetIntent = ThumbnailWorkIntent.PlaybackCurrent.ToString();
+
+            int start = Math.Max(0, currentIndex - 1);
+            int end = Math.Min(orderedVideoPaths.Count - 1, currentIndex + Math.Max(0, lookaheadCount));
+            for (int i = start; i <= end; i++)
+            {
+                if (i == currentIndex)
+                    continue;
+
+                ApplyPlaybackIntentUnsafe(orderedVideoPaths[i], ThumbnailWorkIntent.PlaybackNearby, updatedAtTicks);
+            }
         }
 
         EnsureLoopRunning();
@@ -1249,6 +1285,24 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         task.Intent = intent;
         task.SourceCollectionId = sourceCollectionId ?? task.SourceCollectionId;
         task.IntentUpdatedAtUtcTicks = updatedAtTicks;
+    }
+
+    private void ApplyPlaybackIntentUnsafe(string videoPath, ThumbnailWorkIntent intent, long updatedAtTicks)
+    {
+        if (_videoToTask.TryGetValue(videoPath, out var task))
+            ApplyIntentUnsafe(task, intent, task.SourceCollectionId, updatedAtTicks);
+    }
+
+    private string? GetCurrentForegroundTargetNameUnsafe()
+    {
+        return string.IsNullOrWhiteSpace(_currentForegroundTargetVideoPath)
+            ? null
+            : Path.GetFileName(_currentForegroundTargetVideoPath);
+    }
+
+    private string? GetCurrentForegroundTargetIntentUnsafe()
+    {
+        return _currentForegroundTargetIntent;
     }
 
     private void MarkForDeletionUnsafe(string videoPath)

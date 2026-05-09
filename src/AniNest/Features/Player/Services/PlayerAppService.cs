@@ -4,6 +4,7 @@ using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Media;
 using AniNest.Infrastructure.Thumbnails;
 using System.Diagnostics;
+using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -106,6 +107,10 @@ public sealed class PlayerAppService : IPlayerAppService
             return;
 
         _loadedGeneration = generation;
+        _thumbnailGenerator.BoostPlaybackWindow(
+            _session.PlaylistItems.Select(item => item.FilePath).ToArray(),
+            _session.CurrentIndex,
+            3);
         _pendingActivationGeneration = generation;
         TryActivatePendingVideo("data-loaded");
         Log.Info($"LoadFolderDataAsync complete: CurrentIndex={_session.CurrentIndex}, CurrentVideoPath={_session.CurrentVideoPath ?? "null"}");

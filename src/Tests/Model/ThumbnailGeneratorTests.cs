@@ -101,6 +101,30 @@ public class ThumbnailGeneratorTests : IDisposable
     }
 
     [Fact]
+    public void BoostPlaybackWindow_PromotesCurrentAndNearbyVideos()
+    {
+        var videos = new[]
+        {
+            @"C:\videos\ep01.mp4",
+            @"C:\videos\ep02.mp4",
+            @"C:\videos\ep03.mp4",
+            @"C:\videos\ep04.mp4"
+        };
+
+        _settingsService.SetThumbnailGenerationPaused(true);
+        _generator.RefreshGenerationPaused();
+        _generator.EnqueueFolder(@"C:\videos", videos, 0, null, []);
+        _generator.BoostPlaybackWindow(videos, currentIndex: 1, lookaheadCount: 2);
+
+        _generator.GetIntent(videos[1]).Should().Be(ThumbnailWorkIntent.PlaybackCurrent);
+        _generator.GetIntent(videos[0]).Should().Be(ThumbnailWorkIntent.PlaybackNearby);
+        _generator.GetIntent(videos[2]).Should().Be(ThumbnailWorkIntent.PlaybackNearby);
+        _generator.GetIntent(videos[3]).Should().Be(ThumbnailWorkIntent.PlaybackNearby);
+        _generator.GetStatusSnapshot().CurrentTargetName.Should().Be("ep02.mp4");
+        _generator.GetStatusSnapshot().CurrentTargetIntent.Should().Be(nameof(ThumbnailWorkIntent.PlaybackCurrent));
+    }
+
+    [Fact]
     public void RequeueActiveWorkers_WhenNoActiveWorkers_DoesNotChangePendingTaskState()
     {
         var video = @"C:\videos\ep01.mp4";

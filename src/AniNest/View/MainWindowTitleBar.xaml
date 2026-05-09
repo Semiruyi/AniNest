@@ -112,7 +112,7 @@
                                               IsOpenAnimated="{Binding ElementName=RootControl, Path=IsBackgroundTaskPopupOpen}"
                                               OpenAnimationOrigin="0.5,0"
                                               HorizontalOffset="0"
-                                              VerticalOffset="114">
+                                              VerticalOffset="140">
                         <Border x:Name="BackgroundTaskPopupContent"
                                 Background="{StaticResource PopupMenuBackground}"
                                 BorderBrush="#38383A"

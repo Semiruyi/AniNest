@@ -368,24 +368,38 @@ public partial class ShellViewModel : ObservableObject
         };
 
         ThumbnailGenerationCountText = $"{snapshot.ReadyCount} / {snapshot.TotalCount}";
-        ThumbnailGenerationDetailText = string.Format(
+        string detailText = string.Format(
             _loc["Settings.ThumbnailGeneration.Detail"],
             snapshot.ActiveWorkers,
             snapshot.PendingCount);
+        if (!string.IsNullOrWhiteSpace(snapshot.CurrentTargetName))
+        {
+            detailText += $" · {snapshot.CurrentTargetIntent}: {snapshot.CurrentTargetName}";
+        }
+
+        ThumbnailGenerationDetailText = detailText;
         ThumbnailGenerationProgressPercent = snapshot.TotalCount > 0
             ? (double)snapshot.ReadyCount / snapshot.TotalCount * 100
             : 0;
-        ThumbnailGenerationTooltipText = string.Format(
+        string tooltipText = string.Format(
             _loc["Settings.ThumbnailGeneration.Tooltip"],
             ThumbnailGenerationStatusText,
             snapshot.ReadyCount,
             snapshot.TotalCount,
             snapshot.ActiveWorkers,
             snapshot.PendingCount);
+        if (!string.IsNullOrWhiteSpace(snapshot.CurrentTargetName))
+        {
+            tooltipText += $"\nTarget: {snapshot.CurrentTargetIntent} {snapshot.CurrentTargetName}";
+        }
+
+        ThumbnailGenerationTooltipText = tooltipText;
 
         string statusLog =
             $"code={ThumbnailGenerationStatusCode}, ready={snapshot.ReadyCount}, total={snapshot.TotalCount}, " +
-            $"active={snapshot.ActiveWorkers}, pending={snapshot.PendingCount}, paused={snapshot.IsPaused}, playerActive={snapshot.IsPlayerActive}";
+            $"active={snapshot.ActiveWorkers}, pending={snapshot.PendingCount}, foregroundPending={snapshot.ForegroundPendingCount}, " +
+            $"target={snapshot.CurrentTargetIntent ?? "none"}:{snapshot.CurrentTargetName ?? "none"}, " +
+            $"paused={snapshot.IsPaused}, playerActive={snapshot.IsPlayerActive}";
         if (!string.Equals(_lastThumbnailGenerationStatusLog, statusLog, StringComparison.Ordinal))
         {
             _lastThumbnailGenerationStatusLog = statusLog;

@@ -39,6 +39,7 @@ public interface IThumbnailGenerator
     void FocusCollection(string collectionId);
     void BoostCollection(string collectionId);
     void BoostVideo(string videoPath);
+    void BoostPlaybackWindow(IReadOnlyList<string> orderedVideoPaths, int currentIndex, int lookaheadCount);
 
     void EnqueueFolder(string folderPath, IReadOnlyCollection<string> videoFiles, int cardOrder,
         string? lastPlayedPath, HashSet<string> playedPaths);
@@ -62,4 +63,7 @@ public sealed record ThumbnailGenerationStatusSnapshot(
     int ActiveWorkers,
     int ReadyCount,
     int TotalCount,
-    int PendingCount);
+    int PendingCount,
+    int ForegroundPendingCount,
+    string? CurrentTargetName,
+    string? CurrentTargetIntent);
