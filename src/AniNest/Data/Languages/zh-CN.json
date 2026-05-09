@@ -48,6 +48,7 @@
   "Library.MoveToFront": "移至最前",
   "Library.RemoveFromLibrary": "从媒体库移除",
   "Library.ThumbnailProgress": "缩略图 {0}/{1}",
+  "TitleBar.ThumbnailBackgroundTask": "缩略图后台任务",
 
   "Dialog.AddFolder": "选择包含视频的文件夹",
   "Dialog.AddFolderBatch": "选择要扫描的文件夹",

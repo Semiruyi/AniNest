@@ -48,6 +48,7 @@
   "Library.MoveToFront": "Move to Front",
   "Library.RemoveFromLibrary": "Remove from Library",
   "Library.ThumbnailProgress": "Thumbnails {0}/{1}",
+  "TitleBar.ThumbnailBackgroundTask": "Thumbnail Background Task",
 
   "Dialog.AddFolder": "Add a folder containing videos",
   "Dialog.AddFolderBatch": "Select a folder to scan",

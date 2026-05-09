@@ -111,17 +111,22 @@
                                               IsOpenAnimated="{Binding ElementName=RootControl, Path=IsBackgroundTaskPopupOpen}"
                                               OpenAnimationOrigin="0.5,0"
                                               HorizontalOffset="0"
-                                              VerticalOffset="100">
-                                <Border x:Name="BackgroundTaskPopupContent"
-                                        Background="{StaticResource PopupMenuBackground}"
-                                        BorderBrush="#38383A"
-                                        BorderThickness="1"
-                                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
-                                        Padding="12,10"
-                                        MaxWidth="320"
-                                        MouseEnter="BackgroundTaskPopupContent_MouseEnter"
-                                        MouseLeave="BackgroundTaskPopupContent_MouseLeave">
+                                              VerticalOffset="114">
+                        <Border x:Name="BackgroundTaskPopupContent"
+                                Background="{StaticResource PopupMenuBackground}"
+                                BorderBrush="#38383A"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                                Padding="12,10"
+                                MaxWidth="320"
+                                MouseEnter="BackgroundTaskPopupContent_MouseEnter"
+                                MouseLeave="BackgroundTaskPopupContent_MouseLeave">
                             <StackPanel>
+                                <TextBlock Text="{Binding DataContext.Localization[TitleBar.ThumbnailBackgroundTask], RelativeSource={RelativeSource AncestorType=Window}}"
+                                           Style="{StaticResource AppTextPanelTitle}"
+                                           Foreground="{StaticResource TextPrimary}"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,0,0,8"/>
                                 <Grid Margin="0,0,0,6">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
