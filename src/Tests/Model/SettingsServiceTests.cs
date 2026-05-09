@@ -77,6 +77,51 @@ public class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void Save_UnchangedContent_DoesNotRewriteFile()
+    {
+        _service.SetThumbnailExpiryDays(9);
+        var firstWriteTime = File.GetLastWriteTimeUtc(_settingsPath);
+
+        Thread.Sleep(1100);
+        _service.Save();
+
+        File.GetLastWriteTimeUtc(_settingsPath).Should().Be(firstWriteTime);
+        File.Exists($"{_settingsPath}.tmp").Should().BeFalse();
+    }
+
+    [Fact]
+    public void Save_AfterDirectSettingsMutation_RewritesFile()
+    {
+        var settings = _service.Load();
+        settings.Window.Width = 1280;
+        settings.Window.Height = 720;
+
+        _service.Save();
+
+        var reloaded = new SettingsService(_settingsPath);
+        var window = reloaded.Load().Window;
+        window.Width.Should().Be(1280);
+        window.Height.Should().Be(720);
+        reloaded.Dispose();
+    }
+
+    [Fact]
+    public void Dispose_AfterDirectSettingsMutation_PersistsChanges()
+    {
+        var settings = _service.Load();
+        settings.Window.X = 120;
+        settings.Window.Y = 80;
+
+        _service.Dispose();
+
+        var reloaded = new SettingsService(_settingsPath);
+        var window = reloaded.Load().Window;
+        window.X.Should().Be(120);
+        window.Y.Should().Be(80);
+        reloaded.Dispose();
+    }
+
+    [Fact]
     public async Task DeferredSave_WritesUpdatedVideoProgressToDisk()
     {
         _service.SetVideoProgress("/video.mp4", 1200, 9000);

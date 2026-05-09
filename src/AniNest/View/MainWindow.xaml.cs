@@ -63,7 +63,6 @@ public partial class MainWindow : Window
             settings.Window.Width = Width;
             settings.Window.Height = Height;
             settings.Window.Maximized = WindowState == WindowState.Maximized;
-            _settingsService.Save();
         };
     }
 

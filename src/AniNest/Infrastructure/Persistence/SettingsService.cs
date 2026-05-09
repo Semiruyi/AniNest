@@ -17,10 +17,12 @@ public class SettingsService : ISettingsService, IDisposable
 {
     private static readonly Logger Log = AppLog.For<SettingsService>();
     private static readonly TimeSpan DeferredSaveDelay = TimeSpan.FromMilliseconds(800);
+    private static readonly JsonSerializerOptions SaveJsonOptions = new() { WriteIndented = true };
 
     private readonly string settingsPath;
     private readonly object _sync = new();
     private AppSettings? settings;
+    private string? _lastSavedJson;
     private CancellationTokenSource? _deferredSaveCts;
     private Task? _deferredSaveTask;
     private bool _isDisposed;
@@ -62,6 +64,11 @@ public class SettingsService : ISettingsService, IDisposable
             {
                 string json = File.ReadAllText(settingsPath);
                 loaded = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+
+                lock (_sync)
+                {
+                    _lastSavedJson = json;
+                }
             }
             else
             {
@@ -92,6 +99,7 @@ public class SettingsService : ISettingsService, IDisposable
     {
         string? json = null;
         string tempPath = $"{settingsPath}.tmp";
+        bool skipSave = false;
 
         lock (_sync)
         {
@@ -100,7 +108,14 @@ public class SettingsService : ISettingsService, IDisposable
                 return;
             }
 
-            json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
+            json = JsonSerializer.Serialize(settings, SaveJsonOptions);
+            skipSave = string.Equals(json, _lastSavedJson, StringComparison.Ordinal);
+        }
+
+        if (skipSave)
+        {
+            Log.Debug("Save skipped: settings unchanged");
+            return;
         }
 
         try
@@ -109,11 +124,16 @@ public class SettingsService : ISettingsService, IDisposable
 
             if (File.Exists(settingsPath))
             {
-                File.Replace(tempPath, settingsPath, destinationBackupFileName: null);
+                TryReplaceOrOverwrite(tempPath);
             }
             else
             {
                 File.Move(tempPath, settingsPath);
+            }
+
+            lock (_sync)
+            {
+                _lastSavedJson = json;
             }
 
             Log.Info("settings saved");
@@ -130,6 +150,20 @@ public class SettingsService : ISettingsService, IDisposable
             }
 
             Log.Error("Save exception", ex);
+        }
+    }
+
+    private void TryReplaceOrOverwrite(string tempPath)
+    {
+        try
+        {
+            File.Replace(tempPath, settingsPath, destinationBackupFileName: null);
+        }
+        catch (IOException ex)
+        {
+            Log.Warning($"File.Replace failed, falling back to overwrite copy: {ex.Message}");
+            File.Copy(tempPath, settingsPath, overwrite: true);
+            File.Delete(tempPath);
         }
     }
 
