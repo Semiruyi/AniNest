@@ -328,7 +328,6 @@ public class SeekBar : ContentControl
         _isMouseOver = true;
         if (!_isDragging)
             SetThumbScale(1.35, animate: true);
-        ThumbnailPreview?.OnEnter();
     }
 
     protected override void OnMouseLeave(MouseEventArgs e)
@@ -337,7 +336,6 @@ public class SeekBar : ContentControl
         _isMouseOver = false;
         SetThumbScale(1.0, animate: true);
         HideTooltip();
-        ThumbnailPreview?.OnLeave();
     }
 
     protected override void OnLostMouseCapture(MouseEventArgs e)

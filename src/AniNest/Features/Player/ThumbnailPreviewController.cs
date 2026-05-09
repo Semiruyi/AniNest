@@ -4,15 +4,13 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using AniNest.Features.Player.Services;
 using AniNest.Infrastructure.Thumbnails;
 using AniNest.Infrastructure.Logging;
+using AniNest.Presentation.Behaviors;
 using Point = System.Windows.Point;
 
 namespace AniNest.Features.Player;
@@ -20,17 +18,15 @@ namespace AniNest.Features.Player;
 public partial class ThumbnailPreviewController : ObservableObject
 {
     private static readonly Logger Log = AppLog.For<ThumbnailPreviewController>();
+    private static readonly HoverPopupTiming PreviewPopupTiming =
+        new(TimeSpan.FromMilliseconds(200), TimeSpan.FromMilliseconds(150));
 
     private readonly IPlayerPlaybackFacade _playbackFacade;
     private readonly Func<string?> _getCurrentVideoPath;
     private readonly Func<long> _getMediaLength;
+    private readonly HoverPopupController _hoverPopupController;
 
     private readonly Dictionary<int, BitmapSource> _thumbCache = new();
-    private DispatcherTimer? _thumbShowTimer;
-    private DispatcherTimer? _thumbHideTimer;
-    private bool _thumbHovering;
-    private bool _thumbVisible;
-    private bool _thumbClosing;
     private int _lastRequestedSecond = -1;
     private int _lastLoadedSecond = -1;
     private CancellationTokenSource? _imageLoadCts;
@@ -66,6 +62,10 @@ public partial class ThumbnailPreviewController : ObservableObject
         _playbackFacade = playbackFacade;
         _getCurrentVideoPath = getCurrentVideoPath;
         _getMediaLength = getMediaLength;
+        _hoverPopupController = new HoverPopupController(
+            PreviewPopupTiming,
+            () => IsOpen,
+            opened => IsOpen = opened);
     }
 
     public void OnCurrentVideoPathChanged()
@@ -77,43 +77,7 @@ public partial class ThumbnailPreviewController : ObservableObject
         ImageSource = null;
     }
 
-    public void OnEnter()
-    {
-        _thumbHovering = true;
-        _thumbHideTimer?.Stop();
-        if (!_thumbVisible)
-            (_thumbShowTimer ??= CreateShowTimer()).Start();
-    }
-
-    [RelayCommand]
-    private void Enter() => OnEnter();
-
-    public void OnLeave()
-    {
-        _thumbHovering = false;
-        _thumbShowTimer?.Stop();
-        (_thumbHideTimer ??= CreateHideTimer()).Start();
-    }
-
-    [RelayCommand]
-    private void Leave() => OnLeave();
-
-    public void OnPopupEnter()
-    {
-        _thumbHideTimer?.Stop();
-    }
-
-    [RelayCommand]
-    private void PopupEnter() => OnPopupEnter();
-
-    public void OnPopupLeave()
-    {
-        _thumbHideTimer?.Stop();
-        (_thumbHideTimer ??= CreateHideTimer()).Start();
-    }
-
-    [RelayCommand]
-    private void PopupLeave() => OnPopupLeave();
+    public HoverPopupController HoverPopupController => _hoverPopupController;
 
     public void OnMove(Point pos, double sliderWidth)
     {
@@ -153,64 +117,10 @@ public partial class ThumbnailPreviewController : ObservableObject
         }
     }
 
-    [RelayCommand]
-    private void Move(MouseEventArgs e)
-    {
-        if (e.Source is FrameworkElement el)
-            OnMove(e.GetPosition(el), el.ActualWidth);
-    }
-
     public void Close()
     {
-        _thumbHideTimer?.Stop();
-        _thumbShowTimer?.Stop();
-        IsOpen = false;
-        _thumbVisible = false;
-        _thumbHovering = false;
-        _thumbClosing = false;
+        _hoverPopupController.CloseNow();
         CancelImageLoad();
-    }
-
-    private void ShowThumbnail()
-    {
-        if (_thumbVisible || _thumbClosing) return;
-        _thumbVisible = true;
-        IsOpen = true;
-    }
-
-    private void HideThumbnail()
-    {
-        if (!_thumbVisible || _thumbClosing) return;
-        _thumbClosing = true;
-        _thumbVisible = false;
-        _thumbClosing = false;
-        IsOpen = false;
-    }
-
-    private DispatcherTimer CreateShowTimer()
-    {
-        var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
-        t.Tick += (_, _) =>
-        {
-            t.Stop();
-            if (!_thumbHovering) return;
-            ShowThumbnail();
-        };
-        _thumbShowTimer = t;
-        return t;
-    }
-
-    private DispatcherTimer CreateHideTimer()
-    {
-        var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
-        t.Tick += (_, _) =>
-        {
-            t.Stop();
-            if (_thumbHovering) return;
-            HideThumbnail();
-        };
-        _thumbHideTimer = t;
-        return t;
     }
 
     private async Task LoadJpegAsync(string videoPath, int second)
