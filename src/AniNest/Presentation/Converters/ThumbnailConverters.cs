@@ -59,6 +59,67 @@ public class ProgressToVisibilityConverter : IValueConverter
         => throw new NotImplementedException();
 }
 
+public class ProgressToRingArcConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        double percent = value switch
+        {
+            double d => d,
+            int i => i,
+            float f => f,
+            _ => 0
+        };
+
+        percent = Math.Clamp(percent, 0, 100);
+        if (percent <= 0)
+            return Geometry.Empty;
+
+        const double size = 20;
+        const double inset = 1.5;
+        double radius = (size / 2) - inset;
+        double center = size / 2;
+
+        if (percent >= 100)
+            return new EllipseGeometry(new Rect(center - radius, center - radius, radius * 2, radius * 2));
+
+        double startAngle = -90;
+        double endAngle = startAngle + percent / 100.0 * 359.999;
+
+        var startPoint = PolarToCartesian(center, center, radius, startAngle);
+        var endPoint = PolarToCartesian(center, center, radius, endAngle);
+        bool isLargeArc = endAngle - startAngle > 180;
+
+        var figure = new PathFigure
+        {
+            StartPoint = startPoint,
+            IsClosed = false,
+            IsFilled = false
+        };
+
+        figure.Segments.Add(new ArcSegment(
+            endPoint,
+            new Size(radius, radius),
+            0,
+            isLargeArc,
+            SweepDirection.Clockwise,
+            true));
+
+        return new PathGeometry(new[] { figure });
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+
+    private static WpfPoint PolarToCartesian(double cx, double cy, double radius, double angleDeg)
+    {
+        double angleRad = angleDeg * Math.PI / 180.0;
+        return new WpfPoint(
+            cx + radius * Math.Cos(angleRad),
+            cy + radius * Math.Sin(angleRad));
+    }
+}
+
 public class PercentToWidthConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)

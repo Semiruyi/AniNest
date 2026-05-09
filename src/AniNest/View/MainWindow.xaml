@@ -263,40 +263,6 @@
                         MinWidth="{StaticResource PopupSubmenuMinWidth}"
                         shell:WindowChrome.IsHitTestVisibleInChrome="True">
                     <StackPanel>
-                        <Border Background="{StaticResource SurfaceOverlayDark}"
-                                CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
-                                Padding="12,10"
-                                Margin="0,0,0,8"
-                                ToolTip="{Binding DataContext.ThumbnailGenerationTooltipText, RelativeSource={RelativeSource AncestorType=Window}}">
-                            <StackPanel>
-                                <Grid Margin="0,0,0,6">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Ellipse Width="8"
-                                             Height="8"
-                                             VerticalAlignment="Center"
-                                             Fill="{Binding DataContext.ThumbnailGenerationStatusColor, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                                    <TextBlock Grid.Column="1"
-                                               Text="{Binding DataContext.ThumbnailGenerationStatusText, RelativeSource={RelativeSource AncestorType=Window}}"
-                                               Margin="8,0,0,0"
-                                               FontWeight="SemiBold"
-                                               Foreground="{StaticResource TextPrimary}"/>
-                                    <TextBlock Grid.Column="2"
-                                               Text="{Binding DataContext.ThumbnailGenerationCountText, RelativeSource={RelativeSource AncestorType=Window}}"
-                                               Foreground="{StaticResource TextSecondary}"/>
-                                </Grid>
-                                <ProgressBar Height="4"
-                                             Minimum="0"
-                                             Maximum="100"
-                                             Value="{Binding DataContext.ThumbnailGenerationProgressPercent, RelativeSource={RelativeSource AncestorType=Window}}"
-                                             Margin="0,0,0,6"/>
-                                <TextBlock Text="{Binding DataContext.ThumbnailGenerationDetailText, RelativeSource={RelativeSource AncestorType=Window}}"
-                                           Style="{StaticResource OverlaySecondaryText}"/>
-                            </StackPanel>
-                        </Border>
                         <Button x:Name="ThumbnailPerformanceMenuButton"
                                 Style="{StaticResource PopupMenuSubmenuButton}"
                                 Click="ThumbnailPerformanceMenuButton_Click"
