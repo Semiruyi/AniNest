@@ -70,6 +70,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private TaskCompletionSource _initTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly ThumbnailIndexRepository _indexRepository;
     private readonly ThumbnailGenerationRunner _generationRunner;
+    private readonly ThumbnailWorkerExecutionHost _workerExecutionHost;
     private bool _isShuttingDown;
     private bool _isPlayerActive;
     private bool _isGenerationPaused;
@@ -103,6 +104,15 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         _indexRepository = new ThumbnailIndexRepository(_thumbBaseDir);
         var renderer = new ThumbnailRenderer(_ffmpegPath, _thumbBaseDir, GetVideoDuration);
         _generationRunner = new ThumbnailGenerationRunner(_decodeStrategyService, renderer);
+        _workerExecutionHost = new ThumbnailWorkerExecutionHost(
+            _generationRunner,
+            _taskStore,
+            SetTaskState,
+            SaveIndex,
+            UpdateProgress,
+            BuildSchedulerSnapshotUnsafe,
+            (path, percent) => VideoProgress?.Invoke(path, percent),
+            path => VideoReady?.Invoke(path));
 
         Directory.CreateDirectory(_thumbBaseDir);
 
@@ -467,39 +477,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         await WaitForWorkersAsync();
     }
 
-    private async Task GenerateForTask(ThumbnailTask task, CancellationToken ct)
-    {
-        SetTaskState(task, ThumbnailState.Generating);
-        SaveIndex();
-        string startSnapshot = BuildSchedulerSnapshotUnsafe();
-        Log.Info($"Thumbnail task generating: file={Path.GetFileName(task.VideoPath)}, {startSnapshot}");
-
-        try
-        {
-            var result = await _generationRunner.GenerateAsync(task, ct, (p, v) => VideoProgress?.Invoke(p, v));
-
-            if (result.State == ThumbnailState.Ready)
-            {
-                task.TotalFrames = result.FrameCount;
-                SetTaskState(task, ThumbnailState.Ready);
-                VideoProgress?.Invoke(task.VideoPath, 100);
-                VideoReady?.Invoke(task.VideoPath);
-            }
-            else
-            {
-                SetTaskState(task, ThumbnailState.Failed);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            var cancelSw = Stopwatch.StartNew();
-            bool requeued = _taskStore.TryRequeueTask(task.VideoPath);
-            cancelSw.Stop();
-            Log.Info($"Thumbnail task canceled: file={Path.GetFileName(task.VideoPath)}, elapsed={cancelSw.ElapsedMilliseconds}ms, newState={task.State}");
-            throw;
-        }
-    }
-
     private void StartWorker(ThumbnailTask task, CancellationToken ct)
     {
         var workerCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -521,33 +498,8 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private async Task RunWorkerAsync(ThumbnailGeneratorWorker worker, CancellationToken ct)
     {
-        var task = worker.Task;
-        try
-        {
-            await GenerateForTask(task, ct);
-            LogWorkerCompletion(task, "completed");
-        }
-        catch (OperationCanceledException)
-        {
-            string cancelReason = string.IsNullOrWhiteSpace(worker.CancellationReason)
-                ? "unspecified"
-                : worker.CancellationReason;
-            LogWorkerCompletion(task, $"canceled({cancelReason})");
-        }
-        catch (Exception ex)
-        {
-            Log.Error("Generate thumbnail failed", ex);
-            SetTaskState(task, ThumbnailState.Failed);
-            LogWorkerCompletion(task, "faulted");
-        }
-        finally
-        {
-            var finallySw = Stopwatch.StartNew();
-            SaveIndex();
-            UpdateProgress();
-            finallySw.Stop();
-            Log.Info($"Thumbnail task finalize: file={Path.GetFileName(task.VideoPath)}, elapsed={finallySw.ElapsedMilliseconds}ms, state={task.State}");
-        }
+        await _workerExecutionHost.RunAsync(worker, ct);
+        NotifyStatusChanged();
     }
 
     private void DrainCompletedWorkers()
@@ -615,16 +567,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             return "blocked-max-concurrency";
 
         return "blocked-unknown";
-    }
-
-    private void LogWorkerCompletion(ThumbnailTask task, string outcome)
-    {
-        string snapshot = BuildSchedulerSnapshotUnsafe();
-
-        Log.Info(
-            $"Thumbnail worker end: file={Path.GetFileName(task.VideoPath)}, outcome={outcome}, " +
-            $"state={task.State}, frames={task.TotalFrames}, {snapshot}");
-        NotifyStatusChanged();
     }
 
     private void RequeueActiveWorkers(string reason)

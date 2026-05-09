@@ -536,6 +536,8 @@ Suggested internal split:
   - owns loading and saving the task index plus cache-directory cleanup and expiry deletion
 - `ThumbnailGenerationRunner`
   - owns one-task execution, decode-strategy fallback, and render invocation
+- `ThumbnailWorkerExecutionHost`
+  - owns the lifecycle of a single running worker, including execute, cancel/requeue handling, and finalize/update hooks
 - `ThumbnailStatusTracker`
   - owns aggregated ready/total counts, current foreground target, and status snapshot composition
 
@@ -583,6 +585,7 @@ Infrastructure/Thumbnails/
     ThumbnailDecodeStrategy.cs
     ThumbnailGenerationRunner.cs
     ThumbnailRenderer.cs
+    ThumbnailWorkerExecutionHost.cs
 
   Storage/
     ThumbnailBundle.cs
