@@ -257,24 +257,7 @@ void BoostCollection(string collectionId);
 void BoostVideo(string videoPath);
 ```
 
-The exact API can stay smaller in the first implementation, but the semantics should head in this direction.
-
-### 1.1 Transitional API strategy
-
-The current code already depends on folder-oriented APIs such as:
-
-- `IThumbnailGenerator.EnqueueFolder(...)`
-- `IThumbnailGenerator.DeleteForFolder(...)`
-- `ILibraryAppService.LoadLibraryAsync(...)`
-
-These do not need to disappear immediately. The safer migration path is:
-
-1. keep the existing folder-oriented APIs working
-2. add collection-aware APIs beside them
-3. move feature code toward the new APIs
-4. demote old folder-first APIs into compatibility wrappers
-
-That keeps the first refactor smaller and avoids forcing the library page, player flow, and persistence model to change all at once.
+The exact API can stay smaller than this surface, but the semantics should head in this direction.
 
 ### 2. Introduce a collection resolver boundary
 
@@ -329,9 +312,9 @@ can remain in place and be reused.
 
 The main change is the policy that decides which job should be started next.
 
-### 4. Keep the first scheduler modest
+### 4. Keep the scheduler modest
 
-The first implementation does not need a heavy job system.
+The scheduler does not need a heavy job system.
 
 A practical first version can still use:
 
@@ -373,7 +356,7 @@ public sealed class ThumbnailTask
 }
 ```
 
-This is intentionally modest:
+This model stays intentionally modest:
 
 - keep task persistence and rendering identity as they are
 - add explicit scheduling metadata
@@ -489,36 +472,20 @@ Still pending:
 
 - library-side collection actions beyond the current folder-based bridge
 - player-side single-video manual thumbnail actions
-- a structural refactor of `ThumbnailGenerator`
+- additional library-side collection actions beyond the current folder-based bridge
+- player-side single-video manual thumbnail actions
 
-### Structural refactor plan for `ThumbnailGenerator`
+### Current `ThumbnailGenerator` structure
 
-The current implementation has already moved toward intent-aware scheduling, but the class is still carrying too many responsibilities at once.
+`ThumbnailGenerator` remains the public coordinator, but the internal responsibilities are now split across focused collaborators.
 
-Today it mixes:
-
-- task registry and collection membership storage
-- intent application and playback-window promotion rules
-- worker lifecycle and cancellation/preemption
-- queue loop and next-task selection
-- thumbnail index persistence and cache-directory cleanup
-- status aggregation and UI-facing progress reporting
-
-That shape was acceptable while the feature was still settling, but it will become harder to reason about as the app adds richer library categories, more manual thumbnail actions, and more player-driven scheduling behavior.
-
-The goal of the refactor is not to replace `ThumbnailGenerator` as the public coordinator.
-
-The goal is to keep it as the central entry point while moving its internal responsibilities into smaller, testable collaborators.
-
-#### Refactor target shape
-
-After the refactor, `ThumbnailGenerator` should primarily do three things:
+Today `ThumbnailGenerator` primarily does three things:
 
 - receive external commands through `IThumbnailGenerator`
 - coordinate the internal thumbnail components
 - own high-level startup and shutdown lifecycle
 
-The detailed logic should move into focused components under `Infrastructure/Thumbnails`.
+The detailed logic lives in focused components under `Infrastructure/Thumbnails`.
 
 Suggested internal split:
 
@@ -553,22 +520,14 @@ Suggested internal split:
 
 These names are descriptive rather than mandatory. The important part is the responsibility boundary.
 
-#### Recommended directory layout
+#### Current directory layout
 
-The current `Infrastructure/Thumbnails` module is still flat.
-
-That was fine when the module only contained a few files, but the refactor described above will add enough internal structure that a single directory will become noisy.
-
-The recommended change is modest:
-
-- keep `Thumbnails` as one infrastructure module
-- do not reorganize the whole repository around this work
-- add a small set of subdirectories inside `Infrastructure/Thumbnails` so the thumbnail pipeline can be read by responsibility
-
-Suggested layout:
+Current layout:
 
 ```text
 Infrastructure/Thumbnails/
+  ThumbnailGenerator.cs
+
   Abstractions/
     IThumbnailGenerator.cs
     IVideoScanner.cs
@@ -586,7 +545,7 @@ Infrastructure/Thumbnails/
     ThumbnailWorkIntent.cs
 
   Scheduling/
-    ThumbnailGenerator.cs
+    ThumbnailGeneratorComponents.cs
     ThumbnailPlaybackWindowCoordinator.cs
     ThumbnailPlaybackWindowUpdate.cs
     ThumbnailQueueScheduler.cs
@@ -623,9 +582,7 @@ This layout is intentionally conservative:
 - `Abstractions` contains public interfaces consumed outside the thumbnail module
 - `Scanning` keeps video discovery separate from scheduling concerns
 
-The exact file split can evolve. The important part is to avoid a directory where public interfaces, state enums, cache persistence, worker management, and render execution all sit side by side without a visible boundary.
-
-This should stay a thumbnail-local cleanup, not a repository-wide taxonomy exercise.
+The important part is to avoid a directory where public interfaces, state enums, cache persistence, worker management, and render execution all sit side by side without a visible boundary.
 
 #### Boundary rules
 
@@ -639,64 +596,7 @@ To keep the split meaningful, each component should follow a narrow role:
 
 If a method needs to both mutate task intent and perform filesystem cleanup, that is a signal that the boundary is still too blurred.
 
-#### Recommended extraction order
-
-The refactor should be incremental. Do not try to split everything in one pass.
-
-Recommended order:
-
-1. extract `ThumbnailIndexRepository`
-2. extract `ThumbnailTaskStore`
-3. extract shared scheduling rules such as intent ranking and worker preemption
-4. extract playback-window intent coordination
-5. extract `ThumbnailWorkerPool`
-6. extract `ThumbnailGenerationRunner`
-7. extract `ThumbnailStatusTracker`
-
-This order is intentional:
-
-- index and cleanup logic are relatively isolated and low-risk
-- task-store extraction reduces the largest concentration of mutable state first
-- intent and scheduler extraction then makes the new interaction model visible in code structure
-- worker-pool extraction comes later because it is tightly coupled to cancellation and lifecycle behavior
-
-#### First-step implementation scope
-
-The safest first implementation step is to extract persistence and cache-cleanup behavior without changing scheduling semantics.
-
-That first step should move out:
-
-- loading the thumbnail index at startup
-- saving the index after task mutations
-- deleting expired thumbnail directories
-- deleting temp and backup thumbnail directories
-- deleting per-video thumbnail directories during reset or removal
-
-Expected result of the first step:
-
-- no behavior change in library or player flows
-- a smaller `ThumbnailGenerator`
-- clearer separation between in-memory scheduling logic and filesystem maintenance
-
-#### Second-step implementation scope
-
-After persistence is separated, extract task and collection state management.
-
-That step should move out:
-
-- task registration by video path
-- collection registration and membership replacement
-- reverse lookups from video to collection ids
-- task state transitions such as `Pending`, `Generating`, `Ready`, and `Failed`
-- deletion marking metadata and task counters
-
-Expected result of the second step:
-
-- `ThumbnailGenerator` stops directly managing multiple mutable dictionaries
-- intent and scheduling code can operate on a smaller state surface
-- unit tests can target task-store behavior without running the queue loop
-
-#### Success criteria for the refactor
+#### Refactor result
 
 The refactor is successful when:
 
@@ -806,7 +706,7 @@ The first version can answer these conservatively and still gain most of the use
 
 ## Recommended "Do Not Do Yet" List
 
-To keep the first implementation disciplined, the following should be explicitly deferred:
+To keep the design disciplined, the following should be explicitly deferred:
 
 - persist foreground intent across app restarts
 - speculative generation based on hover
