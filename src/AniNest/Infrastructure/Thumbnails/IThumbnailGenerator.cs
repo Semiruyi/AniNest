@@ -15,6 +15,7 @@ public interface IThumbnailGenerator
 
     ThumbnailState GetState(string videoPath);
     string? GetThumbnailPath(string videoPath, long positionMs);
+    byte[]? GetThumbnailBytes(string videoPath, long positionMs);
 
     void EnqueueFolder(string folderPath, IReadOnlyCollection<string> videoFiles, int cardOrder,
         string? lastPlayedPath, HashSet<string> playedPaths);

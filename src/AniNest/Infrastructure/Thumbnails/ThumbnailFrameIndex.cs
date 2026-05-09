@@ -42,6 +42,16 @@ internal static class ThumbnailFrameIndex
 
     public static string? ResolveThumbnailPath(string thumbnailDirectory, long requestedPositionMs)
     {
+        int? frameIndex = ResolveFrameIndex(thumbnailDirectory, requestedPositionMs);
+        if (frameIndex == null)
+            return null;
+
+        string resolvedPath = Path.Combine(thumbnailDirectory, $"{frameIndex.Value + 1:D4}.jpg");
+        return File.Exists(resolvedPath) ? resolvedPath : null;
+    }
+
+    public static int? ResolveFrameIndex(string thumbnailDirectory, long requestedPositionMs)
+    {
         long[]? framePositionsMs = Load(thumbnailDirectory);
         if (framePositionsMs == null || framePositionsMs.Length == 0)
         {
@@ -55,12 +65,10 @@ internal static class ThumbnailFrameIndex
                 Log.Debug(
                     $"Thumbnail frame legacy fallback miss: dir={Path.GetFileName(thumbnailDirectory)}, requestedMs={requestedPositionMs}, requestedSecond={requestedSecond}, file={Path.GetFileName(legacyPath)}");
             }
-            return exists ? legacyPath : null;
+            return exists ? requestedSecond : null;
         }
 
-        int frameIndex = FindNearestFrameIndex(framePositionsMs, requestedPositionMs);
-        string resolvedPath = Path.Combine(thumbnailDirectory, $"{frameIndex + 1:D4}.jpg");
-        return File.Exists(resolvedPath) ? resolvedPath : null;
+        return FindNearestFrameIndex(framePositionsMs, requestedPositionMs);
     }
 
     public static string? ResolveThumbnailPath(string thumbnailDirectory, int requestedSecond)

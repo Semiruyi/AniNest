@@ -50,4 +50,7 @@ public sealed class PlayerPlaybackFacade : IPlayerPlaybackFacade
 
     public string? GetThumbnailPath(string videoPath, long positionMs)
         => _thumbnailGenerator.GetThumbnailPath(videoPath, positionMs);
+
+    public byte[]? GetThumbnailBytes(string videoPath, long positionMs)
+        => _thumbnailGenerator.GetThumbnailBytes(videoPath, positionMs);
 }

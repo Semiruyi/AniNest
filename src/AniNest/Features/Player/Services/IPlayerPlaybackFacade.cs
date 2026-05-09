@@ -17,4 +17,5 @@ public interface IPlayerPlaybackFacade
     string FormatTime(long ms);
     ThumbnailState GetThumbnailState(string videoPath);
     string? GetThumbnailPath(string videoPath, long positionMs);
+    byte[]? GetThumbnailBytes(string videoPath, long positionMs);
 }

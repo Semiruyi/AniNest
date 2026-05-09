@@ -55,7 +55,7 @@ public class ThumbnailIndexTests : IDisposable
         loaded.Should().ContainSingle();
         loaded[0].VideoPath.Should().Be("/videos/test.mp4");
         loaded[0].Md5Dir.Should().Be("abc123");
-        loaded[0].TotalFrames.Should().Be(1); // 1 jpg file on disk
+        loaded[0].TotalFrames.Should().Be(60);
     }
 
     [Fact]
@@ -115,6 +115,55 @@ public class ThumbnailIndexTests : IDisposable
 
         var loaded = ThumbnailIndex.Load(indexPath, _thumbBaseDir, new HashSet<string>());
         loaded.Should().ContainSingle().Which.State.Should().Be(ThumbnailState.Ready);
+    }
+
+    [Fact]
+    public void Load_ReadyWithZeroIndexedFrames_FallsBackToJpgCount()
+    {
+        var indexPath = Path.Combine(_tempDir, "index.json");
+        var tasks = new List<ThumbnailTask>
+        {
+            new()
+            {
+                VideoPath = "/videos/fallback.mp4",
+                Md5Dir = "fallback123",
+                State = ThumbnailState.Ready,
+                TotalFrames = 0
+            }
+        };
+        ThumbnailIndex.Save(indexPath, tasks);
+
+        var taskDir = Path.Combine(_thumbBaseDir, "fallback123");
+        Directory.CreateDirectory(taskDir);
+        File.WriteAllText(Path.Combine(taskDir, "0001.jpg"), "");
+
+        var loaded = ThumbnailIndex.Load(indexPath, _thumbBaseDir, new HashSet<string>());
+        loaded.Should().ContainSingle().Which.TotalFrames.Should().Be(1);
+    }
+
+    [Fact]
+    public void Load_BundleExists_PromotesToReady()
+    {
+        var indexPath = Path.Combine(_tempDir, "index.json");
+        var tasks = new List<ThumbnailTask>
+        {
+            new()
+            {
+                VideoPath = "/videos/hasbundle.mp4",
+                Md5Dir = "bundle123",
+                State = ThumbnailState.Generating,
+                TotalFrames = 10
+            }
+        };
+        ThumbnailIndex.Save(indexPath, tasks);
+
+        var taskDir = Path.Combine(_thumbBaseDir, "bundle123");
+        Directory.CreateDirectory(taskDir);
+        File.WriteAllBytes(ThumbnailBundle.GetBundlePath(taskDir), [1, 2, 3]);
+
+        var loaded = ThumbnailIndex.Load(indexPath, _thumbBaseDir, new HashSet<string>());
+        loaded.Should().ContainSingle().Which.State.Should().Be(ThumbnailState.Ready);
+        loaded.Should().ContainSingle().Which.TotalFrames.Should().Be(10);
     }
 
     [Fact]

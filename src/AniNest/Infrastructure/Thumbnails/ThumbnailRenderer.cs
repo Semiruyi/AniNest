@@ -171,8 +171,11 @@ internal class ThumbnailRenderer
                     else
                     {
                         frameCount = Directory.GetFiles(tmpDir, "*.jpg").Length;
-                        Directory.Move(tmpDir, finalDir);
-                        SaveSampledFrameIndex(finalDir, totalSec, frameCount);
+                        Directory.CreateDirectory(finalDir);
+                        SaveSampledFrameIndex(tmpDir, totalSec, frameCount);
+                        File.Move(ThumbnailFrameIndex.GetIndexPath(tmpDir), ThumbnailFrameIndex.GetIndexPath(finalDir), overwrite: true);
+                        ThumbnailBundle.Write(tmpDir, finalDir);
+                        Directory.Delete(tmpDir, recursive: true);
                     }
                 }
 
@@ -328,13 +331,13 @@ internal class ThumbnailRenderer
         return framePositionsMs;
     }
 
-    private static void SaveSampledFrameIndex(string finalDir, double durationSeconds, int frameCount)
+    private static void SaveSampledFrameIndex(string thumbnailDirectory, double durationSeconds, int frameCount)
     {
         IReadOnlyList<long> framePositionsMs = BuildSampledFramePositionsMs(durationSeconds, frameCount);
         if (framePositionsMs.Count == 0)
             return;
 
-        ThumbnailFrameIndex.Save(finalDir, framePositionsMs);
+        ThumbnailFrameIndex.Save(thumbnailDirectory, framePositionsMs);
     }
 
     private static int NormalizeKeyframeOutput(string tmpDir, string finalDir, IReadOnlyList<int> generatedFrameSeconds)

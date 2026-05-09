@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -172,8 +173,8 @@ public partial class ThumbnailPreviewController : ObservableObject
     private BitmapSource? DecodeJpeg(string videoPath, long positionMs, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var path = _playbackFacade.GetThumbnailPath(videoPath, positionMs);
-        if (path == null)
+        byte[]? bytes = _playbackFacade.GetThumbnailBytes(videoPath, positionMs);
+        if (bytes == null || bytes.Length == 0)
         {
             Log.Debug(
                 $"Thumbnail preview miss: file={System.IO.Path.GetFileName(videoPath)}, requestedMs={positionMs}, timeText={FormatTime(positionMs)}");
@@ -181,7 +182,8 @@ public partial class ThumbnailPreviewController : ObservableObject
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        var decoder = new JpegBitmapDecoder(new Uri(path), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+        using var stream = new MemoryStream(bytes, writable: false);
+        var decoder = new JpegBitmapDecoder(stream, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
         var frame = decoder.Frames[0];
         frame.Freeze();
         return frame;
