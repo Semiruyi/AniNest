@@ -60,13 +60,11 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     // Paths
     private readonly string _thumbBaseDir;
-    private readonly string _indexPath;
     private readonly string _ffmpegPath;
 
     // Queue & state
     private readonly List<ThumbnailTask> _tasks = new();
     private readonly object _taskLock = new();
-    private readonly object _indexIoLock = new();
     private readonly Dictionary<string, ThumbnailTask> _videoToTask = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, HashSet<string>> _collectionToVideos = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, HashSet<string>> _videoToCollections = new(StringComparer.OrdinalIgnoreCase);
@@ -75,6 +73,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private CancellationTokenSource? _loopCts;
     private Task? _loopTask;
     private TaskCompletionSource _initTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly ThumbnailIndexRepository _indexRepository;
     private readonly ThumbnailRenderer _renderer;
     private bool _isShuttingDown;
     private bool _isPlayerActive;
@@ -123,8 +122,8 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         _performanceMode = _settings.GetThumbnailPerformanceMode();
         _isGenerationPaused = _settings.IsThumbnailGenerationPaused();
         _thumbBaseDir = AppPaths.ThumbnailDirectory;
-        _indexPath = Path.Combine(_thumbBaseDir, "index.json");
         _ffmpegPath = AppPaths.FfmpegPath;
+        _indexRepository = new ThumbnailIndexRepository(_thumbBaseDir);
         _renderer = new ThumbnailRenderer(_ffmpegPath, _thumbBaseDir, GetVideoDuration);
 
         Directory.CreateDirectory(_thumbBaseDir);
@@ -167,7 +166,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             Log.Info("[Init] ffmpeg not available, thumbnail generation disabled");
         }
 
-        CleanupTempDirs();
+        _indexRepository.CleanupTempArtifacts();
 
         LoadIndex();
 
@@ -406,7 +405,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
 
         foreach (string thumbnailDir in thumbnailDirsToDelete.Distinct(StringComparer.OrdinalIgnoreCase))
-            DeleteThumbnailDirectory(thumbnailDir);
+            _indexRepository.DeleteThumbnailDirectory(thumbnailDir);
 
         if (!changed)
             return;
@@ -1093,50 +1092,10 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             waitSw.Stop();
         }
 
-        CleanupTempDirs();
+        _indexRepository.CleanupTempArtifacts();
 
         SaveIndex();
         sw.Stop();
-    }
-
-    private void CleanupTempDirs()
-    {
-        try
-        {
-            var tmpDirs = Directory.GetDirectories(_thumbBaseDir, ".tmp_*");
-            if (tmpDirs.Length > 0)
-            {
-                foreach (var dir in tmpDirs)
-                {
-                    try { Directory.Delete(dir, true); }
-                    catch { }
-                }
-            }
-
-            var backupDirs = Directory.GetDirectories(_thumbBaseDir, "*.bak");
-            if (backupDirs.Length > 0)
-            {
-                foreach (var dir in backupDirs)
-                {
-                    try { Directory.Delete(dir, true); }
-                    catch { }
-                }
-            }
-
-            var backupFiles = Directory.GetFiles(_thumbBaseDir, "*.bak", SearchOption.AllDirectories);
-            if (backupFiles.Length > 0)
-            {
-                foreach (var file in backupFiles)
-                {
-                    try { File.Delete(file); }
-                    catch { }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Error("Cleanup temp directories failed", ex);
-        }
     }
 
 
@@ -1179,16 +1138,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
         foreach (var t in expired)
         {
-            string dir = Path.Combine(_thumbBaseDir, t.Md5Dir);
-            try
-            {
-                if (Directory.Exists(dir))
-                    Directory.Delete(dir, recursive: true);
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Delete expired thumbnail directory failed", ex);
-            }
+            _indexRepository.DeleteTaskDirectory(t.Md5Dir);
 
             lock (_taskLock)
             {
@@ -1217,7 +1167,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
                     existingPaths.Add(key);
             }
 
-            var loaded = ThumbnailIndex.Load(_indexPath, _thumbBaseDir, existingPaths);
+            var loaded = _indexRepository.Load(existingPaths);
 
             lock (_taskLock)
             {
@@ -1247,10 +1197,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         {
             ThumbnailTask[] snapshot;
             lock (_taskLock) { snapshot = _tasks.ToArray(); }
-            lock (_indexIoLock)
-            {
-                ThumbnailIndex.Save(_indexPath, snapshot);
-            }
+            _indexRepository.Save(snapshot);
         }
         catch (Exception ex)
         {
@@ -1680,18 +1627,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
     }
 
-    private static void DeleteThumbnailDirectory(string thumbnailDir)
-    {
-        try
-        {
-            if (Directory.Exists(thumbnailDir))
-                Directory.Delete(thumbnailDir, recursive: true);
-        }
-        catch (Exception ex)
-        {
-            Log.Error($"Delete thumbnail directory failed: {thumbnailDir}", ex);
-        }
-    }
 }
 
 

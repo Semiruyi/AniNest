@@ -491,6 +491,198 @@ Still pending:
 - player-side single-video manual thumbnail actions
 - a structural refactor of `ThumbnailGenerator`
 
+### Structural refactor plan for `ThumbnailGenerator`
+
+The current implementation has already moved toward intent-aware scheduling, but the class is still carrying too many responsibilities at once.
+
+Today it mixes:
+
+- task registry and collection membership storage
+- intent application and playback-window promotion rules
+- worker lifecycle and cancellation/preemption
+- queue loop and next-task selection
+- thumbnail index persistence and cache-directory cleanup
+- status aggregation and UI-facing progress reporting
+
+That shape was acceptable while the feature was still settling, but it will become harder to reason about as the app adds richer library categories, more manual thumbnail actions, and more player-driven scheduling behavior.
+
+The goal of the refactor is not to replace `ThumbnailGenerator` as the public coordinator.
+
+The goal is to keep it as the central entry point while moving its internal responsibilities into smaller, testable collaborators.
+
+#### Refactor target shape
+
+After the refactor, `ThumbnailGenerator` should primarily do three things:
+
+- receive external commands through `IThumbnailGenerator`
+- coordinate the internal thumbnail components
+- own high-level startup and shutdown lifecycle
+
+The detailed logic should move into focused components under `Infrastructure/Thumbnails`.
+
+Suggested internal split:
+
+- `ThumbnailTaskStore`
+  - owns registered tasks, lookup dictionaries, collection membership, and task state transitions
+- `ThumbnailIntentManager`
+  - owns focus, boost, playback-window, and intent-demotion rules
+- `ThumbnailScheduler`
+  - owns next-task selection, intent ranking, foreground/background counting, and worker preemption decisions
+- `ThumbnailWorkerPool`
+  - owns active worker tracking, start/cancel/requeue behavior, and worker completion draining
+- `ThumbnailIndexRepository`
+  - owns loading and saving the task index plus cache-directory cleanup and expiry deletion
+- `ThumbnailGenerationRunner`
+  - owns one-task execution, decode-strategy fallback, and render invocation
+- `ThumbnailStatusTracker`
+  - owns aggregated ready/total counts, current foreground target, and status snapshot composition
+
+These names are descriptive rather than mandatory. The important part is the responsibility boundary.
+
+#### Recommended directory layout
+
+The current `Infrastructure/Thumbnails` module is still flat.
+
+That was fine when the module only contained a few files, but the refactor described above will add enough internal structure that a single directory will become noisy.
+
+The recommended change is modest:
+
+- keep `Thumbnails` as one infrastructure module
+- do not reorganize the whole repository around this work
+- add a small set of subdirectories inside `Infrastructure/Thumbnails` so the thumbnail pipeline can be read by responsibility
+
+Suggested layout:
+
+```text
+Infrastructure/Thumbnails/
+  Abstractions/
+    IThumbnailGenerator.cs
+    IVideoScanner.cs
+
+  Models/
+    LibraryCollectionRef.cs
+    ThumbnailAccelerationMode.cs
+    ThumbnailGenerationStatusSnapshot.cs
+    ThumbnailGeneratorWorker.cs
+    ThumbnailPerformanceMode.cs
+    ThumbnailState.cs
+    ThumbnailWorkIntent.cs
+
+  Scheduling/
+    ThumbnailGenerator.cs
+    ThumbnailIntentManager.cs
+    ThumbnailScheduler.cs
+    ThumbnailStatusTracker.cs
+    ThumbnailTaskStore.cs
+    ThumbnailWorkerPool.cs
+
+  Execution/
+    ThumbnailDecodeStrategy.cs
+    ThumbnailGenerationRunner.cs
+    ThumbnailRenderer.cs
+
+  Storage/
+    ThumbnailBundle.cs
+    ThumbnailFrameIndex.cs
+    ThumbnailIndex.cs
+    ThumbnailIndexRepository.cs
+
+  Scanning/
+    VideoScanner.cs
+```
+
+This layout is intentionally conservative:
+
+- `Scheduling` contains the coordinator and its internal collaborators
+- `Execution` contains render-time and decode-strategy logic
+- `Storage` contains bundle/index/cache persistence logic
+- `Models` contains shared enums, records, and small state holders
+- `Abstractions` contains public interfaces consumed outside the thumbnail module
+- `Scanning` keeps video discovery separate from scheduling concerns
+
+The exact file split can evolve. The important part is to avoid a directory where public interfaces, state enums, cache persistence, worker management, and render execution all sit side by side without a visible boundary.
+
+This should stay a thumbnail-local cleanup, not a repository-wide taxonomy exercise.
+
+#### Boundary rules
+
+To keep the split meaningful, each component should follow a narrow role:
+
+- scheduling code should not delete directories or save the index
+- worker-pool code should not know library collection semantics
+- persistence code should not decide intent priority
+- intent code should not directly own background loop timing
+- UI-facing status reporting should read scheduler state, not compute queue policy inline across the whole coordinator
+
+If a method needs to both mutate task intent and perform filesystem cleanup, that is a signal that the boundary is still too blurred.
+
+#### Recommended extraction order
+
+The refactor should be incremental. Do not try to split everything in one pass.
+
+Recommended order:
+
+1. extract `ThumbnailIndexRepository`
+2. extract `ThumbnailTaskStore`
+3. extract `ThumbnailIntentManager`
+4. extract `ThumbnailScheduler`
+5. extract `ThumbnailWorkerPool`
+6. extract `ThumbnailGenerationRunner`
+7. optionally extract `ThumbnailStatusTracker` if status composition still feels noisy after the earlier steps
+
+This order is intentional:
+
+- index and cleanup logic are relatively isolated and low-risk
+- task-store extraction reduces the largest concentration of mutable state first
+- intent and scheduler extraction then makes the new interaction model visible in code structure
+- worker-pool extraction comes later because it is tightly coupled to cancellation and lifecycle behavior
+
+#### First-step implementation scope
+
+The safest first implementation step is to extract persistence and cache-cleanup behavior without changing scheduling semantics.
+
+That first step should move out:
+
+- loading the thumbnail index at startup
+- saving the index after task mutations
+- deleting expired thumbnail directories
+- deleting temp and backup thumbnail directories
+- deleting per-video thumbnail directories during reset or removal
+
+Expected result of the first step:
+
+- no behavior change in library or player flows
+- a smaller `ThumbnailGenerator`
+- clearer separation between in-memory scheduling logic and filesystem maintenance
+
+#### Second-step implementation scope
+
+After persistence is separated, extract task and collection state management.
+
+That step should move out:
+
+- task registration by video path
+- collection registration and membership replacement
+- reverse lookups from video to collection ids
+- task state transitions such as `Pending`, `Generating`, `Ready`, and `Failed`
+- deletion marking metadata and task counters
+
+Expected result of the second step:
+
+- `ThumbnailGenerator` stops directly managing multiple mutable dictionaries
+- intent and scheduling code can operate on a smaller state surface
+- unit tests can target task-store behavior without running the queue loop
+
+#### Success criteria for the refactor
+
+The refactor is successful when:
+
+- `ThumbnailGenerator` reads like an orchestrator instead of a god object
+- intent-driven scheduling is visible in the class structure, not only in enum values
+- player-triggered boosts and worker preemption remain easy to trace
+- storage and cleanup changes can be made without reopening scheduling code
+- future collection types can be added without increasing coordinator complexity again
+
 ### Phase A: Scheduler foundation
 
 Goal:
