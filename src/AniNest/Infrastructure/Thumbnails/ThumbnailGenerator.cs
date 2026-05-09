@@ -805,6 +805,26 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
                     catch { }
                 }
             }
+
+            var backupDirs = Directory.GetDirectories(_thumbBaseDir, "*.bak");
+            if (backupDirs.Length > 0)
+            {
+                foreach (var dir in backupDirs)
+                {
+                    try { Directory.Delete(dir, true); }
+                    catch { }
+                }
+            }
+
+            var backupFiles = Directory.GetFiles(_thumbBaseDir, "*.bak", SearchOption.AllDirectories);
+            if (backupFiles.Length > 0)
+            {
+                foreach (var file in backupFiles)
+                {
+                    try { File.Delete(file); }
+                    catch { }
+                }
+            }
         }
         catch (Exception ex)
         {

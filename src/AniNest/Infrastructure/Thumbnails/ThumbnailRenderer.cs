@@ -32,6 +32,7 @@ internal readonly struct RenderResult
 internal class ThumbnailRenderer
 {
     private static readonly Logger Log = AppLog.For<ThumbnailRenderer>();
+    internal static Action<string, string>? TestDirectoryMoveOverride;
     private const double MinSamplingIntervalSeconds = 0.5;
     private const double MaxSamplingIntervalSeconds = 5.0;
     private const double SamplingIntervalDivisor = 1200.0;
@@ -179,13 +180,7 @@ internal class ThumbnailRenderer
 
                 bundleWriter.Commit();
 
-                if (Directory.Exists(finalDir))
-                    Directory.Delete(finalDir, recursive: true);
-
-                if (Directory.Exists(tmpDir))
-                {
-                    Directory.Move(tmpDir, finalDir);
-                }
+                PromoteRenderedDirectory(tmpDir, finalDir);
 
                 Log.Info(
                     $"Completed: {Path.GetFileName(task.VideoPath)}, {frameCount} frames");
@@ -500,6 +495,48 @@ internal class ThumbnailRenderer
         }, cancellationToken);
 
         return frameIndex;
+    }
+
+    internal static void PromoteRenderedDirectory(string stagedDirectory, string finalDirectory)
+    {
+        if (!Directory.Exists(stagedDirectory))
+            return;
+
+        if (!Directory.Exists(finalDirectory))
+        {
+            MoveDirectory(stagedDirectory, finalDirectory);
+            return;
+        }
+
+        string backupDirectory = finalDirectory + ".bak";
+        if (Directory.Exists(backupDirectory))
+            Directory.Delete(backupDirectory, recursive: true);
+
+        MoveDirectory(finalDirectory, backupDirectory);
+
+        try
+        {
+            MoveDirectory(stagedDirectory, finalDirectory);
+            Directory.Delete(backupDirectory, recursive: true);
+        }
+        catch
+        {
+            if (!Directory.Exists(finalDirectory) && Directory.Exists(backupDirectory))
+                MoveDirectory(backupDirectory, finalDirectory);
+
+            throw;
+        }
+    }
+
+    private static void MoveDirectory(string sourceDirectory, string destinationDirectory)
+    {
+        if (TestDirectoryMoveOverride != null)
+        {
+            TestDirectoryMoveOverride(sourceDirectory, destinationDirectory);
+            return;
+        }
+
+        Directory.Move(sourceDirectory, destinationDirectory);
     }
 }
 

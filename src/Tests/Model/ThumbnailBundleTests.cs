@@ -85,4 +85,51 @@ public class ThumbnailBundleTests : IDisposable
 
         ThumbnailBundle.ReadFramePositions(_targetDir).Should().Equal([0L, 2500L]);
     }
+
+    [Fact]
+    public void PromoteBundleFile_ReplacesExistingFile()
+    {
+        string stagedPath = Path.Combine(_targetDir, "bundle.bin.tmp");
+        string finalPath = ThumbnailBundle.GetBundlePath(_targetDir);
+        File.WriteAllBytes(stagedPath, [9, 8, 7]);
+        File.WriteAllBytes(finalPath, [1, 2, 3]);
+
+        ThumbnailBundle.PromoteBundleFile(stagedPath, finalPath);
+
+        File.Exists(stagedPath).Should().BeFalse();
+        File.ReadAllBytes(finalPath).Should().Equal([9, 8, 7]);
+        File.Exists(finalPath + ".bak").Should().BeFalse();
+    }
+
+    [Fact]
+    public void PromoteBundleFile_WhenMoveFails_RestoresOriginalFile()
+    {
+        string stagedPath = Path.Combine(_targetDir, "bundle.bin.tmp");
+        string finalPath = ThumbnailBundle.GetBundlePath(_targetDir);
+        File.WriteAllBytes(stagedPath, [9, 8, 7]);
+        File.WriteAllBytes(finalPath, [1, 2, 3]);
+
+        int moveCount = 0;
+        try
+        {
+            ThumbnailBundle.TestFileMoveOverride = (source, destination) =>
+            {
+                moveCount++;
+                if (moveCount == 2)
+                    throw new IOException("Injected move failure");
+
+                File.Move(source, destination);
+            };
+
+            Action act = () => ThumbnailBundle.PromoteBundleFile(stagedPath, finalPath);
+
+            act.Should().Throw<IOException>();
+            File.ReadAllBytes(finalPath).Should().Equal([1, 2, 3]);
+            File.Exists(stagedPath).Should().BeTrue();
+        }
+        finally
+        {
+            ThumbnailBundle.TestFileMoveOverride = null;
+        }
+    }
 }

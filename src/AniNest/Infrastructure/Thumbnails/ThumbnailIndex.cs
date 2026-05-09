@@ -22,6 +22,7 @@ internal class ThumbnailEntryDto
 internal static class ThumbnailIndex
 {
     private static readonly Logger Log = AppLog.For(nameof(ThumbnailIndex));
+    internal static Action<string, string>? TestFileMoveOverride;
 
     public static void Save(string indexPath, IReadOnlyCollection<ThumbnailTask> tasks)
     {
@@ -43,14 +44,7 @@ internal static class ThumbnailIndex
 
         string tempPath = indexPath + ".tmp";
         File.WriteAllText(tempPath, json);
-
-        if (File.Exists(indexPath))
-            File.Copy(tempPath, indexPath, overwrite: true);
-        else
-            File.Move(tempPath, indexPath);
-
-        if (File.Exists(tempPath))
-            File.Delete(tempPath);
+        PromoteIndexFile(tempPath, indexPath);
     }
 
     public static List<ThumbnailTask> Load(string indexPath, string thumbBaseDir,
@@ -117,6 +111,48 @@ internal static class ThumbnailIndex
             });
         }
         return tasks;
+    }
+
+    internal static void PromoteIndexFile(string stagedPath, string finalPath)
+    {
+        if (!File.Exists(stagedPath))
+            return;
+
+        if (!File.Exists(finalPath))
+        {
+            MoveFile(stagedPath, finalPath);
+            return;
+        }
+
+        string backupPath = finalPath + ".bak";
+        if (File.Exists(backupPath))
+            File.Delete(backupPath);
+
+        MoveFile(finalPath, backupPath);
+
+        try
+        {
+            MoveFile(stagedPath, finalPath);
+            File.Delete(backupPath);
+        }
+        catch
+        {
+            if (!File.Exists(finalPath) && File.Exists(backupPath))
+                MoveFile(backupPath, finalPath);
+
+            throw;
+        }
+    }
+
+    private static void MoveFile(string sourcePath, string destinationPath)
+    {
+        if (TestFileMoveOverride != null)
+        {
+            TestFileMoveOverride(sourcePath, destinationPath);
+            return;
+        }
+
+        File.Move(sourcePath, destinationPath);
     }
 }
 

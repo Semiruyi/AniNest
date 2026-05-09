@@ -79,6 +79,53 @@ public class ThumbnailIndexTests : IDisposable
     }
 
     [Fact]
+    public void PromoteIndexFile_ReplacesExistingFile()
+    {
+        var indexPath = Path.Combine(_tempDir, "index.json");
+        var stagedPath = indexPath + ".tmp";
+        File.WriteAllText(indexPath, "old");
+        File.WriteAllText(stagedPath, "new");
+
+        ThumbnailIndex.PromoteIndexFile(stagedPath, indexPath);
+
+        File.Exists(stagedPath).Should().BeFalse();
+        File.ReadAllText(indexPath).Should().Be("new");
+        File.Exists(indexPath + ".bak").Should().BeFalse();
+    }
+
+    [Fact]
+    public void PromoteIndexFile_WhenMoveFails_RestoresOriginalFile()
+    {
+        var indexPath = Path.Combine(_tempDir, "index.json");
+        var stagedPath = indexPath + ".tmp";
+        File.WriteAllText(indexPath, "old");
+        File.WriteAllText(stagedPath, "new");
+
+        int moveCount = 0;
+        try
+        {
+            ThumbnailIndex.TestFileMoveOverride = (source, destination) =>
+            {
+                moveCount++;
+                if (moveCount == 2)
+                    throw new IOException("Injected move failure");
+
+                File.Move(source, destination);
+            };
+
+            Action act = () => ThumbnailIndex.PromoteIndexFile(stagedPath, indexPath);
+
+            act.Should().Throw<IOException>();
+            File.ReadAllText(indexPath).Should().Be("old");
+            File.Exists(stagedPath).Should().BeTrue();
+        }
+        finally
+        {
+            ThumbnailIndex.TestFileMoveOverride = null;
+        }
+    }
+
+    [Fact]
     public void Load_ExcludesExistingPaths()
     {
         var indexPath = Path.Combine(_tempDir, "index.json");

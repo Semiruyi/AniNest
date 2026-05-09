@@ -9,6 +9,7 @@ namespace AniNest.Infrastructure.Thumbnails;
 internal static class ThumbnailBundle
 {
     internal readonly record struct FrameEntry(long PositionMs, long Offset, int Length);
+    internal static Action<string, string>? TestFileMoveOverride;
 
     private const string FileName = "bundle.bin";
     private const string Magic = "ANITHMB1";
@@ -203,10 +204,7 @@ internal static class ThumbnailBundle
                 bundleStream.Flush(flushToDisk: true);
             }
 
-            if (File.Exists(_bundlePath))
-                File.Delete(_bundlePath);
-
-            File.Move(_tempPath, _bundlePath);
+            PromoteBundleFile(_tempPath, _bundlePath);
             File.Delete(_payloadTempPath);
             _committed = true;
         }
@@ -233,5 +231,47 @@ internal static class ThumbnailBundle
 
             _disposed = true;
         }
+    }
+
+    internal static void PromoteBundleFile(string stagedPath, string finalPath)
+    {
+        if (!File.Exists(stagedPath))
+            return;
+
+        if (!File.Exists(finalPath))
+        {
+            MoveFile(stagedPath, finalPath);
+            return;
+        }
+
+        string backupPath = finalPath + ".bak";
+        if (File.Exists(backupPath))
+            File.Delete(backupPath);
+
+        MoveFile(finalPath, backupPath);
+
+        try
+        {
+            MoveFile(stagedPath, finalPath);
+            File.Delete(backupPath);
+        }
+        catch
+        {
+            if (!File.Exists(finalPath) && File.Exists(backupPath))
+                MoveFile(backupPath, finalPath);
+
+            throw;
+        }
+    }
+
+    private static void MoveFile(string sourcePath, string destinationPath)
+    {
+        if (TestFileMoveOverride != null)
+        {
+            TestFileMoveOverride(sourcePath, destinationPath);
+            return;
+        }
+
+        File.Move(sourcePath, destinationPath);
     }
 }

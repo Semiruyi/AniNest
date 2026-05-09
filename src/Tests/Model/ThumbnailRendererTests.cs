@@ -80,6 +80,68 @@ public class ThumbnailRendererTests
         frames[1].Should().Equal(frame2);
     }
 
+    [Fact]
+    public void PromoteRenderedDirectory_ReplacesExistingDirectory()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"ThumbnailRendererTests_{Guid.NewGuid():N}");
+        string stagedDir = Path.Combine(root, ".tmp_hash");
+        string finalDir = Path.Combine(root, "hash");
+
+        Directory.CreateDirectory(stagedDir);
+        Directory.CreateDirectory(finalDir);
+        File.WriteAllText(Path.Combine(finalDir, "old.txt"), "old");
+        File.WriteAllText(Path.Combine(stagedDir, "new.txt"), "new");
+
+        ThumbnailRenderer.PromoteRenderedDirectory(stagedDir, finalDir);
+
+        Directory.Exists(stagedDir).Should().BeFalse();
+        Directory.Exists(finalDir).Should().BeTrue();
+        File.Exists(Path.Combine(finalDir, "new.txt")).Should().BeTrue();
+        File.Exists(Path.Combine(finalDir, "old.txt")).Should().BeFalse();
+        Directory.Exists(finalDir + ".bak").Should().BeFalse();
+
+        try { Directory.Delete(root, true); } catch { }
+    }
+
+    [Fact]
+    public void PromoteRenderedDirectory_WhenMoveFails_RestoresBackup()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"ThumbnailRendererTests_{Guid.NewGuid():N}");
+        string stagedDir = Path.Combine(root, ".tmp_hash");
+        string finalDir = Path.Combine(root, "hash");
+
+        Directory.CreateDirectory(stagedDir);
+        Directory.CreateDirectory(finalDir);
+        File.WriteAllText(Path.Combine(finalDir, "old.txt"), "old");
+        File.WriteAllText(Path.Combine(stagedDir, "new.txt"), "new");
+
+        int moveCount = 0;
+        try
+        {
+            ThumbnailRenderer.TestDirectoryMoveOverride = (source, destination) =>
+            {
+                moveCount++;
+                if (moveCount == 2)
+                    throw new IOException("Injected move failure");
+
+                Directory.Move(source, destination);
+            };
+
+            Action act = () => ThumbnailRenderer.PromoteRenderedDirectory(stagedDir, finalDir);
+
+            act.Should().Throw<IOException>();
+            Directory.Exists(finalDir).Should().BeTrue();
+            File.Exists(Path.Combine(finalDir, "old.txt")).Should().BeTrue();
+            Directory.Exists(stagedDir).Should().BeTrue();
+        }
+        finally
+        {
+            ThumbnailRenderer.TestDirectoryMoveOverride = null;
+        }
+
+        try { Directory.Delete(root, true); } catch { }
+    }
+
     private sealed class ChunkedReadStream(byte[] data, int chunkSize) : Stream
     {
         private int _position;
