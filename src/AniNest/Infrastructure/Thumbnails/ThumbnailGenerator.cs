@@ -348,7 +348,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         return ThumbnailState.Pending;
     }
 
-    public string? GetThumbnailPath(string videoPath, int second)
+    public string? GetThumbnailPath(string videoPath, long positionMs)
     {
         if (!_ffmpegAvailable) return null;
 
@@ -361,7 +361,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         if (task == null || task.State != ThumbnailState.Ready) return null;
 
         string directory = Path.Combine(_thumbBaseDir, task.Md5Dir);
-        return ThumbnailFrameIndex.ResolveThumbnailPath(directory, second);
+        return ThumbnailFrameIndex.ResolveThumbnailPath(directory, positionMs);
     }
 
 

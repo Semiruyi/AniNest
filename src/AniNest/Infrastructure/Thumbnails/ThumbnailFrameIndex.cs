@@ -3,24 +3,26 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using AniNest.Infrastructure.Logging;
 
 namespace AniNest.Infrastructure.Thumbnails;
 
 internal static class ThumbnailFrameIndex
 {
     private const string FileName = "frames.json";
+    private static readonly Logger Log = AppLog.For(nameof(ThumbnailFrameIndex));
 
     public static string GetIndexPath(string thumbnailDirectory)
         => Path.Combine(thumbnailDirectory, FileName);
 
-    public static void Save(string thumbnailDirectory, IReadOnlyList<int> frameSeconds)
+    public static void Save(string thumbnailDirectory, IReadOnlyList<long> framePositionsMs)
     {
         string path = GetIndexPath(thumbnailDirectory);
-        string json = JsonSerializer.Serialize(frameSeconds);
+        string json = JsonSerializer.Serialize(framePositionsMs);
         File.WriteAllText(path, json);
     }
 
-    public static int[]? Load(string thumbnailDirectory)
+    public static long[]? Load(string thumbnailDirectory)
     {
         string path = GetIndexPath(thumbnailDirectory);
         if (!File.Exists(path))
@@ -28,7 +30,9 @@ internal static class ThumbnailFrameIndex
 
         try
         {
-            return JsonSerializer.Deserialize<int[]>(File.ReadAllText(path));
+            string json = File.ReadAllText(path);
+            return JsonSerializer.Deserialize<long[]>(json)
+                ?? JsonSerializer.Deserialize<int[]>(json)?.Select(static value => (long)value).ToArray();
         }
         catch
         {
@@ -36,48 +40,60 @@ internal static class ThumbnailFrameIndex
         }
     }
 
-    public static string? ResolveThumbnailPath(string thumbnailDirectory, int requestedSecond)
+    public static string? ResolveThumbnailPath(string thumbnailDirectory, long requestedPositionMs)
     {
-        int[]? frameSeconds = Load(thumbnailDirectory);
-        if (frameSeconds == null || frameSeconds.Length == 0)
+        long[]? framePositionsMs = Load(thumbnailDirectory);
+        if (framePositionsMs == null || framePositionsMs.Length == 0)
         {
+            int requestedSecond = requestedPositionMs <= 0
+                ? 0
+                : (int)(requestedPositionMs / 1000);
             string legacyPath = Path.Combine(thumbnailDirectory, $"{requestedSecond + 1:D4}.jpg");
-            return File.Exists(legacyPath) ? legacyPath : null;
+            bool exists = File.Exists(legacyPath);
+            if (!exists)
+            {
+                Log.Debug(
+                    $"Thumbnail frame legacy fallback miss: dir={Path.GetFileName(thumbnailDirectory)}, requestedMs={requestedPositionMs}, requestedSecond={requestedSecond}, file={Path.GetFileName(legacyPath)}");
+            }
+            return exists ? legacyPath : null;
         }
 
-        int frameIndex = FindNearestFrameIndex(frameSeconds, requestedSecond);
+        int frameIndex = FindNearestFrameIndex(framePositionsMs, requestedPositionMs);
         string resolvedPath = Path.Combine(thumbnailDirectory, $"{frameIndex + 1:D4}.jpg");
         return File.Exists(resolvedPath) ? resolvedPath : null;
     }
 
-    internal static int FindNearestFrameIndex(IReadOnlyList<int> frameSeconds, int requestedSecond)
-    {
-        if (frameSeconds.Count == 0)
-            throw new ArgumentException("Frame index cannot be empty.", nameof(frameSeconds));
+    public static string? ResolveThumbnailPath(string thumbnailDirectory, int requestedSecond)
+        => ResolveThumbnailPath(thumbnailDirectory, requestedSecond * 1000L);
 
-        int insertionIndex = FindFirstGreaterThanOrEqual(frameSeconds, requestedSecond);
+    internal static int FindNearestFrameIndex(IReadOnlyList<long> framePositionsMs, long requestedPositionMs)
+    {
+        if (framePositionsMs.Count == 0)
+            throw new ArgumentException("Frame index cannot be empty.", nameof(framePositionsMs));
+
+        int insertionIndex = FindFirstGreaterThanOrEqual(framePositionsMs, requestedPositionMs);
         if (insertionIndex <= 0)
             return 0;
 
-        if (insertionIndex >= frameSeconds.Count)
-            return frameSeconds.Count - 1;
+        if (insertionIndex >= framePositionsMs.Count)
+            return framePositionsMs.Count - 1;
 
         int previousIndex = insertionIndex - 1;
-        int previousDistance = Math.Abs(frameSeconds[previousIndex] - requestedSecond);
-        int nextDistance = Math.Abs(frameSeconds[insertionIndex] - requestedSecond);
+        long previousDistance = Math.Abs(framePositionsMs[previousIndex] - requestedPositionMs);
+        long nextDistance = Math.Abs(framePositionsMs[insertionIndex] - requestedPositionMs);
         return previousDistance <= nextDistance
             ? previousIndex
             : insertionIndex;
     }
 
-    private static int FindFirstGreaterThanOrEqual(IReadOnlyList<int> frameSeconds, int requestedSecond)
+    private static int FindFirstGreaterThanOrEqual(IReadOnlyList<long> framePositionsMs, long requestedPositionMs)
     {
         int low = 0;
-        int high = frameSeconds.Count;
+        int high = framePositionsMs.Count;
         while (low < high)
         {
             int mid = low + ((high - low) / 2);
-            if (frameSeconds[mid] < requestedSecond)
+            if (framePositionsMs[mid] < requestedPositionMs)
                 low = mid + 1;
             else
                 high = mid;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using AniNest.Infrastructure.Diagnostics;
@@ -30,6 +31,9 @@ internal readonly struct RenderResult
 internal class ThumbnailRenderer
 {
     private static readonly Logger Log = AppLog.For<ThumbnailRenderer>();
+    private const double MinSamplingIntervalSeconds = 0.5;
+    private const double MaxSamplingIntervalSeconds = 5.0;
+    private const double SamplingIntervalDivisor = 1200.0;
 
     private readonly string _ffmpegPath;
     private readonly string _thumbBaseDir;
@@ -75,7 +79,7 @@ internal class ThumbnailRenderer
               "-vf \"scale='min(300,iw)':'min(300,ih)':force_original_aspect_ratio=decrease,showinfo\" " +
               $"-vsync vfr -q:v 5 \"{tmpDir}\\%04d.jpg\""
             : $"{BuildInputArguments(strategy)}-y -i \"{task.VideoPath}\" " +
-              "-vf \"fps=1,scale='min(300,iw)':'min(300,ih)':force_original_aspect_ratio=decrease\" " +
+              $"-vf \"fps={BuildSamplingFpsExpression(totalSec)},scale='min(300,iw)':'min(300,ih)':force_original_aspect_ratio=decrease\" " +
               $"-q:v 5 \"{tmpDir}\\%04d.jpg\"";
 
         var psi = new ProcessStartInfo
@@ -167,11 +171,10 @@ internal class ThumbnailRenderer
                     else
                     {
                         frameCount = Directory.GetFiles(tmpDir, "*.jpg").Length;
+                        Directory.Move(tmpDir, finalDir);
+                        SaveSampledFrameIndex(finalDir, totalSec, frameCount);
                     }
                 }
-
-                if (!useKeyframeOnlyExtraction)
-                    Directory.Move(tmpDir, finalDir);
 
                 Log.Info(
                     $"Completed: {Path.GetFileName(task.VideoPath)}, {frameCount} frames");
@@ -224,6 +227,22 @@ internal class ThumbnailRenderer
             Log.Error("Get video duration failed", ex);
             return 0;
         }
+    }
+
+    internal static double CalculateSamplingIntervalSeconds(double durationSeconds)
+    {
+        if (durationSeconds <= 0)
+            return 1.0;
+
+        double intervalSeconds = durationSeconds / SamplingIntervalDivisor;
+        return Math.Clamp(intervalSeconds, MinSamplingIntervalSeconds, MaxSamplingIntervalSeconds);
+    }
+
+    internal static string BuildSamplingFpsExpression(double durationSeconds)
+    {
+        double intervalSeconds = CalculateSamplingIntervalSeconds(durationSeconds);
+        double fps = 1.0 / intervalSeconds;
+        return fps.ToString("0.######", CultureInfo.InvariantCulture);
     }
 
     private static string BuildInputArguments(ThumbnailDecodeStrategy strategy)
@@ -289,6 +308,35 @@ internal class ThumbnailRenderer
         return ffprobePath;
     }
 
+    internal static IReadOnlyList<long> BuildSampledFramePositionsMs(double durationSeconds, int frameCount)
+    {
+        if (frameCount <= 0)
+            return Array.Empty<long>();
+
+        double intervalSeconds = CalculateSamplingIntervalSeconds(durationSeconds);
+        var framePositionsMs = new List<long>(frameCount);
+
+        for (int i = 0; i < frameCount; i++)
+        {
+            double positionSeconds = i * intervalSeconds;
+            long positionMs = positionSeconds <= 0
+                ? 0
+                : (long)Math.Round(positionSeconds * 1000.0, MidpointRounding.AwayFromZero);
+            framePositionsMs.Add(positionMs);
+        }
+
+        return framePositionsMs;
+    }
+
+    private static void SaveSampledFrameIndex(string finalDir, double durationSeconds, int frameCount)
+    {
+        IReadOnlyList<long> framePositionsMs = BuildSampledFramePositionsMs(durationSeconds, frameCount);
+        if (framePositionsMs.Count == 0)
+            return;
+
+        ThumbnailFrameIndex.Save(finalDir, framePositionsMs);
+    }
+
     private static int NormalizeKeyframeOutput(string tmpDir, string finalDir, IReadOnlyList<int> generatedFrameSeconds)
     {
         var frameFiles = Directory.GetFiles(tmpDir, "*.jpg")
@@ -298,7 +346,7 @@ internal class ThumbnailRenderer
         if (frameFiles.Length == 0)
             return 0;
 
-        var frameSeconds = new List<int>(frameFiles.Length);
+        var framePositionsMs = new List<long>(frameFiles.Length);
         Directory.CreateDirectory(finalDir);
 
         for (int i = 0; i < frameFiles.Length; i++)
@@ -307,13 +355,13 @@ internal class ThumbnailRenderer
             int second = i < generatedFrameSeconds.Count
                 ? Math.Max(0, generatedFrameSeconds[i])
                 : i;
-            frameSeconds.Add(second);
+            framePositionsMs.Add(second * 1000L);
 
             string destinationPath = Path.Combine(finalDir, $"{i + 1:D4}.jpg");
             File.Move(sourcePath, destinationPath, overwrite: true);
         }
 
-        ThumbnailFrameIndex.Save(finalDir, frameSeconds);
+        ThumbnailFrameIndex.Save(finalDir, framePositionsMs);
         Directory.Delete(tmpDir, recursive: true);
         return frameFiles.Length;
     }
@@ -331,7 +379,7 @@ internal class ThumbnailRenderer
             end++;
 
         string value = line[start..end];
-        if (!double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double parsed))
+        if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed))
             return false;
 
         second = parsed <= 0

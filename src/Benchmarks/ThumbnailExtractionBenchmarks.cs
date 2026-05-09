@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using BenchmarkDotNet.Attributes;
-
 namespace AniNest.Benchmarks;
 
 [MemoryDiagnoser]
@@ -44,9 +43,11 @@ public class ThumbnailExtractionBenchmarks
     public int FullDecode_Fps1()
     {
         string outputDir = PrepareOutputDirectory("full");
+        double durationSeconds = GetVideoDurationSeconds(_videoPath);
+        string fpsExpression = BuildSamplingFpsExpression(durationSeconds);
         string arguments =
             $"-hide_banner -loglevel error -y -i \"{_videoPath}\" " +
-            "-vf \"fps=1,scale='min(300,iw)':'min(300,ih)':force_original_aspect_ratio=decrease\" " +
+            $"-vf \"fps={fpsExpression},scale='min(300,iw)':'min(300,ih)':force_original_aspect_ratio=decrease\" " +
             $"-q:v 5 \"{Path.Combine(outputDir, "%04d.jpg")}\"";
 
         RunFfmpeg(arguments);
@@ -128,5 +129,53 @@ public class ThumbnailExtractionBenchmarks
         process.WaitForExit();
         if (process.ExitCode != 0)
             throw new InvalidOperationException($"ffmpeg exited with {process.ExitCode}: {stderr}");
+    }
+
+    private double GetVideoDurationSeconds(string videoPath)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = _ffmpegPath,
+            Arguments = $"-i \"{videoPath}\"",
+            CreateNoWindow = true,
+            UseShellExecute = false,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true
+        };
+
+        using var process = Process.Start(startInfo);
+        if (process == null)
+            throw new InvalidOperationException("Failed to start ffmpeg for duration probe.");
+
+        string stderr = process.StandardError.ReadToEnd();
+        process.WaitForExit();
+
+        const string marker = "Duration:";
+        int markerIndex = stderr.IndexOf(marker, StringComparison.Ordinal);
+        if (markerIndex < 0)
+            throw new InvalidOperationException("Could not parse video duration from ffmpeg output.");
+
+        int start = markerIndex + marker.Length;
+        while (start < stderr.Length && stderr[start] == ' ')
+            start++;
+
+        int end = stderr.IndexOf(',', start);
+        if (end <= start)
+            throw new InvalidOperationException("Could not parse duration token from ffmpeg output.");
+
+        string durationToken = stderr[start..end].Trim();
+        if (!TimeSpan.TryParse(durationToken, out TimeSpan duration))
+            throw new InvalidOperationException($"Invalid duration token: {durationToken}");
+
+        return duration.TotalSeconds;
+    }
+
+    private static string BuildSamplingFpsExpression(double durationSeconds)
+    {
+        double intervalSeconds = durationSeconds <= 0
+            ? 1.0
+            : Math.Clamp(durationSeconds / 1200.0, 0.5, 5.0);
+        double fps = 1.0 / intervalSeconds;
+        return fps.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture);
     }
 }

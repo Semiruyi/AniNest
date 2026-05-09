@@ -35,21 +35,34 @@ public class ThumbnailFrameIndexTests : IDisposable
     [Fact]
     public void ResolveThumbnailPath_UsesNearestFrameFromIndex()
     {
-        ThumbnailFrameIndex.Save(_tempDir, new[] { 0, 5, 12 });
+        ThumbnailFrameIndex.Save(_tempDir, [0L, 5000L, 12000L]);
         File.WriteAllText(Path.Combine(_tempDir, "0001.jpg"), string.Empty);
         File.WriteAllText(Path.Combine(_tempDir, "0002.jpg"), string.Empty);
         File.WriteAllText(Path.Combine(_tempDir, "0003.jpg"), string.Empty);
 
-        string? resolved = ThumbnailFrameIndex.ResolveThumbnailPath(_tempDir, 7);
+        string? resolved = ThumbnailFrameIndex.ResolveThumbnailPath(_tempDir, 2000L);
 
-        resolved.Should().Be(Path.Combine(_tempDir, "0002.jpg"));
+        resolved.Should().Be(Path.Combine(_tempDir, "0001.jpg"));
     }
 
     [Fact]
     public void FindNearestFrameIndex_PrefersPreviousFrameOnTie()
     {
-        int index = ThumbnailFrameIndex.FindNearestFrameIndex(new[] { 0, 10 }, 5);
+        int index = ThumbnailFrameIndex.FindNearestFrameIndex([0L, 10000L], 5000L);
 
         index.Should().Be(0);
+    }
+
+    [Fact]
+    public void ResolveThumbnailPath_UsesMillisecondPrecisionFromIndex()
+    {
+        ThumbnailFrameIndex.Save(_tempDir, [0L, 500L, 1000L]);
+        File.WriteAllText(Path.Combine(_tempDir, "0001.jpg"), string.Empty);
+        File.WriteAllText(Path.Combine(_tempDir, "0002.jpg"), string.Empty);
+        File.WriteAllText(Path.Combine(_tempDir, "0003.jpg"), string.Empty);
+
+        string? resolved = ThumbnailFrameIndex.ResolveThumbnailPath(_tempDir, 600L);
+
+        resolved.Should().Be(Path.Combine(_tempDir, "0002.jpg"));
     }
 }

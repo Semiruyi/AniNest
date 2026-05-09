@@ -48,6 +48,6 @@ public sealed class PlayerPlaybackFacade : IPlayerPlaybackFacade
     public ThumbnailState GetThumbnailState(string videoPath)
         => _thumbnailGenerator.GetState(videoPath);
 
-    public string? GetThumbnailPath(string videoPath, int second)
-        => _thumbnailGenerator.GetThumbnailPath(videoPath, second);
+    public string? GetThumbnailPath(string videoPath, long positionMs)
+        => _thumbnailGenerator.GetThumbnailPath(videoPath, positionMs);
 }

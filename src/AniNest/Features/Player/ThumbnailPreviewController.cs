@@ -26,9 +26,9 @@ public partial class ThumbnailPreviewController : ObservableObject
     private readonly Func<long> _getMediaLength;
     private readonly HoverPopupController _hoverPopupController;
 
-    private readonly Dictionary<int, BitmapSource> _thumbCache = new();
-    private int _lastRequestedSecond = -1;
-    private int _lastLoadedSecond = -1;
+    private readonly Dictionary<long, BitmapSource> _thumbCache = new();
+    private long _lastRequestedPositionMs = -1;
+    private long _lastLoadedPositionMs = -1;
     private CancellationTokenSource? _imageLoadCts;
     private int _imageLoadVersion;
 
@@ -72,8 +72,8 @@ public partial class ThumbnailPreviewController : ObservableObject
     {
         CancelImageLoad();
         _thumbCache.Clear();
-        _lastRequestedSecond = -1;
-        _lastLoadedSecond = -1;
+        _lastRequestedPositionMs = -1;
+        _lastLoadedPositionMs = -1;
         ImageSource = null;
     }
 
@@ -86,7 +86,7 @@ public partial class ThumbnailPreviewController : ObservableObject
 
         double ratio = Math.Max(0, Math.Min(1, pos.X / sliderWidth));
         long hoverTimeMs = (long)(ratio * length);
-        int hoverSecond = (int)(hoverTimeMs / 1000);
+        long hoverPositionMs = hoverTimeMs;
 
         TimeText = FormatTime(hoverTimeMs);
         string? currentVideoPath = _getCurrentVideoPath();
@@ -100,19 +100,19 @@ public partial class ThumbnailPreviewController : ObservableObject
         PopupVerticalOffset = thumbReady ? -120 : -28;
         HOffset = Math.Clamp(pos.X - (PopupWidth / 2), 0, Math.Max(0, sliderWidth - PopupWidth));
 
-        if (hoverSecond == _lastRequestedSecond) return;
-        _lastRequestedSecond = hoverSecond;
+        if (hoverPositionMs == _lastRequestedPositionMs) return;
+        _lastRequestedPositionMs = hoverPositionMs;
 
         if (thumbReady && currentVideoPath != null)
         {
-            if (_thumbCache.TryGetValue(hoverSecond, out var cached))
+            if (_thumbCache.TryGetValue(hoverPositionMs, out var cached))
             {
-                _lastLoadedSecond = hoverSecond;
+                _lastLoadedPositionMs = hoverPositionMs;
                 ImageSource = cached;
             }
             else
             {
-                _ = LoadJpegAsync(currentVideoPath, hoverSecond);
+                _ = LoadJpegAsync(currentVideoPath, hoverPositionMs);
             }
         }
     }
@@ -123,7 +123,7 @@ public partial class ThumbnailPreviewController : ObservableObject
         CancelImageLoad();
     }
 
-    private async Task LoadJpegAsync(string videoPath, int second)
+    private async Task LoadJpegAsync(string videoPath, long positionMs)
     {
         CancelImageLoad();
         _imageLoadCts = new CancellationTokenSource();
@@ -132,25 +132,25 @@ public partial class ThumbnailPreviewController : ObservableObject
 
         try
         {
-            var bmp = await Task.Run(() => DecodeJpeg(videoPath, second, cancellationToken), cancellationToken);
+            var bmp = await Task.Run(() => DecodeJpeg(videoPath, positionMs, cancellationToken), cancellationToken);
             if (cancellationToken.IsCancellationRequested)
                 return;
 
             if (version != _imageLoadVersion)
                 return;
 
-            if (_getCurrentVideoPath() != videoPath || _lastRequestedSecond != second)
+            if (_getCurrentVideoPath() != videoPath || _lastRequestedPositionMs != positionMs)
                 return;
 
             if (bmp == null)
             {
-                if (_lastLoadedSecond != second)
+                if (_lastLoadedPositionMs != positionMs)
                     ImageSource = null;
                 return;
             }
 
-            _thumbCache[second] = bmp;
-            _lastLoadedSecond = second;
+            _thumbCache[positionMs] = bmp;
+            _lastLoadedPositionMs = positionMs;
             ImageSource = bmp;
 
             if (_thumbCache.Count > 20)
@@ -169,12 +169,16 @@ public partial class ThumbnailPreviewController : ObservableObject
         }
     }
 
-    private BitmapSource? DecodeJpeg(string videoPath, int second, CancellationToken cancellationToken)
+    private BitmapSource? DecodeJpeg(string videoPath, long positionMs, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var path = _playbackFacade.GetThumbnailPath(videoPath, second);
+        var path = _playbackFacade.GetThumbnailPath(videoPath, positionMs);
         if (path == null)
+        {
+            Log.Debug(
+                $"Thumbnail preview miss: file={System.IO.Path.GetFileName(videoPath)}, requestedMs={positionMs}, timeText={FormatTime(positionMs)}");
             return null;
+        }
 
         cancellationToken.ThrowIfCancellationRequested();
         var decoder = new JpegBitmapDecoder(new Uri(path), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
