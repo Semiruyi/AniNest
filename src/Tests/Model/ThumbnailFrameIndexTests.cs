@@ -65,4 +65,19 @@ public class ThumbnailFrameIndexTests : IDisposable
 
         resolved.Should().Be(Path.Combine(_tempDir, "0002.jpg"));
     }
+
+    [Fact]
+    public void Load_UsesBundleFramePositions_WhenFramesJsonDoesNotExist()
+    {
+        string sourceDir = Path.Combine(_tempDir, "source");
+        Directory.CreateDirectory(sourceDir);
+        File.WriteAllBytes(Path.Combine(sourceDir, "0001.jpg"), [1]);
+        File.WriteAllBytes(Path.Combine(sourceDir, "0002.jpg"), [2]);
+
+        ThumbnailBundle.Write(sourceDir, _tempDir, [0L, 750L]);
+
+        long[]? loaded = ThumbnailFrameIndex.Load(_tempDir);
+
+        loaded.Should().Equal([0L, 750L]);
+    }
 }

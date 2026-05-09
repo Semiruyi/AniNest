@@ -24,6 +24,10 @@ internal static class ThumbnailFrameIndex
 
     public static long[]? Load(string thumbnailDirectory)
     {
+        IReadOnlyList<long>? bundleFramePositions = ThumbnailBundle.ReadFramePositions(thumbnailDirectory);
+        if (bundleFramePositions is { Count: > 0 })
+            return bundleFramePositions.ToArray();
+
         string path = GetIndexPath(thumbnailDirectory);
         if (!File.Exists(path))
             return null;

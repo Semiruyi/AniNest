@@ -8,9 +8,11 @@ namespace AniNest.Infrastructure.Thumbnails;
 
 internal static class ThumbnailBundle
 {
+    internal readonly record struct FrameEntry(long PositionMs, long Offset, int Length);
+
     private const string FileName = "bundle.bin";
     private const string Magic = "ANITHMB1";
-    private const int Version = 1;
+    private const int Version = 2;
 
     public static string GetBundlePath(string thumbnailDirectory)
         => Path.Combine(thumbnailDirectory, FileName);
@@ -18,7 +20,7 @@ internal static class ThumbnailBundle
     public static bool Exists(string thumbnailDirectory)
         => File.Exists(GetBundlePath(thumbnailDirectory));
 
-    public static void Write(string sourceDirectory, string targetDirectory)
+    public static void Write(string sourceDirectory, string targetDirectory, IReadOnlyList<long> framePositionsMs)
     {
         string[] frameFiles = Directory.GetFiles(sourceDirectory, "*.jpg")
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
@@ -26,6 +28,9 @@ internal static class ThumbnailBundle
 
         if (frameFiles.Length == 0)
             return;
+
+        if (framePositionsMs.Count != frameFiles.Length)
+            throw new InvalidOperationException("Frame position count must match frame file count.");
 
         Directory.CreateDirectory(targetDirectory);
         string bundlePath = GetBundlePath(targetDirectory);
@@ -39,7 +44,7 @@ internal static class ThumbnailBundle
             writer.Write(frameFiles.Length);
 
             long tableStart = stream.Position;
-            long tableLength = frameFiles.Length * (sizeof(long) + sizeof(int));
+            long tableLength = frameFiles.Length * (sizeof(long) + sizeof(long) + sizeof(int));
             stream.Position += tableLength;
 
             var offsets = new long[frameFiles.Length];
@@ -56,6 +61,7 @@ internal static class ThumbnailBundle
             stream.Position = tableStart;
             for (int i = 0; i < frameFiles.Length; i++)
             {
+                writer.Write(framePositionsMs[i]);
                 writer.Write(offsets[i]);
                 writer.Write(lengths[i]);
             }
@@ -67,11 +73,34 @@ internal static class ThumbnailBundle
         File.Move(tempPath, bundlePath);
     }
 
+    public static IReadOnlyList<long>? ReadFramePositions(string thumbnailDirectory)
+    {
+        FrameEntry[]? entries = ReadFrameEntries(thumbnailDirectory);
+        return entries?.Select(static entry => entry.PositionMs).ToArray();
+    }
+
     public static byte[]? ReadFrameBytes(string thumbnailDirectory, int frameIndex)
     {
         if (frameIndex < 0)
             return null;
 
+        FrameEntry[]? entries = ReadFrameEntries(thumbnailDirectory);
+        if (entries == null || frameIndex >= entries.Length)
+            return null;
+
+        string bundlePath = GetBundlePath(thumbnailDirectory);
+        using var stream = new FileStream(bundlePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        using var reader = new BinaryReader(stream, Encoding.ASCII, leaveOpen: false);
+        FrameEntry entry = entries[frameIndex];
+        if (entry.Length <= 0)
+            return null;
+
+        stream.Position = entry.Offset;
+        return reader.ReadBytes(entry.Length);
+    }
+
+    private static FrameEntry[]? ReadFrameEntries(string thumbnailDirectory)
+    {
         string bundlePath = GetBundlePath(thumbnailDirectory);
         if (!File.Exists(bundlePath))
             return null;
@@ -84,21 +113,34 @@ internal static class ThumbnailBundle
             return null;
 
         int version = reader.ReadInt32();
+        int frameCount = reader.ReadInt32();
+        if (frameCount < 0)
+            return null;
+
+        var entries = new FrameEntry[frameCount];
+        if (version == 1)
+        {
+            for (int i = 0; i < frameCount; i++)
+            {
+                long offset = reader.ReadInt64();
+                int length = reader.ReadInt32();
+                entries[i] = new FrameEntry(i * 1000L, offset, length);
+            }
+
+            return entries;
+        }
+
         if (version != Version)
             return null;
 
-        int frameCount = reader.ReadInt32();
-        if (frameIndex >= frameCount)
-            return null;
+        for (int i = 0; i < frameCount; i++)
+        {
+            long positionMs = reader.ReadInt64();
+            long offset = reader.ReadInt64();
+            int length = reader.ReadInt32();
+            entries[i] = new FrameEntry(positionMs, offset, length);
+        }
 
-        long entryOffset = stream.Position + (frameIndex * (sizeof(long) + sizeof(int)));
-        stream.Position = entryOffset;
-        long payloadOffset = reader.ReadInt64();
-        int payloadLength = reader.ReadInt32();
-        if (payloadLength <= 0)
-            return null;
-
-        stream.Position = payloadOffset;
-        return reader.ReadBytes(payloadLength);
+        return entries;
     }
 }

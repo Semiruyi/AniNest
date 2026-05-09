@@ -172,9 +172,8 @@ internal class ThumbnailRenderer
                     {
                         frameCount = Directory.GetFiles(tmpDir, "*.jpg").Length;
                         Directory.CreateDirectory(finalDir);
-                        SaveSampledFrameIndex(tmpDir, totalSec, frameCount);
-                        File.Move(ThumbnailFrameIndex.GetIndexPath(tmpDir), ThumbnailFrameIndex.GetIndexPath(finalDir), overwrite: true);
-                        ThumbnailBundle.Write(tmpDir, finalDir);
+                        IReadOnlyList<long> framePositionsMs = BuildSampledFramePositionsMs(totalSec, frameCount);
+                        ThumbnailBundle.Write(tmpDir, finalDir, framePositionsMs);
                         Directory.Delete(tmpDir, recursive: true);
                     }
                 }
@@ -331,15 +330,6 @@ internal class ThumbnailRenderer
         return framePositionsMs;
     }
 
-    private static void SaveSampledFrameIndex(string thumbnailDirectory, double durationSeconds, int frameCount)
-    {
-        IReadOnlyList<long> framePositionsMs = BuildSampledFramePositionsMs(durationSeconds, frameCount);
-        if (framePositionsMs.Count == 0)
-            return;
-
-        ThumbnailFrameIndex.Save(thumbnailDirectory, framePositionsMs);
-    }
-
     private static int NormalizeKeyframeOutput(string tmpDir, string finalDir, IReadOnlyList<int> generatedFrameSeconds)
     {
         var frameFiles = Directory.GetFiles(tmpDir, "*.jpg")
@@ -350,21 +340,17 @@ internal class ThumbnailRenderer
             return 0;
 
         var framePositionsMs = new List<long>(frameFiles.Length);
-        Directory.CreateDirectory(finalDir);
 
         for (int i = 0; i < frameFiles.Length; i++)
         {
-            string sourcePath = frameFiles[i];
             int second = i < generatedFrameSeconds.Count
                 ? Math.Max(0, generatedFrameSeconds[i])
                 : i;
             framePositionsMs.Add(second * 1000L);
-
-            string destinationPath = Path.Combine(finalDir, $"{i + 1:D4}.jpg");
-            File.Move(sourcePath, destinationPath, overwrite: true);
         }
 
-        ThumbnailFrameIndex.Save(finalDir, framePositionsMs);
+        Directory.CreateDirectory(finalDir);
+        ThumbnailBundle.Write(tmpDir, finalDir, framePositionsMs);
         Directory.Delete(tmpDir, recursive: true);
         return frameFiles.Length;
     }
