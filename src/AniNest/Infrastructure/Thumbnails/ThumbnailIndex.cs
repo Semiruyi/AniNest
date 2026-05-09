@@ -54,16 +54,26 @@ internal static class ThumbnailIndex
 
         if (!File.Exists(indexPath))
         {
+            Log.Info($"Thumbnail index missing: path={indexPath}");
             return tasks;
         }
 
         string json = File.ReadAllText(indexPath);
         var entries = JsonSerializer.Deserialize<Dictionary<string, ThumbnailEntryDto>>(json);
-        if (entries == null) return tasks;
+        if (entries == null)
+        {
+            Log.Warning($"Thumbnail index empty or invalid: path={indexPath}");
+            return tasks;
+        }
+
+        int readyCount = 0;
+        int pendingCount = 0;
+        int restoredFromBundleCount = 0;
 
         foreach (var kv in entries)
         {
-            if (existingPaths.Contains(kv.Key)) continue;
+            if (existingPaths.Contains(kv.Key))
+                continue;
 
             var state = kv.Value.State switch
             {
@@ -77,12 +87,14 @@ internal static class ThumbnailIndex
             string fullDir = Path.Combine(thumbBaseDir, md5Dir);
             bool directoryExists = Directory.Exists(fullDir);
             bool hasBundle = ThumbnailBundle.Exists(fullDir);
+            string originalState = state.ToString();
 
             if (directoryExists && state != ThumbnailState.Ready)
             {
                 if (hasBundle)
                 {
                     state = ThumbnailState.Ready;
+                    restoredFromBundleCount++;
                     Log.Info(
                         $"Thumbnail directory already contains cached thumbnails; marked Ready: {Path.GetFileName(kv.Key)}");
                 }
@@ -110,7 +122,22 @@ internal static class ThumbnailIndex
                 Intent = ThumbnailWorkIntent.BackgroundFill,
                 IntentUpdatedAtUtcTicks = DateTime.UtcNow.Ticks
             });
+
+            if (state == ThumbnailState.Ready)
+                readyCount++;
+            else
+                pendingCount++;
+
+            if (!string.Equals(originalState, state.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                directoryExists || hasBundle)
+            {
+                Log.Debug(
+                    $"Thumbnail index load entry: file={Path.GetFileName(kv.Key)}, state={originalState}->{state}, dirExists={directoryExists}, hasBundle={hasBundle}, md5={md5Dir}");
+            }
         }
+
+        Log.Info(
+            $"Thumbnail index load completed: path={indexPath}, entries={entries.Count}, loaded={tasks.Count}, ready={readyCount}, pending={pendingCount}, restoredFromBundle={restoredFromBundleCount}");
         return tasks;
     }
 
