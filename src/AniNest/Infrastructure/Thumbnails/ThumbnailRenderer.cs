@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AniNest.Infrastructure.Diagnostics;
@@ -16,10 +18,12 @@ internal readonly struct RenderResult
 {
     public ThumbnailState State { get; }
     public int FrameCount { get; }
-    public RenderResult(ThumbnailState state, int frameCount = 0)
+    public bool UsedKeyframesOnly { get; }
+    public RenderResult(ThumbnailState state, int frameCount = 0, bool usedKeyframesOnly = false)
     {
         State = state;
         FrameCount = frameCount;
+        UsedKeyframesOnly = usedKeyframesOnly;
     }
 }
 
@@ -30,12 +34,14 @@ internal class ThumbnailRenderer
     private readonly string _ffmpegPath;
     private readonly string _thumbBaseDir;
     private readonly Func<string, double> _getDuration;
+    private readonly string _ffprobePath;
 
     public ThumbnailRenderer(string ffmpegPath, string thumbBaseDir, Func<string, double> getDuration)
     {
         _ffmpegPath = ffmpegPath;
         _thumbBaseDir = thumbBaseDir;
         _getDuration = getDuration;
+        _ffprobePath = ResolveFfprobePath(ffmpegPath);
     }
 
     public async Task<RenderResult> GenerateAsync(
@@ -59,12 +65,18 @@ internal class ThumbnailRenderer
         Directory.CreateDirectory(tmpDir);
 
         double totalSec = GetVideoDuration(task.VideoPath);
+        bool useKeyframeOnlyExtraction = ShouldUseKeyframeOnlyExtraction(task.VideoPath);
+        var generatedFrameSeconds = useKeyframeOnlyExtraction ? new List<int>() : null;
         Log.Info(
-            $"Thumbnail render begin: file={Path.GetFileName(task.VideoPath)}, duration={totalSec:F1}s, tmpDir={tmpDir}");
+            $"Thumbnail render begin: file={Path.GetFileName(task.VideoPath)}, duration={totalSec:F1}s, tmpDir={tmpDir}, keyframesOnly={useKeyframeOnlyExtraction}");
 
-        string args = $"{BuildInputArguments(strategy)}-y -i \"{task.VideoPath}\" " +
-            "-vf \"fps=1,scale='min(300,iw)':'min(300,ih)':force_original_aspect_ratio=decrease\" " +
-            $"-q:v 5 \"{tmpDir}\\%04d.jpg\"";
+        string args = useKeyframeOnlyExtraction
+            ? $"{BuildInputArguments(strategy)}-skip_frame nokey -y -i \"{task.VideoPath}\" " +
+              "-vf \"scale='min(300,iw)':'min(300,ih)':force_original_aspect_ratio=decrease,showinfo\" " +
+              $"-vsync vfr -q:v 5 \"{tmpDir}\\%04d.jpg\""
+            : $"{BuildInputArguments(strategy)}-y -i \"{task.VideoPath}\" " +
+              "-vf \"fps=1,scale='min(300,iw)':'min(300,ih)':force_original_aspect_ratio=decrease\" " +
+              $"-q:v 5 \"{tmpDir}\\%04d.jpg\"";
 
         var psi = new ProcessStartInfo
         {
@@ -96,6 +108,13 @@ internal class ThumbnailRenderer
                     string? line;
                     while ((line = process.StandardError.ReadLine()) != null)
                     {
+                        if (useKeyframeOnlyExtraction &&
+                            TryParseShowInfoSecond(line, out int frameSecond) &&
+                            generatedFrameSeconds != null)
+                        {
+                            generatedFrameSeconds.Add(frameSecond);
+                        }
+
                         if (totalSec <= 0) continue;
                         int ti = line.IndexOf("time=", StringComparison.Ordinal);
                         if (ti < 0) continue;
@@ -135,13 +154,24 @@ internal class ThumbnailRenderer
 
             if (exitCode == 0)
             {
-                int frameCount = 0;
-                if (Directory.Exists(tmpDir))
-                    frameCount = Directory.GetFiles(tmpDir, "*.jpg").Length;
-
                 if (Directory.Exists(finalDir))
                     Directory.Delete(finalDir, recursive: true);
-                Directory.Move(tmpDir, finalDir);
+
+                int frameCount = 0;
+                if (Directory.Exists(tmpDir))
+                {
+                    if (useKeyframeOnlyExtraction)
+                    {
+                        frameCount = NormalizeKeyframeOutput(tmpDir, finalDir, generatedFrameSeconds ?? []);
+                    }
+                    else
+                    {
+                        frameCount = Directory.GetFiles(tmpDir, "*.jpg").Length;
+                    }
+                }
+
+                if (!useKeyframeOnlyExtraction)
+                    Directory.Move(tmpDir, finalDir);
 
                 Log.Info(
                     $"Completed: {Path.GetFileName(task.VideoPath)}, {frameCount} frames");
@@ -150,7 +180,7 @@ internal class ThumbnailRenderer
                     ("pid", process.Id),
                     ("strategy", strategy.ToString()),
                     ("frames", frameCount)));
-                return new RenderResult(ThumbnailState.Ready, frameCount);
+                return new RenderResult(ThumbnailState.Ready, frameCount, useKeyframeOnlyExtraction);
             }
             else
             {
@@ -205,6 +235,112 @@ internal class ThumbnailRenderer
             ThumbnailDecodeStrategy.AutoHardware => "-hwaccel auto ",
             _ => string.Empty
         };
+
+    private bool ShouldUseKeyframeOnlyExtraction(string videoPath)
+    {
+        string extension = Path.GetExtension(videoPath);
+        if (string.IsNullOrWhiteSpace(extension))
+            return false;
+
+        extension = extension.ToLowerInvariant();
+        if (extension is not ".mp4" and not ".mkv" and not ".mov" and not ".ts" and not ".m4v")
+            return false;
+
+        string? codecName = ProbeVideoCodec(videoPath);
+        return string.Equals(codecName, "h264", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(codecName, "hevc", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string? ProbeVideoCodec(string videoPath)
+    {
+        if (!File.Exists(_ffprobePath))
+            return null;
+
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = _ffprobePath,
+                Arguments = $"-v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 \"{videoPath}\"",
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            using var process = Process.Start(psi);
+            if (process == null)
+                return null;
+
+            string output = process.StandardOutput.ReadToEnd().Trim();
+            process.WaitForExit(3000);
+            return string.IsNullOrWhiteSpace(output) ? null : output;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string ResolveFfprobePath(string ffmpegPath)
+    {
+        string directory = Path.GetDirectoryName(ffmpegPath) ?? string.Empty;
+        string ffprobePath = Path.Combine(directory, "ffprobe.exe");
+        return ffprobePath;
+    }
+
+    private static int NormalizeKeyframeOutput(string tmpDir, string finalDir, IReadOnlyList<int> generatedFrameSeconds)
+    {
+        var frameFiles = Directory.GetFiles(tmpDir, "*.jpg")
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (frameFiles.Length == 0)
+            return 0;
+
+        var frameSeconds = new List<int>(frameFiles.Length);
+        Directory.CreateDirectory(finalDir);
+
+        for (int i = 0; i < frameFiles.Length; i++)
+        {
+            string sourcePath = frameFiles[i];
+            int second = i < generatedFrameSeconds.Count
+                ? Math.Max(0, generatedFrameSeconds[i])
+                : i;
+            frameSeconds.Add(second);
+
+            string destinationPath = Path.Combine(finalDir, $"{i + 1:D4}.jpg");
+            File.Move(sourcePath, destinationPath, overwrite: true);
+        }
+
+        ThumbnailFrameIndex.Save(finalDir, frameSeconds);
+        Directory.Delete(tmpDir, recursive: true);
+        return frameFiles.Length;
+    }
+
+    private static bool TryParseShowInfoSecond(string line, out int second)
+    {
+        second = 0;
+        int markerIndex = line.IndexOf("pts_time:", StringComparison.Ordinal);
+        if (markerIndex < 0)
+            return false;
+
+        int start = markerIndex + "pts_time:".Length;
+        int end = start;
+        while (end < line.Length && !char.IsWhiteSpace(line[end]))
+            end++;
+
+        string value = line[start..end];
+        if (!double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double parsed))
+            return false;
+
+        second = parsed <= 0
+            ? 0
+            : parsed >= int.MaxValue
+                ? int.MaxValue
+                : (int)Math.Round(parsed, MidpointRounding.AwayFromZero);
+        return true;
+    }
 }
 
 

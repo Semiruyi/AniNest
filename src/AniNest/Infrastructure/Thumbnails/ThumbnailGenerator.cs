@@ -381,8 +381,8 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
         if (task == null || task.State != ThumbnailState.Ready) return null;
 
-        string path = Path.Combine(_thumbBaseDir, task.Md5Dir, $"{second + 1:D4}.jpg");
-        return File.Exists(path) ? path : null;
+        string directory = Path.Combine(_thumbBaseDir, task.Md5Dir);
+        return ThumbnailFrameIndex.ResolveThumbnailPath(directory, second);
     }
 
 
