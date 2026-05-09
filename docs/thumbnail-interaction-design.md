@@ -548,6 +548,8 @@ Suggested internal split:
   - owns worker cancel logging and the shared cancel/reason emission pattern
 - `ThumbnailStatusTracker`
   - owns progress/status event emission and snapshot composition for UI-facing state
+- `ThumbnailGeneratorComponents`
+  - owns internal component wiring so the generator constructor stays small and readable
 
 These names are descriptive rather than mandatory. The important part is the responsibility boundary.
 
