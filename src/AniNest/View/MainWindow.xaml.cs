@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
@@ -23,12 +24,14 @@ public partial class MainWindow : Window
     private CornerRadius _savedCornerRadius;
 
     private readonly ISettingsService _settingsService;
+    private MainWindowTitleBar TitleBar => TitleBarView;
 
     public MainWindow(ShellViewModel vm, ISettingsService settingsService)
     {
         _settingsService = settingsService;
         DataContext = vm;
         InitializeComponent();
+        WireTitleBarEvents();
         PopupInputCoordinator.Instance.Attach(this);
         RegisterPopupRegions();
         FileOverlay.Closed += OnFileOverlayClosed;
@@ -62,6 +65,16 @@ public partial class MainWindow : Window
             settings.Window.Maximized = WindowState == WindowState.Maximized;
             _settingsService.Save();
         };
+    }
+
+    private void WireTitleBarEvents()
+    {
+        FileButton.Click += FileButton_Click;
+        SettingsButton.Click += SettingsButton_Click;
+        MinimizeButton.Click += MinimizeButton_Click;
+        MaximizeButton.Click += MaximizeButton_Click;
+        CloseButton.Click += CloseButton_Click;
+        TitleBarFileNameHost.PreviewMouseLeftButtonDown += TitleBarFileNameHost_PreviewMouseLeftButtonDown;
     }
 
     private void OnToggleFullscreenRequested()
@@ -252,6 +265,15 @@ public partial class MainWindow : Window
 
     private static readonly Logger MainWindowLog = AppLog.For("MainWindow");
     private ShellViewModel Shell => (ShellViewModel)DataContext;
+    private Border TitleBarRoot => TitleBar.TitleBarRootElement;
+    private Button FileButton => TitleBar.FileButtonElement;
+    private Button BackButton => TitleBar.BackButtonElement;
+    private Button SettingsButton => TitleBar.SettingsButtonElement;
+    private Grid TitleBarDragZone => TitleBar.TitleBarDragZoneElement;
+    private Grid TitleBarFileNameHost => TitleBar.TitleBarFileNameHostElement;
+    private Button MinimizeButton => TitleBar.MinimizeButtonElement;
+    private Button MaximizeButton => TitleBar.MaximizeButtonElement;
+    private Button CloseButton => TitleBar.CloseButtonElement;
 
     private bool ToggleAnchoredOverlay(
         AnimatedOverlay overlay,
@@ -313,6 +335,7 @@ public partial class MainWindow : Window
 
     private void FileButton_Click(object sender, RoutedEventArgs e)
     {
+        MainWindowLog.Debug("FileButton_Click");
         CloseOverlay(SettingsOverlay, shell => shell.IsSettingsPopupOpen = false);
         ToggleAnchoredOverlay(
             FileOverlay,
@@ -338,6 +361,7 @@ public partial class MainWindow : Window
 
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
     {
+        MainWindowLog.Debug("SettingsButton_Click");
         CloseOverlay(FileOverlay, shell => shell.IsFilePopupOpen = false);
         ToggleAnchoredOverlay(
             SettingsOverlay,

@@ -1,0 +1,188 @@
+<UserControl x:Class="AniNest.View.MainWindowTitleBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:animations="clr-namespace:AniNest.Presentation.Animations"
+             xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework">
+    <Border x:Name="TitleBarRoot"
+            Background="{StaticResource BackgroundDark}">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Margin="{StaticResource TitleBarLeftMargin}">
+                <Image Source="/Resources/Icons/App.png"
+                       Width="{StaticResource TitleBarAppIconSize}"
+                       Height="{StaticResource TitleBarAppIconSize}"
+                       VerticalAlignment="Center"
+                       Margin="0,0,8,0"
+                       SnapsToDevicePixels="True"/>
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsOnMainPage}" Value="False">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Button x:Name="FileButton"
+                            Style="{StaticResource TitleBarTextButton}"
+                            Content="{Binding DataContext.Localization[App.File], RelativeSource={RelativeSource AncestorType=Window}}"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+                </Grid>
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsOnPlayerPage}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Button x:Name="BackButton"
+                            Style="{StaticResource TitleBarTextButton}"
+                            Command="{Binding GoBackFromPlayerTitleBarCommand}"
+                            Content="{Binding DataContext.Localization[KeyBinding.Back], RelativeSource={RelativeSource AncestorType=Window}}"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+                </Grid>
+                <Grid>
+                    <Button x:Name="SettingsButton"
+                            Style="{StaticResource TitleBarTextButton}"
+                            Content="{Binding DataContext.Localization[App.Settings], RelativeSource={RelativeSource AncestorType=Window}}"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+                </Grid>
+            </StackPanel>
+
+            <Grid x:Name="TitleBarDragZone"
+                  Grid.Column="1">
+                <Grid x:Name="TitleBarFileNameHost"
+                      HorizontalAlignment="Left"
+                      VerticalAlignment="Center"
+                      Margin="12,0,46,0"
+                      Opacity="0"
+                      Visibility="Collapsed"
+                      shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                      animations:FadeVisibilityAnimator.BindVisible="{Binding IsOnPlayerPage}"
+                      animations:FadeVisibilityAnimator.DurationMs="420">
+                    <Grid.ToolTip>
+                        <ToolTip Placement="Bottom"
+                                 HorizontalOffset="0"
+                                 VerticalOffset="8"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Padding="0">
+                            <Border Background="{StaticResource PopupMenuBackground}"
+                                    BorderBrush="#38383A"
+                                    BorderThickness="1"
+                                    CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                                    Padding="10,8"
+                                    MaxWidth="560">
+                                <TextBlock Text="{Binding CurrentPlayerTitleBarToolTip}"
+                                           Foreground="{StaticResource TextSecondary}"
+                                           FontSize="12"
+                                           TextWrapping="Wrap"/>
+                            </Border>
+                        </ToolTip>
+                    </Grid.ToolTip>
+                    <Grid animations:FadeTextSwapAnimator.Text="{Binding CurrentPlayerTitleBarText}"
+                          animations:FadeTextSwapAnimator.DurationMs="420">
+                        <TextBlock Text=""
+                                   Foreground="{StaticResource TextSecondary}"
+                                   FontSize="{StaticResource TitleBarTextFontSize}"
+                                   Opacity="0"
+                                   TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text=""
+                                   Foreground="{StaticResource TextSecondary}"
+                                   FontSize="{StaticResource TitleBarTextFontSize}"
+                                   Opacity="{StaticResource TitleBarTextOpacity}"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </Grid>
+                </Grid>
+            </Grid>
+
+            <StackPanel Grid.Column="2"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
+                <Button x:Name="MinimizeButton"
+                        Style="{StaticResource TitleBarIconButton}"
+                        Width="{StaticResource TitleBarButtonWidth}"
+                        Height="{StaticResource TitleBarButtonHeight}"
+                        ToolTip="{Binding DataContext.Localization[Window.Minimize], RelativeSource={RelativeSource AncestorType=Window}}"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Viewbox Width="{StaticResource TitleBarIconSize}"
+                             Height="{StaticResource TitleBarIconSize}">
+                        <Path Data="{StaticResource MinimizeIconGeometry}"
+                              Stroke="White"
+                              StrokeThickness="{StaticResource TitleBarIconStroke}"
+                              StrokeEndLineCap="Round"/>
+                    </Viewbox>
+                </Button>
+
+                <Button x:Name="MaximizeButton"
+                        Width="{StaticResource TitleBarButtonWidth}"
+                        Height="{StaticResource TitleBarButtonHeight}"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Viewbox Width="{StaticResource TitleBarIconSize}"
+                             Height="{StaticResource TitleBarIconSize}">
+                        <Path Stroke="White"
+                              StrokeThickness="{StaticResource TitleBarIconStroke}"
+                              StrokeLineJoin="Round">
+                            <Path.Style>
+                                <Style TargetType="Path">
+                                    <Setter Property="Data"
+                                            Value="{StaticResource MaximizeIconGeometry}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Value="Maximized"
+                                                     Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}">
+                                            <Setter Property="Data"
+                                                    Value="{StaticResource RestoreIconGeometry}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
+                    </Viewbox>
+                    <Button.Style>
+                        <Style TargetType="Button"
+                               BasedOn="{StaticResource TitleBarIconButton}">
+                            <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Window.Maximize], RelativeSource={RelativeSource AncestorType=Window}}"/>
+                            <Style.Triggers>
+                                <DataTrigger Value="Maximized"
+                                             Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}">
+                                    <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Window.Restore], RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <Button x:Name="CloseButton"
+                        Style="{StaticResource CloseIconButton}"
+                        Width="{StaticResource TitleBarButtonWidth}"
+                        Height="{StaticResource TitleBarButtonHeight}"
+                        ToolTip="{Binding DataContext.Localization[Window.Close], RelativeSource={RelativeSource AncestorType=Window}}"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Viewbox Width="{StaticResource TitleBarIconSize}"
+                             Height="{StaticResource TitleBarIconSize}">
+                        <Path Data="{StaticResource CloseIconGeometry}"
+                              Stroke="White"
+                              StrokeThickness="{StaticResource TitleBarIconStroke}"
+                              StrokeEndLineCap="Round"
+                              StrokeLineJoin="Round"/>
+                    </Viewbox>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>
