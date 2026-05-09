@@ -74,6 +74,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private readonly ThumbnailWorkerExecutionHost _workerExecutionHost;
     private readonly ThumbnailWorkerCancellationCoordinator _workerCancellationCoordinator;
     private readonly ThumbnailStatusTracker _statusTracker;
+    private readonly ThumbnailQueueLoopRunner _queueLoopRunner;
     private bool _isShuttingDown;
     private bool _isPlayerActive;
     private bool _isGenerationPaused;
@@ -122,6 +123,18 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             (path, percent) => VideoProgress?.Invoke(path, percent),
             path => VideoReady?.Invoke(path));
         _workerCancellationCoordinator = new ThumbnailWorkerCancellationCoordinator(BuildSchedulerSnapshotUnsafe);
+        _queueLoopRunner = new ThumbnailQueueLoopRunner(
+            () => _initTcs.Task,
+            () => _isShuttingDown,
+            DrainCompletedWorkers,
+            () => _taskStore.CountTasksByState(ThumbnailState.Pending) > 0,
+            () => ThumbnailQueueScheduler.CanStartMoreWorkers(_workerPool, _isGenerationPaused, _performanceMode, _isPlayerActive),
+            () => ThumbnailQueueScheduler.SelectNextTask(_taskStore, _workerPool, _isGenerationPaused, _performanceMode, _isPlayerActive),
+            StartWorker,
+            ReportSchedulerState,
+            () => GetBlockedSchedulerReason(),
+            GetActiveWorkerCount,
+            WaitForWorkersAsync);
 
         Directory.CreateDirectory(_thumbBaseDir);
 
@@ -424,49 +437,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         if (_isShuttingDown) return;
 
         _loopCts = new CancellationTokenSource();
-        _loopTask = Task.Run(() => ProcessQueueLoop(_loopCts.Token));
-    }
-
-    private async Task ProcessQueueLoop(CancellationToken ct)
-    {
-        await _initTcs.Task;
-        while (!ct.IsCancellationRequested && !_isShuttingDown)
-        {
-            DrainCompletedWorkers();
-
-            bool hasPending = _taskStore.CountTasksByState(ThumbnailState.Pending) > 0;
-            bool canStartWorkers = ThumbnailQueueScheduler.CanStartMoreWorkers(
-                _workerPool,
-                _isGenerationPaused,
-                _performanceMode,
-                _isPlayerActive);
-
-            var task = ThumbnailQueueScheduler.SelectNextTask(
-                _taskStore,
-                _workerPool,
-                _isGenerationPaused,
-                _performanceMode,
-                _isPlayerActive);
-            if (task != null)
-            {
-                ReportSchedulerState("starting-workers");
-                StartWorker(task, ct);
-                continue;
-            }
-
-            if (!hasPending && GetActiveWorkerCount() == 0)
-            {
-                ReportSchedulerState("idle");
-                try { await Task.Delay(2000, ct); } catch { break; }
-                continue;
-            }
-
-            ReportSchedulerState(canStartWorkers ? "waiting-for-pending-selection" : GetBlockedSchedulerReason());
-            int waitDelayMs = canStartWorkers ? 200 : 500;
-            try { await Task.Delay(waitDelayMs, ct); } catch { break; }
-        }
-
-        await WaitForWorkersAsync();
+        _loopTask = Task.Run(() => _queueLoopRunner.RunAsync(_loopCts.Token));
     }
 
     private void StartWorker(ThumbnailTask task, CancellationToken ct)

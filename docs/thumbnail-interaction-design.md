@@ -542,6 +542,8 @@ Suggested internal split:
   - owns index load/save orchestration plus temp-artifact and expired-cache cleanup
 - `ThumbnailQueueScheduler`
   - owns next-task selection, blocked-state reasoning, and scheduler snapshot composition
+- `ThumbnailQueueLoopRunner`
+  - owns the scheduling loop control flow and idle/backoff policy
 - `ThumbnailWorkerCancellationCoordinator`
   - owns worker cancel logging and the shared cancel/reason emission pattern
 - `ThumbnailStatusTracker`
@@ -583,6 +585,7 @@ Infrastructure/Thumbnails/
     ThumbnailPlaybackWindowCoordinator.cs
     ThumbnailPlaybackWindowUpdate.cs
     ThumbnailQueueScheduler.cs
+    ThumbnailQueueLoopRunner.cs
     ThumbnailTaskStore.cs
     ThumbnailWorkIntentPriority.cs
     ThumbnailWorkerCancellationCoordinator.cs
