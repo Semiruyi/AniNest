@@ -37,4 +37,52 @@ public class ThumbnailBundleTests : IDisposable
         ThumbnailBundle.ReadFrameBytes(_targetDir, 1).Should().Equal([4, 5]);
         ThumbnailBundle.ReadFramePositions(_targetDir).Should().Equal([0L, 500L]);
     }
+
+    [Fact]
+    public void BundleWriter_AppendAndCommit_RoundTripsFrames()
+    {
+        using (var writer = ThumbnailBundle.CreateWriter(_targetDir))
+        {
+            writer.AppendFrame(0L, [1, 2, 3]);
+            writer.AppendFrame(1250L, [4, 5, 6, 7]);
+            writer.Commit();
+        }
+
+        ThumbnailBundle.Exists(_targetDir).Should().BeTrue();
+        ThumbnailBundle.ReadFrameBytes(_targetDir, 0).Should().Equal([1, 2, 3]);
+        ThumbnailBundle.ReadFrameBytes(_targetDir, 1).Should().Equal([4, 5, 6, 7]);
+        ThumbnailBundle.ReadFramePositions(_targetDir).Should().Equal([0L, 1250L]);
+        ThumbnailBundle.GetFrameCount(_targetDir).Should().Be(2);
+    }
+
+    [Fact]
+    public void BundleWriter_DisposeWithoutCommit_DeletesTemporaryFile()
+    {
+        string tempBundlePath = ThumbnailBundle.GetBundlePath(_targetDir) + ".tmp";
+        string tempPayloadPath = tempBundlePath + ".payload";
+
+        using (var writer = ThumbnailBundle.CreateWriter(_targetDir))
+        {
+            writer.AppendFrame(0L, [9, 8, 7]);
+            File.Exists(tempPayloadPath).Should().BeTrue();
+        }
+
+        File.Exists(tempBundlePath).Should().BeFalse();
+        File.Exists(tempPayloadPath).Should().BeFalse();
+        ThumbnailBundle.Exists(_targetDir).Should().BeFalse();
+    }
+
+    [Fact]
+    public void BundleWriter_UpdateFramePosition_PersistsUpdatedPositions()
+    {
+        using (var writer = ThumbnailBundle.CreateWriter(_targetDir))
+        {
+            writer.AppendFrame(0L, [1, 2]);
+            writer.AppendFrame(1000L, [3, 4]);
+            writer.UpdateFramePosition(1, 2500L);
+            writer.Commit();
+        }
+
+        ThumbnailBundle.ReadFramePositions(_targetDir).Should().Equal([0L, 2500L]);
+    }
 }

@@ -20,6 +20,9 @@ internal static class ThumbnailBundle
     public static bool Exists(string thumbnailDirectory)
         => File.Exists(GetBundlePath(thumbnailDirectory));
 
+    public static BundleWriter CreateWriter(string targetDirectory)
+        => new(targetDirectory);
+
     public static void Write(string sourceDirectory, string targetDirectory, IReadOnlyList<long> framePositionsMs)
     {
         string[] frameFiles = Directory.GetFiles(sourceDirectory, "*.jpg")
@@ -32,45 +35,12 @@ internal static class ThumbnailBundle
         if (framePositionsMs.Count != frameFiles.Length)
             throw new InvalidOperationException("Frame position count must match frame file count.");
 
-        Directory.CreateDirectory(targetDirectory);
-        string bundlePath = GetBundlePath(targetDirectory);
-        string tempPath = bundlePath + ".tmp";
-
-        using (var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
-        using (var writer = new BinaryWriter(stream, Encoding.ASCII, leaveOpen: false))
+        using var bundleWriter = CreateWriter(targetDirectory);
+        for (int i = 0; i < frameFiles.Length; i++)
         {
-            writer.Write(Encoding.ASCII.GetBytes(Magic));
-            writer.Write(Version);
-            writer.Write(frameFiles.Length);
-
-            long tableStart = stream.Position;
-            long tableLength = frameFiles.Length * (sizeof(long) + sizeof(long) + sizeof(int));
-            stream.Position += tableLength;
-
-            var offsets = new long[frameFiles.Length];
-            var lengths = new int[frameFiles.Length];
-
-            for (int i = 0; i < frameFiles.Length; i++)
-            {
-                byte[] bytes = File.ReadAllBytes(frameFiles[i]);
-                offsets[i] = stream.Position;
-                lengths[i] = bytes.Length;
-                writer.Write(bytes);
-            }
-
-            stream.Position = tableStart;
-            for (int i = 0; i < frameFiles.Length; i++)
-            {
-                writer.Write(framePositionsMs[i]);
-                writer.Write(offsets[i]);
-                writer.Write(lengths[i]);
-            }
+            bundleWriter.AppendFrame(framePositionsMs[i], File.ReadAllBytes(frameFiles[i]));
         }
-
-        if (File.Exists(bundlePath))
-            File.Delete(bundlePath);
-
-        File.Move(tempPath, bundlePath);
+        bundleWriter.Commit();
     }
 
     public static IReadOnlyList<long>? ReadFramePositions(string thumbnailDirectory)
@@ -148,5 +118,120 @@ internal static class ThumbnailBundle
         }
 
         return entries;
+    }
+
+    internal sealed class BundleWriter : IDisposable
+    {
+        private readonly string _bundlePath;
+        private readonly string _tempPath;
+        private readonly string _payloadTempPath;
+        private readonly FileStream _payloadStream;
+        private readonly List<FrameEntry> _entries = [];
+        private bool _committed;
+        private bool _disposed;
+
+        public BundleWriter(string targetDirectory)
+        {
+            Directory.CreateDirectory(targetDirectory);
+            _bundlePath = GetBundlePath(targetDirectory);
+            _tempPath = _bundlePath + ".tmp";
+            _payloadTempPath = _tempPath + ".payload";
+            _payloadStream = new FileStream(_payloadTempPath, FileMode.Create, FileAccess.Write, FileShare.None);
+        }
+
+        public void AppendFrame(long positionMs, ReadOnlySpan<byte> bytes)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            if (_committed)
+                throw new InvalidOperationException("Cannot append frames after commit.");
+
+            if (bytes.Length <= 0)
+                throw new InvalidOperationException("Frame payload must not be empty.");
+
+            long offset = _payloadStream.Position;
+            _payloadStream.Write(bytes);
+            _entries.Add(new FrameEntry(positionMs, offset, bytes.Length));
+        }
+
+        public void UpdateFramePosition(int frameIndex, long positionMs)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            if (_committed)
+                throw new InvalidOperationException("Cannot update frame positions after commit.");
+
+            if (frameIndex < 0 || frameIndex >= _entries.Count)
+                throw new ArgumentOutOfRangeException(nameof(frameIndex));
+
+            FrameEntry entry = _entries[frameIndex];
+            _entries[frameIndex] = entry with { PositionMs = positionMs };
+        }
+
+        public int FrameCount => _entries.Count;
+
+        public void Commit()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            if (_committed)
+                return;
+
+            _payloadStream.Flush(flushToDisk: true);
+            _payloadStream.Dispose();
+
+            long tableLength = _entries.Count * (sizeof(long) + sizeof(long) + sizeof(int));
+            long payloadStartOffset = Magic.Length + sizeof(int) + sizeof(int) + tableLength;
+
+            using (var bundleStream = new FileStream(_tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var writer = new BinaryWriter(bundleStream, Encoding.ASCII, leaveOpen: false))
+            {
+                writer.Write(Encoding.ASCII.GetBytes(Magic));
+                writer.Write(Version);
+                writer.Write(_entries.Count);
+
+                foreach (FrameEntry entry in _entries)
+                {
+                    writer.Write(entry.PositionMs);
+                    writer.Write(payloadStartOffset + entry.Offset);
+                    writer.Write(entry.Length);
+                }
+
+                using var payloadStream = new FileStream(_payloadTempPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                payloadStream.CopyTo(bundleStream);
+                writer.Flush();
+                bundleStream.Flush(flushToDisk: true);
+            }
+
+            if (File.Exists(_bundlePath))
+                File.Delete(_bundlePath);
+
+            File.Move(_tempPath, _bundlePath);
+            File.Delete(_payloadTempPath);
+            _committed = true;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            if (!_committed)
+            {
+                _payloadStream.Dispose();
+                try
+                {
+                    if (File.Exists(_tempPath))
+                        File.Delete(_tempPath);
+                    if (File.Exists(_payloadTempPath))
+                        File.Delete(_payloadTempPath);
+                }
+                catch
+                {
+                }
+            }
+
+            _disposed = true;
+        }
     }
 }

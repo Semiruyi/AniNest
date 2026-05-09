@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Globalization;
+using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
 using AniNest.Infrastructure.Diagnostics;
@@ -77,10 +78,10 @@ internal class ThumbnailRenderer
         string args = useKeyframeOnlyExtraction
             ? $"{BuildInputArguments(strategy)}-skip_frame nokey -y -i \"{task.VideoPath}\" " +
               "-vf \"scale='min(300,iw)':'min(300,ih)':force_original_aspect_ratio=decrease,showinfo\" " +
-              $"-vsync vfr -q:v 5 \"{tmpDir}\\%04d.jpg\""
+              "-vsync vfr -q:v 5 -f image2pipe -vcodec mjpeg pipe:1"
             : $"{BuildInputArguments(strategy)}-y -i \"{task.VideoPath}\" " +
               $"-vf \"fps={BuildSamplingFpsExpression(totalSec)},scale='min(300,iw)':'min(300,ih)':force_original_aspect_ratio=decrease\" " +
-              $"-q:v 5 \"{tmpDir}\\%04d.jpg\"";
+              "-q:v 5 -f image2pipe -vcodec mjpeg pipe:1";
 
         var psi = new ProcessStartInfo
         {
@@ -89,6 +90,7 @@ internal class ThumbnailRenderer
             CreateNoWindow = true,
             UseShellExecute = false,
             RedirectStandardError = true,
+            RedirectStandardOutput = true,
             RedirectStandardInput = true
         };
 
@@ -103,6 +105,8 @@ internal class ThumbnailRenderer
                 ("pid", process.Id),
                 ("strategy", strategy.ToString()),
                 ("tmpDir", Path.GetFileName(tmpDir))));
+
+            using var bundleWriter = ThumbnailBundle.CreateWriter(tmpDir);
 
             int lastPercent = -1;
             var stderrTask = Task.Run(() =>
@@ -140,6 +144,10 @@ internal class ThumbnailRenderer
                 catch { }
             }, ct);
 
+            int frameCount = useKeyframeOnlyExtraction
+                ? await ReadKeyframeBundleAsync(process.StandardOutput.BaseStream, bundleWriter, ct)
+                : await ReadSampledBundleAsync(process.StandardOutput.BaseStream, bundleWriter, totalSec, ct);
+
             await process.WaitForExitAsync(ct);
             Log.Info(
                 $"Thumbnail renderer wait-exit completed; waiting stderr task, pid={process.Id}");
@@ -158,24 +166,25 @@ internal class ThumbnailRenderer
 
             if (exitCode == 0)
             {
+                if (useKeyframeOnlyExtraction && generatedFrameSeconds != null)
+                {
+                    for (int i = 0; i < frameCount; i++)
+                    {
+                        int second = i < generatedFrameSeconds.Count
+                            ? Math.Max(0, generatedFrameSeconds[i])
+                            : i;
+                        bundleWriter.UpdateFramePosition(i, second * 1000L);
+                    }
+                }
+
+                bundleWriter.Commit();
+
                 if (Directory.Exists(finalDir))
                     Directory.Delete(finalDir, recursive: true);
 
-                int frameCount = 0;
                 if (Directory.Exists(tmpDir))
                 {
-                    if (useKeyframeOnlyExtraction)
-                    {
-                        frameCount = NormalizeKeyframeOutput(tmpDir, finalDir, generatedFrameSeconds ?? []);
-                    }
-                    else
-                    {
-                        frameCount = Directory.GetFiles(tmpDir, "*.jpg").Length;
-                        Directory.CreateDirectory(finalDir);
-                        IReadOnlyList<long> framePositionsMs = BuildSampledFramePositionsMs(totalSec, frameCount);
-                        ThumbnailBundle.Write(tmpDir, finalDir, framePositionsMs);
-                        Directory.Delete(tmpDir, recursive: true);
-                    }
+                    Directory.Move(tmpDir, finalDir);
                 }
 
                 Log.Info(
@@ -315,44 +324,24 @@ internal class ThumbnailRenderer
         if (frameCount <= 0)
             return Array.Empty<long>();
 
-        double intervalSeconds = CalculateSamplingIntervalSeconds(durationSeconds);
         var framePositionsMs = new List<long>(frameCount);
 
         for (int i = 0; i < frameCount; i++)
         {
-            double positionSeconds = i * intervalSeconds;
-            long positionMs = positionSeconds <= 0
-                ? 0
-                : (long)Math.Round(positionSeconds * 1000.0, MidpointRounding.AwayFromZero);
-            framePositionsMs.Add(positionMs);
+            framePositionsMs.Add(GetSampledFramePositionMs(durationSeconds, i));
         }
 
         return framePositionsMs;
     }
 
-    private static int NormalizeKeyframeOutput(string tmpDir, string finalDir, IReadOnlyList<int> generatedFrameSeconds)
+    internal static long GetSampledFramePositionMs(double durationSeconds, int frameIndex)
     {
-        var frameFiles = Directory.GetFiles(tmpDir, "*.jpg")
-            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-
-        if (frameFiles.Length == 0)
+        if (frameIndex <= 0)
             return 0;
 
-        var framePositionsMs = new List<long>(frameFiles.Length);
-
-        for (int i = 0; i < frameFiles.Length; i++)
-        {
-            int second = i < generatedFrameSeconds.Count
-                ? Math.Max(0, generatedFrameSeconds[i])
-                : i;
-            framePositionsMs.Add(second * 1000L);
-        }
-
-        Directory.CreateDirectory(finalDir);
-        ThumbnailBundle.Write(tmpDir, finalDir, framePositionsMs);
-        Directory.Delete(tmpDir, recursive: true);
-        return frameFiles.Length;
+        double intervalSeconds = CalculateSamplingIntervalSeconds(durationSeconds);
+        double positionSeconds = frameIndex * intervalSeconds;
+        return (long)Math.Round(positionSeconds * 1000.0, MidpointRounding.AwayFromZero);
     }
 
     private static bool TryParseShowInfoSecond(string line, out int second)
@@ -377,6 +366,140 @@ internal class ThumbnailRenderer
                 ? int.MaxValue
                 : (int)Math.Round(parsed, MidpointRounding.AwayFromZero);
         return true;
+    }
+
+    internal static async Task ReadJpegFramesAsync(
+        Stream stream,
+        Action<byte[]> onFrame,
+        CancellationToken cancellationToken)
+    {
+        byte[] readBuffer = ArrayPool<byte>.Shared.Rent(16 * 1024);
+        byte[] carryBuffer = Array.Empty<byte>();
+        int carryLength = 0;
+
+        try
+        {
+            while (true)
+            {
+                int read = await stream.ReadAsync(readBuffer.AsMemory(0, readBuffer.Length), cancellationToken);
+                if (read <= 0)
+                    break;
+
+                int combinedLength = carryLength + read;
+                byte[] combinedBuffer = ArrayPool<byte>.Shared.Rent(combinedLength);
+
+                try
+                {
+                    if (carryLength > 0)
+                        Buffer.BlockCopy(carryBuffer, 0, combinedBuffer, 0, carryLength);
+
+                    Buffer.BlockCopy(readBuffer, 0, combinedBuffer, carryLength, read);
+
+                    int searchStart = 0;
+                    while (TryExtractJpegFrame(combinedBuffer, combinedLength, ref searchStart, out byte[]? frame))
+                    {
+                        if (frame != null)
+                            onFrame(frame);
+                    }
+
+                    int remainingLength = combinedLength - searchStart;
+                    if (remainingLength <= 0)
+                    {
+                        carryLength = 0;
+                        continue;
+                    }
+
+                    if (carryBuffer.Length < remainingLength)
+                        carryBuffer = new byte[Math.Max(remainingLength, 2)];
+
+                    Buffer.BlockCopy(combinedBuffer, searchStart, carryBuffer, 0, remainingLength);
+                    carryLength = remainingLength;
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(combinedBuffer);
+                }
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(readBuffer);
+        }
+    }
+
+    internal static bool TryExtractJpegFrame(
+        byte[] buffer,
+        int length,
+        ref int searchStart,
+        out byte[]? frame)
+    {
+        frame = null;
+        int start = -1;
+
+        for (int i = searchStart; i < length - 1; i++)
+        {
+            if (start < 0)
+            {
+                if (buffer[i] == 0xFF && buffer[i + 1] == 0xD8)
+                {
+                    start = i;
+                    i++;
+                }
+
+                continue;
+            }
+
+            if (buffer[i] == 0xFF && buffer[i + 1] == 0xD9)
+            {
+                int frameLength = i + 2 - start;
+                frame = new byte[frameLength];
+                Buffer.BlockCopy(buffer, start, frame, 0, frameLength);
+                searchStart = i + 2;
+                return true;
+            }
+        }
+
+        if (start >= 0)
+        {
+            searchStart = start;
+        }
+        else
+        {
+            searchStart = Math.Max(0, length - 1);
+        }
+
+        return false;
+    }
+
+    private static async Task<int> ReadSampledBundleAsync(
+        Stream outputStream,
+        ThumbnailBundle.BundleWriter bundleWriter,
+        double durationSeconds,
+        CancellationToken cancellationToken)
+    {
+        int frameIndex = 0;
+        await ReadJpegFramesAsync(outputStream, frameBytes =>
+        {
+            bundleWriter.AppendFrame(GetSampledFramePositionMs(durationSeconds, frameIndex), frameBytes);
+            frameIndex++;
+        }, cancellationToken);
+
+        return frameIndex;
+    }
+
+    private static async Task<int> ReadKeyframeBundleAsync(
+        Stream outputStream,
+        ThumbnailBundle.BundleWriter bundleWriter,
+        CancellationToken cancellationToken)
+    {
+        int frameIndex = 0;
+        await ReadJpegFramesAsync(outputStream, frameBytes =>
+        {
+            bundleWriter.AppendFrame(frameIndex * 1000L, frameBytes);
+            frameIndex++;
+        }, cancellationToken);
+
+        return frameIndex;
     }
 }
 
