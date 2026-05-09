@@ -542,8 +542,10 @@ Suggested internal split:
   - owns index load/save orchestration plus temp-artifact and expired-cache cleanup
 - `ThumbnailQueueScheduler`
   - owns next-task selection, blocked-state reasoning, and scheduler snapshot composition
+- `ThumbnailWorkerCancellationCoordinator`
+  - owns worker cancel logging and the shared cancel/reason emission pattern
 - `ThumbnailStatusTracker`
-  - owns aggregated ready/total counts, current foreground target, and status snapshot composition
+  - owns progress/status event emission and snapshot composition for UI-facing state
 
 These names are descriptive rather than mandatory. The important part is the responsibility boundary.
 
@@ -583,6 +585,7 @@ Infrastructure/Thumbnails/
     ThumbnailQueueScheduler.cs
     ThumbnailTaskStore.cs
     ThumbnailWorkIntentPriority.cs
+    ThumbnailWorkerCancellationCoordinator.cs
     ThumbnailWorkerPool.cs
     ThumbnailWorkerPreemption.cs
 
@@ -640,7 +643,7 @@ Recommended order:
 4. extract playback-window intent coordination
 5. extract `ThumbnailWorkerPool`
 6. extract `ThumbnailGenerationRunner`
-7. optionally extract `ThumbnailStatusTracker` if status composition still feels noisy after the earlier steps
+7. extract `ThumbnailStatusTracker`
 
 This order is intentional:
 
