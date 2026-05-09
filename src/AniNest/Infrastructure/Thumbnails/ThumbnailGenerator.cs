@@ -69,6 +69,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private Task? _loopTask;
     private TaskCompletionSource _initTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly ThumbnailIndexRepository _indexRepository;
+    private readonly ThumbnailCacheMaintenance _cacheMaintenance;
     private readonly ThumbnailGenerationRunner _generationRunner;
     private readonly ThumbnailWorkerExecutionHost _workerExecutionHost;
     private bool _isShuttingDown;
@@ -102,6 +103,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         _thumbBaseDir = AppPaths.ThumbnailDirectory;
         _ffmpegPath = AppPaths.FfmpegPath;
         _indexRepository = new ThumbnailIndexRepository(_thumbBaseDir);
+        _cacheMaintenance = new ThumbnailCacheMaintenance(_indexRepository, _settings);
         var renderer = new ThumbnailRenderer(_ffmpegPath, _thumbBaseDir, GetVideoDuration);
         _generationRunner = new ThumbnailGenerationRunner(_decodeStrategyService, renderer);
         _workerExecutionHost = new ThumbnailWorkerExecutionHost(
@@ -154,7 +156,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             Log.Info("[Init] ffmpeg not available, thumbnail generation disabled");
         }
 
-        _indexRepository.CleanupTempArtifacts();
+        _cacheMaintenance.CleanupTempArtifacts();
 
         LoadIndex();
 
@@ -431,19 +433,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         _loopTask = Task.Run(() => ProcessQueueLoop(_loopCts.Token));
     }
 
-    private ThumbnailTask? DequeueNext()
-    {
-        if (!CanStartMoreWorkersUnsafe())
-            return null;
-
-        return _taskStore.SnapshotTasks()
-            .Where(static task => task.State == ThumbnailState.Pending)
-            .OrderByDescending(static task => ThumbnailWorkIntentPriority.GetRank(task.Intent))
-            .ThenByDescending(static task => task.IntentUpdatedAtUtcTicks)
-            .ThenBy(static task => task.VideoPath, StringComparer.OrdinalIgnoreCase)
-            .FirstOrDefault();
-    }
-
     private async Task ProcessQueueLoop(CancellationToken ct)
     {
         await _initTcs.Task;
@@ -452,9 +441,18 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             DrainCompletedWorkers();
 
             bool hasPending = _taskStore.CountTasksByState(ThumbnailState.Pending) > 0;
-            bool canStartWorkers = CanStartMoreWorkersUnsafe();
+            bool canStartWorkers = ThumbnailQueueScheduler.CanStartMoreWorkers(
+                _workerPool,
+                _isGenerationPaused,
+                _performanceMode,
+                _isPlayerActive);
 
-            var task = DequeueNext();
+            var task = ThumbnailQueueScheduler.SelectNextTask(
+                _taskStore,
+                _workerPool,
+                _isGenerationPaused,
+                _performanceMode,
+                _isPlayerActive);
             if (task != null)
             {
                 ReportSchedulerState("starting-workers");
@@ -512,30 +510,8 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private int GetActiveWorkerCount() => _workerPool.Count;
 
-    private bool CanStartMoreWorkersUnsafe()
-    {
-        if (_isGenerationPaused)
-            return false;
-
-        ThumbnailExecutionPolicy policy = GetExecutionPolicyUnsafe();
-        if (!policy.AllowStartNewJobs)
-            return false;
-
-        return _workerPool.Count < policy.MaxConcurrency;
-    }
-
-    private ThumbnailExecutionPolicy GetExecutionPolicyUnsafe()
-        => ThumbnailPerformancePolicy.Create(_performanceMode, _isPlayerActive);
-
     private string BuildSchedulerSnapshotUnsafe()
-    {
-        ThumbnailExecutionPolicy policy = GetExecutionPolicyUnsafe();
-        return
-            $"playerActive={_isPlayerActive}, mode={_performanceMode}, paused={_isGenerationPaused}, maxConcurrency={policy.MaxConcurrency}, " +
-            $"allowStartNewJobs={policy.AllowStartNewJobs}, activeWorkers={_workerPool.Count}, " +
-            $"pendingTasks={_taskStore.CountTasksByState(ThumbnailState.Pending)}, ready={_taskStore.ReadyCount}, total={_taskStore.TotalCount}, " +
-            $"foregroundPending={_taskStore.CountForegroundPending()}";
-    }
+        => ThumbnailQueueScheduler.BuildSnapshot(_workerPool, _taskStore, _isGenerationPaused, _isPlayerActive, _performanceMode);
 
     private void ReportSchedulerState(string state)
     {
@@ -553,21 +529,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     }
 
     private string GetBlockedSchedulerReason()
-    {
-        if (_isGenerationPaused)
-            return "blocked-generation-paused";
-
-        ThumbnailExecutionPolicy policy = GetExecutionPolicyUnsafe();
-        if (!policy.AllowStartNewJobs)
-            return _isPlayerActive
-                ? "blocked-player-active-no-new-jobs"
-                : "blocked-policy-no-new-jobs";
-
-        if (_workerPool.Count >= policy.MaxConcurrency)
-            return "blocked-max-concurrency";
-
-        return "blocked-unknown";
-    }
+        => ThumbnailQueueScheduler.GetBlockedReason(_workerPool, _isGenerationPaused, _performanceMode, _isPlayerActive);
 
     private void RequeueActiveWorkers(string reason)
     {
@@ -712,7 +674,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             waitSw.Stop();
         }
 
-        _indexRepository.CleanupTempArtifacts();
+        _cacheMaintenance.CleanupTempArtifacts();
 
         SaveIndex();
         sw.Stop();
@@ -738,62 +700,18 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private void CleanupExpired()
     {
-        int expiryDays = _settings.GetThumbnailExpiryDays();
+        if (!_cacheMaintenance.CleanupExpired(_taskStore))
+            return;
 
-        if (expiryDays <= 0) return;
-
-        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        long threshold = now - (long)expiryDays * 86400;
-        List<ThumbnailTask> expired = _taskStore.SnapshotTasks()
-            .Where(t => t.MarkedForDeletionAt > 0 && t.MarkedForDeletionAt < threshold)
-            .ToList();
-
-        if (expired.Count == 0) return;
-
-        var sw = Stopwatch.StartNew();
-
-        foreach (var t in expired)
-        {
-            _indexRepository.DeleteTaskDirectory(t.Md5Dir);
-        }
-
-        _taskStore.RemoveTasks(expired);
-
-        SaveIndex();
         UpdateProgress();
-        sw.Stop();
     }
 
 
     private void LoadIndex()
-    {
-        var sw = Stopwatch.StartNew();
-        try
-        {
-            var loaded = _indexRepository.Load(new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-            _taskStore.MergeLoadedTasks(loaded);
-
-            sw.Stop();
-            Log.Info($"Thumbnail index loaded: count={loaded.Count}, ready={_taskStore.ReadyCount}, total={_taskStore.TotalCount}");
-        }
-        catch (Exception ex)
-        {
-            Log.Error("Load tasks failed", ex);
-            sw.Stop();
-        }
-    }
+        => _cacheMaintenance.LoadInto(_taskStore);
 
     private void SaveIndex()
-    {
-        try
-        {
-            _indexRepository.Save(_taskStore.SnapshotTasks());
-        }
-        catch (Exception ex)
-        {
-            Log.Error("Save thumbnail index failed", ex);
-        }
-    }
+        => _cacheMaintenance.SaveFrom(_taskStore);
 
 
     private void UpdateProgress()

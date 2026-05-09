@@ -538,6 +538,10 @@ Suggested internal split:
   - owns one-task execution, decode-strategy fallback, and render invocation
 - `ThumbnailWorkerExecutionHost`
   - owns the lifecycle of a single running worker, including execute, cancel/requeue handling, and finalize/update hooks
+- `ThumbnailCacheMaintenance`
+  - owns index load/save orchestration plus temp-artifact and expired-cache cleanup
+- `ThumbnailQueueScheduler`
+  - owns next-task selection, blocked-state reasoning, and scheduler snapshot composition
 - `ThumbnailStatusTracker`
   - owns aggregated ready/total counts, current foreground target, and status snapshot composition
 
@@ -576,6 +580,7 @@ Infrastructure/Thumbnails/
     ThumbnailGenerator.cs
     ThumbnailPlaybackWindowCoordinator.cs
     ThumbnailPlaybackWindowUpdate.cs
+    ThumbnailQueueScheduler.cs
     ThumbnailTaskStore.cs
     ThumbnailWorkIntentPriority.cs
     ThumbnailWorkerPool.cs
@@ -589,6 +594,7 @@ Infrastructure/Thumbnails/
 
   Storage/
     ThumbnailBundle.cs
+    ThumbnailCacheMaintenance.cs
     ThumbnailFrameIndex.cs
     ThumbnailIndex.cs
     ThumbnailIndexRepository.cs
