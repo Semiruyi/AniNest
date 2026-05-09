@@ -28,10 +28,12 @@ public class ThumbnailTask
 {
     public string VideoPath { get; init; } = "";
     public string Md5Dir { get; set; } = "";
-    public int Priority { get; set; }
     public ThumbnailState State { get; set; } = ThumbnailState.Pending;
     public int TotalFrames { get; set; }
     public long MarkedForDeletionAt { get; set; }
+    public ThumbnailWorkIntent Intent { get; set; } = ThumbnailWorkIntent.BackgroundFill;
+    public string? SourceCollectionId { get; set; }
+    public long IntentUpdatedAtUtcTicks { get; set; }
 }
 
 public class ThumbnailProgressEventArgs : EventArgs
@@ -58,6 +60,9 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private readonly object _taskLock = new();
     private readonly object _indexIoLock = new();
     private readonly Dictionary<string, ThumbnailTask> _videoToTask = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, HashSet<string>> _collectionToVideos = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, HashSet<string>> _videoToCollections = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, LibraryCollectionRef> _collections = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<ThumbnailGeneratorWorker> _activeWorkers = new();
     private CancellationTokenSource? _loopCts;
     private Task? _loopTask;
@@ -161,82 +166,103 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     }
 
 
+    public void RegisterCollection(LibraryCollectionRef collection, IReadOnlyCollection<string> videoPaths)
+    {
+        if (!_ffmpegAvailable)
+            return;
+
+        lock (_taskLock)
+        {
+            RegisterCollectionUnsafe(collection, videoPaths);
+        }
+
+        EnsureLoopRunning();
+        NotifyStatusChanged();
+    }
+
+    public void RemoveCollection(string collectionId)
+    {
+        lock (_taskLock)
+        {
+            if (!_collectionToVideos.TryGetValue(collectionId, out var members))
+                return;
+
+            foreach (string videoPath in members)
+            {
+                if (_videoToCollections.TryGetValue(videoPath, out var collectionIds))
+                {
+                    collectionIds.Remove(collectionId);
+                    if (collectionIds.Count == 0)
+                        _videoToCollections.Remove(videoPath);
+                }
+            }
+
+            _collectionToVideos.Remove(collectionId);
+            _collections.Remove(collectionId);
+        }
+    }
+
+    public void FocusCollection(string collectionId)
+    {
+        lock (_taskLock)
+        {
+            ApplyIntentToCollectionUnsafe(collectionId, ThumbnailWorkIntent.FocusedCollection);
+        }
+
+        EnsureLoopRunning();
+        NotifyStatusChanged();
+    }
+
+    public void BoostCollection(string collectionId)
+    {
+        lock (_taskLock)
+        {
+            ApplyIntentToCollectionUnsafe(collectionId, ThumbnailWorkIntent.ManualCollection);
+        }
+
+        EnsureLoopRunning();
+        NotifyStatusChanged();
+    }
+
+    public void BoostVideo(string videoPath)
+    {
+        lock (_taskLock)
+        {
+            if (_videoToTask.TryGetValue(videoPath, out var task))
+                ApplyIntentUnsafe(task, ThumbnailWorkIntent.ManualSingle, task.SourceCollectionId, DateTime.UtcNow.Ticks);
+        }
+
+        EnsureLoopRunning();
+        NotifyStatusChanged();
+    }
+
     public void EnqueueFolder(string folderPath, IReadOnlyCollection<string> videoFiles, int cardOrder,
         string? lastPlayedPath, HashSet<string> playedPaths)
     {
-        if (!_ffmpegAvailable)
-        {
-            return;
-        }
-
-        var sw = Stopwatch.StartNew();
-
-        int added = 0;
-        foreach (var videoPath in videoFiles)
-        {
-            int videoWeight = 2; // played
-            if (string.Equals(videoPath, lastPlayedPath, StringComparison.OrdinalIgnoreCase))
-                videoWeight = 0; // last played
-            else if (!playedPaths.Contains(videoPath))
-                videoWeight = 1; // unplayed
-
-            if (TryEnqueueVideo(videoPath, cardOrder * 1000 + videoWeight, out bool revived))
-            {
-                added++;
-            }
-            else if (revived)
-            {
-                SaveIndex();
-            }
-        }
-
-        if (added > 0)
-            SortQueue();
-        EnsureLoopRunning();
-        NotifyStatusChanged();
-
-        sw.Stop();
+        RegisterCollection(new LibraryCollectionRef(folderPath, LibraryCollectionKind.Folder, Path.GetFileName(folderPath)), videoFiles);
     }
 
     public void DeleteForFolder(string folderPath, IReadOnlyCollection<string>? videoFiles = null)
     {
-        var sw = Stopwatch.StartNew();
-        int marked = 0;
-
-        if (videoFiles != null)
-        {
-            foreach (var videoPath in videoFiles)
-            {
-                MarkForDeletion(videoPath);
-                marked++;
-            }
-        }
-
         lock (_taskLock)
         {
+            if (videoFiles != null)
+            {
+                foreach (var videoPath in videoFiles)
+                    MarkForDeletionUnsafe(videoPath);
+            }
+
             var matching = _tasks.Where(t =>
                 t.VideoPath.StartsWith(folderPath, StringComparison.OrdinalIgnoreCase)).ToList();
-            foreach (var t in matching)
+            foreach (var task in matching)
             {
-                if (videoFiles == null || !videoFiles.Contains(t.VideoPath, StringComparer.OrdinalIgnoreCase))
-                {
-                    t.MarkedForDeletionAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                    marked++;
-                }
+                if (videoFiles == null || !videoFiles.Contains(task.VideoPath, StringComparer.OrdinalIgnoreCase))
+                    task.MarkedForDeletionAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             }
         }
 
+        RemoveCollection(folderPath);
         SaveIndex();
-        sw.Stop();
-
-        lock (_taskLock)
-        {
-            var markedPaths = _tasks.Where(t =>
-                t.MarkedForDeletionAt > 0 &&
-                t.VideoPath.StartsWith(folderPath, StringComparison.OrdinalIgnoreCase))
-                .Select(t => t.VideoPath);
-        }
-
         NotifyStatusChanged();
     }
 
@@ -379,50 +405,34 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         _loopTask = Task.Run(() => ProcessQueueLoop(_loopCts.Token));
     }
 
-    private void SortQueue()
+    private bool TryRegisterVideoUnsafe(string videoPath, out bool revived)
     {
-        lock (_taskLock)
+        revived = false;
+
+        if (_videoToTask.TryGetValue(videoPath, out var existing))
         {
-            _tasks.Sort((a, b) =>
+            if (existing.MarkedForDeletionAt != 0)
             {
-                int aBlocked = a.State is ThumbnailState.Ready or ThumbnailState.Generating ? 1 : 0;
-                int bBlocked = b.State is ThumbnailState.Ready or ThumbnailState.Generating ? 1 : 0;
-                int cmp = aBlocked.CompareTo(bBlocked);
-                return cmp != 0 ? cmp : a.Priority.CompareTo(b.Priority);
-            });
-        }
-    }
-
-    private bool TryEnqueueVideo(string videoPath, int priority, out bool revived)
-    {
-        lock (_taskLock)
-        {
-            revived = false;
-
-            if (_videoToTask.TryGetValue(videoPath, out var existing))
-            {
-                if (existing.MarkedForDeletionAt != 0)
-                {
-                    existing.MarkedForDeletionAt = 0;
-                    revived = true;
-                }
-
-                return false;
+                existing.MarkedForDeletionAt = 0;
+                revived = true;
             }
 
-            var task = new ThumbnailTask
-            {
-                VideoPath = videoPath,
-                Md5Dir = ComputeMd5(videoPath),
-                Priority = priority,
-                State = ThumbnailState.Pending
-            };
-
-            _tasks.Add(task);
-            _videoToTask[videoPath] = task;
-            _totalCount++;
-            return true;
+            return false;
         }
+
+        var task = new ThumbnailTask
+        {
+            VideoPath = videoPath,
+            Md5Dir = ComputeMd5(videoPath),
+            State = ThumbnailState.Pending,
+            Intent = ThumbnailWorkIntent.BackgroundFill,
+            IntentUpdatedAtUtcTicks = 0
+        };
+
+        _tasks.Add(task);
+        _videoToTask[videoPath] = task;
+        _totalCount++;
+        return true;
     }
 
     private ThumbnailTask? DequeueNext()
@@ -432,13 +442,13 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             if (!CanStartMoreWorkersUnsafe())
                 return null;
 
-            foreach (var t in _tasks)
-            {
-                if (t.State == ThumbnailState.Pending)
-                    return t;
-            }
+            return _tasks
+                .Where(static task => task.State == ThumbnailState.Pending)
+                .OrderByDescending(static task => GetIntentRank(task.Intent))
+                .ThenByDescending(static task => task.IntentUpdatedAtUtcTicks)
+                .ThenBy(static task => task.VideoPath, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
         }
-        return null;
     }
 
     private async Task ProcessQueueLoop(CancellationToken ct)
@@ -543,7 +553,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
 
         Log.Info(
-            $"Thumbnail worker start: file={Path.GetFileName(task.VideoPath)}, priority={task.Priority}, {snapshot}");
+            $"Thumbnail worker start: file={Path.GetFileName(task.VideoPath)}, intent={task.Intent}, {snapshot}");
         NotifyStatusChanged();
     }
 
@@ -628,7 +638,8 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         return
             $"playerActive={_isPlayerActive}, mode={_performanceMode}, paused={_isGenerationPaused}, maxConcurrency={policy.MaxConcurrency}, " +
             $"allowStartNewJobs={policy.AllowStartNewJobs}, activeWorkers={_activeWorkers.Count}, " +
-            $"pendingTasks={CountTasksByStateUnsafe(ThumbnailState.Pending)}, ready={_readyCount}, total={_totalCount}";
+            $"pendingTasks={CountTasksByStateUnsafe(ThumbnailState.Pending)}, ready={_readyCount}, total={_totalCount}, " +
+            $"foregroundPending={CountForegroundPendingUnsafe()}";
     }
 
     private void ReportSchedulerState(string state)
@@ -917,6 +928,8 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
                 foreach (var task in loaded)
                 {
                     _tasks.Add(task);
+                    task.Intent = ThumbnailWorkIntent.BackgroundFill;
+                    task.IntentUpdatedAtUtcTicks = 0;
                     _videoToTask[task.VideoPath] = task;
                     _totalCount++;
                     if (task.State == ThumbnailState.Ready) _readyCount++;
@@ -1042,7 +1055,22 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     {
         lock (_taskLock)
         {
-            return _tasks.Select(static task => task.VideoPath).ToArray();
+            return _tasks
+                .OrderByDescending(static task => GetIntentRank(task.Intent))
+                .ThenByDescending(static task => task.IntentUpdatedAtUtcTicks)
+                .ThenBy(static task => task.VideoPath, StringComparer.OrdinalIgnoreCase)
+                .Select(static task => task.VideoPath)
+                .ToArray();
+        }
+    }
+
+    internal ThumbnailWorkIntent? GetIntent(string videoPath)
+    {
+        lock (_taskLock)
+        {
+            return _videoToTask.TryGetValue(videoPath, out var task)
+                ? task.Intent
+                : null;
         }
     }
 
@@ -1093,23 +1121,15 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private bool TryRequeueTask(ThumbnailTask task)
     {
-        bool requeued = false;
-        bool needsSort = false;
-
         lock (_taskLock)
         {
             if (task.State == ThumbnailState.Generating)
             {
                 SetTaskStateUnsafe(task, ThumbnailState.Pending);
-                requeued = true;
-                needsSort = true;
+                return true;
             }
         }
-
-        if (needsSort)
-            SortQueue();
-
-        return requeued;
+        return false;
     }
 
     private int CountTasksByStateUnsafe(ThumbnailState state)
@@ -1151,6 +1171,94 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             $"Thumbnail render failed all strategies: file={Path.GetFileName(task.VideoPath)}, " +
             $"attempts={string.Join(" -> ", strategies)}");
         return lastResult;
+    }
+
+    private static int GetIntentRank(ThumbnailWorkIntent intent)
+        => intent switch
+        {
+            ThumbnailWorkIntent.ManualSingle => 5,
+            ThumbnailWorkIntent.PlaybackCurrent => 4,
+            ThumbnailWorkIntent.PlaybackNearby => 3,
+            ThumbnailWorkIntent.ManualCollection => 2,
+            ThumbnailWorkIntent.FocusedCollection => 1,
+            _ => 0
+        };
+
+    private int CountForegroundPendingUnsafe()
+        => _tasks.Count(task =>
+            task.State == ThumbnailState.Pending &&
+            task.Intent != ThumbnailWorkIntent.BackgroundFill);
+
+    private void RegisterCollectionUnsafe(LibraryCollectionRef collection, IReadOnlyCollection<string> videoPaths)
+    {
+        _collections[collection.Id] = collection;
+
+        if (_collectionToVideos.TryGetValue(collection.Id, out var previousMembers))
+        {
+            foreach (string videoPath in previousMembers)
+            {
+                if (_videoToCollections.TryGetValue(videoPath, out var collectionIds))
+                {
+                    collectionIds.Remove(collection.Id);
+                    if (collectionIds.Count == 0)
+                        _videoToCollections.Remove(videoPath);
+                }
+            }
+        }
+
+        var members = new HashSet<string>(videoPaths, StringComparer.OrdinalIgnoreCase);
+        _collectionToVideos[collection.Id] = members;
+
+        foreach (string videoPath in members)
+        {
+            TryRegisterVideoUnsafe(videoPath, out _);
+
+            if (_videoToTask.TryGetValue(videoPath, out var task))
+            {
+                task.SourceCollectionId ??= collection.Id;
+            }
+
+            if (!_videoToCollections.TryGetValue(videoPath, out var collectionIds))
+            {
+                collectionIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                _videoToCollections[videoPath] = collectionIds;
+            }
+
+            collectionIds.Add(collection.Id);
+        }
+    }
+
+    private void ApplyIntentToCollectionUnsafe(string collectionId, ThumbnailWorkIntent intent)
+    {
+        if (!_collectionToVideos.TryGetValue(collectionId, out var members))
+            return;
+
+        long updatedAtTicks = DateTime.UtcNow.Ticks;
+        foreach (string videoPath in members)
+        {
+            if (_videoToTask.TryGetValue(videoPath, out var task))
+                ApplyIntentUnsafe(task, intent, collectionId, updatedAtTicks);
+        }
+    }
+
+    private void ApplyIntentUnsafe(ThumbnailTask task, ThumbnailWorkIntent intent, string? sourceCollectionId, long updatedAtTicks)
+    {
+        if (GetIntentRank(intent) < GetIntentRank(task.Intent))
+            return;
+
+        task.Intent = intent;
+        task.SourceCollectionId = sourceCollectionId ?? task.SourceCollectionId;
+        task.IntentUpdatedAtUtcTicks = updatedAtTicks;
+    }
+
+    private void MarkForDeletionUnsafe(string videoPath)
+    {
+        if (_videoToTask.TryGetValue(videoPath, out var task) &&
+            task.State == ThumbnailState.Ready &&
+            task.MarkedForDeletionAt == 0)
+        {
+            task.MarkedForDeletionAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        }
     }
 }
 

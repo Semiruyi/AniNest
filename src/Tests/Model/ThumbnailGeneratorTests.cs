@@ -47,32 +47,57 @@ public class ThumbnailGeneratorTests : IDisposable
             .ToArray();
 
         matchingPaths.Should().HaveCount(2);
-        matchingPaths
-            .Should()
-            .Equal(videos);
+        matchingPaths.Should().Equal(videos);
     }
 
     [Fact]
-    public void EnqueueFolder_OrdersLastPlayedBeforeUnplayedBeforePlayed()
+    public void EnqueueFolder_SeedsVideosAsBackgroundFill()
     {
-        var lastPlayed = @"C:\videos\ep03.mp4";
-        var unplayed = @"C:\videos\ep02.mp4";
-        var played = @"C:\videos\ep01.mp4";
+        var videos = new[] { @"C:\videos\ep01.mp4", @"C:\videos\ep02.mp4" };
 
-        _settingsService.MarkVideoPlayed(lastPlayed);
-        _settingsService.MarkVideoPlayed(played);
+        _generator.EnqueueFolder(@"C:\videos", videos, 2, videos[0], [videos[0]]);
 
-        _generator.EnqueueFolder(
-            @"C:\videos",
-            [played, unplayed, lastPlayed],
-            cardOrder: 2,
-            lastPlayedPath: lastPlayed,
-            playedPaths: [lastPlayed, played]);
+        _generator.GetIntent(videos[0]).Should().Be(ThumbnailWorkIntent.BackgroundFill);
+        _generator.GetIntent(videos[1]).Should().Be(ThumbnailWorkIntent.BackgroundFill);
+    }
 
-        _generator.GetTaskVideoPathsInOrder()
-            .Where(path => path is not null && (path == lastPlayed || path == unplayed || path == played))
-            .Should()
-            .Equal(lastPlayed, unplayed, played);
+    [Fact]
+    public void FocusCollection_PromotesCollectionVideosAboveBackground()
+    {
+        var focusVideos = new[] { @"C:\videos\a.mp4", @"C:\videos\b.mp4" };
+        var backgroundVideo = @"C:\other\c.mp4";
+
+        _generator.RegisterCollection(
+            new LibraryCollectionRef("folder:focus", LibraryCollectionKind.Folder, "Focus"),
+            focusVideos);
+        _generator.RegisterCollection(
+            new LibraryCollectionRef("folder:other", LibraryCollectionKind.Folder, "Other"),
+            [backgroundVideo]);
+
+        _generator.FocusCollection("folder:focus");
+
+        _generator.GetIntent(focusVideos[0]).Should().Be(ThumbnailWorkIntent.FocusedCollection);
+        _generator.GetIntent(focusVideos[1]).Should().Be(ThumbnailWorkIntent.FocusedCollection);
+        _generator.GetIntent(backgroundVideo).Should().Be(ThumbnailWorkIntent.BackgroundFill);
+
+        _generator.GetTaskVideoPathsInOrder().Take(2).Should().Equal(focusVideos);
+    }
+
+    [Fact]
+    public void BoostVideo_PromotesSingleVideoAboveFocusedCollection()
+    {
+        var focusVideos = new[] { @"C:\videos\a.mp4", @"C:\videos\b.mp4" };
+
+        _generator.RegisterCollection(
+            new LibraryCollectionRef("folder:focus", LibraryCollectionKind.Folder, "Focus"),
+            focusVideos);
+        _generator.FocusCollection("folder:focus");
+
+        _generator.BoostVideo(focusVideos[1]);
+
+        _generator.GetIntent(focusVideos[0]).Should().Be(ThumbnailWorkIntent.FocusedCollection);
+        _generator.GetIntent(focusVideos[1]).Should().Be(ThumbnailWorkIntent.ManualSingle);
+        _generator.GetTaskVideoPathsInOrder().First().Should().Be(focusVideos[1]);
     }
 
     [Fact]
@@ -92,6 +117,7 @@ public class ThumbnailGeneratorTests : IDisposable
     {
         var video = @"C:\videos\ep01.mp4";
         _generator.EnqueueFolder(@"C:\videos", [video], 0, null, []);
+        _generator.BoostVideo(video);
         _generator.ForceTaskState(video, ThumbnailState.Generating);
 
         var requeued = _generator.TryRequeueTaskForTest(video);
@@ -100,6 +126,7 @@ public class ThumbnailGeneratorTests : IDisposable
         _generator.GetState(video).Should().Be(ThumbnailState.Pending);
         _generator.GetStatusSnapshot().ReadyCount.Should().Be(0);
         _generator.CountTasksByState(ThumbnailState.Pending).Should().BeGreaterThan(0);
+        _generator.GetIntent(video).Should().Be(ThumbnailWorkIntent.ManualSingle);
     }
 
     [Fact]

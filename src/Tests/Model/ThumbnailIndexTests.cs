@@ -38,8 +38,7 @@ public class ThumbnailIndexTests : IDisposable
                 VideoPath = "/videos/test.mp4",
                 Md5Dir = "abc123",
                 State = ThumbnailState.Ready,
-                TotalFrames = 60,
-                Priority = 5
+                TotalFrames = 60
             }
         };
 

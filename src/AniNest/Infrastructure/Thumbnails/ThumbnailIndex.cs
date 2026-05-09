@@ -106,8 +106,9 @@ internal static class ThumbnailIndex
                 Md5Dir = md5Dir,
                 State = state,
                 TotalFrames = totalFrames,
-                Priority = int.MaxValue,
-                MarkedForDeletionAt = kv.Value.MarkedForDeletionAt
+                MarkedForDeletionAt = kv.Value.MarkedForDeletionAt,
+                Intent = ThumbnailWorkIntent.BackgroundFill,
+                IntentUpdatedAtUtcTicks = DateTime.UtcNow.Ticks
             });
         }
         return tasks;

@@ -1,12 +1,30 @@
 using System;
 using System.Collections.Generic;
-using AniNest.Infrastructure.Logging;
-using AniNest.Infrastructure.Paths;
-using AniNest.Infrastructure.Persistence;
-using AniNest.Infrastructure.Media;
-using AniNest.Infrastructure.Thumbnails;
-using AniNest.Infrastructure.Interop;
+
 namespace AniNest.Infrastructure.Thumbnails;
+
+public enum LibraryCollectionKind
+{
+    Folder,
+    SystemCategory,
+    UserCategory,
+    Virtual
+}
+
+public sealed record LibraryCollectionRef(
+    string Id,
+    LibraryCollectionKind Kind,
+    string Name);
+
+public enum ThumbnailWorkIntent
+{
+    BackgroundFill,
+    FocusedCollection,
+    ManualCollection,
+    PlaybackNearby,
+    PlaybackCurrent,
+    ManualSingle
+}
 
 public interface IThumbnailGenerator
 {
@@ -15,6 +33,12 @@ public interface IThumbnailGenerator
 
     ThumbnailState GetState(string videoPath);
     byte[]? GetThumbnailBytes(string videoPath, long positionMs);
+
+    void RegisterCollection(LibraryCollectionRef collection, IReadOnlyCollection<string> videoPaths);
+    void RemoveCollection(string collectionId);
+    void FocusCollection(string collectionId);
+    void BoostCollection(string collectionId);
+    void BoostVideo(string videoPath);
 
     void EnqueueFolder(string folderPath, IReadOnlyCollection<string> videoFiles, int cardOrder,
         string? lastPlayedPath, HashSet<string> playedPaths);
@@ -39,6 +63,3 @@ public sealed record ThumbnailGenerationStatusSnapshot(
     int ReadyCount,
     int TotalCount,
     int PendingCount);
-
-
-
