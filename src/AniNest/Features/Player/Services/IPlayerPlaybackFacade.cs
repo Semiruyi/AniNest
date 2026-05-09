@@ -8,7 +8,7 @@ public interface IPlayerPlaybackFacade
     long MediaLength { get; }
     float Rate { get; set; }
 
-    void Initialize();
+    Task InitializeAsync();
     void TogglePlayPause();
     void Stop();
     void SeekForward(long milliseconds);

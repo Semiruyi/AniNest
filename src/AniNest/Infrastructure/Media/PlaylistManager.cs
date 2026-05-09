@@ -47,14 +47,11 @@ public class PlaylistManager
         _getThumbnailState = getThumbnailState;
     }
 
-    public void LoadFolder(string folderPath, string folderName)
+    public async Task LoadFolderAsync(string folderPath, string folderName, CancellationToken cancellationToken = default)
     {
-        LoadFolderSkeletonAsync(folderPath, folderName).GetAwaiter().GetResult();
-        LoadFolderData();
+        await LoadFolderSkeletonAsync(folderPath, folderName, cancellationToken);
+        await LoadFolderDataAsync(cancellationToken);
     }
-
-    public void LoadFolderSkeleton(string folderPath, string folderName)
-        => LoadFolderSkeletonAsync(folderPath, folderName).GetAwaiter().GetResult();
 
     public async Task LoadFolderSkeletonAsync(string folderPath, string folderName, CancellationToken cancellationToken = default)
     {

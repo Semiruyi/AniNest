@@ -89,14 +89,14 @@ public class MediaPlayerController : IMediaPlayerController
         }
     }
 
-    public void Initialize()
+    public async Task InitializeAsync()
     {
         try
         {
             var vlc = _sharedLibVLC;
             if (vlc == null)
             {
-                vlc = GetOrStartPreinitializationTask().GetAwaiter().GetResult();
+                vlc = await GetOrStartPreinitializationTask().ConfigureAwait(false);
             }
             libVLC = vlc;
             EnsurePlaybackSession();

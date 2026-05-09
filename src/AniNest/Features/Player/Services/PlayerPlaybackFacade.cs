@@ -24,8 +24,8 @@ public sealed class PlayerPlaybackFacade : IPlayerPlaybackFacade
         set => _media.Rate = value;
     }
 
-    public void Initialize()
-        => _media.Initialize();
+    public Task InitializeAsync()
+        => _media.InitializeAsync();
 
     public void TogglePlayPause()
         => _media.TogglePlayPause();

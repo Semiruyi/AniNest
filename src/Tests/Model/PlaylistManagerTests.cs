@@ -44,10 +44,10 @@ public class PlaylistManagerTests : IDisposable
     }
 
     [Fact]
-    public void PlayNext_AtStart_AdvancesIndex()
+    public async Task PlayNext_AtStart_AdvancesIndex()
     {
         CreateVideoFiles(3);
-        _manager.LoadFolder(_tempDir, "Test");
+        await _manager.LoadFolderAsync(_tempDir, "Test");
 
         var result = _manager.PlayNext();
 
@@ -56,10 +56,10 @@ public class PlaylistManagerTests : IDisposable
     }
 
     [Fact]
-    public void PlayNext_AtEnd_ReturnsFalse()
+    public async Task PlayNext_AtEnd_ReturnsFalse()
     {
         CreateVideoFiles(3);
-        _manager.LoadFolder(_tempDir, "Test");
+        await _manager.LoadFolderAsync(_tempDir, "Test");
         // Move to last
         _manager.CurrentIndex = 2;
 
@@ -70,10 +70,10 @@ public class PlaylistManagerTests : IDisposable
     }
 
     [Fact]
-    public void PlayPrevious_AtStart_ReturnsFalse()
+    public async Task PlayPrevious_AtStart_ReturnsFalse()
     {
         CreateVideoFiles(3);
-        _manager.LoadFolder(_tempDir, "Test");
+        await _manager.LoadFolderAsync(_tempDir, "Test");
 
         var result = _manager.PlayPrevious();
 
@@ -82,10 +82,10 @@ public class PlaylistManagerTests : IDisposable
     }
 
     [Fact]
-    public void PlayPrevious_AtMiddle_GoesBack()
+    public async Task PlayPrevious_AtMiddle_GoesBack()
     {
         CreateVideoFiles(3);
-        _manager.LoadFolder(_tempDir, "Test");
+        await _manager.LoadFolderAsync(_tempDir, "Test");
         _manager.CurrentIndex = 1;
 
         var result = _manager.PlayPrevious();
@@ -95,10 +95,10 @@ public class PlaylistManagerTests : IDisposable
     }
 
     [Fact]
-    public void PlayEpisode_ValidIndex_PlaysIt()
+    public async Task PlayEpisode_ValidIndex_PlaysIt()
     {
         CreateVideoFiles(5);
-        _manager.LoadFolder(_tempDir, "Test");
+        await _manager.LoadFolderAsync(_tempDir, "Test");
 
         _manager.PlayEpisode(3);
 
@@ -106,10 +106,10 @@ public class PlaylistManagerTests : IDisposable
     }
 
     [Fact]
-    public void PlayEpisode_OutOfRange_DoesNothing()
+    public async Task PlayEpisode_OutOfRange_DoesNothing()
     {
         CreateVideoFiles(3);
-        _manager.LoadFolder(_tempDir, "Test");
+        await _manager.LoadFolderAsync(_tempDir, "Test");
 
         _manager.PlayEpisode(10);
 
@@ -117,10 +117,10 @@ public class PlaylistManagerTests : IDisposable
     }
 
     [Fact]
-    public void PlayEpisode_NegativeIndex_DoesNothing()
+    public async Task PlayEpisode_NegativeIndex_DoesNothing()
     {
         CreateVideoFiles(3);
-        _manager.LoadFolder(_tempDir, "Test");
+        await _manager.LoadFolderAsync(_tempDir, "Test");
 
         _manager.PlayEpisode(-1);
 
@@ -150,10 +150,10 @@ public class PlaylistManagerTests : IDisposable
     }
 
     [Fact]
-    public void PlayNext_SetsIsPlayedOnPrevious()
+    public async Task PlayNext_SetsIsPlayedOnPrevious()
     {
         CreateVideoFiles(3);
-        _manager.LoadFolder(_tempDir, "Test");
+        await _manager.LoadFolderAsync(_tempDir, "Test");
         var firstItem = _manager.Items[0];
 
         _manager.PlayNext();
@@ -162,10 +162,10 @@ public class PlaylistManagerTests : IDisposable
     }
 
     [Fact]
-    public void UpdateThumbnailReady_SetsFlag()
+    public async Task UpdateThumbnailReady_SetsFlag()
     {
         CreateVideoFiles(2);
-        _manager.LoadFolder(_tempDir, "Test");
+        await _manager.LoadFolderAsync(_tempDir, "Test");
         var item = _manager.Items[1];
 
         _manager.UpdateThumbnailReady(item.FilePath);
@@ -174,10 +174,10 @@ public class PlaylistManagerTests : IDisposable
     }
 
     [Fact]
-    public void UpdateThumbnailProgress_SetsPercent()
+    public async Task UpdateThumbnailProgress_SetsPercent()
     {
         CreateVideoFiles(2);
-        _manager.LoadFolder(_tempDir, "Test");
+        await _manager.LoadFolderAsync(_tempDir, "Test");
         var item = _manager.Items[0];
 
         _manager.UpdateThumbnailProgress(item.FilePath, 75);
@@ -186,21 +186,21 @@ public class PlaylistManagerTests : IDisposable
     }
 
     [Fact]
-    public void CurrentItem_ReturnsItemAtCurrentIndex()
+    public async Task CurrentItem_ReturnsItemAtCurrentIndex()
     {
         CreateVideoFiles(3);
-        _manager.LoadFolder(_tempDir, "Test");
+        await _manager.LoadFolderAsync(_tempDir, "Test");
         _manager.CurrentIndex = 1;
 
         _manager.CurrentItem!.Number.Should().Be(2);
     }
 
     [Fact]
-    public void LoadFolder_SetsCurrentIndex()
+    public async Task LoadFolder_SetsCurrentIndex()
     {
         CreateVideoFiles(3);
 
-        _manager.LoadFolder(_tempDir, "Test");
+        await _manager.LoadFolderAsync(_tempDir, "Test");
 
         _manager.CurrentIndex.Should().Be(0);
         _manager.ItemCount.Should().Be(3);
@@ -208,13 +208,13 @@ public class PlaylistManagerTests : IDisposable
     }
 
     [Fact]
-    public void VideoPlayed_Event_FiresOnPlayEpisode()
+    public async Task VideoPlayed_Event_FiresOnPlayEpisode()
     {
         CreateVideoFiles(2);
         string? playedPath = null;
         _manager.VideoPlayed += path => playedPath = path;
 
-        _manager.LoadFolder(_tempDir, "Test");
+        await _manager.LoadFolderAsync(_tempDir, "Test");
 
         // PlayEpisode calls PlayCurrentVideo which fires VideoPlayed
         _manager.PlayEpisode(1);

@@ -84,7 +84,7 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
         if (!_dataLoaded)
             return;
 
-        _ = RefreshLibraryAsync();
+        _ = RefreshLibraryOnAppearAsync();
     }
 
     public void OnDisappearing()
@@ -95,12 +95,14 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     {
         if (_dataLoaded && !forceReload)
         {
+            Log.Debug("LoadDataCore skipped: data already loaded");
             LoadDataCompleted?.Invoke(this, EventArgs.Empty);
             return;
         }
 
         CancelAndDispose(ref _loadDataCts);
         _loadDataCts = new CancellationTokenSource();
+        Log.Info($"LoadDataCore start: forceReload={forceReload}");
 
         try
         {
@@ -111,10 +113,16 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
                 FolderItems.Add(CreateFolderItem(item));
 
             _dataLoaded = true;
+            Log.Info($"LoadDataCore complete: items={loadedItems.Count}");
             LoadDataCompleted?.Invoke(this, EventArgs.Empty);
         }
         catch (OperationCanceledException)
         {
+            Log.Info($"LoadDataCore canceled: forceReload={forceReload}");
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"LoadDataCore failed: forceReload={forceReload}", ex);
         }
     }
 
@@ -385,6 +393,21 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
         cancellationTokenSource?.Cancel();
         cancellationTokenSource?.Dispose();
         cancellationTokenSource = null;
+    }
+
+    private async Task RefreshLibraryOnAppearAsync()
+    {
+        Log.Debug("RefreshLibraryOnAppear queued");
+
+        try
+        {
+            await RefreshLibraryAsync();
+            Log.Debug("RefreshLibraryOnAppear complete");
+        }
+        catch (Exception ex)
+        {
+            Log.Error("RefreshLibraryOnAppear failed", ex);
+        }
     }
 
     private int CountItemsWithCover()

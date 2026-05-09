@@ -19,7 +19,7 @@ public interface IMediaPlayerController : IDisposable
     WriteableBitmap? VideoBitmap { get; }
     float Rate { get; set; }
 
-    void Initialize();
+    Task InitializeAsync();
     Task WarmupAsync();
     void Play(string filePath, long startTimeMs = 0);
     void TogglePlayPause();

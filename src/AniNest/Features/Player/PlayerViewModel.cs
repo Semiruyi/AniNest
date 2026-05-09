@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using AniNest.Features.Player.Models;
 using AniNest.Features.Player.Input;
 using AniNest.Features.Player.Services;
+using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Localization;
 using AniNest.Presentation.Primitives;
 
@@ -14,11 +15,13 @@ namespace AniNest.Features.Player;
 
 public partial class PlayerViewModel : ObservableObject, ITransitioningContentLifecycle, IPlayerInputHost
 {
+    private static readonly Logger Log = AppLog.For<PlayerViewModel>();
     private readonly PlayerSessionController _session;
     private readonly PlayerPlaybackStateController _playback;
     private readonly IPlayerPlaybackFacade _playbackFacade;
     private readonly System.ComponentModel.PropertyChangedEventHandler _playbackPropertyChangedHandler;
     private bool _isMediaInitialized;
+    private Task? _initializeTask;
 
     private float _savedRate = 1.0f;
 
@@ -115,9 +118,8 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     {
         if (_isMediaInitialized)
             return;
-        _playbackFacade.Initialize();
-        _isMediaInitialized = true;
-        OnPropertyChanged(nameof(VideoSource));
+
+        _initializeTask ??= InitializeMediaAsync();
     }
 
     public void OnDisappearing()
@@ -214,5 +216,23 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     {
         _session.SaveProgress();
         GoBackRequested?.Invoke();
+    }
+
+    private async Task InitializeMediaAsync()
+    {
+        try
+        {
+            await _playbackFacade.InitializeAsync();
+            _isMediaInitialized = true;
+            OnPropertyChanged(nameof(VideoSource));
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Media initialization failed", ex);
+        }
+        finally
+        {
+            _initializeTask = null;
+        }
     }
 }

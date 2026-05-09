@@ -216,7 +216,7 @@ public partial class ShellViewModel : ObservableObject
         _isPageTransitionPending = true;
         _pendingTransitionTarget = nameof(PlayerViewModel);
         CurrentPage = _playerPage;
-        _ = _playerAppService.EnterPlayerAsync(CurrentAnimationCode, path, name);
+        _ = EnterPlayerPageAsync(path, name);
     }
 
     private void OnPlayerToggleFullscreenRequested()
@@ -245,7 +245,7 @@ public partial class ShellViewModel : ObservableObject
         Log.Info("Player go-back requested");
         _isPageTransitionPending = true;
         _pendingTransitionTarget = nameof(MainPageViewModel);
-        _ = _playerAppService.BeginLeavePlayerAsync();
+        _ = LeavePlayerPageAsync();
         CurrentPage = _mainPage;
     }
 
@@ -507,6 +507,32 @@ public partial class ShellViewModel : ObservableObject
     {
         if (CurrentPage is PlayerViewModel player)
             player.InputService.TryHandlePreviewKeyDown(player, args);
+    }
+
+    private async Task EnterPlayerPageAsync(string path, string name)
+    {
+        try
+        {
+            await _playerAppService.EnterPlayerAsync(CurrentAnimationCode, path, name);
+            Log.Info($"EnterPlayerAsync finished: name={name}, path={path}");
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"EnterPlayerAsync failed: name={name}, path={path}", ex);
+        }
+    }
+
+    private async Task LeavePlayerPageAsync()
+    {
+        try
+        {
+            await _playerAppService.BeginLeavePlayerAsync();
+            Log.Info("BeginLeavePlayerAsync finished");
+        }
+        catch (Exception ex)
+        {
+            Log.Error("BeginLeavePlayerAsync failed", ex);
+        }
     }
 
 }

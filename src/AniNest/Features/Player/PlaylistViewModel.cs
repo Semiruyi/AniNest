@@ -51,18 +51,15 @@ public partial class PlaylistViewModel : ObservableObject
         _playlistManager.VideoPlayed += _videoPlayedHandler;
     }
 
-    public void LoadFolder(string folderPath, string folderName)
+    public async System.Threading.Tasks.Task LoadFolderAsync(string folderPath, string folderName, CancellationToken cancellationToken = default)
     {
-        _playlistManager.LoadFolder(folderPath, folderName);
+        await _playlistManager.LoadFolderAsync(folderPath, folderName, cancellationToken);
         CurrentFolderName = folderName;
 
         var items = _playlistManager.Items;
         EpisodeCountText = items.Count > 0 ? string.Format(_loc["Player.EpisodeCount"], items.Count) : "";
         SetCurrentIndex(_playlistManager.CurrentIndex, force: true);
     }
-
-    public void LoadFolderSkeleton(string folderPath, string folderName)
-        => LoadFolderSkeletonAsync(folderPath, folderName).GetAwaiter().GetResult();
 
     public async System.Threading.Tasks.Task LoadFolderSkeletonAsync(string folderPath, string folderName, CancellationToken cancellationToken = default)
     {
