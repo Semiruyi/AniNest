@@ -125,6 +125,103 @@ public class ThumbnailGeneratorTests : IDisposable
     }
 
     [Fact]
+    public void SetPlayerActive_False_DemotesPlaybackIntentsAndClearsPlaybackTarget()
+    {
+        var videos = new[]
+        {
+            @"C:\videos\ep01.mp4",
+            @"C:\videos\ep02.mp4",
+            @"C:\videos\ep03.mp4"
+        };
+
+        _settingsService.SetThumbnailGenerationPaused(true);
+        _generator.RefreshGenerationPaused();
+        _generator.EnqueueFolder(@"C:\videos", videos, 0, null, []);
+        _generator.BoostPlaybackWindow(videos, currentIndex: 1, lookaheadCount: 1);
+
+        _generator.SetPlayerActive(false);
+
+        _generator.GetIntent(videos[0]).Should().Be(ThumbnailWorkIntent.BackgroundFill);
+        _generator.GetIntent(videos[1]).Should().Be(ThumbnailWorkIntent.BackgroundFill);
+        _generator.GetIntent(videos[2]).Should().Be(ThumbnailWorkIntent.BackgroundFill);
+        _generator.GetStatusSnapshot().CurrentTargetName.Should().BeNull();
+        _generator.GetStatusSnapshot().CurrentTargetIntent.Should().BeNull();
+    }
+
+    [Fact]
+    public void BoostPlaybackWindow_NewCurrent_PreemptsOldPlaybackWorker()
+    {
+        var videos = new[]
+        {
+            @"C:\videos\ep01.mp4",
+            @"C:\videos\ep02.mp4",
+            @"C:\videos\ep03.mp4"
+        };
+
+        _settingsService.SetThumbnailGenerationPaused(true);
+        _generator.RefreshGenerationPaused();
+        _generator.EnqueueFolder(@"C:\videos", videos, 0, null, []);
+        _generator.BoostPlaybackWindow(videos, currentIndex: 0, lookaheadCount: 1);
+        _generator.AddActiveWorkerForTest(videos[0]);
+
+        _generator.BoostPlaybackWindow(videos, currentIndex: 1, lookaheadCount: 1);
+
+        _generator.IsActiveWorkerCancellationRequestedForTest(videos[0]).Should().BeTrue();
+        _generator.GetIntent(videos[1]).Should().Be(ThumbnailWorkIntent.PlaybackCurrent);
+        _generator.GetStatusSnapshot().CurrentTargetName.Should().Be("ep02.mp4");
+    }
+
+    [Fact]
+    public void ResetCollection_WithBoostAfterReset_RequeuesCollectionAsManualCollection()
+    {
+        var videos = new[] { @"C:\videos\ep01.mp4", @"C:\videos\ep02.mp4" };
+
+        _settingsService.SetThumbnailGenerationPaused(true);
+        _generator.RefreshGenerationPaused();
+        _generator.RegisterCollection(new LibraryCollectionRef("folder:reset", LibraryCollectionKind.Folder, "Reset"), videos);
+        _generator.ForceTaskState(videos[0], ThumbnailState.Ready);
+        _generator.ResetCollection("folder:reset", boostAfterReset: true);
+
+        _generator.GetState(videos[0]).Should().Be(ThumbnailState.Pending);
+        _generator.GetIntent(videos[0]).Should().Be(ThumbnailWorkIntent.ManualCollection);
+        _generator.GetIntent(videos[1]).Should().Be(ThumbnailWorkIntent.ManualCollection);
+        _generator.GetStatusSnapshot().CurrentTargetIntent.Should().Be(nameof(ThumbnailWorkIntent.ManualCollection));
+    }
+
+    [Fact]
+    public void ResetCollection_WithoutBoostAfterReset_RequeuesCollectionAsBackgroundFill()
+    {
+        var videos = new[] { @"C:\videos\ep01.mp4", @"C:\videos\ep02.mp4" };
+
+        _settingsService.SetThumbnailGenerationPaused(true);
+        _generator.RefreshGenerationPaused();
+        _generator.RegisterCollection(new LibraryCollectionRef("folder:clear", LibraryCollectionKind.Folder, "Clear"), videos);
+        _generator.BoostCollection("folder:clear");
+        _generator.ResetCollection("folder:clear", boostAfterReset: false);
+
+        _generator.GetIntent(videos[0]).Should().Be(ThumbnailWorkIntent.BackgroundFill);
+        _generator.GetIntent(videos[1]).Should().Be(ThumbnailWorkIntent.BackgroundFill);
+    }
+
+    [Fact]
+    public void PreemptLowerPriorityWorkers_WhenManualSingleArrives_RequeuesBackgroundWorker()
+    {
+        var backgroundVideo = @"C:\videos\ep01.mp4";
+        var boostedVideo = @"C:\videos\ep02.mp4";
+
+        _generator.EnqueueFolder(@"C:\videos", [backgroundVideo, boostedVideo], 0, null, []);
+        _generator.AddActiveWorkerForTest(backgroundVideo);
+
+        _generator.BoostVideo(boostedVideo);
+        _generator.PreemptLowerPriorityWorkersForTest(ThumbnailWorkIntent.ManualSingle);
+        _generator.SimulateCanceledActiveWorkerForTest(backgroundVideo);
+
+        _generator.GetState(backgroundVideo).Should().Be(ThumbnailState.Pending);
+        _generator.GetIntent(backgroundVideo).Should().Be(ThumbnailWorkIntent.BackgroundFill);
+        _generator.GetIntent(boostedVideo).Should().Be(ThumbnailWorkIntent.ManualSingle);
+    }
+
+    [Fact]
     public void RequeueActiveWorkers_WhenNoActiveWorkers_DoesNotChangePendingTaskState()
     {
         var video = @"C:\videos\ep01.mp4";

@@ -107,12 +107,30 @@ public partial class PlayerSessionController : ObservableObject
     private void OnPlaylistCurrentIndexChanged(int value)
     {
         SyncCurrentIndex();
+        var currentPath = CurrentItem?.FilePath;
+        if (!string.Equals(CurrentVideoPath, currentPath, StringComparison.OrdinalIgnoreCase))
+        {
+            CurrentVideoPath = currentPath;
+            Log.Info(MemorySnapshot.Capture("PlayerSessionController.CurrentVideoPathSynced",
+                ("index", value),
+                ("currentVideoPath", CurrentVideoPath ?? "null"),
+                ("items", PlaylistItems.Count)));
+        }
+        Log.Info(MemorySnapshot.Capture("PlayerSessionController.CurrentIndexChanged",
+            ("index", value),
+            ("sessionIndex", CurrentIndex),
+            ("currentVideoPath", CurrentVideoPath ?? "null"),
+            ("items", PlaylistItems.Count)));
         OnCurrentIndexChangedValue(value);
     }
 
     private void OnPlaylistVideoPlayed(string filePath)
     {
         CurrentVideoPath = filePath;
+        Log.Info(MemorySnapshot.Capture("PlayerSessionController.VideoPlayed",
+            ("filePath", filePath),
+            ("currentIndex", CurrentIndex),
+            ("items", PlaylistItems.Count)));
         CurrentVideoPathChanged?.Invoke(filePath);
     }
 }

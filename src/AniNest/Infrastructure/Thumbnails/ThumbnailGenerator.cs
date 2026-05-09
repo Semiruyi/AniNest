@@ -42,6 +42,14 @@ public class ThumbnailProgressEventArgs : EventArgs
     public int Total { get; init; }
 }
 
+internal enum IntentApplyOutcome
+{
+    Applied,
+    AlreadyReady,
+    HigherIntentAlreadyPresent,
+    MissingTask
+}
+
 public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 {
     private static readonly Logger Log = AppLog.For<ThumbnailGenerator>();
@@ -181,6 +189,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             RegisterCollectionUnsafe(collection, videoPaths);
         }
 
+        Log.Info($"Thumbnail collection registered: id={collection.Id}, kind={collection.Kind}, name={collection.Name}, videos={videoPaths.Count}");
         EnsureLoopRunning();
         NotifyStatusChanged();
     }
@@ -209,38 +218,56 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     public void FocusCollection(string collectionId)
     {
+        bool shouldPreempt;
+        int promotedCount;
         lock (_taskLock)
         {
-            ApplyIntentToCollectionUnsafe(collectionId, ThumbnailWorkIntent.FocusedCollection);
+            promotedCount = ApplyIntentToCollectionUnsafe(collectionId, ThumbnailWorkIntent.FocusedCollection);
+            shouldPreempt = ShouldPreemptActiveWorkersUnsafe(ThumbnailWorkIntent.FocusedCollection);
         }
 
+        Log.Info($"Thumbnail collection focused: id={collectionId}, promoted={promotedCount}, shouldPreempt={shouldPreempt}");
+        if (shouldPreempt)
+            PreemptLowerPriorityWorkers(ThumbnailWorkIntent.FocusedCollection);
         EnsureLoopRunning();
         NotifyStatusChanged();
     }
 
     public void BoostCollection(string collectionId)
     {
+        bool shouldPreempt;
+        int promotedCount;
         lock (_taskLock)
         {
-            ApplyIntentToCollectionUnsafe(collectionId, ThumbnailWorkIntent.ManualCollection);
+            promotedCount = ApplyIntentToCollectionUnsafe(collectionId, ThumbnailWorkIntent.ManualCollection);
+            shouldPreempt = ShouldPreemptActiveWorkersUnsafe(ThumbnailWorkIntent.ManualCollection);
         }
 
+        Log.Info($"Thumbnail collection boosted: id={collectionId}, promoted={promotedCount}, shouldPreempt={shouldPreempt}");
+        if (shouldPreempt)
+            PreemptLowerPriorityWorkers(ThumbnailWorkIntent.ManualCollection);
         EnsureLoopRunning();
         NotifyStatusChanged();
     }
 
     public void BoostVideo(string videoPath)
     {
+        bool shouldPreempt = false;
+        IntentApplyOutcome outcome = IntentApplyOutcome.MissingTask;
         lock (_taskLock)
         {
             if (_videoToTask.TryGetValue(videoPath, out var task))
             {
-                ApplyIntentUnsafe(task, ThumbnailWorkIntent.ManualSingle, task.SourceCollectionId, DateTime.UtcNow.Ticks);
+                outcome = ApplyIntentUnsafe(task, ThumbnailWorkIntent.ManualSingle, task.SourceCollectionId, DateTime.UtcNow.Ticks);
                 _currentForegroundTargetVideoPath = task.VideoPath;
                 _currentForegroundTargetIntent = task.Intent.ToString();
+                shouldPreempt = ShouldPreemptActiveWorkersUnsafe(ThumbnailWorkIntent.ManualSingle);
             }
         }
 
+        Log.Info($"Thumbnail video boosted: file={Path.GetFileName(videoPath)}, outcome={outcome}, shouldPreempt={shouldPreempt}");
+        if (shouldPreempt)
+            PreemptLowerPriorityWorkers(ThumbnailWorkIntent.ManualSingle);
         EnsureLoopRunning();
         NotifyStatusChanged();
     }
@@ -250,11 +277,19 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         if (orderedVideoPaths.Count == 0 || currentIndex < 0 || currentIndex >= orderedVideoPaths.Count)
             return;
 
+        string currentVideoPath = orderedVideoPaths[currentIndex];
         long updatedAtTicks = DateTime.UtcNow.Ticks;
+        bool shouldPreemptLowerPriority;
+        int stalePlaybackWorkers;
+        IntentApplyOutcome currentOutcome;
+        int nearbyApplied = 0;
+        int nearbyReady = 0;
+        int nearbyHigherIntent = 0;
+        int nearbyMissing = 0;
         lock (_taskLock)
         {
-            ApplyPlaybackIntentUnsafe(orderedVideoPaths[currentIndex], ThumbnailWorkIntent.PlaybackCurrent, updatedAtTicks);
-            _currentForegroundTargetVideoPath = orderedVideoPaths[currentIndex];
+            currentOutcome = ApplyPlaybackIntentUnsafe(currentVideoPath, ThumbnailWorkIntent.PlaybackCurrent, updatedAtTicks);
+            _currentForegroundTargetVideoPath = currentVideoPath;
             _currentForegroundTargetIntent = ThumbnailWorkIntent.PlaybackCurrent.ToString();
 
             int start = Math.Max(0, currentIndex - 1);
@@ -264,10 +299,91 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
                 if (i == currentIndex)
                     continue;
 
-                ApplyPlaybackIntentUnsafe(orderedVideoPaths[i], ThumbnailWorkIntent.PlaybackNearby, updatedAtTicks);
+                IntentApplyOutcome outcome = ApplyPlaybackIntentUnsafe(orderedVideoPaths[i], ThumbnailWorkIntent.PlaybackNearby, updatedAtTicks);
+                switch (outcome)
+                {
+                    case IntentApplyOutcome.Applied:
+                        nearbyApplied++;
+                        break;
+                    case IntentApplyOutcome.AlreadyReady:
+                        nearbyReady++;
+                        break;
+                    case IntentApplyOutcome.HigherIntentAlreadyPresent:
+                        nearbyHigherIntent++;
+                        break;
+                    default:
+                        nearbyMissing++;
+                        break;
+                }
+            }
+
+            stalePlaybackWorkers = CountStalePlaybackWorkersUnsafe(currentVideoPath);
+            shouldPreemptLowerPriority = stalePlaybackWorkers == 0 &&
+                ShouldPreemptActiveWorkersUnsafe(ThumbnailWorkIntent.PlaybackCurrent);
+        }
+
+        Log.Info(
+            $"Thumbnail playback window boost: currentIndex={currentIndex}, lookahead={lookaheadCount}, currentFile={Path.GetFileName(currentVideoPath)}, " +
+            $"currentOutcome={currentOutcome}, nearbyApplied={nearbyApplied}, nearbyReady={nearbyReady}, nearbyHigherIntent={nearbyHigherIntent}, nearbyMissing={nearbyMissing}, shouldPreemptLowerPriority={shouldPreemptLowerPriority}, stalePlaybackWorkers={stalePlaybackWorkers}");
+        if (stalePlaybackWorkers > 0)
+            PreemptStalePlaybackWorkers(currentVideoPath);
+        else if (shouldPreemptLowerPriority)
+            PreemptLowerPriorityWorkers(ThumbnailWorkIntent.PlaybackCurrent);
+        EnsureLoopRunning();
+        NotifyStatusChanged();
+    }
+
+    public void ResetCollection(string collectionId, bool boostAfterReset)
+    {
+        List<string> thumbnailDirsToDelete = [];
+        bool changed = false;
+        long updatedAtTicks = DateTime.UtcNow.Ticks;
+        bool shouldPreempt = false;
+
+        lock (_taskLock)
+        {
+            if (!_collectionToVideos.TryGetValue(collectionId, out var members))
+                return;
+
+            foreach (string videoPath in members)
+            {
+                if (!_videoToTask.TryGetValue(videoPath, out var task))
+                    continue;
+
+                if (task.State == ThumbnailState.Ready)
+                    _readyCount--;
+
+                task.State = ThumbnailState.Pending;
+                task.TotalFrames = 0;
+                task.MarkedForDeletionAt = 0;
+                task.Intent = boostAfterReset
+                    ? ThumbnailWorkIntent.ManualCollection
+                    : ThumbnailWorkIntent.BackgroundFill;
+                task.IntentUpdatedAtUtcTicks = boostAfterReset ? updatedAtTicks : 0;
+                task.SourceCollectionId = collectionId;
+                thumbnailDirsToDelete.Add(Path.Combine(_thumbBaseDir, task.Md5Dir));
+                changed = true;
+            }
+
+            if (boostAfterReset && members.Count > 0)
+            {
+                _currentForegroundTargetVideoPath = members
+                    .OrderBy(static path => path, StringComparer.OrdinalIgnoreCase)
+                    .FirstOrDefault();
+                _currentForegroundTargetIntent = ThumbnailWorkIntent.ManualCollection.ToString();
+                shouldPreempt = ShouldPreemptActiveWorkersUnsafe(ThumbnailWorkIntent.ManualCollection);
             }
         }
 
+        foreach (string thumbnailDir in thumbnailDirsToDelete.Distinct(StringComparer.OrdinalIgnoreCase))
+            DeleteThumbnailDirectory(thumbnailDir);
+
+        if (!changed)
+            return;
+
+        if (shouldPreempt)
+            PreemptLowerPriorityWorkers(ThumbnailWorkIntent.ManualCollection);
+        SaveIndex();
         EnsureLoopRunning();
         NotifyStatusChanged();
     }
@@ -306,18 +422,53 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     {
         bool changed;
         string snapshot;
+        int demotedPlaybackTasks = 0;
+        List<ThumbnailGeneratorWorker> playbackWorkersToCancel = [];
+        string playbackWorkerFiles = string.Empty;
 
         lock (_taskLock)
         {
             changed = _isPlayerActive != isActive;
             _isPlayerActive = isActive;
+
+            if (!isActive)
+            {
+                demotedPlaybackTasks = DemotePlaybackIntentsUnsafe();
+                ClearPlaybackForegroundTargetUnsafe();
+
+                playbackWorkersToCancel = _activeWorkers
+                    .Where(static worker => !worker.Execution.IsCompleted)
+                    .Where(worker => IsPlaybackIntent(worker.Task.Intent))
+                    .ToList();
+
+                foreach (var worker in playbackWorkersToCancel)
+                    worker.CancellationReason = "player-inactive";
+
+                playbackWorkerFiles = string.Join(", ",
+                    playbackWorkersToCancel.Select(worker => Path.GetFileName(worker.Task.VideoPath)));
+            }
+
             snapshot = BuildSchedulerSnapshotUnsafe();
         }
 
-        if (!changed)
+        if (!changed && demotedPlaybackTasks == 0 && playbackWorkersToCancel.Count == 0)
             return;
 
-        Log.Info($"Thumbnail player activity changed: isActive={isActive}, {snapshot}");
+        Log.Info(
+            $"Thumbnail player activity changed: isActive={isActive}, demotedPlaybackTasks={demotedPlaybackTasks}, " +
+            $"cancelPlaybackWorkers={playbackWorkersToCancel.Count}, files=[{playbackWorkerFiles}], {snapshot}");
+
+        foreach (var worker in playbackWorkersToCancel)
+        {
+            try
+            {
+                worker.Cancellation.Cancel();
+            }
+            catch
+            {
+            }
+        }
+
         NotifyStatusChanged();
         EnsureLoopRunning();
     }
@@ -769,6 +920,83 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
     }
 
+    private void PreemptLowerPriorityWorkers(ThumbnailWorkIntent incomingIntent)
+    {
+        List<ThumbnailGeneratorWorker> workersToCancel;
+        string snapshot;
+        string files;
+
+        lock (_taskLock)
+        {
+            workersToCancel = _activeWorkers
+                .Where(static worker => !worker.Execution.IsCompleted)
+                .Where(worker => GetIntentRank(worker.Task.Intent) < GetIntentRank(incomingIntent))
+                .ToList();
+
+            foreach (var worker in workersToCancel)
+                worker.CancellationReason = $"preempted-by-{incomingIntent}";
+
+            snapshot = BuildSchedulerSnapshotUnsafe();
+            files = string.Join(", ", workersToCancel.Select(worker => $"{Path.GetFileName(worker.Task.VideoPath)}:{worker.Task.Intent}"));
+        }
+
+        if (workersToCancel.Count == 0)
+            return;
+
+        Log.Info(
+            $"Thumbnail worker preempt: incomingIntent={incomingIntent}, workers={workersToCancel.Count}, files=[{files}], {snapshot}");
+
+        foreach (var worker in workersToCancel)
+        {
+            try
+            {
+                worker.Cancellation.Cancel();
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    private void PreemptStalePlaybackWorkers(string currentVideoPath)
+    {
+        List<ThumbnailGeneratorWorker> workersToCancel;
+        string snapshot;
+        string files;
+
+        lock (_taskLock)
+        {
+            workersToCancel = _activeWorkers
+                .Where(static worker => !worker.Execution.IsCompleted)
+                .Where(worker => IsPlaybackIntent(worker.Task.Intent))
+                .Where(worker => !string.Equals(worker.Task.VideoPath, currentVideoPath, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            foreach (var worker in workersToCancel)
+                worker.CancellationReason = $"stale-playback-target:{Path.GetFileName(currentVideoPath)}";
+
+            snapshot = BuildSchedulerSnapshotUnsafe();
+            files = string.Join(", ", workersToCancel.Select(worker => $"{Path.GetFileName(worker.Task.VideoPath)}:{worker.Task.Intent}"));
+        }
+
+        if (workersToCancel.Count == 0)
+            return;
+
+        Log.Info(
+            $"Thumbnail stale playback worker preempt: currentFile={Path.GetFileName(currentVideoPath)}, workers={workersToCancel.Count}, files=[{files}], {snapshot}");
+
+        foreach (var worker in workersToCancel)
+        {
+            try
+            {
+                worker.Cancellation.Cancel();
+            }
+            catch
+            {
+            }
+        }
+    }
+
     private async Task WaitForWorkersAsync()
     {
         Task[] workers;
@@ -1133,6 +1361,46 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         return false;
     }
 
+    internal void PreemptLowerPriorityWorkersForTest(ThumbnailWorkIntent incomingIntent)
+        => PreemptLowerPriorityWorkers(incomingIntent);
+
+    internal void AddActiveWorkerForTest(string videoPath, string cancellationReason = "test-worker")
+    {
+        lock (_taskLock)
+        {
+            if (!_videoToTask.TryGetValue(videoPath, out var task))
+                return;
+
+            task.State = ThumbnailState.Generating;
+            _activeWorkers.Add(new ThumbnailGeneratorWorker
+            {
+                Task = task,
+                Execution = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously).Task,
+                Cancellation = new CancellationTokenSource(),
+                CancellationReason = cancellationReason
+            });
+        }
+    }
+
+    internal bool IsActiveWorkerCancellationRequestedForTest(string videoPath)
+    {
+        lock (_taskLock)
+        {
+            var worker = _activeWorkers.FirstOrDefault(activeWorker =>
+                string.Equals(activeWorker.Task.VideoPath, videoPath, StringComparison.OrdinalIgnoreCase));
+            return worker?.Cancellation.IsCancellationRequested ?? false;
+        }
+    }
+
+    internal void SimulateCanceledActiveWorkerForTest(string videoPath)
+    {
+        lock (_taskLock)
+        {
+            if (_videoToTask.TryGetValue(videoPath, out var task))
+                TryRequeueTask(task);
+        }
+    }
+
     private void SetTaskState(ThumbnailTask task, ThumbnailState newState)
     {
         lock (_taskLock)
@@ -1220,10 +1488,60 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             _ => 0
         };
 
+    private static bool IsPlaybackIntent(ThumbnailWorkIntent intent)
+        => intent is ThumbnailWorkIntent.PlaybackCurrent or ThumbnailWorkIntent.PlaybackNearby;
+
+    private bool ShouldPreemptActiveWorkersUnsafe(ThumbnailWorkIntent incomingIntent)
+    {
+        int incomingRank = GetIntentRank(incomingIntent);
+        foreach (var worker in _activeWorkers)
+        {
+            if (worker.Execution.IsCompleted)
+                continue;
+
+            if (GetIntentRank(worker.Task.Intent) < incomingRank)
+                return true;
+        }
+
+        return false;
+    }
+
     private int CountForegroundPendingUnsafe()
         => _tasks.Count(task =>
             task.State == ThumbnailState.Pending &&
             task.Intent != ThumbnailWorkIntent.BackgroundFill);
+
+    private int CountStalePlaybackWorkersUnsafe(string currentVideoPath)
+        => _activeWorkers.Count(worker =>
+            !worker.Execution.IsCompleted &&
+            IsPlaybackIntent(worker.Task.Intent) &&
+            !string.Equals(worker.Task.VideoPath, currentVideoPath, StringComparison.OrdinalIgnoreCase));
+
+    private int DemotePlaybackIntentsUnsafe()
+    {
+        int demoted = 0;
+        foreach (var task in _tasks)
+        {
+            if (!IsPlaybackIntent(task.Intent))
+                continue;
+
+            task.Intent = ThumbnailWorkIntent.BackgroundFill;
+            task.IntentUpdatedAtUtcTicks = 0;
+            demoted++;
+        }
+
+        return demoted;
+    }
+
+    private void ClearPlaybackForegroundTargetUnsafe()
+    {
+        if (!string.Equals(_currentForegroundTargetIntent, nameof(ThumbnailWorkIntent.PlaybackCurrent), StringComparison.Ordinal) &&
+            !string.Equals(_currentForegroundTargetIntent, nameof(ThumbnailWorkIntent.PlaybackNearby), StringComparison.Ordinal))
+            return;
+
+        _currentForegroundTargetVideoPath = null;
+        _currentForegroundTargetIntent = null;
+    }
 
     private void RegisterCollectionUnsafe(LibraryCollectionRef collection, IReadOnlyCollection<string> videoPaths)
     {
@@ -1264,33 +1582,46 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
     }
 
-    private void ApplyIntentToCollectionUnsafe(string collectionId, ThumbnailWorkIntent intent)
+    private int ApplyIntentToCollectionUnsafe(string collectionId, ThumbnailWorkIntent intent)
     {
         if (!_collectionToVideos.TryGetValue(collectionId, out var members))
-            return;
+            return 0;
 
         long updatedAtTicks = DateTime.UtcNow.Ticks;
+        int applied = 0;
         foreach (string videoPath in members)
         {
             if (_videoToTask.TryGetValue(videoPath, out var task))
-                ApplyIntentUnsafe(task, intent, collectionId, updatedAtTicks);
+            {
+                var outcome = ApplyIntentUnsafe(task, intent, collectionId, updatedAtTicks);
+                if (outcome == IntentApplyOutcome.Applied)
+                    applied++;
+            }
         }
+
+        return applied;
     }
 
-    private void ApplyIntentUnsafe(ThumbnailTask task, ThumbnailWorkIntent intent, string? sourceCollectionId, long updatedAtTicks)
+    private IntentApplyOutcome ApplyIntentUnsafe(ThumbnailTask task, ThumbnailWorkIntent intent, string? sourceCollectionId, long updatedAtTicks)
     {
+        if (task.State == ThumbnailState.Ready)
+            return IntentApplyOutcome.AlreadyReady;
+
         if (GetIntentRank(intent) < GetIntentRank(task.Intent))
-            return;
+            return IntentApplyOutcome.HigherIntentAlreadyPresent;
 
         task.Intent = intent;
         task.SourceCollectionId = sourceCollectionId ?? task.SourceCollectionId;
         task.IntentUpdatedAtUtcTicks = updatedAtTicks;
+        return IntentApplyOutcome.Applied;
     }
 
-    private void ApplyPlaybackIntentUnsafe(string videoPath, ThumbnailWorkIntent intent, long updatedAtTicks)
+    private IntentApplyOutcome ApplyPlaybackIntentUnsafe(string videoPath, ThumbnailWorkIntent intent, long updatedAtTicks)
     {
         if (_videoToTask.TryGetValue(videoPath, out var task))
-            ApplyIntentUnsafe(task, intent, task.SourceCollectionId, updatedAtTicks);
+            return ApplyIntentUnsafe(task, intent, task.SourceCollectionId, updatedAtTicks);
+
+        return IntentApplyOutcome.MissingTask;
     }
 
     private string? GetCurrentForegroundTargetNameUnsafe()
@@ -1312,6 +1643,19 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             task.MarkedForDeletionAt == 0)
         {
             task.MarkedForDeletionAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        }
+    }
+
+    private static void DeleteThumbnailDirectory(string thumbnailDir)
+    {
+        try
+        {
+            if (Directory.Exists(thumbnailDir))
+                Directory.Delete(thumbnailDir, recursive: true);
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Delete thumbnail directory failed: {thumbnailDir}", ex);
         }
     }
 }

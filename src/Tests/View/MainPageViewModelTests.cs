@@ -41,6 +41,22 @@ public class MainPageViewModelTests
         viewModel.FolderItems[0].PlayedPercent.Should().Be(50);
     }
 
+    [Fact]
+    public async Task PrioritizeFolderThumbnailsCommand_CallsLibraryService()
+    {
+        var libraryService = new Mock<ILibraryAppService>();
+        var localization = CreateLocalizationService();
+        libraryService
+            .Setup(service => service.PrioritizeFolderThumbnailsAsync("/folder", It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var viewModel = new MainPageViewModel(libraryService.Object, localization.Object);
+        viewModel.AddFolderItem("Folder", "/folder", 4, null);
+
+        await viewModel.PrioritizeFolderThumbnailsCommand.ExecuteAsync(viewModel.FolderItems[0]);
+
+        libraryService.Verify(service => service.PrioritizeFolderThumbnailsAsync("/folder", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     private static Mock<ILocalizationService> CreateLocalizationService()
     {
         var localization = new Mock<ILocalizationService>();

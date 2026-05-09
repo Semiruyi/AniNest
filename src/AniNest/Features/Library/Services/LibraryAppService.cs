@@ -141,6 +141,42 @@ public sealed class LibraryAppService : ILibraryAppService
         return Task.CompletedTask;
     }
 
+    public async Task PrioritizeFolderThumbnailsAsync(string path, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var videos = await _videoScanner.GetVideoFilesAsync(path, cancellationToken);
+        if (videos.Length == 0)
+            return;
+
+        RegisterFolderCollection(path, videos);
+        _thumbnailGenerator.BoostCollection(path);
+    }
+
+    public async Task RegenerateFolderThumbnailsAsync(string path, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var videos = await _videoScanner.GetVideoFilesAsync(path, cancellationToken);
+        if (videos.Length == 0)
+            return;
+
+        RegisterFolderCollection(path, videos);
+        _thumbnailGenerator.ResetCollection(path, boostAfterReset: true);
+    }
+
+    public async Task ClearFolderThumbnailCacheAsync(string path, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var videos = await _videoScanner.GetVideoFilesAsync(path, cancellationToken);
+        if (videos.Length == 0)
+            return;
+
+        RegisterFolderCollection(path, videos);
+        _thumbnailGenerator.ResetCollection(path, boostAfterReset: false);
+    }
+
     public async Task<LibraryFolderDto?> ClearFolderWatchHistoryAsync(string path, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -182,23 +218,14 @@ public sealed class LibraryAppService : ILibraryAppService
 
     private void EnqueueFolderForThumbnails(string folderPath, string[] videoFiles)
     {
-        int cardOrder = 0;
-        var folders = _settings.GetFolders();
-        var folderInfo = folders.FirstOrDefault(f => f.Path == folderPath);
-        if (folderInfo != null)
-            cardOrder = folderInfo.OrderIndex;
+        RegisterFolderCollection(folderPath, videoFiles);
+    }
 
-        var folderProgress = _settings.GetFolderProgress(folderPath);
-        string? lastPlayed = folderProgress?.LastVideoPath;
-
-        var playedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var videoFile in videoFiles)
-        {
-            if (_settings.IsVideoPlayed(videoFile))
-                playedPaths.Add(videoFile);
-        }
-
-        _thumbnailGenerator.EnqueueFolder(folderPath, videoFiles, cardOrder, lastPlayed, playedPaths);
+    private void RegisterFolderCollection(string folderPath, IReadOnlyCollection<string> videoFiles)
+    {
+        _thumbnailGenerator.RegisterCollection(
+            new LibraryCollectionRef(folderPath, LibraryCollectionKind.Folder, Path.GetFileName(folderPath)),
+            videoFiles);
     }
 
     private LibraryFolderDto CreateFolderDto(

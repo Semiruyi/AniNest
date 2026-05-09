@@ -40,6 +40,7 @@ public interface IThumbnailGenerator
     void BoostCollection(string collectionId);
     void BoostVideo(string videoPath);
     void BoostPlaybackWindow(IReadOnlyList<string> orderedVideoPaths, int currentIndex, int lookaheadCount);
+    void ResetCollection(string collectionId, bool boostAfterReset);
 
     void EnqueueFolder(string folderPath, IReadOnlyCollection<string> videoFiles, int cardOrder,
         string? lastPlayedPath, HashSet<string> playedPaths);

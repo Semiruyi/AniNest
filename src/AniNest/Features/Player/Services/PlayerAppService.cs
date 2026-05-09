@@ -3,6 +3,7 @@ using AniNest.Infrastructure.Diagnostics;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Media;
 using AniNest.Infrastructure.Thumbnails;
+using System.IO;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows;
@@ -40,6 +41,7 @@ public sealed class PlayerAppService : IPlayerAppService
         _playback = playback;
         _media = media;
         _thumbnailGenerator = thumbnailGenerator;
+        _session.CurrentIndexChanged += OnSessionCurrentIndexChanged;
     }
 
     public async Task EnterPlayerAsync(string animationCode, string path, string name)
@@ -107,13 +109,10 @@ public sealed class PlayerAppService : IPlayerAppService
             return;
 
         _loadedGeneration = generation;
-        _thumbnailGenerator.BoostPlaybackWindow(
-            _session.PlaylistItems.Select(item => item.FilePath).ToArray(),
-            _session.CurrentIndex,
-            3);
+        RefreshPlaybackThumbnailWindow();
         _pendingActivationGeneration = generation;
         TryActivatePendingVideo("data-loaded");
-        Log.Info($"LoadFolderDataAsync complete: CurrentIndex={_session.CurrentIndex}, CurrentVideoPath={_session.CurrentVideoPath ?? "null"}");
+        Log.Info($"LoadFolderDataAsync complete: CurrentIndex={_session.CurrentIndex}, CurrentItemPath={_session.CurrentItem?.FilePath ?? "null"}, CurrentVideoPath={_session.CurrentVideoPath ?? "null"}");
         Log.Info(MemorySnapshot.Capture("PlayerAppService.EnterPlayer.end",
             ("folder", name),
             ("generation", generation),
@@ -271,6 +270,51 @@ public sealed class PlayerAppService : IPlayerAppService
         }
 
         _activatedGeneration = generation;
-        Log.Info($"ActivateCurrentVideo complete: generation={generation}, index={_session.CurrentIndex}, path={_session.CurrentVideoPath ?? "null"}");
+        Log.Info($"ActivateCurrentVideo complete: generation={generation}, index={_session.CurrentIndex}, itemPath={_session.CurrentItem?.FilePath ?? "null"}, path={_session.CurrentVideoPath ?? "null"}");
+    }
+
+    private void OnSessionCurrentIndexChanged(int _)
+    {
+        if (_isLeavingPlayer || !_isPlayerPageVisible)
+        {
+            Log.Debug(
+                $"Skip RefreshPlaybackThumbnailWindow on index change: leaving={_isLeavingPlayer}, " +
+                $"pageVisible={_isPlayerPageVisible}, currentIndex={_session.CurrentIndex}, " +
+                $"currentVideoPath={_session.CurrentVideoPath ?? "null"}");
+            return;
+        }
+
+        Log.Info(
+            $"Player current index changed: currentIndex={_session.CurrentIndex}, " +
+            $"currentItemPath={_session.CurrentItem?.FilePath ?? "null"}, currentVideoPath={_session.CurrentVideoPath ?? "null"}, items={_session.PlaylistItems.Count}");
+        RefreshPlaybackThumbnailWindow();
+    }
+
+    private void RefreshPlaybackThumbnailWindow()
+    {
+        if (_session.CurrentIndex < 0 || _session.PlaylistItems.Count == 0)
+        {
+            Log.Debug(
+                $"Skip RefreshPlaybackThumbnailWindow: currentIndex={_session.CurrentIndex}, " +
+                $"items={_session.PlaylistItems.Count}, currentVideoPath={_session.CurrentVideoPath ?? "null"}");
+            return;
+        }
+
+        string[] orderedVideoPaths = _session.PlaylistItems.Select(item => item.FilePath).ToArray();
+        int currentIndex = _session.CurrentIndex;
+        int start = Math.Max(0, currentIndex - 1);
+        int end = Math.Min(orderedVideoPaths.Length - 1, currentIndex + 3);
+        string windowSummary = string.Join(", ",
+            Enumerable.Range(start, end - start + 1)
+                .Select(i => $"{i}:{Path.GetFileName(orderedVideoPaths[i])}{(i == currentIndex ? "*" : "")}"));
+
+        Log.Info(
+            $"RefreshPlaybackThumbnailWindow: currentIndex={currentIndex}, currentItemPath={_session.CurrentItem?.FilePath ?? "null"}, currentVideoPath={_session.CurrentVideoPath ?? "null"}, " +
+            $"window=[{windowSummary}], items={orderedVideoPaths.Length}");
+
+        _thumbnailGenerator.BoostPlaybackWindow(
+            orderedVideoPaths,
+            currentIndex,
+            3);
     }
 }

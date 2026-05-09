@@ -199,6 +199,39 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     }
 
     [RelayCommand]
+    private async Task PrioritizeFolderThumbnails(FolderListItem? item)
+    {
+        if (item == null)
+            return;
+
+        CloseFolderPopup();
+        Log.Info($"PrioritizeFolderThumbnails: name={item.Name} path={item.Path}");
+        await _libraryService.PrioritizeFolderThumbnailsAsync(item.Path);
+    }
+
+    [RelayCommand]
+    private async Task RegenerateFolderThumbnails(FolderListItem? item)
+    {
+        if (item == null)
+            return;
+
+        CloseFolderPopup();
+        Log.Info($"RegenerateFolderThumbnails: name={item.Name} path={item.Path}");
+        await _libraryService.RegenerateFolderThumbnailsAsync(item.Path);
+    }
+
+    [RelayCommand]
+    private async Task ClearFolderThumbnailCache(FolderListItem? item)
+    {
+        if (item == null)
+            return;
+
+        CloseFolderPopup();
+        Log.Info($"ClearFolderThumbnailCache: name={item.Name} path={item.Path}");
+        await _libraryService.ClearFolderThumbnailCacheAsync(item.Path);
+    }
+
+    [RelayCommand]
     private async Task ClearFolderWatchHistory(FolderListItem? item)
     {
         if (item == null)
