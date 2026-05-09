@@ -79,6 +79,12 @@ internal static class ThumbnailBundle
         return entries?.Select(static entry => entry.PositionMs).ToArray();
     }
 
+    public static int GetFrameCount(string thumbnailDirectory)
+    {
+        FrameEntry[]? entries = ReadFrameEntries(thumbnailDirectory);
+        return entries?.Length ?? 0;
+    }
+
     public static byte[]? ReadFrameBytes(string thumbnailDirectory, int frameIndex)
     {
         if (frameIndex < 0)

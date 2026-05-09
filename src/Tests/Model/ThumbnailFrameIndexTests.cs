@@ -1,19 +1,20 @@
-using System;
 using System.IO;
 using FluentAssertions;
 using AniNest.Infrastructure.Thumbnails;
-using Xunit;
 
 namespace AniNest.Tests.Model;
 
 public class ThumbnailFrameIndexTests : IDisposable
 {
     private readonly string _tempDir;
+    private readonly string _sourceDir;
 
     public ThumbnailFrameIndexTests()
     {
         _tempDir = Path.Combine(Path.GetTempPath(), $"ThumbnailFrameIndexTests_{Guid.NewGuid():N}");
+        _sourceDir = Path.Combine(_tempDir, "source");
         Directory.CreateDirectory(_tempDir);
+        Directory.CreateDirectory(_sourceDir);
     }
 
     public void Dispose()
@@ -22,27 +23,28 @@ public class ThumbnailFrameIndexTests : IDisposable
     }
 
     [Fact]
-    public void ResolveThumbnailPath_UsesLegacySequentialNaming_WhenNoFrameIndexExists()
+    public void Load_UsesBundleFramePositions()
     {
-        string expectedPath = Path.Combine(_tempDir, "0003.jpg");
-        File.WriteAllText(expectedPath, string.Empty);
+        File.WriteAllBytes(Path.Combine(_sourceDir, "0001.jpg"), [1]);
+        File.WriteAllBytes(Path.Combine(_sourceDir, "0002.jpg"), [2]);
+        ThumbnailBundle.Write(_sourceDir, _tempDir, [0L, 750L]);
 
-        string? resolved = ThumbnailFrameIndex.ResolveThumbnailPath(_tempDir, 2);
+        long[]? loaded = ThumbnailFrameIndex.Load(_tempDir);
 
-        resolved.Should().Be(expectedPath);
+        loaded.Should().Equal([0L, 750L]);
     }
 
     [Fact]
-    public void ResolveThumbnailPath_UsesNearestFrameFromIndex()
+    public void ResolveFrameIndex_UsesNearestFrameFromBundleMetadata()
     {
-        ThumbnailFrameIndex.Save(_tempDir, [0L, 5000L, 12000L]);
-        File.WriteAllText(Path.Combine(_tempDir, "0001.jpg"), string.Empty);
-        File.WriteAllText(Path.Combine(_tempDir, "0002.jpg"), string.Empty);
-        File.WriteAllText(Path.Combine(_tempDir, "0003.jpg"), string.Empty);
+        File.WriteAllBytes(Path.Combine(_sourceDir, "0001.jpg"), [1]);
+        File.WriteAllBytes(Path.Combine(_sourceDir, "0002.jpg"), [2]);
+        File.WriteAllBytes(Path.Combine(_sourceDir, "0003.jpg"), [3]);
+        ThumbnailBundle.Write(_sourceDir, _tempDir, [0L, 500L, 1000L]);
 
-        string? resolved = ThumbnailFrameIndex.ResolveThumbnailPath(_tempDir, 2000L);
+        int? resolved = ThumbnailFrameIndex.ResolveFrameIndex(_tempDir, 600L);
 
-        resolved.Should().Be(Path.Combine(_tempDir, "0001.jpg"));
+        resolved.Should().Be(1);
     }
 
     [Fact]
@@ -51,33 +53,5 @@ public class ThumbnailFrameIndexTests : IDisposable
         int index = ThumbnailFrameIndex.FindNearestFrameIndex([0L, 10000L], 5000L);
 
         index.Should().Be(0);
-    }
-
-    [Fact]
-    public void ResolveThumbnailPath_UsesMillisecondPrecisionFromIndex()
-    {
-        ThumbnailFrameIndex.Save(_tempDir, [0L, 500L, 1000L]);
-        File.WriteAllText(Path.Combine(_tempDir, "0001.jpg"), string.Empty);
-        File.WriteAllText(Path.Combine(_tempDir, "0002.jpg"), string.Empty);
-        File.WriteAllText(Path.Combine(_tempDir, "0003.jpg"), string.Empty);
-
-        string? resolved = ThumbnailFrameIndex.ResolveThumbnailPath(_tempDir, 600L);
-
-        resolved.Should().Be(Path.Combine(_tempDir, "0002.jpg"));
-    }
-
-    [Fact]
-    public void Load_UsesBundleFramePositions_WhenFramesJsonDoesNotExist()
-    {
-        string sourceDir = Path.Combine(_tempDir, "source");
-        Directory.CreateDirectory(sourceDir);
-        File.WriteAllBytes(Path.Combine(sourceDir, "0001.jpg"), [1]);
-        File.WriteAllBytes(Path.Combine(sourceDir, "0002.jpg"), [2]);
-
-        ThumbnailBundle.Write(sourceDir, _tempDir, [0L, 750L]);
-
-        long[]? loaded = ThumbnailFrameIndex.Load(_tempDir);
-
-        loaded.Should().Equal([0L, 750L]);
     }
 }

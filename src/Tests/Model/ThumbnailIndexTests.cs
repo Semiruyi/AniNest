@@ -43,10 +43,12 @@ public class ThumbnailIndexTests : IDisposable
             }
         };
 
-        // Create the disk directory so Load preserves Ready state
         var taskDir = Path.Combine(_thumbBaseDir, "abc123");
         Directory.CreateDirectory(taskDir);
-        File.WriteAllText(Path.Combine(taskDir, "0001.jpg"), "");
+        var sourceDir = Path.Combine(_tempDir, "source-roundtrip");
+        Directory.CreateDirectory(sourceDir);
+        File.WriteAllBytes(Path.Combine(sourceDir, "0001.jpg"), [1]);
+        ThumbnailBundle.Write(sourceDir, taskDir, [0L]);
 
         ThumbnailIndex.Save(indexPath, tasks);
         File.Exists(indexPath).Should().BeTrue();
@@ -111,34 +113,13 @@ public class ThumbnailIndexTests : IDisposable
 
         var taskDir = Path.Combine(_thumbBaseDir, "hash123");
         Directory.CreateDirectory(taskDir);
-        File.WriteAllText(Path.Combine(taskDir, "0001.jpg"), "");
+        var sourceDir = Path.Combine(_tempDir, "source-promote");
+        Directory.CreateDirectory(sourceDir);
+        File.WriteAllBytes(Path.Combine(sourceDir, "0001.jpg"), [1]);
+        ThumbnailBundle.Write(sourceDir, taskDir, [0L]);
 
         var loaded = ThumbnailIndex.Load(indexPath, _thumbBaseDir, new HashSet<string>());
         loaded.Should().ContainSingle().Which.State.Should().Be(ThumbnailState.Ready);
-    }
-
-    [Fact]
-    public void Load_ReadyWithZeroIndexedFrames_FallsBackToJpgCount()
-    {
-        var indexPath = Path.Combine(_tempDir, "index.json");
-        var tasks = new List<ThumbnailTask>
-        {
-            new()
-            {
-                VideoPath = "/videos/fallback.mp4",
-                Md5Dir = "fallback123",
-                State = ThumbnailState.Ready,
-                TotalFrames = 0
-            }
-        };
-        ThumbnailIndex.Save(indexPath, tasks);
-
-        var taskDir = Path.Combine(_thumbBaseDir, "fallback123");
-        Directory.CreateDirectory(taskDir);
-        File.WriteAllText(Path.Combine(taskDir, "0001.jpg"), "");
-
-        var loaded = ThumbnailIndex.Load(indexPath, _thumbBaseDir, new HashSet<string>());
-        loaded.Should().ContainSingle().Which.TotalFrames.Should().Be(1);
     }
 
     [Fact]
@@ -164,6 +145,35 @@ public class ThumbnailIndexTests : IDisposable
         var loaded = ThumbnailIndex.Load(indexPath, _thumbBaseDir, new HashSet<string>());
         loaded.Should().ContainSingle().Which.State.Should().Be(ThumbnailState.Ready);
         loaded.Should().ContainSingle().Which.TotalFrames.Should().Be(10);
+    }
+
+    [Fact]
+    public void Load_BundleExistsWithZeroIndexedFrames_UsesBundleFrameCount()
+    {
+        var indexPath = Path.Combine(_tempDir, "index.json");
+        var tasks = new List<ThumbnailTask>
+        {
+            new()
+            {
+                VideoPath = "/videos/bundlezero.mp4",
+                Md5Dir = "bundlezero",
+                State = ThumbnailState.Ready,
+                TotalFrames = 0
+            }
+        };
+        ThumbnailIndex.Save(indexPath, tasks);
+
+        var sourceDir = Path.Combine(_tempDir, "bundle-source");
+        Directory.CreateDirectory(sourceDir);
+        File.WriteAllBytes(Path.Combine(sourceDir, "0001.jpg"), [1]);
+        File.WriteAllBytes(Path.Combine(sourceDir, "0002.jpg"), [2]);
+
+        var taskDir = Path.Combine(_thumbBaseDir, "bundlezero");
+        Directory.CreateDirectory(taskDir);
+        ThumbnailBundle.Write(sourceDir, taskDir, [0L, 1000L]);
+
+        var loaded = ThumbnailIndex.Load(indexPath, _thumbBaseDir, new HashSet<string>());
+        loaded.Should().ContainSingle().Which.TotalFrames.Should().Be(2);
     }
 
     [Fact]

@@ -81,21 +81,19 @@ internal static class ThumbnailIndex
 
             string md5Dir = kv.Value.Md5;
             string fullDir = Path.Combine(thumbBaseDir, md5Dir);
+            bool directoryExists = Directory.Exists(fullDir);
             bool hasBundle = ThumbnailBundle.Exists(fullDir);
-            int jpgCount = Directory.Exists(fullDir)
-                ? Directory.GetFiles(fullDir, "*.jpg").Length
-                : 0;
 
-            if (Directory.Exists(fullDir) && state != ThumbnailState.Ready)
+            if (directoryExists && state != ThumbnailState.Ready)
             {
-                if (jpgCount > 0 || hasBundle)
+                if (hasBundle)
                 {
                     state = ThumbnailState.Ready;
                     Log.Info(
                         $"Thumbnail directory already contains cached thumbnails; marked Ready: {Path.GetFileName(kv.Key)}");
                 }
             }
-            else if (state == ThumbnailState.Ready && !Directory.Exists(fullDir))
+            else if (state == ThumbnailState.Ready && !directoryExists)
             {
                 state = ThumbnailState.Pending;
                 Log.Info(
@@ -105,7 +103,7 @@ internal static class ThumbnailIndex
             int totalFrames = state == ThumbnailState.Ready
                 ? (kv.Value.TotalFrames > 0
                     ? kv.Value.TotalFrames
-                    : jpgCount)
+                    : ThumbnailBundle.GetFrameCount(fullDir))
                 : 0;
 
             tasks.Add(new ThumbnailTask

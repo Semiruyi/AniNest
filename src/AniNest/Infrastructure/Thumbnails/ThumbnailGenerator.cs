@@ -348,22 +348,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         return ThumbnailState.Pending;
     }
 
-    public string? GetThumbnailPath(string videoPath, long positionMs)
-    {
-        if (!_ffmpegAvailable) return null;
-
-        ThumbnailTask? task;
-        lock (_taskLock)
-        {
-            _videoToTask.TryGetValue(videoPath, out task);
-        }
-
-        if (task == null || task.State != ThumbnailState.Ready) return null;
-
-        string directory = Path.Combine(_thumbBaseDir, task.Md5Dir);
-        return ThumbnailFrameIndex.ResolveThumbnailPath(directory, positionMs);
-    }
-
     public byte[]? GetThumbnailBytes(string videoPath, long positionMs)
     {
         if (!_ffmpegAvailable) return null;
@@ -382,14 +366,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         if (frameIndex == null)
             return null;
 
-        byte[]? bundleBytes = ThumbnailBundle.ReadFrameBytes(directory, frameIndex.Value);
-        if (bundleBytes != null)
-            return bundleBytes;
-
-        string? path = ThumbnailFrameIndex.ResolveThumbnailPath(directory, positionMs);
-        return path != null && File.Exists(path)
-            ? File.ReadAllBytes(path)
-            : null;
+        return ThumbnailBundle.ReadFrameBytes(directory, frameIndex.Value);
     }
 
 
