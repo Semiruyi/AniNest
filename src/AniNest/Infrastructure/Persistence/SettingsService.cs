@@ -91,6 +91,7 @@ public class SettingsService : ISettingsService, IDisposable
     private void SaveCore()
     {
         string? json = null;
+        string tempPath = $"{settingsPath}.tmp";
 
         lock (_sync)
         {
@@ -104,11 +105,30 @@ public class SettingsService : ISettingsService, IDisposable
 
         try
         {
-            File.WriteAllText(settingsPath, json);
+            File.WriteAllText(tempPath, json);
+
+            if (File.Exists(settingsPath))
+            {
+                File.Replace(tempPath, settingsPath, destinationBackupFileName: null);
+            }
+            else
+            {
+                File.Move(tempPath, settingsPath);
+            }
+
             Log.Info("settings saved");
         }
         catch (Exception ex)
         {
+            try
+            {
+                if (File.Exists(tempPath))
+                    File.Delete(tempPath);
+            }
+            catch
+            {
+            }
+
             Log.Error("Save exception", ex);
         }
     }

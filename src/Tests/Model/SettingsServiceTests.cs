@@ -9,6 +9,7 @@ namespace AniNest.Tests.Model;
 public class SettingsServiceTests : IDisposable
 {
     private readonly string _tempDir;
+    private readonly string _settingsPath;
     private readonly SettingsService _service;
 
     public SettingsServiceTests()
@@ -17,7 +18,8 @@ public class SettingsServiceTests : IDisposable
         var dataDir = Path.Combine(_tempDir, "data", "config");
         Directory.CreateDirectory(dataDir);
 
-        _service = new SettingsService(Path.Combine(dataDir, "settings.json"));
+        _settingsPath = Path.Combine(dataDir, "settings.json");
+        _service = new SettingsService(_settingsPath);
     }
 
     public void Dispose()
@@ -44,6 +46,74 @@ public class SettingsServiceTests : IDisposable
         _service.GetThumbnailPerformanceMode().Should().Be(ThumbnailPerformanceMode.Fast);
         _service.IsThumbnailGenerationPaused().Should().BeTrue();
         _service.GetThumbnailAccelerationMode().Should().Be(ThumbnailAccelerationMode.Compatible);
+    }
+
+    [Fact]
+    public void Save_DoesNotLeaveTemporaryFile()
+    {
+        _service.AddFolder("/test", "TestFolder");
+
+        File.Exists($"{_settingsPath}.tmp").Should().BeFalse();
+    }
+
+    [Fact]
+    public void Save_ExistingFile_ReplacesContent()
+    {
+        File.WriteAllText(_settingsPath, """
+        {
+          "ThumbnailExpiryDays": 3
+        }
+        """);
+
+        _service.Reload();
+        _service.SetThumbnailExpiryDays(9);
+
+        var reloaded = new SettingsService(_settingsPath);
+        reloaded.GetThumbnailExpiryDays().Should().Be(9);
+        File.Exists($"{_settingsPath}.tmp").Should().BeFalse();
+        reloaded.Dispose();
+    }
+
+    [Fact]
+    public async Task DeferredSave_WritesUpdatedVideoProgressToDisk()
+    {
+        _service.SetVideoProgress("/video.mp4", 1200, 9000);
+
+        await Task.Delay(1000);
+        _service.Reload();
+
+        var progress = _service.GetVideoProgress("/video.mp4");
+        progress.Should().NotBeNull();
+        progress!.Position.Should().Be(1200);
+        progress.Duration.Should().Be(9000);
+    }
+
+    [Fact]
+    public async Task DeferredSave_MultipleUpdates_PersistsLatestValue()
+    {
+        _service.SetVideoProgress("/video.mp4", 1000, 9000);
+        _service.SetVideoProgress("/video.mp4", 2500, 9000);
+
+        await Task.Delay(1000);
+        _service.Reload();
+
+        var progress = _service.GetVideoProgress("/video.mp4");
+        progress.Should().NotBeNull();
+        progress!.Position.Should().Be(2500);
+    }
+
+    [Fact]
+    public void Dispose_FlushesPendingDeferredSave()
+    {
+        _service.SetFolderProgress("/folder", "/folder/episode-02.mp4");
+
+        _service.Dispose();
+
+        var reloaded = new SettingsService(_settingsPath);
+        var progress = reloaded.GetFolderProgress("/folder");
+        progress.Should().NotBeNull();
+        progress!.LastVideoPath.Should().Be("/folder/episode-02.mp4");
+        reloaded.Dispose();
     }
 
     [Fact]
