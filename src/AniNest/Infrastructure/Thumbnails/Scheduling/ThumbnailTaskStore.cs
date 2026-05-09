@@ -136,7 +136,7 @@ internal sealed class ThumbnailTaskStore
         lock (_lock)
         {
             return _tasks
-                .OrderByDescending(static task => GetIntentRank(task.Intent))
+                .OrderByDescending(static task => ThumbnailWorkIntentPriority.GetRank(task.Intent))
                 .ThenByDescending(static task => task.IntentUpdatedAtUtcTicks)
                 .ThenBy(static task => task.VideoPath, StringComparer.OrdinalIgnoreCase)
                 .Select(static task => task.VideoPath)
@@ -421,7 +421,7 @@ internal sealed class ThumbnailTaskStore
         if (task.State == ThumbnailState.Ready)
             return IntentApplyOutcome.AlreadyReady;
 
-        if (GetIntentRank(intent) < GetIntentRank(task.Intent))
+        if (ThumbnailWorkIntentPriority.GetRank(intent) < ThumbnailWorkIntentPriority.GetRank(task.Intent))
             return IntentApplyOutcome.HigherIntentAlreadyPresent;
 
         task.Intent = intent;
@@ -466,15 +466,4 @@ internal sealed class ThumbnailTaskStore
         => string.IsNullOrWhiteSpace(_currentForegroundTargetVideoPath)
             ? null
             : Path.GetFileName(_currentForegroundTargetVideoPath);
-
-    private static int GetIntentRank(ThumbnailWorkIntent intent)
-        => intent switch
-        {
-            ThumbnailWorkIntent.ManualSingle => 5,
-            ThumbnailWorkIntent.PlaybackCurrent => 4,
-            ThumbnailWorkIntent.PlaybackNearby => 3,
-            ThumbnailWorkIntent.ManualCollection => 2,
-            ThumbnailWorkIntent.FocusedCollection => 1,
-            _ => 0
-        };
 }

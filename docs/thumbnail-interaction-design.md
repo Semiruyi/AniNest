@@ -524,10 +524,12 @@ Suggested internal split:
 
 - `ThumbnailTaskStore`
   - owns registered tasks, lookup dictionaries, collection membership, and task state transitions
-- `ThumbnailIntentManager`
-  - owns focus, boost, playback-window, and intent-demotion rules
-- `ThumbnailScheduler`
-  - owns next-task selection, intent ranking, foreground/background counting, and worker preemption decisions
+- `ThumbnailPlaybackWindowCoordinator`
+  - owns playback-window intent application plus stale-worker/preemption decision input for playback changes
+- `ThumbnailWorkIntentPriority`
+  - owns the stable intent ranking rules shared by scheduling decisions
+- `ThumbnailWorkerPreemption`
+  - owns worker preemption selection rules for incoming higher-priority work and stale playback workers
 - `ThumbnailWorkerPool`
   - owns active worker tracking, start/cancel/requeue behavior, and worker completion draining
 - `ThumbnailIndexRepository`
@@ -570,10 +572,11 @@ Infrastructure/Thumbnails/
 
   Scheduling/
     ThumbnailGenerator.cs
-    ThumbnailIntentManager.cs
-    ThumbnailScheduler.cs
-    ThumbnailStatusTracker.cs
+    ThumbnailPlaybackWindowCoordinator.cs
+    ThumbnailPlaybackWindowUpdate.cs
     ThumbnailTaskStore.cs
+    ThumbnailWorkIntentPriority.cs
+    ThumbnailWorkerPreemption.cs
     ThumbnailWorkerPool.cs
 
   Execution/
@@ -624,8 +627,8 @@ Recommended order:
 
 1. extract `ThumbnailIndexRepository`
 2. extract `ThumbnailTaskStore`
-3. extract `ThumbnailIntentManager`
-4. extract `ThumbnailScheduler`
+3. extract shared scheduling rules such as intent ranking and worker preemption
+4. extract playback-window intent coordination
 5. extract `ThumbnailWorkerPool`
 6. extract `ThumbnailGenerationRunner`
 7. optionally extract `ThumbnailStatusTracker` if status composition still feels noisy after the earlier steps
