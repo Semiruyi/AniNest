@@ -141,6 +141,18 @@ public sealed class LibraryAppService : ILibraryAppService
         return Task.CompletedTask;
     }
 
+    public async Task FocusFolderThumbnailsAsync(string path, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var videos = await _videoScanner.GetVideoFilesAsync(path, cancellationToken);
+        if (videos.Length == 0)
+            return;
+
+        RegisterFolderCollection(path, videos);
+        _thumbnailGenerator.FocusCollection(path);
+    }
+
     public async Task PrioritizeFolderThumbnailsAsync(string path, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();

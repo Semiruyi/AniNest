@@ -28,6 +28,7 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     private FolderListItem? _activePopupItem;
     private bool _dataLoaded;
     private bool _isCleanedUp;
+    private string? _lastFocusedFolderPath;
 
     public event EventHandler? LoadDataCompleted;
     public event Action<string, string>? FolderSelected;
@@ -113,6 +114,7 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
                 FolderItems.Add(CreateFolderItem(item));
 
             _dataLoaded = true;
+            FocusFirstFolderIfNeeded(loadedItems);
             Log.Info($"LoadDataCore complete: items={loadedItems.Count}");
             LoadDataCompleted?.Invoke(this, EventArgs.Empty);
         }
@@ -441,6 +443,20 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
         {
             Log.Error("RefreshLibraryOnAppear failed", ex);
         }
+    }
+
+    private void FocusFirstFolderIfNeeded(IReadOnlyList<LibraryFolderDto> loadedItems)
+    {
+        if (loadedItems.Count == 0)
+            return;
+
+        var firstPath = loadedItems[0].Path;
+        if (string.Equals(_lastFocusedFolderPath, firstPath, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        _lastFocusedFolderPath = firstPath;
+        Log.Info($"FocusFirstFolder: path={firstPath}");
+        _ = _libraryService.FocusFolderThumbnailsAsync(firstPath);
     }
 
     private int CountItemsWithCover()

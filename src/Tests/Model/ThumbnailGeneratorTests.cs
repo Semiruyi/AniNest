@@ -164,11 +164,60 @@ public class ThumbnailGeneratorTests : IDisposable
         _generator.BoostPlaybackWindow(videos, currentIndex: 0, lookaheadCount: 1);
         _generator.AddActiveWorkerForTest(videos[0]);
 
-        _generator.BoostPlaybackWindow(videos, currentIndex: 1, lookaheadCount: 1);
+        _generator.BoostPlaybackWindow(videos, currentIndex: 2, lookaheadCount: 0);
 
         _generator.IsActiveWorkerCancellationRequestedForTest(videos[0]).Should().BeTrue();
-        _generator.GetIntent(videos[1]).Should().Be(ThumbnailWorkIntent.PlaybackCurrent);
-        _generator.GetStatusSnapshot().CurrentTargetName.Should().Be("ep02.mp4");
+        _generator.GetIntent(videos[2]).Should().Be(ThumbnailWorkIntent.PlaybackCurrent);
+        _generator.GetStatusSnapshot().CurrentTargetName.Should().Be("ep03.mp4");
+    }
+
+    [Fact]
+    public void BoostPlaybackWindow_NewCurrent_KeepsPreviousFirstNearbyPlaybackWorker()
+    {
+        var videos = new[]
+        {
+            @"C:\videos\ep01.mp4",
+            @"C:\videos\ep02.mp4",
+            @"C:\videos\ep03.mp4"
+        };
+
+        _settingsService.SetThumbnailGenerationPaused(true);
+        _generator.RefreshGenerationPaused();
+        _generator.EnqueueFolder(@"C:\videos", videos, 0, null, []);
+        _generator.BoostPlaybackWindow(videos, currentIndex: 0, lookaheadCount: 1);
+        _generator.AddActiveWorkerForTest(videos[0]);
+
+        _generator.BoostPlaybackWindow(videos, currentIndex: 1, lookaheadCount: 1);
+
+        _generator.IsActiveWorkerCancellationRequestedForTest(videos[0]).Should().BeFalse();
+        _generator.IsActiveWorkerCancellationRequestedForTest(videos[1]).Should().BeFalse();
+    }
+
+    [Fact]
+    public void BoostPlaybackWindow_SkipsReadyVideosWhenChoosingPlaybackCandidates()
+    {
+        var videos = new[]
+        {
+            @"C:\videos\ep01.mp4",
+            @"C:\videos\ep02.mp4",
+            @"C:\videos\ep03.mp4",
+            @"C:\videos\ep04.mp4"
+        };
+
+        _settingsService.SetThumbnailGenerationPaused(true);
+        _generator.RefreshGenerationPaused();
+        _generator.EnqueueFolder(@"C:\videos", videos, 0, null, []);
+        _generator.ForceTaskState(videos[0], ThumbnailState.Ready);
+        _generator.ForceTaskState(videos[1], ThumbnailState.Ready);
+        _generator.ForceTaskState(videos[2], ThumbnailState.Ready);
+        _generator.BoostPlaybackWindow(videos, currentIndex: 3, lookaheadCount: 0);
+        _generator.AddActiveWorkerForTest(videos[3]);
+
+        _generator.BoostPlaybackWindow(videos, currentIndex: 0, lookaheadCount: 3);
+
+        _generator.IsActiveWorkerCancellationRequestedForTest(videos[3]).Should().BeFalse();
+        _generator.GetIntent(videos[3]).Should().Be(ThumbnailWorkIntent.PlaybackCurrent);
+        _generator.GetStatusSnapshot().CurrentTargetName.Should().Be("ep01.mp4");
     }
 
     [Fact]

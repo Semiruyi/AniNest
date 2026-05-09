@@ -310,7 +310,7 @@ public sealed class PlayerAppService : IPlayerAppService
 
         Log.Info(
             $"RefreshPlaybackThumbnailWindow: currentIndex={currentIndex}, currentItemPath={_session.CurrentItem?.FilePath ?? "null"}, currentVideoPath={_session.CurrentVideoPath ?? "null"}, " +
-            $"window=[{windowSummary}], items={orderedVideoPaths.Length}");
+            $"rawWindow=[{windowSummary}], items={orderedVideoPaths.Length}");
 
         _thumbnailGenerator.BoostPlaybackWindow(
             orderedVideoPaths,
