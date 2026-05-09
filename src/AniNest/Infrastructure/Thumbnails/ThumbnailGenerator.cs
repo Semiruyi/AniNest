@@ -174,41 +174,20 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         int added = 0;
         foreach (var videoPath in videoFiles)
         {
-            lock (_taskLock)
-            {
-                if (_videoToTask.TryGetValue(videoPath, out var existing))
-                {
-                    if (existing.MarkedForDeletionAt != 0)
-                    {
-                        existing.MarkedForDeletionAt = 0;
-                        SaveIndex();
-                    }
-                    continue;
-                }
-            }
-
             int videoWeight = 2; // played
             if (string.Equals(videoPath, lastPlayedPath, StringComparison.OrdinalIgnoreCase))
                 videoWeight = 0; // last played
             else if (!playedPaths.Contains(videoPath))
                 videoWeight = 1; // unplayed
 
-            int priority = cardOrder * 1000 + videoWeight;
-            var task = new ThumbnailTask
+            if (TryEnqueueVideo(videoPath, cardOrder * 1000 + videoWeight, out bool revived))
             {
-                VideoPath = videoPath,
-                Md5Dir = ComputeMd5(videoPath),
-                Priority = priority,
-                State = ThumbnailState.Pending
-            };
-
-            lock (_taskLock)
-            {
-                _tasks.Add(task);
-                _videoToTask[videoPath] = task;
-                _totalCount++;
+                added++;
             }
-            added++;
+            else if (revived)
+            {
+                SaveIndex();
+            }
         }
 
         if (added > 0)
@@ -399,7 +378,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     {
         lock (_taskLock)
         {
-            _tasks.Sort((a, b) => a.Priority.CompareTo(b.Priority));
             _tasks.Sort((a, b) =>
             {
                 int aBlocked = a.State is ThumbnailState.Ready or ThumbnailState.Generating ? 1 : 0;
@@ -407,6 +385,38 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
                 int cmp = aBlocked.CompareTo(bBlocked);
                 return cmp != 0 ? cmp : a.Priority.CompareTo(b.Priority);
             });
+        }
+    }
+
+    private bool TryEnqueueVideo(string videoPath, int priority, out bool revived)
+    {
+        lock (_taskLock)
+        {
+            revived = false;
+
+            if (_videoToTask.TryGetValue(videoPath, out var existing))
+            {
+                if (existing.MarkedForDeletionAt != 0)
+                {
+                    existing.MarkedForDeletionAt = 0;
+                    revived = true;
+                }
+
+                return false;
+            }
+
+            var task = new ThumbnailTask
+            {
+                VideoPath = videoPath,
+                Md5Dir = ComputeMd5(videoPath),
+                Priority = priority,
+                State = ThumbnailState.Pending
+            };
+
+            _tasks.Add(task);
+            _videoToTask[videoPath] = task;
+            _totalCount++;
+            return true;
         }
     }
 
@@ -466,7 +476,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private async Task GenerateForTask(ThumbnailTask task, CancellationToken ct)
     {
-        task.State = ThumbnailState.Generating;
+        SetTaskState(task, ThumbnailState.Generating);
         SaveIndex();
         string startSnapshot;
         lock (_taskLock)
@@ -481,33 +491,26 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
             if (result.State == ThumbnailState.Ready)
             {
-                task.State = ThumbnailState.Ready;
-                task.TotalFrames = result.FrameCount;
-                lock (_taskLock) { _readyCount++; }
+                lock (_taskLock)
+                {
+                    task.TotalFrames = result.FrameCount;
+                    SetTaskStateUnsafe(task, ThumbnailState.Ready);
+                }
                 VideoProgress?.Invoke(task.VideoPath, 100);
                 VideoReady?.Invoke(task.VideoPath);
             }
             else
             {
-                task.State = ThumbnailState.Failed;
+                SetTaskState(task, ThumbnailState.Failed);
             }
         }
         catch (OperationCanceledException)
         {
             var cancelSw = Stopwatch.StartNew();
-            if (task.State == ThumbnailState.Generating)
-                task.State = ThumbnailState.Pending;
+            bool requeued = TryRequeueTask(task);
             cancelSw.Stop();
             Log.Info($"Thumbnail task canceled: file={Path.GetFileName(task.VideoPath)}, elapsed={cancelSw.ElapsedMilliseconds}ms, newState={task.State}");
             throw;
-        }
-        finally
-        {
-            var finallySw = Stopwatch.StartNew();
-            SaveIndex();
-            UpdateProgress();
-            finallySw.Stop();
-            Log.Info($"Thumbnail task finalize: file={Path.GetFileName(task.VideoPath)}, elapsed={finallySw.ElapsedMilliseconds}ms, state={task.State}");
         }
     }
 
@@ -557,10 +560,16 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         catch (Exception ex)
         {
             Log.Error("Generate thumbnail failed", ex);
-            task.State = ThumbnailState.Failed;
+            SetTaskState(task, ThumbnailState.Failed);
+            LogWorkerCompletion(task, "faulted");
+        }
+        finally
+        {
+            var finallySw = Stopwatch.StartNew();
             SaveIndex();
             UpdateProgress();
-            LogWorkerCompletion(task, "faulted");
+            finallySw.Stop();
+            Log.Info($"Thumbnail task finalize: file={Path.GetFileName(task.VideoPath)}, elapsed={finallySw.ElapsedMilliseconds}ms, state={task.State}");
         }
     }
 
@@ -672,7 +681,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private void RequeueActiveWorkers(string reason)
     {
         List<ThumbnailGeneratorWorker> workersToCancel;
-        int requeued = 0;
         string snapshot;
         string files;
 
@@ -685,15 +693,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             foreach (var worker in workersToCancel)
             {
                 worker.CancellationReason = reason;
-                if (worker.Task.State == ThumbnailState.Generating)
-                {
-                    worker.Task.State = ThumbnailState.Pending;
-                    requeued++;
-                }
             }
-
-            if (requeued > 0)
-                SortQueue();
 
             snapshot = BuildSchedulerSnapshotUnsafe();
             files = string.Join(", ", workersToCancel.Select(worker => Path.GetFileName(worker.Task.VideoPath)));
@@ -703,7 +703,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             return;
 
         Log.Info(
-            $"Thumbnail active worker requeue: reason={reason}, workers={workersToCancel.Count}, requeued={requeued}, files=[{files}], {snapshot}");
+            $"Thumbnail active worker requeue: reason={reason}, workers={workersToCancel.Count}, files=[{files}], {snapshot}");
 
         foreach (var worker in workersToCancel)
         {
@@ -1005,12 +1005,86 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
     }
 
-    private int CountTasksByState(ThumbnailState state)
+    internal int CountTasksByState(ThumbnailState state)
     {
         lock (_taskLock)
         {
             return CountTasksByStateUnsafe(state);
         }
+    }
+
+    internal IReadOnlyList<string> GetTaskVideoPathsInOrder()
+    {
+        lock (_taskLock)
+        {
+            return _tasks.Select(static task => task.VideoPath).ToArray();
+        }
+    }
+
+    internal void ForceTaskState(string videoPath, ThumbnailState state)
+    {
+        lock (_taskLock)
+        {
+            if (_videoToTask.TryGetValue(videoPath, out var task))
+                SetTaskStateUnsafe(task, state);
+        }
+    }
+
+    internal void RequeueActiveWorkersForTest(string reason)
+        => RequeueActiveWorkers(reason);
+
+    internal bool TryRequeueTaskForTest(string videoPath)
+    {
+        lock (_taskLock)
+        {
+            if (_videoToTask.TryGetValue(videoPath, out var task))
+                return TryRequeueTask(task);
+        }
+
+        return false;
+    }
+
+    private void SetTaskState(ThumbnailTask task, ThumbnailState newState)
+    {
+        lock (_taskLock)
+        {
+            SetTaskStateUnsafe(task, newState);
+        }
+    }
+
+    private void SetTaskStateUnsafe(ThumbnailTask task, ThumbnailState newState)
+    {
+        if (task.State == newState)
+            return;
+
+        if (task.State == ThumbnailState.Ready && newState != ThumbnailState.Ready)
+            _readyCount--;
+
+        task.State = newState;
+
+        if (newState == ThumbnailState.Ready)
+            _readyCount++;
+    }
+
+    private bool TryRequeueTask(ThumbnailTask task)
+    {
+        bool requeued = false;
+        bool needsSort = false;
+
+        lock (_taskLock)
+        {
+            if (task.State == ThumbnailState.Generating)
+            {
+                SetTaskStateUnsafe(task, ThumbnailState.Pending);
+                requeued = true;
+                needsSort = true;
+            }
+        }
+
+        if (needsSort)
+            SortQueue();
+
+        return requeued;
     }
 
     private int CountTasksByStateUnsafe(ThumbnailState state)

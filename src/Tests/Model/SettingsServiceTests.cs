@@ -24,6 +24,8 @@ public class SettingsServiceTests : IDisposable
 
     public void Dispose()
     {
+        _service.Dispose();
+
         try { Directory.Delete(_tempDir, true); } catch { }
     }
 

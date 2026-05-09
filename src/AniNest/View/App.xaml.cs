@@ -17,6 +17,7 @@ namespace AniNest;
 public partial class App : Application
 {
     private static readonly Logger Log = AppLog.For<App>();
+    private int _exitHandled;
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -38,6 +39,9 @@ public partial class App : Application
 
         Exit += (_, _) =>
         {
+            if (Interlocked.Exchange(ref _exitHandled, 1) != 0)
+                return;
+
             Log.Info("Application exit begin");
             try
             {
