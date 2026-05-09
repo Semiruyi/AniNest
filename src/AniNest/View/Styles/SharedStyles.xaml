@@ -69,9 +69,10 @@
         <Setter Property="Padding" Value="{StaticResource TitleBarTextButtonPadding}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
         <Setter Property="Opacity" Value="{StaticResource TitleBarTextOpacity}"/>
-        <Setter Property="FontSize" Value="{StaticResource TitleBarTextFontSize}"/>
+        <Setter Property="FontSize" Value="{StaticResource AppFontSizeTitleBar}"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -115,8 +116,9 @@
         <Setter Property="Padding" Value="{StaticResource PopupMenuButtonPadding}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-        <Setter Property="FontSize" Value="{StaticResource TitleBarTextFontSize}"/>
+        <Setter Property="FontSize" Value="{StaticResource AppFontSizeTitleBar}"/>
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="animations:ButtonScaleHover.IsEnabled" Value="True"/>

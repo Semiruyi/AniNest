@@ -112,15 +112,15 @@
                                               OpenAnimationOrigin="0.5,0"
                                               HorizontalOffset="0"
                                               VerticalOffset="100">
-                        <Border x:Name="BackgroundTaskPopupContent"
-                                Background="{StaticResource PopupMenuBackground}"
-                                BorderBrush="#38383A"
-                                BorderThickness="1"
-                                CornerRadius="{StaticResource SpeedPopupCornerRadius}"
-                                Padding="12,10"
-                                MaxWidth="320"
-                                MouseEnter="BackgroundTaskPopupContent_MouseEnter"
-                                MouseLeave="BackgroundTaskPopupContent_MouseLeave">
+                                <Border x:Name="BackgroundTaskPopupContent"
+                                        Background="{StaticResource PopupMenuBackground}"
+                                        BorderBrush="#38383A"
+                                        BorderThickness="1"
+                                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
+                                        Padding="12,10"
+                                        MaxWidth="320"
+                                        MouseEnter="BackgroundTaskPopupContent_MouseEnter"
+                                        MouseLeave="BackgroundTaskPopupContent_MouseLeave">
                             <StackPanel>
                                 <Grid Margin="0,0,0,6">
                                     <Grid.ColumnDefinitions>
@@ -133,11 +133,12 @@
                                              VerticalAlignment="Center"
                                              Fill="{Binding ThumbnailGenerationStatusColor}"/>
                                     <TextBlock Grid.Column="1"
+                                               Style="{StaticResource AppTextBodyEmphasis}"
                                                Text="{Binding ThumbnailGenerationStatusText}"
                                                Margin="8,0,0,0"
-                                               FontWeight="SemiBold"
                                                Foreground="{StaticResource TextPrimary}"/>
                                     <TextBlock Grid.Column="2"
+                                               Style="{StaticResource AppTextBody}"
                                                Text="{Binding ThumbnailGenerationCountText}"
                                                Foreground="{StaticResource TextSecondary}"/>
                                 </Grid>
@@ -150,8 +151,8 @@
                                            Style="{StaticResource OverlaySecondaryText}"
                                            Margin="0,0,0,8"/>
                                 <TextBlock Text="{Binding ThumbnailGenerationTooltipText}"
+                                           Style="{StaticResource AppTextBody}"
                                            Foreground="{StaticResource TextSecondary}"
-                                           FontSize="12"
                                            TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
@@ -168,7 +169,8 @@
                             </Style>
                         </Grid.Style>
                         <Grid.ToolTip>
-                            <ToolTip Placement="Bottom"
+                            <ToolTip Style="{StaticResource AppTooltipText}"
+                                     Placement="Bottom"
                                      HorizontalOffset="0"
                                      VerticalOffset="8"
                                      Background="Transparent"
@@ -181,8 +183,8 @@
                                         Padding="10,8"
                                         MaxWidth="560">
                                     <TextBlock Text="{Binding CurrentPlayerTitleBarToolTip}"
+                                               Style="{StaticResource AppTextBody}"
                                                Foreground="{StaticResource TextSecondary}"
-                                               FontSize="12"
                                                TextWrapping="Wrap"/>
                                 </Border>
                             </ToolTip>
@@ -190,13 +192,13 @@
                         <Grid animations:FadeTextSwapAnimator.Text="{Binding CurrentPlayerTitleBarText}"
                               animations:FadeTextSwapAnimator.DurationMs="420">
                             <TextBlock Text=""
+                                       Style="{StaticResource AppTextTitleBar}"
                                        Foreground="{StaticResource TextSecondary}"
-                                       FontSize="{StaticResource TitleBarTextFontSize}"
                                        Opacity="0"
                                        TextTrimming="CharacterEllipsis"/>
                             <TextBlock Text=""
+                                       Style="{StaticResource AppTextTitleBar}"
                                        Foreground="{StaticResource TextSecondary}"
-                                       FontSize="{StaticResource TitleBarTextFontSize}"
                                        Opacity="{StaticResource TitleBarTextOpacity}"
                                        TextTrimming="CharacterEllipsis"/>
                         </Grid>

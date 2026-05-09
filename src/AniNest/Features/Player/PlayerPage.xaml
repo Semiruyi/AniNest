@@ -29,8 +29,8 @@
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Focusable" Value="False"/>
                 <Setter Property="FontWeight" Value="Medium"/>
-                <Setter Property="FontSize" Value="15"/>
-                <Setter Property="FontFamily" Value="Segoe UI, Microsoft YaHei, sans-serif"/>
+                <Setter Property="FontSize" Value="{StaticResource AppFontSizePanelTitle}"/>
+                <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
                 <Setter Property="anim:ButtonScaleHover.IsEnabled" Value="True"/>
                 <Setter Property="anim:ButtonScaleHover.HoverScale" Value="1.04"/>
                 <Setter Property="anim:ButtonScaleHover.PressScale" Value="0.96"/>
@@ -276,10 +276,13 @@
 
                 <!-- Header -->
                 <Grid Margin="{StaticResource PlaylistHeaderMargin}">
-                    <TextBlock Text="{Binding DataContext.Localization[Player.Playlist], RelativeSource={RelativeSource AncestorType=UserControl}}" Foreground="White" FontSize="15"
-                               FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding DataContext.Localization[Player.Playlist], RelativeSource={RelativeSource AncestorType=UserControl}}"
+                               Style="{StaticResource AppTextPanelTitle}"
+                               Foreground="White"
+                               VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding EpisodeCountText, FallbackValue=''}"
-                               Foreground="#8E8E93" FontSize="12"
+                               Style="{StaticResource AppTextBody}"
+                               Foreground="#8E8E93"
                                VerticalAlignment="Center" HorizontalAlignment="Right"/>
                 </Grid>
 
@@ -302,16 +305,16 @@
                                     Command="{Binding DataContext.PlayEpisodeCommand, RelativeSource={RelativeSource AncestorType=Border}}"
                                     CommandParameter="{Binding}">
                                 <TextBlock Text="{Binding Number, StringFormat={}{0:D2}}"
+                                           Style="{StaticResource AppTextPanelValue}"
                                            Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                           FontSize="15"
-                                           FontWeight="Medium"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center">
                                     <TextBlock.ToolTip>
-                                        <ToolTip Background="#1C1C1E" BorderBrush="#38383A"
-                                                 Foreground="White" Padding="10,5" BorderThickness="1"
-                                                 FontSize="12">
+                                        <ToolTip Style="{StaticResource AppTooltipText}"
+                                                 Background="#1C1C1E" BorderBrush="#38383A"
+                                                 Foreground="White" Padding="10,5" BorderThickness="1">
                                             <TextBlock Text="{Binding Title}" MaxWidth="220"
+                                                       Style="{StaticResource AppTextBody}"
                                                        TextTrimming="CharacterEllipsis"/>
                                         </ToolTip>
                                     </TextBlock.ToolTip>

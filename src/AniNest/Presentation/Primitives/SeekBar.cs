@@ -96,6 +96,8 @@ public class SeekBar : ContentControl
     private double _dragVisualMaxMs;
     private long _lastThumbPreviewUpdateTs;
     private bool _visualUpdateScheduled;
+    private FontFamily _appFontFamily = new("Segoe UI, Microsoft YaHei UI, Microsoft YaHei");
+    private double _appFontSizeCaption = 11;
 
 
     private Brush _trackBgBrush = new SolidColorBrush(Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF));
@@ -144,6 +146,13 @@ public class SeekBar : ContentControl
         if (TryFindResource("SeekBarTrackHeight") is double th) _trackHeight = th;
         if (TryFindResource("SeekBarThumbSize") is double ts) _thumbSize = ts;
         if (TryFindResource("SeekBarThumbShadowSize") is double tss) _thumbShadowSize = tss;
+        if (TryFindResource("AppFontFamily") is FontFamily ff) _appFontFamily = ff;
+        if (TryFindResource("AppFontSizeCaption") is double fs) _appFontSizeCaption = fs;
+        if (_tooltipText != null)
+        {
+            _tooltipText.FontFamily = _appFontFamily;
+            _tooltipText.FontSize = _appFontSizeCaption;
+        }
     }
 
     private void BuildVisualTree()
@@ -210,8 +219,8 @@ public class SeekBar : ContentControl
         _tooltipText = new TextBlock
         {
             Foreground = Brushes.White,
-            FontSize = 11,
-            FontFamily = new FontFamily("Segoe UI, Microsoft YaHei, sans-serif")
+            FontSize = _appFontSizeCaption,
+            FontFamily = _appFontFamily
         };
 
         _tooltip = new AnimatedPopup

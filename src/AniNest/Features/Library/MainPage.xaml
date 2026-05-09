@@ -63,7 +63,8 @@
 
                                 <Rectangle Fill="#252525"
                                            Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
-                                <TextBlock Text="&#x1F3AC;" FontSize="32"
+                                <TextBlock Text="&#x1F3AC;"
+                                           Style="{StaticResource AppTextIconPlaceholder}"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"
                                            Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
 
@@ -81,37 +82,36 @@
                                                 <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
                                         <TextBlock Text="{Binding Name}"
+                                                   Style="{StaticResource AppTextSectionTitle}"
                                                    Foreground="White"
-                                                   FontSize="14"
-                                                   FontWeight="SemiBold"
                                                    TextTrimming="CharacterEllipsis"/>
                                         <StackPanel Grid.Row="1"
                                                     Orientation="Horizontal"
                                                     Margin="0,4,0,0">
                                             <TextBlock Text="{Binding DataContext.PlayedSummaryPrefix, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                       Style="{StaticResource AppTextCardSummary}"
                                                        Foreground="#BFC7D5"
-                                                       FontSize="{StaticResource FolderCardSummaryFontSize}"
-                                                       FontWeight="SemiBold"/>
+                                                       />
                                             <TextBlock Text="{Binding PlayedCount}"
+                                                       Style="{StaticResource AppTextCardSummary}"
                                                        Foreground="{StaticResource AccentBlue}"
-                                                       FontSize="{StaticResource FolderCardSummaryFontSize}"
-                                                       FontWeight="SemiBold"/>
+                                                       />
                                             <TextBlock Text=" / "
+                                                       Style="{StaticResource AppTextCardSummary}"
                                                        Foreground="#BFC7D5"
-                                                       FontSize="{StaticResource FolderCardSummaryFontSize}"
-                                                       FontWeight="SemiBold"/>
+                                                       />
                                             <TextBlock Text="{Binding DataContext.PlayedSummaryTotal, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                       Style="{StaticResource AppTextCardSummary}"
                                                        Foreground="#BFC7D5"
-                                                       FontSize="{StaticResource FolderCardSummaryFontSize}"
-                                                       FontWeight="SemiBold"/>
+                                                       />
                                             <TextBlock Text="{Binding VideoCount}"
+                                                       Style="{StaticResource AppTextCardSummary}"
                                                        Foreground="#8A93A3"
-                                                       FontSize="{StaticResource FolderCardSummaryFontSize}"
-                                                       FontWeight="SemiBold"/>
+                                                       />
                                             <TextBlock Text="{Binding DataContext.PlayedSummarySuffix, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                       Style="{StaticResource AppTextCardSummary}"
                                                        Foreground="#BFC7D5"
-                                                       FontSize="{StaticResource FolderCardSummaryFontSize}"
-                                                       FontWeight="SemiBold"/>
+                                                       />
                                         </StackPanel>
                                             <Grid Grid.Row="2"
                                                   Margin="0,8,0,0"

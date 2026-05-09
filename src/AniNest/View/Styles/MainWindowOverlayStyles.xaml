@@ -30,12 +30,15 @@
 
     <Style x:Key="OverlaySecondaryText"
            TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
         <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
-        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontSize" Value="{StaticResource AppFontSizeBody}"/>
     </Style>
 
     <Style x:Key="OverlaySummaryText"
            TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+        <Setter Property="FontSize" Value="{StaticResource AppFontSizeBody}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
     </Style>

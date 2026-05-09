@@ -76,17 +76,17 @@
                            Height="{StaticResource IconSizeSmall}"/>
                 </Button>
                 <TextBlock Text="{Binding CurrentTimeText, FallbackValue='00:00'}"
-                           Foreground="{StaticResource TextSecondary}" FontSize="11"
+                           Style="{StaticResource AppTextCaption}"
+                           Foreground="{StaticResource TextSecondary}"
                            VerticalAlignment="Center"
-                           Margin="{StaticResource TimeTextLeftMargin}"
-                           FontFamily="Segoe UI, Microsoft YaHei, sans-serif"/>
-                <TextBlock Text=" / " Foreground="#66FFFFFF" FontSize="11"
+                           Margin="{StaticResource TimeTextLeftMargin}"/>
+                <TextBlock Text=" / " Style="{StaticResource AppTextCaption}" Foreground="#66FFFFFF"
                            VerticalAlignment="Center"
                            Margin="{StaticResource TimeSeparatorMargin}"/>
                 <TextBlock Text="{Binding TotalTimeText, FallbackValue='00:00'}"
-                           Foreground="{StaticResource TextSecondary}" FontSize="11"
-                           VerticalAlignment="Center"
-                           FontFamily="Segoe UI, Microsoft YaHei, sans-serif"/>
+                           Style="{StaticResource AppTextCaption}"
+                           Foreground="{StaticResource TextSecondary}"
+                           VerticalAlignment="Center"/>
             </StackPanel>
 
             <primitives:SeekBar x:Name="SeekBar" Grid.Column="1"
@@ -130,9 +130,9 @@
                             HorizontalAlignment="Center"
                             VerticalAlignment="Bottom">
                         <TextBlock Text="{Binding ThumbnailPreview.TimeText}"
+                                   Style="{StaticResource AppTextThumbnailPreview}"
                                    Foreground="{StaticResource TextPrimary}"
-                                   FontSize="{StaticResource ThumbnailPreviewFontSize}"
-                                   FontFamily="Segoe UI, Microsoft YaHei, sans-serif"/>
+                                   />
                     </Border>
                 </Grid>
             </primitives:AnimatedPopup>
@@ -141,12 +141,17 @@
                         VerticalAlignment="Center">
                 <Grid>
                     <Button x:Name="SpeedBtn"
-                            Style="{StaticResource IconButton}"
-                            FontSize="11" FontWeight="SemiBold"
                             Foreground="White" Focusable="False"
                             Margin="{StaticResource ButtonGapRight}"
                             Click="SpeedBtn_Click"
                             animations:ButtonScaleHover.IsEnabled="True">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
+                                <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+                                <Setter Property="FontSize" Value="{StaticResource AppFontSizeCaption}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Style>
+                        </Button.Style>
                         <Grid animations:TextSwapAnimator.Text="{Binding Rate, StringFormat={}{0:0.0#}x}">
                             <TextBlock Text="" HorizontalAlignment="Center" VerticalAlignment="Center"
                                        Opacity="0" RenderTransformOrigin="0.5,0.5">
