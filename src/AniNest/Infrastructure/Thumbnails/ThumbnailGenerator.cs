@@ -330,14 +330,13 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             "Thumbnail worker preempt");
     }
 
-    private void PreemptStalePlaybackWorkers(string currentVideoPath, string? keepPlaybackWorkerVideoPath)
+    private void PreemptStalePlaybackWorkers(string currentVideoPath, string? keepPlaybackWorkerVideoPath, IReadOnlyCollection<string> stalePlaybackWorkerVideoPaths)
     {
         List<ThumbnailGeneratorWorker> workersToCancel;
         workersToCancel = _workerPool.MarkForCancellation(
             workers => ThumbnailWorkerPreemption.SelectStalePlaybackWorkers(
                 workers,
-                currentVideoPath,
-                keepPlaybackWorkerVideoPath),
+                stalePlaybackWorkerVideoPaths),
             worker => $"stale-playback-target:{Path.GetFileName(currentVideoPath)}");
         _workerCancellationCoordinator.CancelWithComputedReasons(
             workersToCancel,

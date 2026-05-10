@@ -248,6 +248,65 @@ public class ThumbnailGeneratorTests : IDisposable
     }
 
     [Fact]
+    public void BoostPlaybackWindow_DemotesStalePlaybackIntentOutsideNewWindow()
+    {
+        var videos = new[]
+        {
+            @"C:\videos\ep01.mp4",
+            @"C:\videos\ep02.mp4",
+            @"C:\videos\ep03.mp4",
+            @"C:\videos\ep04.mp4",
+            @"C:\videos\ep05.mp4",
+            @"C:\videos\ep06.mp4"
+        };
+
+        _settingsService.SetThumbnailGenerationPaused(true);
+        _generator.RefreshGenerationPaused();
+        RegisterFolderCollection(@"C:\videos", videos);
+        for (int i = 0; i < 5; i++)
+            _generator.ForceTaskState(videos[i], ThumbnailState.Ready);
+
+        _generator.BoostPlaybackWindow(videos, currentIndex: 4, lookaheadCount: 1);
+        _generator.GetIntent(videos[5]).Should().Be(ThumbnailWorkIntent.PlaybackNearby);
+        _generator.AddActiveWorkerForTest(videos[5]);
+
+        _generator.BoostPlaybackWindow(videos, currentIndex: 0, lookaheadCount: 3);
+
+        _generator.IsActiveWorkerCancellationRequestedForTest(videos[5]).Should().BeTrue();
+        _generator.GetIntent(videos[5]).Should().Be(ThumbnailWorkIntent.BackgroundFill);
+    }
+
+    [Fact]
+    public void BoostPlaybackWindow_DemotedStalePlaybackWorker_IsStillCanceled()
+    {
+        var videos = new[]
+        {
+            @"C:\videos\ep01.mp4",
+            @"C:\videos\ep02.mp4",
+            @"C:\videos\ep03.mp4",
+            @"C:\videos\ep04.mp4",
+            @"C:\videos\ep05.mp4",
+            @"C:\videos\ep06.mp4",
+            @"C:\videos\ep07.mp4"
+        };
+
+        _settingsService.SetThumbnailGenerationPaused(true);
+        _generator.RefreshGenerationPaused();
+        RegisterFolderCollection(@"C:\videos", videos);
+        for (int i = 0; i < 6; i++)
+            _generator.ForceTaskState(videos[i], ThumbnailState.Ready);
+
+        _generator.BoostPlaybackWindow(videos, currentIndex: 5, lookaheadCount: 1);
+        _generator.AddActiveWorkerForTest(videos[6]);
+        _generator.GetIntent(videos[6]).Should().Be(ThumbnailWorkIntent.PlaybackNearby);
+
+        _generator.BoostPlaybackWindow(videos, currentIndex: 0, lookaheadCount: 3);
+
+        _generator.IsActiveWorkerCancellationRequestedForTest(videos[6]).Should().BeTrue();
+        _generator.GetIntent(videos[6]).Should().Be(ThumbnailWorkIntent.BackgroundFill);
+    }
+
+    [Fact]
     public void BoostPlaybackWindow_CurrentReady_PreemptsLowerPriorityWorkerForFirstNearbyCandidate()
     {
         var videos = new[]

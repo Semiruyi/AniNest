@@ -39,6 +39,20 @@ internal static class ThumbnailWorkerPreemption
             (string.IsNullOrWhiteSpace(keepPlaybackWorkerVideoPath) ||
              !string.Equals(worker.Task.VideoPath, keepPlaybackWorkerVideoPath, StringComparison.OrdinalIgnoreCase)));
 
+    public static string[] GetStalePlaybackWorkerVideoPaths(
+        IReadOnlyCollection<ThumbnailGeneratorWorker> activeWorkers,
+        string currentVideoPath,
+        string? keepPlaybackWorkerVideoPath = null)
+        => activeWorkers
+            .Where(static worker => !worker.Execution.IsCompleted)
+            .Where(worker => ThumbnailWorkIntentPriority.IsPlaybackIntent(worker.Task.Intent))
+            .Where(worker => !string.Equals(worker.Task.VideoPath, currentVideoPath, StringComparison.OrdinalIgnoreCase))
+            .Where(worker => string.IsNullOrWhiteSpace(keepPlaybackWorkerVideoPath) ||
+                !string.Equals(worker.Task.VideoPath, keepPlaybackWorkerVideoPath, StringComparison.OrdinalIgnoreCase))
+            .Select(worker => worker.Task.VideoPath)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
     public static List<ThumbnailGeneratorWorker> SelectLowerPriorityWorkers(
         IReadOnlyCollection<ThumbnailGeneratorWorker> activeWorkers,
         ThumbnailWorkIntent incomingIntent,
@@ -55,15 +69,12 @@ internal static class ThumbnailWorkerPreemption
 
     public static List<ThumbnailGeneratorWorker> SelectStalePlaybackWorkers(
         IReadOnlyCollection<ThumbnailGeneratorWorker> activeWorkers,
-        string currentVideoPath,
-        string? keepPlaybackWorkerVideoPath)
+        IReadOnlyCollection<string> staleVideoPaths)
     {
+        var stale = new HashSet<string>(staleVideoPaths, StringComparer.OrdinalIgnoreCase);
         return activeWorkers
             .Where(static worker => !worker.Execution.IsCompleted)
-            .Where(worker => ThumbnailWorkIntentPriority.IsPlaybackIntent(worker.Task.Intent))
-            .Where(worker => !string.Equals(worker.Task.VideoPath, currentVideoPath, StringComparison.OrdinalIgnoreCase))
-            .Where(worker => string.IsNullOrWhiteSpace(keepPlaybackWorkerVideoPath) ||
-                !string.Equals(worker.Task.VideoPath, keepPlaybackWorkerVideoPath, StringComparison.OrdinalIgnoreCase))
+            .Where(worker => stale.Contains(worker.Task.VideoPath))
             .ToList();
     }
 }

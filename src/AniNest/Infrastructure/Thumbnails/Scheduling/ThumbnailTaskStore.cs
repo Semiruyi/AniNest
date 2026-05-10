@@ -175,6 +175,29 @@ internal sealed class ThumbnailTaskStore
         }
     }
 
+    public int DemotePlaybackIntentsOutside(IReadOnlyCollection<string> retainedVideoPaths)
+    {
+        lock (_lock)
+        {
+            var retained = new HashSet<string>(retainedVideoPaths, StringComparer.OrdinalIgnoreCase);
+            int demoted = 0;
+            foreach (var task in _tasks)
+            {
+                if (task.Intent is not (ThumbnailWorkIntent.PlaybackCurrent or ThumbnailWorkIntent.PlaybackNearby))
+                    continue;
+
+                if (retained.Contains(task.VideoPath))
+                    continue;
+
+                task.Intent = ThumbnailWorkIntent.BackgroundFill;
+                task.IntentUpdatedAtUtcTicks = 0;
+                demoted++;
+            }
+
+            return demoted;
+        }
+    }
+
     public void ClearPlaybackForegroundTarget()
     {
         lock (_lock)
