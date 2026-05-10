@@ -345,6 +345,33 @@ public class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void FolderClassification_RoundTripsAfterReload()
+    {
+        _service.SetFolderWatchStatus("/folder", WatchStatus.Watching);
+        _service.SetFolderFavorite("/folder", true);
+
+        _service.Reload();
+
+        var classification = _service.GetFolderClassification("/folder");
+        classification.Status.Should().Be(WatchStatus.Watching);
+        classification.IsFavorite.Should().BeTrue();
+    }
+
+    [Fact]
+    public void RemoveFolder_RemovesClassification()
+    {
+        _service.AddFolder("/a", "A");
+        _service.SetFolderWatchStatus("/a", WatchStatus.Completed);
+        _service.SetFolderFavorite("/a", true);
+
+        _service.RemoveFolder("/a");
+
+        var classification = _service.GetFolderClassification("/a");
+        classification.Status.Should().Be(WatchStatus.Unsorted);
+        classification.IsFavorite.Should().BeFalse();
+    }
+
+    [Fact]
     public void Load_NewInstance_ReturnsDefaults()
     {
         // Empty settings file (just created)

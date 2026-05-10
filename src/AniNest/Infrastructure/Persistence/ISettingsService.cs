@@ -27,6 +27,10 @@ public interface ISettingsService
     void ClearFolderWatchHistory(string folderPath);
     double GetFolderPlayedPercent(string folderPath, string[] videoFiles);
     int GetFolderPlayedCount(string folderPath, string[] videoFiles);
+    FolderClassification GetFolderClassification(string folderPath);
+    void SetFolderWatchStatus(string folderPath, WatchStatus status);
+    void SetFolderFavorite(string folderPath, bool isFavorite);
+    void RemoveFolderClassification(string folderPath);
 
     int GetThumbnailExpiryDays();
     void SetThumbnailExpiryDays(int days);

@@ -206,6 +206,20 @@ public sealed class LibraryAppService : ILibraryAppService
             scanResult.VideoFiles);
     }
 
+    public Task SetFolderWatchStatusAsync(string path, WatchStatus status, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        _settings.SetFolderWatchStatus(path, status);
+        return Task.CompletedTask;
+    }
+
+    public Task SetFolderFavoriteAsync(string path, bool isFavorite, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        _settings.SetFolderFavorite(path, isFavorite);
+        return Task.CompletedTask;
+    }
+
     public Task DeleteFolderAsync(string path, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -248,6 +262,7 @@ public sealed class LibraryAppService : ILibraryAppService
         string[] videoFiles)
     {
         int playedCount = _settings.GetFolderPlayedCount(path, videoFiles);
-        return new LibraryFolderDto(name, path, videoCount, coverPath, playedCount);
+        var classification = _settings.GetFolderClassification(path);
+        return new LibraryFolderDto(name, path, videoCount, coverPath, playedCount, classification.Status, classification.IsFavorite);
     }
 }

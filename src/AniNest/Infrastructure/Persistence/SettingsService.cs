@@ -229,6 +229,7 @@ public class SettingsService : ISettingsService, IDisposable
     {
         var current = Load();
         current.Folders.RemoveAll(f => f.Path == path);
+        current.FolderClassifications.Remove(path);
         Save();
     }
 
@@ -364,6 +365,51 @@ public class SettingsService : ISettingsService, IDisposable
         return videoFiles.Count(f => current.VideoProgress.TryGetValue(f, out var p) && p.IsPlayed);
     }
 
+    public FolderClassification GetFolderClassification(string folderPath)
+    {
+        var current = Load();
+        if (current.FolderClassifications.TryGetValue(folderPath, out var classification))
+            return classification;
+
+        return new FolderClassification
+        {
+            FolderPath = folderPath,
+            Status = WatchStatus.Unsorted,
+            IsFavorite = false
+        };
+    }
+
+    public void SetFolderWatchStatus(string folderPath, WatchStatus status)
+    {
+        var current = Load();
+        var classification = GetOrCreateFolderClassification(current, folderPath);
+        if (classification.Status == status)
+            return;
+
+        classification.Status = status;
+        Save();
+    }
+
+    public void SetFolderFavorite(string folderPath, bool isFavorite)
+    {
+        var current = Load();
+        var classification = GetOrCreateFolderClassification(current, folderPath);
+        if (classification.IsFavorite == isFavorite)
+            return;
+
+        classification.IsFavorite = isFavorite;
+        Save();
+    }
+
+    public void RemoveFolderClassification(string folderPath)
+    {
+        var current = Load();
+        if (!current.FolderClassifications.Remove(folderPath))
+            return;
+
+        Save();
+    }
+
     private static bool IsPathInFolder(string filePath, string folderPath)
     {
         if (string.IsNullOrWhiteSpace(filePath) || string.IsNullOrWhiteSpace(folderPath))
@@ -381,6 +427,21 @@ public class SettingsService : ISettingsService, IDisposable
 
         char separator = filePath[normalizedFolder.Length];
         return separator == Path.DirectorySeparatorChar || separator == Path.AltDirectorySeparatorChar;
+    }
+
+    private static FolderClassification GetOrCreateFolderClassification(AppSettings current, string folderPath)
+    {
+        if (current.FolderClassifications.TryGetValue(folderPath, out var classification))
+            return classification;
+
+        classification = new FolderClassification
+        {
+            FolderPath = folderPath,
+            Status = WatchStatus.Unsorted,
+            IsFavorite = false
+        };
+        current.FolderClassifications[folderPath] = classification;
+        return classification;
     }
 
     public int GetThumbnailExpiryDays()

@@ -1,4 +1,5 @@
 using AniNest.Infrastructure.Thumbnails;
+using AniNest.Infrastructure.Persistence;
 
 namespace AniNest.Features.Library.Services;
 
@@ -14,6 +15,8 @@ public interface ILibraryAppService
     Task RegenerateFolderThumbnailsAsync(string path, CancellationToken cancellationToken = default);
     Task ClearFolderThumbnailCacheAsync(string path, CancellationToken cancellationToken = default);
     Task<LibraryFolderDto?> ClearFolderWatchHistoryAsync(string path, CancellationToken cancellationToken = default);
+    Task SetFolderWatchStatusAsync(string path, WatchStatus status, CancellationToken cancellationToken = default);
+    Task SetFolderFavoriteAsync(string path, bool isFavorite, CancellationToken cancellationToken = default);
     Task DeleteFolderAsync(string path, CancellationToken cancellationToken = default);
     int GetThumbnailExpiryDays();
     ThumbnailExpirySaveResult SaveThumbnailExpiryDays(string input);

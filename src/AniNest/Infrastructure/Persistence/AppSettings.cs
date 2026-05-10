@@ -8,6 +8,7 @@ public class AppSettings
     public List<FolderInfo> Folders { get; set; } = new();
     public Dictionary<string, VideoProgress> VideoProgress { get; set; } = new();
     public Dictionary<string, FolderProgress> FolderProgress { get; set; } = new();
+    public Dictionary<string, FolderClassification> FolderClassifications { get; set; } = new();
     public int ThumbnailExpiryDays { get; set; } = 30;
     public ThumbnailPerformanceMode ThumbnailPerformanceMode { get; set; } = ThumbnailPerformanceMode.Balanced;
     public bool ThumbnailGenerationPaused { get; set; }
@@ -51,6 +52,21 @@ public class FolderProgress
     public string FolderPath { get; set; } = "";
     public string LastVideoPath { get; set; } = "";
     public long LastPlayed { get; set; }
+}
+
+public enum WatchStatus
+{
+    Unsorted,
+    Watching,
+    Completed,
+    Dropped
+}
+
+public class FolderClassification
+{
+    public string FolderPath { get; set; } = "";
+    public WatchStatus Status { get; set; } = WatchStatus.Unsorted;
+    public bool IsFavorite { get; set; }
 }
 
 

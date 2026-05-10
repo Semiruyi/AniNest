@@ -1,3 +1,5 @@
+using AniNest.Infrastructure.Persistence;
+
 namespace AniNest.Features.Library.Services;
 
 public sealed record LibraryFolderDto(
@@ -5,7 +7,9 @@ public sealed record LibraryFolderDto(
     string Path,
     int VideoCount,
     string? CoverPath,
-    int PlayedCount = 0);
+    int PlayedCount = 0,
+    WatchStatus Status = WatchStatus.Unsorted,
+    bool IsFavorite = false);
 
 public enum OpenFolderFailure
 {
