@@ -538,6 +538,34 @@ Today `ThumbnailGenerator` primarily does three things:
 
 The detailed logic lives in focused components under `Infrastructure/Thumbnails`.
 
+Even after the scheduling, execution, and storage helpers were extracted, `ThumbnailGenerator` still exposes a fairly broad command surface to the rest of the app. From a readability standpoint, the main risk is no longer "god object business logic", but "too many public entry points with mixed semantics in one facade".
+
+The current public surface mixes four interaction styles:
+
+- query
+  - status snapshot, task state lookup, thumbnail bytes lookup
+- collection-oriented commands
+  - register, remove, focus, boost, reset, and legacy folder bridge commands
+- playback-oriented commands
+  - single-video boost, playback-window boost, player-active updates
+- runtime controls
+  - performance refresh, pause refresh, decode-strategy refresh, shutdown
+
+That mix is still reasonable for a single facade consumed by the app, but it makes the class harder to scan because the reader must constantly switch between library semantics, player semantics, worker runtime control, and query behavior.
+
+#### Recommended facade rule
+
+Keep `IThumbnailGenerator` as the single public facade for now.
+
+Do not immediately split the public API into many separately injected services unless the calling sites also become hard to read. A fragmented public dependency graph would make the app wiring noisier without necessarily improving comprehension.
+
+Instead, prefer this rule:
+
+- external API stays unified
+- internal implementation continues to split by interaction role
+
+In other words, `ThumbnailGenerator` should trend toward being a facade with thin delegating methods rather than a class that directly implements every command body itself.
+
 Suggested internal split:
 
 - `ThumbnailTaskStore`
@@ -568,6 +596,40 @@ Suggested internal split:
   - owns progress/status event emission and snapshot composition for UI-facing state
 - `ThumbnailGeneratorComponents`
   - owns internal component wiring so the generator constructor stays small and readable
+
+Recommended next readability split:
+
+- `ThumbnailCollectionCoordinator`
+  - owns collection-facing commands such as register, remove, focus, boost, reset, and folder-bridge operations
+- `ThumbnailPlaybackCoordinator`
+  - owns player-facing commands such as boost video, boost playback window, and player active state transitions
+- `ThumbnailRuntimeController`
+  - owns runtime controls such as pause and resume, performance refresh, decode-strategy refresh, worker requeue, and shutdown-time runtime behavior
+- `ThumbnailQueryService`
+  - owns query-oriented operations such as status snapshot, task state lookup, and thumbnail byte lookup
+
+These names are still descriptive rather than mandatory. The important point is the seam:
+
+- collection and playback commands are user-intent entry points
+- runtime control commands are scheduler-operation entry points
+- query methods should stay read-oriented and side-effect-light
+
+With that split, `ThumbnailGenerator` becomes easier to read because each public method can usually delegate in one line to the right internal coordinator.
+
+Example direction:
+
+```csharp
+public void FocusCollection(string collectionId)
+    => _collectionCoordinator.FocusCollection(collectionId);
+
+public void BoostPlaybackWindow(IReadOnlyList<string> orderedVideoPaths, int currentIndex, int lookaheadCount)
+    => _playbackCoordinator.BoostPlaybackWindow(orderedVideoPaths, currentIndex, lookaheadCount);
+
+public void RefreshGenerationPaused()
+    => _runtimeController.RefreshGenerationPaused();
+```
+
+This is primarily a readability refactor, not a behavior refactor. The scheduler model, task store, worker pool, and renderer boundaries do not need to change just to gain this clarity.
 
 These names are descriptive rather than mandatory. The important part is the responsibility boundary.
 

@@ -7,7 +7,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using AniNest.Infrastructure.Diagnostics;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Paths;
 using AniNest.Infrastructure.Persistence;
@@ -42,6 +41,10 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private readonly ThumbnailWorkerSuspensionCoordinator _workerSuspensionCoordinator;
     private readonly ThumbnailStatusTracker _statusTracker;
     private readonly ThumbnailQueueLoopRunner _queueLoopRunner;
+    private readonly ThumbnailCollectionCoordinator _collectionCoordinator;
+    private readonly ThumbnailPlaybackCoordinator _playbackCoordinator;
+    private readonly ThumbnailQueryService _queryService;
+    private readonly ThumbnailRuntimeController _runtimeController;
     private bool _isShuttingDown;
     private bool _isPlayerActive;
     private bool _isGenerationPaused;
@@ -60,7 +63,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     public bool IsFfmpegAvailable => _ffmpegAvailable;
 
     public ThumbnailGenerationStatusSnapshot GetStatusSnapshot()
-        => _statusTracker.CreateSnapshot(_isGenerationPaused, _isPlayerActive, _workerPool.Count);
+        => _queryService.GetStatusSnapshot();
 
     public ThumbnailGenerator(
         ISettingsService settings,
@@ -115,6 +118,51 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         _workerCancellationCoordinator = components.WorkerCancellationCoordinator;
         _workerSuspensionCoordinator = components.WorkerSuspensionCoordinator;
         _queueLoopRunner = components.QueueLoopRunner;
+        _collectionCoordinator = new ThumbnailCollectionCoordinator(
+            _taskStore,
+            _workerPool,
+            _indexRepository,
+            EnsureLoopRunning,
+            NotifyStatusChanged,
+            SaveIndex,
+            PreemptLowerPriorityWorkers,
+            () => _ffmpegAvailable,
+            ComputeMd5);
+        _playbackCoordinator = new ThumbnailPlaybackCoordinator(
+            _taskStore,
+            _workerPool,
+            EnsureLoopRunning,
+            NotifyStatusChanged,
+            PreemptLowerPriorityWorkers,
+            PreemptStalePlaybackWorkers);
+        _queryService = new ThumbnailQueryService(
+            _taskStore,
+            _statusTracker,
+            _workerPool,
+            _thumbBaseDir,
+            () => _isGenerationPaused,
+            () => _isPlayerActive);
+        _runtimeController = new ThumbnailRuntimeController(
+            _settings,
+            _decodeStrategyService,
+            _workerPool,
+            _workerCancellationCoordinator,
+            _workerSuspensionCoordinator,
+            _cacheMaintenance,
+            _statusTracker,
+            EnsureLoopRunning,
+            NotifyStatusChanged,
+            SaveIndex,
+            SetTaskState,
+            BuildSchedulerSnapshot,
+            () => _isPlayerActive,
+            value => _isPlayerActive = value,
+            () => _performanceMode,
+            mode => _performanceMode = mode,
+            () => _isGenerationPaused,
+            paused => _isGenerationPaused = paused,
+            DemotePlaybackIntents,
+            ClearPlaybackForegroundTarget);
 
         Directory.CreateDirectory(_thumbBaseDir);
 
@@ -169,248 +217,50 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
 
     public void RegisterCollection(LibraryCollectionRef collection, IReadOnlyCollection<string> videoPaths)
-    {
-        if (!_ffmpegAvailable)
-            return;
-
-        _taskStore.RegisterCollection(collection, videoPaths, ComputeMd5);
-
-        Log.Info($"Thumbnail collection registered: id={collection.Id}, kind={collection.Kind}, name={collection.Name}, videos={videoPaths.Count}");
-        EnsureLoopRunning();
-        NotifyStatusChanged();
-    }
+        => _collectionCoordinator.RegisterCollection(collection, videoPaths);
 
     public void RemoveCollection(string collectionId)
-    {
-        _taskStore.RemoveCollection(collectionId);
-    }
+        => _collectionCoordinator.RemoveCollection(collectionId);
 
     public void FocusCollection(string collectionId)
-    {
-        int promotedCount = _taskStore.ApplyIntentToCollection(collectionId, ThumbnailWorkIntent.FocusedCollection);
-        bool shouldPreempt = ThumbnailWorkerPreemption.ShouldPreemptForIncomingIntent(
-            _workerPool.SnapshotWorkers(),
-            ThumbnailWorkIntent.FocusedCollection);
-
-        Log.Info($"Thumbnail collection focused: id={collectionId}, promoted={promotedCount}, shouldPreempt={shouldPreempt}");
-        if (shouldPreempt)
-            PreemptLowerPriorityWorkers(ThumbnailWorkIntent.FocusedCollection);
-        EnsureLoopRunning();
-        NotifyStatusChanged();
-    }
+        => _collectionCoordinator.FocusCollection(collectionId);
 
     public void BoostCollection(string collectionId)
-    {
-        int promotedCount = _taskStore.ApplyIntentToCollection(collectionId, ThumbnailWorkIntent.ManualCollection);
-        bool shouldPreempt = ThumbnailWorkerPreemption.ShouldPreemptForIncomingIntent(
-            _workerPool.SnapshotWorkers(),
-            ThumbnailWorkIntent.ManualCollection);
-
-        Log.Info($"Thumbnail collection boosted: id={collectionId}, promoted={promotedCount}, shouldPreempt={shouldPreempt}");
-        if (shouldPreempt)
-            PreemptLowerPriorityWorkers(ThumbnailWorkIntent.ManualCollection);
-        EnsureLoopRunning();
-        NotifyStatusChanged();
-    }
+        => _collectionCoordinator.BoostCollection(collectionId);
 
     public void BoostVideo(string videoPath)
-    {
-        bool shouldPreempt = false;
-        IntentApplyOutcome outcome = IntentApplyOutcome.MissingTask;
-        if (_taskStore.TryGetTask(videoPath, out var task))
-        {
-            outcome = _taskStore.ApplyIntentToVideo(videoPath, ThumbnailWorkIntent.ManualSingle, task.SourceCollectionId, DateTime.UtcNow.Ticks);
-            _taskStore.CurrentForegroundTargetVideoPath = task.VideoPath;
-            _taskStore.CurrentForegroundTargetIntent = task.Intent.ToString();
-            shouldPreempt = ThumbnailWorkerPreemption.ShouldPreemptForIncomingIntent(
-                _workerPool.SnapshotWorkers(),
-                ThumbnailWorkIntent.ManualSingle);
-        }
-
-        Log.Info($"Thumbnail video boosted: file={Path.GetFileName(videoPath)}, outcome={outcome}, shouldPreempt={shouldPreempt}");
-        if (shouldPreempt)
-            PreemptLowerPriorityWorkers(ThumbnailWorkIntent.ManualSingle);
-        EnsureLoopRunning();
-        NotifyStatusChanged();
-    }
+        => _playbackCoordinator.BoostVideo(videoPath);
 
     public void BoostPlaybackWindow(IReadOnlyList<string> orderedVideoPaths, int currentIndex, int lookaheadCount)
-    {
-        if (orderedVideoPaths.Count == 0 || currentIndex < 0 || currentIndex >= orderedVideoPaths.Count)
-            return;
-
-        ThumbnailPlaybackWindowUpdate update;
-        update = ThumbnailPlaybackWindowCoordinator.Apply(
-            _taskStore,
-            _workerPool.SnapshotWorkers(),
-            orderedVideoPaths,
-            currentIndex,
-            lookaheadCount,
-            DateTime.UtcNow.Ticks);
-
-        Log.Info(
-            $"Thumbnail playback window boost: currentIndex={currentIndex}, lookahead={lookaheadCount}, currentFile={Path.GetFileName(update.CurrentVideoPath)}, keepFile={Path.GetFileName(update.KeepPlaybackWorkerVideoPath ?? string.Empty)}, " +
-            $"candidateWindow=[{update.CandidateWindowSummary}], currentOutcome={update.CurrentOutcome}, nearbyApplied={update.NearbyApplied}, nearbyReady={update.NearbyReady}, nearbyHigherIntent={update.NearbyHigherIntent}, nearbyMissing={update.NearbyMissing}, shouldPreemptLowerPriority={update.ShouldPreemptLowerPriority}, stalePlaybackWorkers={update.StalePlaybackWorkers}");
-        if (update.StalePlaybackWorkers > 0)
-            PreemptStalePlaybackWorkers(update.CurrentVideoPath, update.KeepPlaybackWorkerVideoPath);
-        else if (update.ShouldPreemptLowerPriority)
-            PreemptLowerPriorityWorkers(ThumbnailWorkIntent.PlaybackCurrent);
-        EnsureLoopRunning();
-        NotifyStatusChanged();
-    }
+        => _playbackCoordinator.BoostPlaybackWindow(orderedVideoPaths, currentIndex, lookaheadCount);
 
     public void ResetCollection(string collectionId, bool boostAfterReset)
-    {
-        long updatedAtTicks = DateTime.UtcNow.Ticks;
-        _taskStore.ResetCollection(collectionId, boostAfterReset, updatedAtTicks,
-            out var thumbnailDirsToDelete, out bool changed, out bool shouldPreempt,
-            out _, out _);
-
-        foreach (string thumbnailDir in thumbnailDirsToDelete.Distinct(StringComparer.OrdinalIgnoreCase))
-            _indexRepository.DeleteThumbnailDirectory(thumbnailDir);
-
-        if (!changed)
-            return;
-
-        if (shouldPreempt)
-            PreemptLowerPriorityWorkers(ThumbnailWorkIntent.ManualCollection);
-        SaveIndex();
-        EnsureLoopRunning();
-        NotifyStatusChanged();
-    }
+        => _collectionCoordinator.ResetCollection(collectionId, boostAfterReset);
 
     public void EnqueueFolder(string folderPath, IReadOnlyCollection<string> videoFiles, int cardOrder,
         string? lastPlayedPath, HashSet<string> playedPaths)
-    {
-        RegisterCollection(new LibraryCollectionRef(folderPath, LibraryCollectionKind.Folder, Path.GetFileName(folderPath)), videoFiles);
-    }
+        => _collectionCoordinator.EnqueueFolder(folderPath, videoFiles);
 
     public void DeleteForFolder(string folderPath, IReadOnlyCollection<string>? videoFiles = null)
-    {
-        _taskStore.DeleteForFolder(folderPath, videoFiles);
-
-        RemoveCollection(folderPath);
-        SaveIndex();
-        NotifyStatusChanged();
-    }
+        => _collectionCoordinator.DeleteForFolder(folderPath, videoFiles);
 
     public void SetPlayerActive(bool isActive)
-    {
-        bool changed;
-        string snapshot;
-        int demotedPlaybackTasks = 0;
-        List<ThumbnailGeneratorWorker> playbackWorkersToCancel = [];
-        string playbackWorkerFiles = string.Empty;
-
-        changed = _isPlayerActive != isActive;
-        _isPlayerActive = isActive;
-
-        if (!isActive)
-        {
-            demotedPlaybackTasks = DemotePlaybackIntents();
-            ClearPlaybackForegroundTarget();
-
-            playbackWorkersToCancel = _workerPool.SnapshotWorkers()
-                .Where(static worker => !worker.Execution.IsCompleted)
-                .Where(worker => ThumbnailWorkIntentPriority.IsPlaybackIntent(worker.Task.Intent))
-                .ToList();
-
-            playbackWorkerFiles = string.Join(", ",
-                playbackWorkersToCancel.Select(worker => Path.GetFileName(worker.Task.VideoPath)));
-        }
-
-        snapshot = BuildSchedulerSnapshot();
-
-        if (!changed && demotedPlaybackTasks == 0 && playbackWorkersToCancel.Count == 0)
-            return;
-
-        Log.Info(
-            $"Thumbnail player activity changed: isActive={isActive}, demotedPlaybackTasks={demotedPlaybackTasks}, " +
-            $"cancelPlaybackWorkers={playbackWorkersToCancel.Count}, files=[{playbackWorkerFiles}], {snapshot}");
-        _workerCancellationCoordinator.CancelWithReason(playbackWorkersToCancel, "player-inactive", "Thumbnail player playback workers canceled");
-
-        NotifyStatusChanged();
-        EnsureLoopRunning();
-    }
+        => _runtimeController.SetPlayerActive(isActive);
 
     public void RefreshPerformanceMode()
-    {
-        ThumbnailPerformanceMode mode = _settings.GetThumbnailPerformanceMode();
-        string snapshot;
-        bool changed;
-
-        changed = _performanceMode != mode;
-        _performanceMode = mode;
-        snapshot = BuildSchedulerSnapshot();
-
-        if (!changed)
-            return;
-
-        Log.Info($"Thumbnail performance mode changed: selectedMode={mode}, {snapshot}");
-        RequeueActiveWorkers("performance-mode-changed");
-        NotifyStatusChanged();
-        EnsureLoopRunning();
-    }
+        => _runtimeController.RefreshPerformanceMode();
 
     public void RefreshGenerationPaused()
-    {
-        bool paused = _settings.IsThumbnailGenerationPaused();
-        bool changed;
-        string snapshot;
-
-        changed = _isGenerationPaused != paused;
-        _isGenerationPaused = paused;
-        snapshot = BuildSchedulerSnapshot();
-
-        if (!changed)
-            return;
-
-        Log.Info($"Thumbnail generation paused changed: paused={paused}, {snapshot}");
-        if (paused)
-            PauseActiveWorkers();
-        else
-            ResumePausedWorkers();
-        NotifyStatusChanged();
-        EnsureLoopRunning();
-    }
+        => _runtimeController.RefreshGenerationPaused();
 
     public void RefreshDecodeStrategy()
-    {
-        _decodeStrategyService.RefreshAccelerationMode();
-
-        string snapshot = BuildSchedulerSnapshot();
-
-        Log.Info($"Thumbnail decode strategy refreshed: {snapshot}");
-        RequeueActiveWorkers("decode-strategy-changed");
-        NotifyStatusChanged();
-        EnsureLoopRunning();
-    }
+        => _runtimeController.RefreshDecodeStrategy();
 
     public ThumbnailState GetState(string videoPath)
-    {
-        using var span = PerfSpan.Begin("Thumbnail.GetState", new Dictionary<string, string>
-        {
-            ["file"] = Path.GetFileName(videoPath)
-        });
-        return _taskStore.GetState(videoPath);
-    }
+        => _queryService.GetState(videoPath);
 
     public byte[]? GetThumbnailBytes(string videoPath, long positionMs)
-    {
-        if (!_ffmpegAvailable) return null;
-
-        _taskStore.TryGetTask(videoPath, out var task);
-
-        if (task == null || task.State != ThumbnailState.Ready)
-            return null;
-
-        string directory = Path.Combine(_thumbBaseDir, task.Md5Dir);
-        int? frameIndex = ThumbnailFrameIndex.ResolveFrameIndex(directory, positionMs);
-        if (frameIndex == null)
-            return null;
-
-        return ThumbnailBundle.ReadFrameBytes(directory, frameIndex.Value);
-    }
+        => _queryService.GetThumbnailBytes(videoPath, positionMs, _ffmpegAvailable);
 
 
     private void EnsureLoopRunning()
@@ -479,33 +329,13 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         => ThumbnailQueueScheduler.GetBlockedReason(_workerPool, _isGenerationPaused, _performanceMode, _isPlayerActive);
 
     private void RequeueActiveWorkers(string reason)
-    {
-        List<ThumbnailGeneratorWorker> workersToCancel;
-        workersToCancel = _workerPool.MarkAllActiveForCancellation(reason);
-        _workerCancellationCoordinator.CancelWithReason(workersToCancel, reason, "Thumbnail active worker requeue");
-    }
+        => _runtimeController.RequeueActiveWorkers(reason);
 
     private void PauseActiveWorkers()
-    {
-        ThumbnailGeneratorWorker[] activeWorkers = _workerPool.SnapshotWorkers()
-            .Where(static worker => !worker.Execution.IsCompleted)
-            .ToArray();
-
-        if (activeWorkers.Length == 0)
-            return;
-
-        _workerSuspensionCoordinator.SuspendActiveWorkers(activeWorkers, SetTaskState);
-    }
+        => _runtimeController.PauseActiveWorkers();
 
     private void ResumePausedWorkers()
-    {
-        ThumbnailGeneratorWorker[] pausedWorkers = _workerPool.SnapshotWorkers()
-            .Where(static worker => !worker.Execution.IsCompleted)
-            .Where(worker => worker.Task.State == ThumbnailState.PausedGenerating)
-            .ToArray();
-
-        _workerSuspensionCoordinator.ResumePausedWorkers(pausedWorkers, SetTaskState);
-    }
+        => _runtimeController.ResumePausedWorkers();
 
     private void PreemptLowerPriorityWorkers(ThumbnailWorkIntent incomingIntent)
     {
@@ -558,29 +388,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
 
     public void Shutdown()
-    {
-        var sw = Stopwatch.StartNew();
-        Log.Info("[Shutdown] starting");
-
-        _isShuttingDown = true;
-
-        _loopCts?.Cancel();
-        _expiryCts?.Cancel();
-        CancelActiveWorkersForShutdown();
-
-        if (_loopTask != null)
-        {
-        Log.Info($"[Shutdown] waiting for _loopTask (Status={_loopTask.Status})...");
-            var waitSw = Stopwatch.StartNew();
-            try { _loopTask.Wait(5000); } catch { }
-            waitSw.Stop();
-        }
-
-        _cacheMaintenance.CleanupTempArtifacts();
-
-        SaveIndex();
-        sw.Stop();
-    }
+        => _runtimeController.Shutdown(_loopCts, _loopTask, _expiryCts, () => _isShuttingDown = true);
 
 
     private CancellationTokenSource? _expiryCts;
@@ -601,12 +409,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     }
 
     private void CleanupExpired()
-    {
-        if (!_cacheMaintenance.CleanupExpired(_taskStore))
-            return;
-
-        _statusTracker.UpdateProgress();
-    }
+        => _runtimeController.CleanupExpired(_taskStore);
 
 
     private void LoadIndex()
