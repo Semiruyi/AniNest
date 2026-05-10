@@ -347,6 +347,7 @@ public class SettingsServiceTests : IDisposable
     [Fact]
     public void FolderClassification_RoundTripsAfterReload()
     {
+        _service.AddFolder("/folder", "Folder");
         _service.SetFolderWatchStatus("/folder", WatchStatus.Watching);
         _service.SetFolderFavorite("/folder", true);
 
@@ -369,6 +370,16 @@ public class SettingsServiceTests : IDisposable
         var classification = _service.GetFolderClassification("/a");
         classification.Status.Should().Be(WatchStatus.Unsorted);
         classification.IsFavorite.Should().BeFalse();
+    }
+
+    [Fact]
+    public void SetFolderClassification_MissingFolder_DoesNotCreateStoredClassification()
+    {
+        _service.SetFolderWatchStatus("/missing", WatchStatus.Watching);
+        _service.SetFolderFavorite("/missing", true);
+
+        var settings = _service.Load();
+        settings.FolderClassifications.Should().BeEmpty();
     }
 
     [Fact]

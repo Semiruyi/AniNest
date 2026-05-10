@@ -382,6 +382,9 @@ public class SettingsService : ISettingsService, IDisposable
     public void SetFolderWatchStatus(string folderPath, WatchStatus status)
     {
         var current = Load();
+        if (!FolderExists(current, folderPath))
+            return;
+
         var classification = GetOrCreateFolderClassification(current, folderPath);
         if (classification.Status == status)
             return;
@@ -393,6 +396,9 @@ public class SettingsService : ISettingsService, IDisposable
     public void SetFolderFavorite(string folderPath, bool isFavorite)
     {
         var current = Load();
+        if (!FolderExists(current, folderPath))
+            return;
+
         var classification = GetOrCreateFolderClassification(current, folderPath);
         if (classification.IsFavorite == isFavorite)
             return;
@@ -443,6 +449,9 @@ public class SettingsService : ISettingsService, IDisposable
         current.FolderClassifications[folderPath] = classification;
         return classification;
     }
+
+    private static bool FolderExists(AppSettings current, string folderPath)
+        => current.Folders.Any(folder => string.Equals(folder.Path, folderPath, StringComparison.OrdinalIgnoreCase));
 
     public int GetThumbnailExpiryDays()
         => Load().ThumbnailExpiryDays;

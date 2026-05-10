@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -21,6 +22,7 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     private static readonly Infrastructure.Logging.Logger Log = Infrastructure.Logging.AppLog.For<MainPageViewModel>();
     private readonly ILibraryAppService _libraryService;
     private readonly ILocalizationService _loc;
+    private readonly List<FolderListItem> _allFolderItems = new();
     private readonly EventHandler<ThumbnailProgressEventArgs> _thumbnailProgressChangedHandler;
     private readonly PropertyChangedEventHandler _localizationChangedHandler;
     private CancellationTokenSource? _loadDataCts;
@@ -51,6 +53,9 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     [ObservableProperty]
     private bool _isThumbnailProgressVisible;
 
+    [ObservableProperty]
+    private LibraryFilter _selectedFilter = LibraryFilter.All;
+
     public MainPageViewModel(
         ILibraryAppService libraryService,
         ILocalizationService loc)
@@ -68,7 +73,8 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
 
     public void AddFolderItem(string name, string path, int videoCount, string? coverPath)
     {
-        FolderItems.Add(CreateFolderItem(new LibraryFolderDto(name, path, videoCount, coverPath)));
+        _allFolderItems.Add(CreateFolderItem(new LibraryFolderDto(name, path, videoCount, coverPath)));
+        ApplyCurrentFilter();
     }
 
     [RelayCommand]
@@ -109,9 +115,11 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
         {
             var loadedItems = await _libraryService.LoadLibraryAsync(_loadDataCts.Token);
 
-            FolderItems.Clear();
+            _allFolderItems.Clear();
             foreach (var item in loadedItems)
-                FolderItems.Add(CreateFolderItem(item));
+                _allFolderItems.Add(CreateFolderItem(item));
+
+            ApplyCurrentFilter();
 
             _dataLoaded = true;
             FocusFirstFolderIfNeeded(loadedItems);
@@ -169,7 +177,7 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
         if (item == null)
             return;
 
-        int currentIndex = FolderItems.IndexOf(item);
+        int currentIndex = _allFolderItems.FindIndex(folder => string.Equals(folder.Path, item.Path, StringComparison.OrdinalIgnoreCase));
         if (currentIndex <= 0)
         {
             Log.Debug($"MoveFolderToFront skipped: already first name={item.Name} path={item.Path}");
@@ -180,9 +188,8 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
         CloseFolderPopup();
         Log.Info($"MoveFolderToFront: name={item.Name} path={item.Path} fromIndex={currentIndex}");
         await _libraryService.MoveFolderToFrontAsync(item.Path);
-        FolderItems.Move(currentIndex, 0);
-        UpdateMoveToFrontState();
-        MoveFolderToFrontCommand.NotifyCanExecuteChanged();
+        MoveFolderItemToFront(item.Path);
+        ApplyCurrentFilter();
     }
 
     private bool CanMoveFolderToFront(FolderListItem? item)
@@ -197,7 +204,8 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
         CloseFolderPopup();
         Log.Info($"DeleteFolder: name={item.Name} path={item.Path}");
         await _libraryService.DeleteFolderAsync(item.Path);
-        FolderItems.Remove(item);
+        _allFolderItems.RemoveAll(folder => string.Equals(folder.Path, item.Path, StringComparison.OrdinalIgnoreCase));
+        ApplyCurrentFilter();
     }
 
     [RelayCommand]
@@ -249,6 +257,39 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
         item.PlayedPercent = updated.VideoCount > 0
             ? (double)updated.PlayedCount / updated.VideoCount * 100
             : 0;
+    }
+
+    [RelayCommand]
+    private void SetSelectedFilter(LibraryFilter filter)
+    {
+        SelectedFilter = filter;
+    }
+
+    [RelayCommand]
+    private async Task SetFolderWatchStatus(FolderStatusChangeRequest? request)
+    {
+        if (request?.Item == null)
+            return;
+
+        CloseFolderPopup();
+        Log.Info($"SetFolderWatchStatus: name={request.Item.Name} path={request.Item.Path} status={request.Status}");
+        await _libraryService.SetFolderWatchStatusAsync(request.Item.Path, request.Status);
+        request.Item.Status = request.Status;
+        ApplyCurrentFilter();
+    }
+
+    [RelayCommand]
+    private async Task ToggleFolderFavorite(FolderListItem? item)
+    {
+        if (item == null)
+            return;
+
+        CloseFolderPopup();
+        bool nextFavorite = !item.IsFavorite;
+        Log.Info($"ToggleFolderFavorite: name={item.Name} path={item.Path} isFavorite={nextFavorite}");
+        await _libraryService.SetFolderFavoriteAsync(item.Path, nextFavorite);
+        item.IsFavorite = nextFavorite;
+        ApplyCurrentFilter();
     }
 
     [RelayCommand]
@@ -340,8 +381,15 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
         return new FolderListItem(item.Name, item.Path, item.VideoCount, item.CoverPath)
         {
             PlayedPercent = item.VideoCount > 0 ? (double)item.PlayedCount / item.VideoCount * 100 : 0,
-            PlayedCount = item.PlayedCount
+            PlayedCount = item.PlayedCount,
+            Status = item.Status,
+            IsFavorite = item.IsFavorite
         };
+    }
+
+    partial void OnSelectedFilterChanged(LibraryFilter value)
+    {
+        ApplyCurrentFilter();
     }
 
     private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e)
@@ -402,7 +450,44 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     private void UpdateMoveToFrontState()
     {
         for (int i = 0; i < FolderItems.Count; i++)
-            FolderItems[i].CanMoveToFront = i > 0;
+        {
+            var item = FolderItems[i];
+            int allIndex = _allFolderItems.FindIndex(folder => string.Equals(folder.Path, item.Path, StringComparison.OrdinalIgnoreCase));
+            item.CanMoveToFront = allIndex > 0;
+        }
+    }
+
+    private void ApplyCurrentFilter()
+    {
+        var filteredItems = _allFolderItems.Where(MatchesSelectedFilter).ToList();
+
+        FolderItems.Clear();
+        foreach (var item in filteredItems)
+            FolderItems.Add(item);
+    }
+
+    private bool MatchesSelectedFilter(FolderListItem item)
+    {
+        return SelectedFilter switch
+        {
+            LibraryFilter.All => true,
+            LibraryFilter.Watching => item.Status == Infrastructure.Persistence.WatchStatus.Watching,
+            LibraryFilter.Unsorted => item.Status == Infrastructure.Persistence.WatchStatus.Unsorted,
+            LibraryFilter.Completed => item.Status == Infrastructure.Persistence.WatchStatus.Completed,
+            LibraryFilter.Favorites => item.IsFavorite,
+            LibraryFilter.Dropped => item.Status == Infrastructure.Persistence.WatchStatus.Dropped,
+            _ => true
+        };
+    }
+
+    private void MoveFolderItemToFront(string path)
+    {
+        var item = _allFolderItems.FirstOrDefault(folder => string.Equals(folder.Path, path, StringComparison.OrdinalIgnoreCase));
+        if (item == null)
+            return;
+
+        _allFolderItems.Remove(item);
+        _allFolderItems.Insert(0, item);
     }
 
     private void CloseFolderPopup(FolderListItem? except = null)

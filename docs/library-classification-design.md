@@ -382,3 +382,15 @@ Deferred to later steps:
 - card-level favorite and status controls
 - right-click classification actions
 - automatic transition from `Unsorted` to `Watching`
+
+### Step 2 complete
+
+The ViewModel layer now keeps a full in-memory item list, applies the selected filter, and can update folder status or favorite state through service commands.
+
+Completed scope:
+
+- add `LibraryFilter`
+- keep a master library list plus filtered visible items
+- add commands for filter selection, favorite toggle, and status updates
+- preserve existing library actions while filtering
+- add focused ViewModel tests

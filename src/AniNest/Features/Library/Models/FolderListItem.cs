@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using AniNest.Infrastructure.Persistence;
 
 namespace AniNest.Features.Library.Models;
 
@@ -28,4 +29,10 @@ public partial class FolderListItem : ObservableObject
 
     [ObservableProperty]
     private bool _canMoveToFront;
+
+    [ObservableProperty]
+    private WatchStatus _status;
+
+    [ObservableProperty]
+    private bool _isFavorite;
 }
