@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+
 namespace AniNest.Infrastructure.Thumbnails;
 
 internal sealed class ThumbnailStatusTracker
@@ -16,8 +21,17 @@ internal sealed class ThumbnailStatusTracker
         _onStatusChanged = onStatusChanged;
     }
 
-    public ThumbnailGenerationStatusSnapshot CreateSnapshot(bool isPaused, bool isPlayerActive, int activeWorkers)
-        => _taskStore.CreateSnapshot(isPaused, isPlayerActive, activeWorkers);
+    public ThumbnailGenerationStatusSnapshot CreateSnapshot(
+        bool isPaused,
+        bool isPlayerActive,
+        int activeWorkers,
+        IReadOnlyDictionary<string, int> videoProgressSnapshot,
+        IReadOnlyCollection<ThumbnailGeneratorWorker> activeWorkersSnapshot)
+        => _taskStore.CreateSnapshot(
+            isPaused,
+            isPlayerActive,
+            activeWorkers,
+            BuildActiveTaskSnapshots(videoProgressSnapshot, activeWorkersSnapshot));
 
     public void UpdateProgress()
     {
@@ -32,4 +46,22 @@ internal sealed class ThumbnailStatusTracker
 
     public void NotifyStatusChanged()
         => _onStatusChanged();
+
+    private static IReadOnlyList<ThumbnailActiveTaskSnapshot> BuildActiveTaskSnapshots(
+        IReadOnlyDictionary<string, int> videoProgressSnapshot,
+        IReadOnlyCollection<ThumbnailGeneratorWorker> activeWorkersSnapshot)
+        => activeWorkersSnapshot
+            .Where(worker => !worker.Execution.IsCompleted)
+            .Select(worker => new ThumbnailActiveTaskSnapshot(
+                worker.Task.VideoPath,
+                Path.GetFileName(worker.Task.VideoPath),
+                worker.Task.Intent,
+                worker.Task.State,
+                videoProgressSnapshot.TryGetValue(worker.Task.VideoPath, out int percent) ? percent : 0,
+                ThumbnailWorkIntentPriority.IsPlaybackIntent(worker.Task.Intent),
+                worker.IsSuspended))
+            .OrderByDescending(static task => ThumbnailWorkIntentPriority.GetRank(task.Intent))
+            .ThenByDescending(static task => task.ProgressPercent)
+            .ThenBy(static task => task.VideoName, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 }

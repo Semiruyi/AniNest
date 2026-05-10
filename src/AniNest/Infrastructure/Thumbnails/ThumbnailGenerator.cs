@@ -35,6 +35,8 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private readonly ThumbnailPlaybackCoordinator _playbackCoordinator;
     private readonly ThumbnailQueryService _queryService;
     private readonly ThumbnailRuntimeController _runtimeController;
+    private readonly object _videoProgressLock = new();
+    private readonly Dictionary<string, int> _videoProgressByPath = new(StringComparer.OrdinalIgnoreCase);
     private bool _isShuttingDown;
     private bool _isPlayerActive;
     private bool _isGenerationPaused;
@@ -96,8 +98,8 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             SaveIndex,
             args => ProgressChanged?.Invoke(this, args),
             () => StatusChanged?.Invoke(),
-            (path, percent) => VideoProgress?.Invoke(path, percent),
-            path => VideoReady?.Invoke(path),
+            OnVideoProgressReported,
+            OnVideoReadyReported,
             BuildSchedulerSnapshot,
             GetVideoDuration);
         _cacheMaintenance = components.CacheMaintenance;
@@ -126,6 +128,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             _taskStore,
             _statusTracker,
             _workerPool,
+            GetVideoProgressSnapshot,
             _thumbBaseDir,
             () => _isGenerationPaused,
             () => _isPlayerActive);
@@ -255,6 +258,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private void StartWorker(ThumbnailTask task, CancellationToken ct)
     {
+        ClearVideoProgress(task.VideoPath);
         var workerCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var worker = new ThumbnailGeneratorWorker
         {
@@ -280,6 +284,12 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private void DrainCompletedWorkers()
     {
+        foreach (var worker in _workerPool.SnapshotWorkers())
+        {
+            if (worker.Execution.IsCompleted)
+                ClearVideoProgress(worker.Task.VideoPath);
+        }
+
         bool changed = _workerPool.DrainCompletedWorkers();
 
         if (changed)
@@ -393,6 +403,36 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private void NotifyStatusChanged()
         => _statusTracker.NotifyStatusChanged();
+
+    private void OnVideoProgressReported(string path, int percent)
+    {
+        lock (_videoProgressLock)
+            _videoProgressByPath[path] = Math.Clamp(percent, 0, 100);
+
+        VideoProgress?.Invoke(path, percent);
+        NotifyStatusChanged();
+    }
+
+    private void OnVideoReadyReported(string path)
+    {
+        lock (_videoProgressLock)
+            _videoProgressByPath[path] = 100;
+
+        VideoReady?.Invoke(path);
+        NotifyStatusChanged();
+    }
+
+    private IReadOnlyDictionary<string, int> GetVideoProgressSnapshot()
+    {
+        lock (_videoProgressLock)
+            return new Dictionary<string, int>(_videoProgressByPath, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private void ClearVideoProgress(string videoPath)
+    {
+        lock (_videoProgressLock)
+            _videoProgressByPath.Remove(videoPath);
+    }
 
     // Shared helpers
     private static double GetVideoDuration(string videoPath)

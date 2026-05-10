@@ -112,13 +112,14 @@
                                               IsOpenAnimated="{Binding ElementName=RootControl, Path=IsBackgroundTaskPopupOpen}"
                                               OpenAnimationOrigin="0.5,0"
                                               HorizontalOffset="0"
-                                              VerticalOffset="140">
+                                              VerticalOffset="240">
                         <Border x:Name="BackgroundTaskPopupContent"
                                 Background="{StaticResource PopupMenuBackground}"
                                 BorderBrush="#38383A"
                                 BorderThickness="1"
                                 CornerRadius="{StaticResource SpeedPopupCornerRadius}"
                                 Padding="12,10"
+                                MinWidth="120"
                                 MaxWidth="320"
                                 behaviors:HoverPopupBehavior.Controller="{Binding ElementName=RootControl, Path=BackgroundTaskPopupController}"
                                 behaviors:HoverPopupBehavior.Zone="Popup">
@@ -145,21 +146,42 @@
                                                Foreground="{StaticResource TextPrimary}"/>
                                     <TextBlock Grid.Column="2"
                                                Style="{StaticResource AppTextBody}"
-                                               Text="{Binding ThumbnailGenerationCountText}"
+                                               Text="{Binding ThumbnailGenerationSummaryText}"
+                                               Margin="12,0,0,0"
+                                               HorizontalAlignment="Right"
                                                Foreground="{StaticResource TextSecondary}"/>
                                 </Grid>
                                 <ProgressBar Height="4"
                                              Minimum="0"
                                              Maximum="100"
                                              Value="{Binding ThumbnailGenerationProgressPercent}"
-                                             Margin="0,0,0,6"/>
-                                <TextBlock Text="{Binding ThumbnailGenerationDetailText}"
-                                           Style="{StaticResource OverlaySecondaryText}"
-                                           Margin="0,0,0,8"/>
-                                <TextBlock Text="{Binding ThumbnailGenerationTooltipText}"
-                                           Style="{StaticResource AppTextBody}"
+                                             Margin="0,0,0,8"/>
+                                <TextBlock Text="{Binding ThumbnailBackgroundTasksHeaderText}"
+                                           Style="{StaticResource AppTextBodyEmphasis}"
                                            Foreground="{StaticResource TextSecondary}"
-                                           TextWrapping="Wrap"/>
+                                           Margin="0,0,0,6"/>
+                                <ItemsControl ItemsSource="{Binding ThumbnailBackgroundTasks}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="0,0,0,8">
+                                                <TextBlock Text="{Binding FileName}"
+                                                           Style="{StaticResource AppTextBody}"
+                                                           Foreground="{StaticResource TextPrimary}"
+                                                           VerticalAlignment="Top"
+                                                           LineHeight="20"
+                                                           LineStackingStrategy="BlockLineHeight"
+                                                           MaxHeight="100"
+                                                           TextWrapping="Wrap"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Margin="0,0,0,4"/>
+                                                <ProgressBar Height="4"
+                                                             Minimum="0"
+                                                             Maximum="100"
+                                                             Value="{Binding ProgressPercent, Mode=OneWay}"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </StackPanel>
                         </Border>
                     </primitives:AnimatedPopup>

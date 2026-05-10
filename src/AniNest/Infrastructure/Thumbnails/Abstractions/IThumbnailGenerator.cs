@@ -70,4 +70,14 @@ public sealed record ThumbnailGenerationStatusSnapshot(
     int PendingCount,
     int ForegroundPendingCount,
     string? CurrentTargetName,
-    string? CurrentTargetIntent);
+    string? CurrentTargetIntent,
+    IReadOnlyList<ThumbnailActiveTaskSnapshot> ActiveTasks);
+
+public sealed record ThumbnailActiveTaskSnapshot(
+    string VideoPath,
+    string VideoName,
+    ThumbnailWorkIntent Intent,
+    ThumbnailState State,
+    int ProgressPercent,
+    bool IsForeground,
+    bool IsSuspended);

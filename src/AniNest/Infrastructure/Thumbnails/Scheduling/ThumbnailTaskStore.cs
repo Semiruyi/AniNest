@@ -45,7 +45,8 @@ internal sealed class ThumbnailTaskStore
     public ThumbnailGenerationStatusSnapshot CreateSnapshot(
         bool isPaused,
         bool isPlayerActive,
-        int activeWorkers)
+        int activeWorkers,
+        IReadOnlyList<ThumbnailActiveTaskSnapshot> activeTasks)
     {
         lock (_lock)
         {
@@ -58,7 +59,8 @@ internal sealed class ThumbnailTaskStore
                 CountTasksByStateUnsafe(ThumbnailState.Pending),
                 CountForegroundPendingUnsafe(),
                 GetCurrentForegroundTargetNameUnsafe(),
-                _currentForegroundTargetIntent);
+                _currentForegroundTargetIntent,
+                activeTasks);
         }
     }
 

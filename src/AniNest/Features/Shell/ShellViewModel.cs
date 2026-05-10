@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -113,16 +114,15 @@ public partial class ShellViewModel : ObservableObject
     private string _thumbnailGenerationStatusColor = "#8E8E93";
 
     [ObservableProperty]
-    private string _thumbnailGenerationCountText = string.Empty;
+    private string _thumbnailGenerationSummaryText = string.Empty;
 
     [ObservableProperty]
-    private string _thumbnailGenerationDetailText = string.Empty;
+    private string _thumbnailBackgroundTasksHeaderText = string.Empty;
 
     [ObservableProperty]
     private double _thumbnailGenerationProgressPercent;
 
-    [ObservableProperty]
-    private string _thumbnailGenerationTooltipText = string.Empty;
+    public ObservableCollection<ThumbnailBackgroundTaskItemViewModel> ThumbnailBackgroundTasks { get; } = new();
 
     public event Action? ToggleFullscreenRequested;
 
@@ -367,33 +367,14 @@ public partial class ShellViewModel : ObservableObject
             _ => "#8E8E93"
         };
 
-        ThumbnailGenerationCountText = $"{snapshot.ReadyCount} / {snapshot.TotalCount}";
-        string detailText = string.Format(
-            _loc["Settings.ThumbnailGeneration.Detail"],
-            snapshot.ActiveWorkers,
-            snapshot.PendingCount);
-        if (!string.IsNullOrWhiteSpace(snapshot.CurrentTargetName))
-        {
-            detailText += $" · {snapshot.CurrentTargetIntent}: {snapshot.CurrentTargetName}";
-        }
-
-        ThumbnailGenerationDetailText = detailText;
         ThumbnailGenerationProgressPercent = snapshot.TotalCount > 0
             ? (double)snapshot.ReadyCount / snapshot.TotalCount * 100
             : 0;
-        string tooltipText = string.Format(
-            _loc["Settings.ThumbnailGeneration.Tooltip"],
-            ThumbnailGenerationStatusText,
-            snapshot.ReadyCount,
-            snapshot.TotalCount,
-            snapshot.ActiveWorkers,
-            snapshot.PendingCount);
-        if (!string.IsNullOrWhiteSpace(snapshot.CurrentTargetName))
-        {
-            tooltipText += $"\nTarget: {snapshot.CurrentTargetIntent} {snapshot.CurrentTargetName}";
-        }
-
-        ThumbnailGenerationTooltipText = tooltipText;
+        ThumbnailGenerationSummaryText = string.Format(_loc["Settings.ThumbnailGeneration.Summary"], snapshot.ReadyCount, snapshot.TotalCount);
+        ThumbnailBackgroundTasksHeaderText = _loc["TitleBar.ThumbnailBackgroundTasks"];
+        ThumbnailBackgroundTasks.Clear();
+        foreach (var task in snapshot.ActiveTasks.Take(2))
+            ThumbnailBackgroundTasks.Add(new ThumbnailBackgroundTaskItemViewModel(task, _loc));
 
         string statusLog =
             $"code={ThumbnailGenerationStatusCode}, ready={snapshot.ReadyCount}, total={snapshot.TotalCount}, " +
@@ -448,6 +429,37 @@ public partial class ShellViewModel : ObservableObject
             ThumbnailDecodeStrategy.AutoHardware => "Auto Hardware",
             _ => "Software"
         };
+
+    public sealed class ThumbnailBackgroundTaskItemViewModel
+    {
+        public ThumbnailBackgroundTaskItemViewModel(ThumbnailActiveTaskSnapshot snapshot, ILocalizationService loc)
+        {
+            FileName = snapshot.VideoName;
+            IntentText = FormatIntent(snapshot.Intent, loc);
+            ProgressPercent = snapshot.ProgressPercent;
+            IsSuspended = snapshot.IsSuspended;
+            StatusText = snapshot.IsSuspended
+                ? loc["Settings.ThumbnailGeneration.Status.Paused"]
+                : loc[$"Settings.ThumbnailGeneration.Status.{snapshot.State}"];
+        }
+
+        public string FileName { get; }
+        public string IntentText { get; }
+        public string StatusText { get; }
+        public int ProgressPercent { get; }
+        public bool IsSuspended { get; }
+
+        private static string FormatIntent(ThumbnailWorkIntent intent, ILocalizationService loc)
+            => intent switch
+            {
+                ThumbnailWorkIntent.ManualSingle => loc["Settings.ThumbnailGeneration.Intent.Current"],
+                ThumbnailWorkIntent.PlaybackCurrent => loc["Settings.ThumbnailGeneration.Intent.Now"],
+                ThumbnailWorkIntent.PlaybackNearby => loc["Settings.ThumbnailGeneration.Intent.Nearby"],
+                ThumbnailWorkIntent.ManualCollection => loc["Settings.ThumbnailGeneration.Intent.Manual"],
+                ThumbnailWorkIntent.FocusedCollection => loc["Settings.ThumbnailGeneration.Intent.Focused"],
+                _ => loc["Settings.ThumbnailGeneration.Intent.Background"]
+            };
+    }
 
     [RelayCommand]
     private async Task AddFolder()

@@ -10,6 +10,7 @@ internal sealed class ThumbnailQueryService
     private readonly ThumbnailTaskStore _taskStore;
     private readonly ThumbnailStatusTracker _statusTracker;
     private readonly ThumbnailWorkerPool _workerPool;
+    private readonly Func<IReadOnlyDictionary<string, int>> _getVideoProgressSnapshot;
     private readonly string _thumbBaseDir;
     private readonly Func<bool> _isGenerationPaused;
     private readonly Func<bool> _isPlayerActive;
@@ -18,6 +19,7 @@ internal sealed class ThumbnailQueryService
         ThumbnailTaskStore taskStore,
         ThumbnailStatusTracker statusTracker,
         ThumbnailWorkerPool workerPool,
+        Func<IReadOnlyDictionary<string, int>> getVideoProgressSnapshot,
         string thumbBaseDir,
         Func<bool> isGenerationPaused,
         Func<bool> isPlayerActive)
@@ -25,13 +27,19 @@ internal sealed class ThumbnailQueryService
         _taskStore = taskStore;
         _statusTracker = statusTracker;
         _workerPool = workerPool;
+        _getVideoProgressSnapshot = getVideoProgressSnapshot;
         _thumbBaseDir = thumbBaseDir;
         _isGenerationPaused = isGenerationPaused;
         _isPlayerActive = isPlayerActive;
     }
 
     public ThumbnailGenerationStatusSnapshot GetStatusSnapshot()
-        => _statusTracker.CreateSnapshot(_isGenerationPaused(), _isPlayerActive(), _workerPool.Count);
+        => _statusTracker.CreateSnapshot(
+            _isGenerationPaused(),
+            _isPlayerActive(),
+            _workerPool.Count,
+            _getVideoProgressSnapshot(),
+            _workerPool.SnapshotWorkers());
 
     public ThumbnailState GetThumbnailState(string videoPath)
     {
