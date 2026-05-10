@@ -104,15 +104,16 @@
                             </Viewbox>
                         </Grid>
                     </Border>
-                    <primitives:AnimatedPopup PlacementTarget="{Binding ElementName=BackgroundTaskHost}"
-                                              Placement="Center"
+                    <primitives:AnimatedPopup x:Name="BackgroundTaskPopup"
+                                              PlacementTarget="{Binding ElementName=BackgroundTaskHost}"
+                                              PlacementPreset="BottomCenter"
                                               AllowsTransparency="True"
                                               IsHitTestVisible="True"
                                               StaysOpen="True"
                                               IsOpenAnimated="{Binding ElementName=RootControl, Path=IsBackgroundTaskPopupOpen}"
                                               OpenAnimationOrigin="0.5,0"
                                               HorizontalOffset="0"
-                                              VerticalOffset="240">
+                                              VerticalOffset="8">
                         <Border x:Name="BackgroundTaskPopupContent"
                                 Background="{StaticResource PopupMenuBackground}"
                                 BorderBrush="#38383A"

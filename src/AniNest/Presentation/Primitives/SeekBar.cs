@@ -226,7 +226,7 @@ public class SeekBar : ContentControl
         _tooltip = new AnimatedPopup
         {
             PlacementTarget = this,
-            Placement = PlacementMode.Relative,
+            PlacementPreset = AnimatedPopupPlacementPreset.Relative,
             AllowsTransparency = true,
             IsHitTestVisible = false,
             CloseOnOutsideClick = false,

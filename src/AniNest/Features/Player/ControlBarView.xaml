@@ -103,7 +103,7 @@
                                 Margin="{StaticResource ControlBarSliderMargin}"/>
 
             <primitives:AnimatedPopup PlacementTarget="{Binding ElementName=SeekBar}"
-                   Placement="Relative"
+                   PlacementPreset="Relative"
                    AllowsTransparency="True"
                    IsHitTestVisible="False"
                    StaysOpen="True"

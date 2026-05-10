@@ -14,6 +14,20 @@ using Point = System.Windows.Point;
 
 namespace AniNest.Presentation.Primitives;
 
+public enum AnimatedPopupPlacementPreset
+{
+    None,
+    Relative,
+    Bottom,
+    Top,
+    Left,
+    Right,
+    BottomCenter,
+    TopCenter,
+    LeftCenter,
+    RightCenter
+}
+
 /// <summary>
 /// Presentation-focused popup with built-in scale+opacity entrance/exit animation.
 ///
@@ -69,11 +83,20 @@ public class AnimatedPopup : Popup
         DependencyProperty.Register(nameof(Content), typeof(UIElement), typeof(AnimatedPopup),
             new PropertyMetadata(null, OnContentChanged));
 
+    public static readonly DependencyProperty PlacementPresetProperty =
+        DependencyProperty.Register(nameof(PlacementPreset), typeof(AnimatedPopupPlacementPreset), typeof(AnimatedPopup),
+            new PropertyMetadata(AnimatedPopupPlacementPreset.None, OnPlacementPresetChanged));
+
     public bool IsOpenAnimated { get => (bool)GetValue(IsOpenAnimatedProperty); set => SetValue(IsOpenAnimatedProperty, value); }
     public Point OpenAnimationOrigin { get => (Point)GetValue(OpenAnimationOriginProperty); set => SetValue(OpenAnimationOriginProperty, value); }
     public int CloseDurationMs { get => (int)GetValue(CloseDurationMsProperty); set => SetValue(CloseDurationMsProperty, value); }
     public bool CloseOnOutsideClick { get => (bool)GetValue(CloseOnOutsideClickProperty); set => SetValue(CloseOnOutsideClickProperty, value); }
     public UIElement? Content { get => (UIElement?)GetValue(ContentProperty); set => SetValue(ContentProperty, value); }
+    public AnimatedPopupPlacementPreset PlacementPreset
+    {
+        get => (AnimatedPopupPlacementPreset)GetValue(PlacementPresetProperty);
+        set => SetValue(PlacementPresetProperty, value);
+    }
     public PopupPassthroughTargets OutsideClickPassthroughTargets
     {
         get => (PopupPassthroughTargets)GetValue(OutsideClickPassthroughTargetsProperty);
@@ -103,6 +126,7 @@ public class AnimatedPopup : Popup
         };
         base.Child = _popupRoot;
         Unloaded += OnUnloaded;
+        UpdatePopupPlacementCallback();
     }
 
     // ========== Open / Close orchestration ==========
@@ -253,6 +277,63 @@ public class AnimatedPopup : Popup
     {
         var popup = (AnimatedPopup)d;
         popup._animationLayer.Child = e.NewValue as UIElement;
+    }
+
+    private static void OnPlacementPresetChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var popup = (AnimatedPopup)d;
+        popup.UpdatePopupPlacementCallback();
+        if (popup.IsOpen)
+            ForceReposition(popup);
+    }
+
+    private void UpdatePopupPlacementCallback()
+    {
+        switch (PlacementPreset)
+        {
+            case AnimatedPopupPlacementPreset.None:
+                CustomPopupPlacementCallback = null;
+                return;
+            case AnimatedPopupPlacementPreset.Relative:
+                CustomPopupPlacementCallback = null;
+                Placement = PlacementMode.Relative;
+                return;
+            case AnimatedPopupPlacementPreset.Bottom:
+                CustomPopupPlacementCallback = null;
+                Placement = PlacementMode.Bottom;
+                return;
+            case AnimatedPopupPlacementPreset.Top:
+                CustomPopupPlacementCallback = null;
+                Placement = PlacementMode.Top;
+                return;
+            case AnimatedPopupPlacementPreset.Left:
+                CustomPopupPlacementCallback = null;
+                Placement = PlacementMode.Left;
+                return;
+            case AnimatedPopupPlacementPreset.Right:
+                CustomPopupPlacementCallback = null;
+                Placement = PlacementMode.Right;
+                return;
+        }
+
+        Placement = PlacementMode.Custom;
+        CustomPopupPlacementCallback = PlaceUsingPreset;
+    }
+
+    private CustomPopupPlacement[] PlaceUsingPreset(Size popupSize, Size targetSize, Point offset)
+    {
+        return PlacementPreset switch
+        {
+            AnimatedPopupPlacementPreset.BottomCenter =>
+                [new CustomPopupPlacement(new Point((targetSize.Width - popupSize.Width) / 2d + offset.X, targetSize.Height + offset.Y), PopupPrimaryAxis.Horizontal)],
+            AnimatedPopupPlacementPreset.TopCenter =>
+                [new CustomPopupPlacement(new Point((targetSize.Width - popupSize.Width) / 2d + offset.X, -popupSize.Height + offset.Y), PopupPrimaryAxis.Horizontal)],
+            AnimatedPopupPlacementPreset.LeftCenter =>
+                [new CustomPopupPlacement(new Point(-popupSize.Width + offset.X, (targetSize.Height - popupSize.Height) / 2d + offset.Y), PopupPrimaryAxis.Vertical)],
+            AnimatedPopupPlacementPreset.RightCenter =>
+                [new CustomPopupPlacement(new Point(targetSize.Width + offset.X, (targetSize.Height - popupSize.Height) / 2d + offset.Y), PopupPrimaryAxis.Vertical)],
+            _ => []
+        };
     }
 }
 
