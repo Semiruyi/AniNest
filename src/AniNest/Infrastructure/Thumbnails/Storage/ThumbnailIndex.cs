@@ -79,6 +79,7 @@ internal static class ThumbnailIndex
             {
                 "Ready" => ThumbnailState.Ready,
                 "Generating" => ThumbnailState.Pending,
+                "PausedGenerating" => ThumbnailState.Pending,
                 "Failed" => ThumbnailState.Pending,
                 _ => ThumbnailState.Pending
             };

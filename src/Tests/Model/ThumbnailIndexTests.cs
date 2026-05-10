@@ -241,6 +241,26 @@ public class ThumbnailIndexTests : IDisposable
         var loaded = ThumbnailIndex.Load(indexPath, _thumbBaseDir, new HashSet<string>());
         loaded.Should().ContainSingle().Which.State.Should().Be(ThumbnailState.Pending);
     }
+
+    [Fact]
+    public void Load_StatePausedGenerating_ResetsToPending()
+    {
+        var indexPath = Path.Combine(_tempDir, "index.json");
+        var tasks = new List<ThumbnailTask>
+        {
+            new()
+            {
+                VideoPath = "/videos/paused.mp4",
+                Md5Dir = "pausedhash",
+                State = ThumbnailState.PausedGenerating,
+                TotalFrames = 0
+            }
+        };
+        ThumbnailIndex.Save(indexPath, tasks);
+
+        var loaded = ThumbnailIndex.Load(indexPath, _thumbBaseDir, new HashSet<string>());
+        loaded.Should().ContainSingle().Which.State.Should().Be(ThumbnailState.Pending);
+    }
 }
 
 

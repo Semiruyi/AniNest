@@ -197,7 +197,8 @@ internal sealed class ThumbnailTaskStore
     {
         lock (_lock)
         {
-            if (_videoToTask.TryGetValue(videoPath, out var task) && task.State == ThumbnailState.Generating)
+            if (_videoToTask.TryGetValue(videoPath, out var task) &&
+                task.State is ThumbnailState.Generating or ThumbnailState.PausedGenerating)
             {
                 SetTaskStateUnsafe(task, ThumbnailState.Pending);
                 return true;

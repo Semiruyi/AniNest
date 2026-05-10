@@ -16,10 +16,17 @@ internal static class ThumbnailQueueScheduler
 
         return taskStore.SnapshotTasks()
             .Where(static task => task.State == ThumbnailState.Pending)
-            .OrderByDescending(static task => ThumbnailWorkIntentPriority.GetRank(task.Intent))
-            .ThenByDescending(static task => task.IntentUpdatedAtUtcTicks)
-            .ThenBy(static task => task.VideoPath, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(static task => task, TaskPriorityComparer.Instance)
             .FirstOrDefault();
+    }
+
+    public static bool IsTaskOutrankedByPendingWork(
+        ThumbnailTaskStore taskStore,
+        ThumbnailTask task)
+    {
+        return taskStore.SnapshotTasks()
+            .Where(static pendingTask => pendingTask.State == ThumbnailState.Pending)
+            .Any(pendingTask => TaskPriorityComparer.Instance.Compare(pendingTask, task) < 0);
     }
 
     public static bool CanStartMoreWorkers(
@@ -72,5 +79,33 @@ internal static class ThumbnailQueueScheduler
             return "blocked-max-concurrency";
 
         return "blocked-unknown";
+    }
+
+    private sealed class TaskPriorityComparer : IComparer<ThumbnailTask>
+    {
+        public static TaskPriorityComparer Instance { get; } = new();
+
+        public int Compare(ThumbnailTask? x, ThumbnailTask? y)
+        {
+            if (ReferenceEquals(x, y))
+                return 0;
+
+            if (x == null)
+                return 1;
+
+            if (y == null)
+                return -1;
+
+            int rankComparison = ThumbnailWorkIntentPriority.GetRank(y.Intent)
+                .CompareTo(ThumbnailWorkIntentPriority.GetRank(x.Intent));
+            if (rankComparison != 0)
+                return rankComparison;
+
+            int updatedAtComparison = y.IntentUpdatedAtUtcTicks.CompareTo(x.IntentUpdatedAtUtcTicks);
+            if (updatedAtComparison != 0)
+                return updatedAtComparison;
+
+            return StringComparer.OrdinalIgnoreCase.Compare(x.VideoPath, y.VideoPath);
+        }
     }
 }

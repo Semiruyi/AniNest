@@ -356,7 +356,9 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
         Log.Info($"Thumbnail generation paused changed: paused={paused}, {snapshot}");
         if (paused)
-            RequeueActiveWorkers("generation-paused");
+            PauseActiveWorkers();
+        else
+            ResumePausedWorkers();
         NotifyStatusChanged();
         EnsureLoopRunning();
     }
@@ -470,6 +472,58 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         List<ThumbnailGeneratorWorker> workersToCancel;
         workersToCancel = _workerPool.MarkAllActiveForCancellation(reason);
         _workerCancellationCoordinator.CancelWithReason(workersToCancel, reason, "Thumbnail active worker requeue");
+    }
+
+    private void PauseActiveWorkers()
+    {
+        ThumbnailGeneratorWorker[] activeWorkers = _workerPool.SnapshotWorkers()
+            .Where(static worker => !worker.Execution.IsCompleted)
+            .ToArray();
+
+        if (activeWorkers.Length == 0)
+            return;
+
+        ThumbnailGeneratorWorker? workerToPreserve = activeWorkers
+            .OrderBy(worker => worker.Task, WorkerTaskPriorityComparer.Instance)
+            .FirstOrDefault();
+
+        bool canPreserveWorker = workerToPreserve != null &&
+            !ThumbnailQueueScheduler.IsTaskOutrankedByPendingWork(_taskStore, workerToPreserve.Task);
+
+        foreach (var worker in activeWorkers)
+        {
+            if (canPreserveWorker && ReferenceEquals(worker, workerToPreserve))
+            {
+                SetTaskState(worker.Task, ThumbnailState.PausedGenerating);
+                Log.Info(
+                    $"Thumbnail worker pause-preserved: file={Path.GetFileName(worker.Task.VideoPath)}, intent={worker.Task.Intent}, {BuildSchedulerSnapshot()}");
+                continue;
+            }
+
+            worker.CancellationReason = "generation-paused";
+            try
+            {
+                worker.Cancellation.Cancel();
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    private void ResumePausedWorkers()
+    {
+        ThumbnailGeneratorWorker[] pausedWorkers = _workerPool.SnapshotWorkers()
+            .Where(static worker => !worker.Execution.IsCompleted)
+            .Where(worker => worker.Task.State == ThumbnailState.PausedGenerating)
+            .ToArray();
+
+        foreach (var worker in pausedWorkers)
+        {
+            SetTaskState(worker.Task, ThumbnailState.Generating);
+            Log.Info(
+                $"Thumbnail worker resume-marked: file={Path.GetFileName(worker.Task.VideoPath)}, intent={worker.Task.Intent}, {BuildSchedulerSnapshot()}");
+        }
     }
 
     private void PreemptLowerPriorityWorkers(ThumbnailWorkIntent incomingIntent)
@@ -693,6 +747,34 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private void ClearPlaybackForegroundTarget()
         => _taskStore.ClearPlaybackForegroundTarget();
+
+    private sealed class WorkerTaskPriorityComparer : IComparer<ThumbnailTask>
+    {
+        public static WorkerTaskPriorityComparer Instance { get; } = new();
+
+        public int Compare(ThumbnailTask? x, ThumbnailTask? y)
+        {
+            if (ReferenceEquals(x, y))
+                return 0;
+
+            if (x == null)
+                return 1;
+
+            if (y == null)
+                return -1;
+
+            int rankComparison = ThumbnailWorkIntentPriority.GetRank(y.Intent)
+                .CompareTo(ThumbnailWorkIntentPriority.GetRank(x.Intent));
+            if (rankComparison != 0)
+                return rankComparison;
+
+            int updatedAtComparison = y.IntentUpdatedAtUtcTicks.CompareTo(x.IntentUpdatedAtUtcTicks);
+            if (updatedAtComparison != 0)
+                return updatedAtComparison;
+
+            return StringComparer.OrdinalIgnoreCase.Compare(x.VideoPath, y.VideoPath);
+        }
+    }
 
 }
 

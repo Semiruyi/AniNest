@@ -332,6 +332,15 @@ The current `ThumbnailTask` model is close to what is needed for rendering and p
 A practical first extension would be:
 
 ```csharp
+public enum ThumbnailState
+{
+    Pending,
+    Generating,
+    PausedGenerating,
+    Ready,
+    Failed
+}
+
 public enum ThumbnailWorkIntent
 {
     BackgroundFill,
@@ -361,6 +370,13 @@ This model stays intentionally modest:
 - keep task persistence and rendering identity as they are
 - add explicit scheduling metadata
 - stop baking ordering into one arithmetic `Priority`
+
+`PausedGenerating` is a narrow-purpose state:
+
+- it exists only for pause and resume behavior
+- it is used only for the currently running head task that is still worth preserving
+- it means the task keeps its in-memory generation progress and should resume before falling back to a fresh restart
+- it is not a general queue state for all interrupted work
 
 ### 4.2 Suggested scheduler responsibilities
 
@@ -399,6 +415,27 @@ Within the same intent level, prefer:
 3. stable file-path order as a final tie-breaker
 
 This gives the system predictable behavior without reintroducing opaque weighting math.
+
+### 4.4 Pause and resume strategy
+
+Pause and resume should distinguish between two kinds of interruption:
+
+1. interruption where the current generating video is still the strongest candidate after resume
+2. interruption where the current generating video has already lost its head position to stronger work
+
+Recommended behavior:
+
+- when generation is paused, inspect the currently running worker
+- if its task is still the current head task under the same scheduler ordering, move it from `Generating` to `PausedGenerating`
+- a `PausedGenerating` task should not be canceled or requeued, because that would discard its current in-memory generation progress
+- if the running task is no longer the head task, cancel it and return it to `Pending`
+- on resume, `PausedGenerating` should be resumed first
+- once a `PausedGenerating` task loses head position because of stronger incoming work, it may be demoted back to `Pending` and regenerated later from scratch
+
+This keeps the rule simple:
+
+- preserve progress only when the same task still deserves to run first
+- otherwise prefer scheduler correctness over partial work preservation
 
 ## Mapping to the Current Codebase
 
@@ -470,9 +507,8 @@ Already in place:
 
 Still pending:
 
+- pause and resume behavior based on `PausedGenerating` instead of unconditional cancel and requeue
 - library-side collection actions beyond the current folder-based bridge
-- player-side single-video manual thumbnail actions
-- additional library-side collection actions beyond the current folder-based bridge
 - player-side single-video manual thumbnail actions
 
 ### Current `ThumbnailGenerator` structure

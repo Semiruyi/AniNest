@@ -300,6 +300,59 @@ public class ThumbnailGeneratorTests : IDisposable
     }
 
     [Fact]
+    public void RefreshGenerationPaused_PreservesHeadWorkerAsPausedGenerating()
+    {
+        var currentVideo = @"C:\videos\ep01.mp4";
+        var backgroundVideo = @"C:\videos\ep02.mp4";
+
+        _generator.EnqueueFolder(@"C:\videos", [currentVideo, backgroundVideo], 0, null, []);
+        _generator.BoostVideo(currentVideo);
+        _generator.AddActiveWorkerForTest(currentVideo);
+        _settingsService.SetThumbnailGenerationPaused(true);
+
+        _generator.RefreshGenerationPaused();
+
+        _generator.GetState(currentVideo).Should().Be(ThumbnailState.PausedGenerating);
+        _generator.IsActiveWorkerCancellationRequestedForTest(currentVideo).Should().BeFalse();
+    }
+
+    [Fact]
+    public void RefreshGenerationPaused_CancelsWorkerThatLostHeadPosition()
+    {
+        var activeVideo = @"C:\videos\ep01.mp4";
+        var boostedVideo = @"C:\videos\ep02.mp4";
+
+        _generator.EnqueueFolder(@"C:\videos", [activeVideo, boostedVideo], 0, null, []);
+        _generator.AddActiveWorkerForTest(activeVideo);
+        _generator.BoostVideo(boostedVideo);
+        _settingsService.SetThumbnailGenerationPaused(true);
+
+        _generator.RefreshGenerationPaused();
+        _generator.SimulateCanceledActiveWorkerForTest(activeVideo);
+
+        _generator.IsActiveWorkerCancellationRequestedForTest(activeVideo).Should().BeTrue();
+        _generator.GetState(activeVideo).Should().Be(ThumbnailState.Pending);
+    }
+
+    [Fact]
+    public void RefreshGenerationPaused_False_ResumesPausedGeneratingWorkerState()
+    {
+        var currentVideo = @"C:\videos\ep01.mp4";
+
+        _generator.EnqueueFolder(@"C:\videos", [currentVideo], 0, null, []);
+        _generator.BoostVideo(currentVideo);
+        _generator.AddActiveWorkerForTest(currentVideo);
+        _settingsService.SetThumbnailGenerationPaused(true);
+        _generator.RefreshGenerationPaused();
+
+        _settingsService.SetThumbnailGenerationPaused(false);
+        _generator.RefreshGenerationPaused();
+
+        _generator.GetState(currentVideo).Should().Be(ThumbnailState.Generating);
+        _generator.IsActiveWorkerCancellationRequestedForTest(currentVideo).Should().BeFalse();
+    }
+
+    [Fact]
     public void TryRequeueTask_WhenReady_DoesNothingAndKeepsReadyCount()
     {
         var video = @"C:\videos\ep02.mp4";
