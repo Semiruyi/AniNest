@@ -168,9 +168,14 @@ public class PlaylistManagerTests : IDisposable
         await _manager.LoadFolderAsync(_tempDir, "Test");
         var item = _manager.Items[1];
 
-        _manager.UpdateThumbnailReady(item.FilePath);
+        _manager.SyncThumbnailVisualStates(
+            new Dictionary<string, ThumbnailActiveTaskSnapshot>(),
+            path => string.Equals(path, item.FilePath, StringComparison.OrdinalIgnoreCase)
+                ? ThumbnailState.Ready
+                : ThumbnailState.Pending);
 
         item.IsThumbnailReady.Should().BeTrue();
+        item.ThumbnailProgress.Should().Be(0);
     }
 
     [Fact]
@@ -180,9 +185,51 @@ public class PlaylistManagerTests : IDisposable
         await _manager.LoadFolderAsync(_tempDir, "Test");
         var item = _manager.Items[0];
 
-        _manager.UpdateThumbnailProgress(item.FilePath, 75);
+        _manager.SyncThumbnailVisualStates(
+            new Dictionary<string, ThumbnailActiveTaskSnapshot>(StringComparer.OrdinalIgnoreCase)
+            {
+                [item.FilePath] = new ThumbnailActiveTaskSnapshot(
+                    item.FilePath,
+                    Path.GetFileName(item.FilePath),
+                    ThumbnailWorkIntent.PlaybackCurrent,
+                    ThumbnailState.Generating,
+                    75,
+                    true,
+                    false)
+            },
+            _ => ThumbnailState.Pending);
 
         item.ThumbnailProgress.Should().Be(75);
+        item.IsThumbnailReady.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SyncThumbnailVisualStates_CanceledOrQueued_HidesPie()
+    {
+        CreateVideoFiles(2);
+        await _manager.LoadFolderAsync(_tempDir, "Test");
+        var item = _manager.Items[0];
+
+        _manager.SyncThumbnailVisualStates(
+            new Dictionary<string, ThumbnailActiveTaskSnapshot>(StringComparer.OrdinalIgnoreCase)
+            {
+                [item.FilePath] = new ThumbnailActiveTaskSnapshot(
+                    item.FilePath,
+                    Path.GetFileName(item.FilePath),
+                    ThumbnailWorkIntent.PlaybackCurrent,
+                    ThumbnailState.Generating,
+                    42,
+                    true,
+                    false)
+            },
+            _ => ThumbnailState.Pending);
+
+        _manager.SyncThumbnailVisualStates(
+            new Dictionary<string, ThumbnailActiveTaskSnapshot>(),
+            _ => ThumbnailState.Pending);
+
+        item.ThumbnailProgress.Should().Be(0);
+        item.IsThumbnailReady.Should().BeFalse();
     }
 
     [Fact]

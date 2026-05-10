@@ -1,11 +1,13 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using AniNest.Features.Player.Models;
 using AniNest.Infrastructure.Localization;
 using AniNest.Infrastructure.Media;
+using AniNest.Infrastructure.Thumbnails;
 
 namespace AniNest.Features.Player;
 
@@ -127,15 +129,10 @@ public partial class PlaylistViewModel : ObservableObject
         SetCurrentIndex(_playlistManager.CurrentIndex, force: true);
     }
 
-    public void UpdateThumbnailReady(string videoPath)
-    {
-        _playlistManager.UpdateThumbnailReady(videoPath);
-    }
-
-    public void UpdateThumbnailProgress(string videoPath, int percent)
-    {
-        _playlistManager.UpdateThumbnailProgress(videoPath, percent);
-    }
+    public void SyncThumbnailVisualStates(
+        IReadOnlyDictionary<string, ThumbnailActiveTaskSnapshot> activeTasksByPath,
+        Func<string, ThumbnailState> getThumbnailState)
+        => _playlistManager.SyncThumbnailVisualStates(activeTasksByPath, getThumbnailState);
 
     public void RefreshCurrentIndex()
     {

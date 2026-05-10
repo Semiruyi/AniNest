@@ -256,26 +256,29 @@ public class PlaylistManager
             _settings.SetVideoProgress(filePath, time, length);
     }
 
-    public void UpdateThumbnailReady(string videoPath)
+    public void SyncThumbnailVisualStates(
+        IReadOnlyDictionary<string, ThumbnailActiveTaskSnapshot> activeTasksByPath,
+        Func<string, ThumbnailState> getThumbnailState)
     {
         foreach (var item in Items)
         {
-            if (string.Equals(item.FilePath, videoPath, StringComparison.OrdinalIgnoreCase))
+            if (activeTasksByPath.TryGetValue(item.FilePath, out var activeTask) &&
+                activeTask.State is ThumbnailState.Generating or ThumbnailState.PausedGenerating)
             {
-                item.IsThumbnailReady = true;
-                return;
+                item.IsThumbnailReady = false;
+                item.ThumbnailProgress = activeTask.ProgressPercent;
+                continue;
             }
-        }
-    }
 
-    public void UpdateThumbnailProgress(string videoPath, int percent)
-    {
-        foreach (var item in Items)
-        {
-            if (string.Equals(item.FilePath, videoPath, StringComparison.OrdinalIgnoreCase))
+            if (getThumbnailState(item.FilePath) == ThumbnailState.Ready)
             {
-                item.ThumbnailProgress = percent;
-                return;
+                item.ThumbnailProgress = 0;
+                item.IsThumbnailReady = true;
+            }
+            else
+            {
+                item.IsThumbnailReady = false;
+                item.ThumbnailProgress = 0;
             }
         }
     }

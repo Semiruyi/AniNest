@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using System.Windows;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Thumbnails;
@@ -10,15 +11,13 @@ public sealed class PlayerThumbnailSyncService : IPlayerThumbnailSyncService
     private static readonly Logger Log = AppLog.For<PlayerThumbnailSyncService>();
 
     private readonly IThumbnailGenerator _thumbnailGenerator;
-    private readonly Action<string> _videoReadyHandler;
-    private readonly Action<string, int> _videoProgressHandler;
+    private readonly Action _statusChangedHandler;
     private PlaylistViewModel? _playlist;
 
     public PlayerThumbnailSyncService(IThumbnailGenerator thumbnailGenerator)
     {
         _thumbnailGenerator = thumbnailGenerator;
-        _videoReadyHandler = OnVideoReady;
-        _videoProgressHandler = OnVideoProgress;
+        _statusChangedHandler = OnStatusChanged;
     }
 
     public void Attach(PlaylistViewModel playlist)
@@ -30,8 +29,8 @@ public sealed class PlayerThumbnailSyncService : IPlayerThumbnailSyncService
             Detach(_playlist);
 
         _playlist = playlist;
-        _thumbnailGenerator.VideoReady += _videoReadyHandler;
-        _thumbnailGenerator.VideoProgress += _videoProgressHandler;
+        _thumbnailGenerator.StatusChanged += _statusChangedHandler;
+        SyncPlaylistThumbnailStates();
     }
 
     public void Detach(PlaylistViewModel playlist)
@@ -39,28 +38,24 @@ public sealed class PlayerThumbnailSyncService : IPlayerThumbnailSyncService
         if (!ReferenceEquals(_playlist, playlist))
             return;
 
-        _thumbnailGenerator.VideoReady -= _videoReadyHandler;
-        _thumbnailGenerator.VideoProgress -= _videoProgressHandler;
+        _thumbnailGenerator.StatusChanged -= _statusChangedHandler;
         _playlist = null;
     }
 
-    private void OnVideoReady(string path)
-    {
-        Application.Current.Dispatcher.Invoke(() =>
-        {
-            if (_playlist == null)
-                return;
-            _playlist.UpdateThumbnailReady(path);
-        });
-    }
+    private void OnStatusChanged()
+        => Application.Current.Dispatcher.Invoke(SyncPlaylistThumbnailStates);
 
-    private void OnVideoProgress(string path, int percent)
+    private void SyncPlaylistThumbnailStates()
     {
-        Application.Current.Dispatcher.Invoke(() =>
-        {
-            if (_playlist == null)
-                return;
-            _playlist.UpdateThumbnailProgress(path, percent);
-        });
+        if (_playlist == null)
+            return;
+
+        var snapshot = _thumbnailGenerator.GetStatusSnapshot();
+        var activeTasksByPath = snapshot.ActiveTasks
+            .Where(task => task.State is ThumbnailState.Generating or ThumbnailState.PausedGenerating)
+            .GroupBy(task => task.VideoPath, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+        _playlist.SyncThumbnailVisualStates(activeTasksByPath, _thumbnailGenerator.GetThumbnailState);
     }
 }
