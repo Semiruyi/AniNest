@@ -16,7 +16,7 @@ internal sealed class ThumbnailCollectionCoordinator
     private readonly Action _ensureLoopRunning;
     private readonly Action _notifyStatusChanged;
     private readonly Action _saveIndex;
-    private readonly Action<ThumbnailWorkIntent> _preemptLowerPriorityWorkers;
+    private readonly Action<ThumbnailWorkIntent, string?> _preemptLowerPriorityWorkers;
     private readonly Func<bool> _isFfmpegAvailable;
     private readonly Func<string, string> _computeMd5;
 
@@ -27,7 +27,7 @@ internal sealed class ThumbnailCollectionCoordinator
         Action ensureLoopRunning,
         Action notifyStatusChanged,
         Action saveIndex,
-        Action<ThumbnailWorkIntent> preemptLowerPriorityWorkers,
+        Action<ThumbnailWorkIntent, string?> preemptLowerPriorityWorkers,
         Func<bool> isFfmpegAvailable,
         Func<string, string> computeMd5)
     {
@@ -74,7 +74,7 @@ internal sealed class ThumbnailCollectionCoordinator
 
         Log.Info($"Thumbnail collection focused: id={collectionId}, promoted={promotedCount}, shouldPreempt={shouldPreempt}");
         if (shouldPreempt)
-            _preemptLowerPriorityWorkers(ThumbnailWorkIntent.FocusedCollection);
+            _preemptLowerPriorityWorkers(ThumbnailWorkIntent.FocusedCollection, null);
         _ensureLoopRunning();
         _notifyStatusChanged();
     }
@@ -88,7 +88,7 @@ internal sealed class ThumbnailCollectionCoordinator
 
         Log.Info($"Thumbnail collection boosted: id={collectionId}, promoted={promotedCount}, shouldPreempt={shouldPreempt}");
         if (shouldPreempt)
-            _preemptLowerPriorityWorkers(ThumbnailWorkIntent.ManualCollection);
+            _preemptLowerPriorityWorkers(ThumbnailWorkIntent.ManualCollection, null);
         _ensureLoopRunning();
         _notifyStatusChanged();
     }
@@ -107,7 +107,7 @@ internal sealed class ThumbnailCollectionCoordinator
             return;
 
         if (shouldPreempt)
-            _preemptLowerPriorityWorkers(ThumbnailWorkIntent.ManualCollection);
+            _preemptLowerPriorityWorkers(ThumbnailWorkIntent.ManualCollection, null);
         _saveIndex();
         _ensureLoopRunning();
         _notifyStatusChanged();

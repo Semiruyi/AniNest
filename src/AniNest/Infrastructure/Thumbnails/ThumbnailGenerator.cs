@@ -318,11 +318,11 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private void ResumePausedWorkers()
         => _runtimeController.ResumePausedWorkers();
 
-    private void PreemptLowerPriorityWorkers(ThumbnailWorkIntent incomingIntent)
+    private void PreemptLowerPriorityWorkers(ThumbnailWorkIntent incomingIntent, string? protectedVideoPath = null)
     {
         List<ThumbnailGeneratorWorker> workersToCancel;
         workersToCancel = _workerPool.MarkForCancellation(
-            workers => ThumbnailWorkerPreemption.SelectLowerPriorityWorkers(workers, incomingIntent),
+            workers => ThumbnailWorkerPreemption.SelectLowerPriorityWorkers(workers, incomingIntent, protectedVideoPath),
             worker => $"preempted-by-{incomingIntent}");
         _workerCancellationCoordinator.CancelWithComputedReasons(
             workersToCancel,
@@ -470,8 +470,8 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     internal bool TryRequeueTaskForTest(string videoPath)
         => _taskStore.TryRequeueTask(videoPath);
 
-    internal void PreemptLowerPriorityWorkersForTest(ThumbnailWorkIntent incomingIntent)
-        => PreemptLowerPriorityWorkers(incomingIntent);
+    internal void PreemptLowerPriorityWorkersForTest(ThumbnailWorkIntent incomingIntent, string? protectedVideoPath = null)
+        => PreemptLowerPriorityWorkers(incomingIntent, protectedVideoPath);
 
     internal void AddActiveWorkerForTest(string videoPath, string cancellationReason = "test-worker")
     {

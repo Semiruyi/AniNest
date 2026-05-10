@@ -226,6 +226,7 @@ Current implementation note:
 - the playback window starts at the current item and extends forward by the configured lookahead count
 - already-ready items stay in the window for targeting purposes, but the scheduler skips regenerating them
 - if the current item is already ready, the first unresolved nearby item can still preempt lower-priority non-playback work so the next useful thumbnail starts promptly
+- lower-priority worker preemption accepts an explicit protected video so the scheduler does not cancel the same task it is trying to prioritize
 
 ## Status and Feedback
 
@@ -525,6 +526,7 @@ Already in place:
 - ready-item skipping inside the playback window
 - stale playback worker protection via keep-target logic
 - nearby playback candidates can preempt lower-priority non-playback workers even when the current item is already ready
+- lower-priority preemption can explicitly protect the prioritized video from self-cancellation instead of relying only on in-memory intent mutation
 
 Still pending:
 

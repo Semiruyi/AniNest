@@ -92,12 +92,16 @@ internal static class ThumbnailPlaybackWindowCoordinator
             : shouldPrioritizeNearbyWorker
                 ? ThumbnailWorkIntent.PlaybackNearby
                 : null;
+        string? protectedVideoPath = shouldPrioritizeCurrentWorker
+            ? currentVideoPath
+            : keepPlaybackWorkerVideoPath;
 
         return new ThumbnailPlaybackWindowUpdate
         {
             CurrentVideoPath = currentVideoPath,
             CurrentOutcome = currentOutcome,
             KeepPlaybackWorkerVideoPath = keepPlaybackWorkerVideoPath,
+            ProtectedVideoPath = protectedVideoPath,
             LowerPriorityPreemptionIntent = lowerPriorityPreemptionIntent,
             CandidateWindowSummary = candidateWindow.Count == 0 ? "-" : string.Join(", ", candidateWindow),
             NearbyApplied = nearbyApplied,
@@ -107,7 +111,7 @@ internal static class ThumbnailPlaybackWindowCoordinator
             StalePlaybackWorkers = stalePlaybackWorkers,
             ShouldPreemptLowerPriority = lowerPriorityPreemptionIntent.HasValue &&
                 stalePlaybackWorkers == 0 &&
-                ThumbnailWorkerPreemption.ShouldPreemptForIncomingIntent(activeWorkers, lowerPriorityPreemptionIntent.Value)
+                ThumbnailWorkerPreemption.ShouldPreemptForIncomingIntent(activeWorkers, lowerPriorityPreemptionIntent.Value, protectedVideoPath)
         };
     }
 }

@@ -14,7 +14,7 @@ internal sealed class ThumbnailPlaybackCoordinator
     private readonly ThumbnailWorkerPool _workerPool;
     private readonly Action _ensureLoopRunning;
     private readonly Action _notifyStatusChanged;
-    private readonly Action<ThumbnailWorkIntent> _preemptLowerPriorityWorkers;
+    private readonly Action<ThumbnailWorkIntent, string?> _preemptLowerPriorityWorkers;
     private readonly Action<string, string?> _preemptStalePlaybackWorkers;
 
     public ThumbnailPlaybackCoordinator(
@@ -22,7 +22,7 @@ internal sealed class ThumbnailPlaybackCoordinator
         ThumbnailWorkerPool workerPool,
         Action ensureLoopRunning,
         Action notifyStatusChanged,
-        Action<ThumbnailWorkIntent> preemptLowerPriorityWorkers,
+        Action<ThumbnailWorkIntent, string?> preemptLowerPriorityWorkers,
         Action<string, string?> preemptStalePlaybackWorkers)
     {
         _taskStore = taskStore;
@@ -44,12 +44,13 @@ internal sealed class ThumbnailPlaybackCoordinator
             _taskStore.CurrentForegroundTargetIntent = task.Intent.ToString();
             shouldPreempt = ThumbnailWorkerPreemption.ShouldPreemptForIncomingIntent(
                 _workerPool.SnapshotWorkers(),
-                ThumbnailWorkIntent.ManualSingle);
+                ThumbnailWorkIntent.ManualSingle,
+                task.VideoPath);
         }
 
         Log.Info($"Thumbnail video boosted: file={Path.GetFileName(videoPath)}, outcome={outcome}, shouldPreempt={shouldPreempt}");
         if (shouldPreempt)
-            _preemptLowerPriorityWorkers(ThumbnailWorkIntent.ManualSingle);
+            _preemptLowerPriorityWorkers(ThumbnailWorkIntent.ManualSingle, videoPath);
         _ensureLoopRunning();
         _notifyStatusChanged();
     }
@@ -69,11 +70,11 @@ internal sealed class ThumbnailPlaybackCoordinator
 
         Log.Info(
             $"Thumbnail playback window boost: currentIndex={currentIndex}, lookahead={lookaheadCount}, currentFile={Path.GetFileName(update.CurrentVideoPath)}, keepFile={Path.GetFileName(update.KeepPlaybackWorkerVideoPath ?? string.Empty)}, " +
-            $"candidateWindow=[{update.CandidateWindowSummary}], currentOutcome={update.CurrentOutcome}, nearbyApplied={update.NearbyApplied}, nearbyReady={update.NearbyReady}, nearbyHigherIntent={update.NearbyHigherIntent}, nearbyMissing={update.NearbyMissing}, lowerPriorityPreemptionIntent={update.LowerPriorityPreemptionIntent?.ToString() ?? "-"}, shouldPreemptLowerPriority={update.ShouldPreemptLowerPriority}, stalePlaybackWorkers={update.StalePlaybackWorkers}");
+            $"candidateWindow=[{update.CandidateWindowSummary}], currentOutcome={update.CurrentOutcome}, nearbyApplied={update.NearbyApplied}, nearbyReady={update.NearbyReady}, nearbyHigherIntent={update.NearbyHigherIntent}, nearbyMissing={update.NearbyMissing}, lowerPriorityPreemptionIntent={update.LowerPriorityPreemptionIntent?.ToString() ?? "-"}, protectedVideo={Path.GetFileName(update.ProtectedVideoPath ?? string.Empty)}, shouldPreemptLowerPriority={update.ShouldPreemptLowerPriority}, stalePlaybackWorkers={update.StalePlaybackWorkers}");
         if (update.StalePlaybackWorkers > 0)
             _preemptStalePlaybackWorkers(update.CurrentVideoPath, update.KeepPlaybackWorkerVideoPath);
         else if (update.ShouldPreemptLowerPriority && update.LowerPriorityPreemptionIntent.HasValue)
-            _preemptLowerPriorityWorkers(update.LowerPriorityPreemptionIntent.Value);
+            _preemptLowerPriorityWorkers(update.LowerPriorityPreemptionIntent.Value, update.ProtectedVideoPath);
         _ensureLoopRunning();
         _notifyStatusChanged();
     }

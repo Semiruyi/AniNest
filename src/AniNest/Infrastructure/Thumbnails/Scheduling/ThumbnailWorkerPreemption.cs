@@ -8,12 +8,17 @@ internal static class ThumbnailWorkerPreemption
 {
     public static bool ShouldPreemptForIncomingIntent(
         IReadOnlyCollection<ThumbnailGeneratorWorker> activeWorkers,
-        ThumbnailWorkIntent incomingIntent)
+        ThumbnailWorkIntent incomingIntent,
+        string? protectedVideoPath = null)
     {
         int incomingRank = ThumbnailWorkIntentPriority.GetRank(incomingIntent);
         foreach (var worker in activeWorkers)
         {
             if (worker.Execution.IsCompleted)
+                continue;
+
+            if (!string.IsNullOrWhiteSpace(protectedVideoPath) &&
+                string.Equals(worker.Task.VideoPath, protectedVideoPath, StringComparison.OrdinalIgnoreCase))
                 continue;
 
             if (ThumbnailWorkIntentPriority.GetRank(worker.Task.Intent) < incomingRank)
@@ -36,11 +41,14 @@ internal static class ThumbnailWorkerPreemption
 
     public static List<ThumbnailGeneratorWorker> SelectLowerPriorityWorkers(
         IReadOnlyCollection<ThumbnailGeneratorWorker> activeWorkers,
-        ThumbnailWorkIntent incomingIntent)
+        ThumbnailWorkIntent incomingIntent,
+        string? protectedVideoPath = null)
     {
         int incomingRank = ThumbnailWorkIntentPriority.GetRank(incomingIntent);
         return activeWorkers
             .Where(static worker => !worker.Execution.IsCompleted)
+            .Where(worker => string.IsNullOrWhiteSpace(protectedVideoPath) ||
+                !string.Equals(worker.Task.VideoPath, protectedVideoPath, StringComparison.OrdinalIgnoreCase))
             .Where(worker => ThumbnailWorkIntentPriority.GetRank(worker.Task.Intent) < incomingRank)
             .ToList();
     }

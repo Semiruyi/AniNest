@@ -337,6 +337,23 @@ public class ThumbnailGeneratorTests : IDisposable
     }
 
     [Fact]
+    public void PreemptLowerPriorityWorkers_WithProtectedVideo_DoesNotCancelMatchingWorker()
+    {
+        var protectedVideo = @"C:\videos\ep01.mp4";
+        var otherVideo = @"C:\videos\ep02.mp4";
+
+        RegisterFolderCollection(@"C:\videos", [protectedVideo, otherVideo]);
+        _generator.AddActiveWorkerForTest(protectedVideo);
+        _generator.AddActiveWorkerForTest(otherVideo);
+
+        _generator.BoostVideo(protectedVideo);
+        _generator.PreemptLowerPriorityWorkersForTest(ThumbnailWorkIntent.ManualSingle, protectedVideo);
+
+        _generator.IsActiveWorkerCancellationRequestedForTest(protectedVideo).Should().BeFalse();
+        _generator.IsActiveWorkerCancellationRequestedForTest(otherVideo).Should().BeTrue();
+    }
+
+    [Fact]
     public void RequeueActiveWorkers_WhenNoActiveWorkers_DoesNotChangePendingTaskState()
     {
         var video = @"C:\videos\ep01.mp4";

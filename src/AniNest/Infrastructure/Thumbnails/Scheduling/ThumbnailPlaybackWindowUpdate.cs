@@ -6,6 +6,7 @@ internal sealed class ThumbnailPlaybackWindowUpdate
     public required IntentApplyOutcome CurrentOutcome { get; init; }
     public required string CandidateWindowSummary { get; init; }
     public string? KeepPlaybackWorkerVideoPath { get; init; }
+    public string? ProtectedVideoPath { get; init; }
     public ThumbnailWorkIntent? LowerPriorityPreemptionIntent { get; init; }
     public int NearbyApplied { get; init; }
     public int NearbyReady { get; init; }
