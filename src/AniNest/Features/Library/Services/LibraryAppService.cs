@@ -47,7 +47,7 @@ public sealed class LibraryAppService : ILibraryAppService
             }
 
             _settings.RemoveFolder(folder.Path);
-            _thumbnailGenerator.DeleteForFolder(folder.Path);
+            _thumbnailGenerator.DeleteCollection(folder.Path);
         }
 
         foreach (var (folder, videoFiles) in loadedItems)
@@ -210,7 +210,7 @@ public sealed class LibraryAppService : ILibraryAppService
     {
         cancellationToken.ThrowIfCancellationRequested();
         _settings.RemoveFolder(path);
-        _thumbnailGenerator.DeleteForFolder(path);
+        _thumbnailGenerator.DeleteCollection(path);
         return Task.CompletedTask;
     }
 

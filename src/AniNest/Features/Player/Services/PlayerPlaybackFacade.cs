@@ -46,7 +46,7 @@ public sealed class PlayerPlaybackFacade : IPlayerPlaybackFacade
         => MediaPlayerController.FormatTime(ms);
 
     public ThumbnailState GetThumbnailState(string videoPath)
-        => _thumbnailGenerator.GetState(videoPath);
+        => _thumbnailGenerator.GetThumbnailState(videoPath);
 
     public byte[]? GetThumbnailBytes(string videoPath, long positionMs)
         => _thumbnailGenerator.GetThumbnailBytes(videoPath, positionMs);

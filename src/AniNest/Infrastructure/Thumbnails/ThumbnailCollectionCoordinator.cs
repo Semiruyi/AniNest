@@ -57,6 +57,14 @@ internal sealed class ThumbnailCollectionCoordinator
     public void RemoveCollection(string collectionId)
         => _taskStore.RemoveCollection(collectionId);
 
+    public void DeleteCollection(string collectionId, IReadOnlyCollection<string>? videoPaths = null)
+    {
+        _taskStore.DeleteForCollection(collectionId, videoPaths);
+        RemoveCollection(collectionId);
+        _saveIndex();
+        _notifyStatusChanged();
+    }
+
     public void FocusCollection(string collectionId)
     {
         int promotedCount = _taskStore.ApplyIntentToCollection(collectionId, ThumbnailWorkIntent.FocusedCollection);
@@ -105,14 +113,4 @@ internal sealed class ThumbnailCollectionCoordinator
         _notifyStatusChanged();
     }
 
-    public void EnqueueFolder(string folderPath, IReadOnlyCollection<string> videoFiles)
-        => RegisterCollection(new LibraryCollectionRef(folderPath, LibraryCollectionKind.Folder, Path.GetFileName(folderPath)), videoFiles);
-
-    public void DeleteForFolder(string folderPath, IReadOnlyCollection<string>? videoFiles)
-    {
-        _taskStore.DeleteForFolder(folderPath, videoFiles);
-        RemoveCollection(folderPath);
-        _saveIndex();
-        _notifyStatusChanged();
-    }
 }

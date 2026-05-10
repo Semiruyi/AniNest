@@ -264,21 +264,18 @@ internal sealed class ThumbnailTaskStore
         }
     }
 
-    public void DeleteForFolder(string folderPath, IReadOnlyCollection<string>? videoFiles = null)
+    public void DeleteForCollection(string collectionId, IReadOnlyCollection<string>? videoPaths = null)
     {
         lock (_lock)
         {
-            if (videoFiles != null)
-            {
-                foreach (string videoPath in videoFiles)
-                    MarkForDeletionUnsafe(videoPath);
-            }
+            if (!_collectionToVideos.TryGetValue(collectionId, out var members))
+                return;
 
-            var matching = _tasks.Where(t => t.VideoPath.StartsWith(folderPath, StringComparison.OrdinalIgnoreCase)).ToList();
-            foreach (var task in matching)
+            IReadOnlyCollection<string> targets = videoPaths ?? members.ToArray();
+            foreach (string videoPath in targets)
             {
-                if (videoFiles == null || !videoFiles.Contains(task.VideoPath, StringComparer.OrdinalIgnoreCase))
-                    task.MarkedForDeletionAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                if (members.Contains(videoPath))
+                    MarkForDeletionUnsafe(videoPath);
             }
         }
     }

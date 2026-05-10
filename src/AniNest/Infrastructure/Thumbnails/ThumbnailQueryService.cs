@@ -33,7 +33,7 @@ internal sealed class ThumbnailQueryService
     public ThumbnailGenerationStatusSnapshot GetStatusSnapshot()
         => _statusTracker.CreateSnapshot(_isGenerationPaused(), _isPlayerActive(), _workerPool.Count);
 
-    public ThumbnailState GetState(string videoPath)
+    public ThumbnailState GetThumbnailState(string videoPath)
     {
         using var span = PerfSpan.Begin("Thumbnail.GetState", new Dictionary<string, string>
         {

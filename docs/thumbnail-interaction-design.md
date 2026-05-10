@@ -522,7 +522,6 @@ Already in place:
 
 Still pending:
 
-- real ffmpeg suspend and resume behavior behind `PausedGenerating`
 - library-side collection actions beyond the current folder-based bridge
 - player-side single-video manual thumbnail actions
 
@@ -545,7 +544,7 @@ The current public surface mixes four interaction styles:
 - query
   - status snapshot, task state lookup, thumbnail bytes lookup
 - collection-oriented commands
-  - register, remove, focus, boost, reset, and legacy folder bridge commands
+  - register, remove, delete, focus, boost, and reset
 - playback-oriented commands
   - single-video boost, playback-window boost, player-active updates
 - runtime controls
@@ -597,10 +596,10 @@ Suggested internal split:
 - `ThumbnailGeneratorComponents`
   - owns internal component wiring so the generator constructor stays small and readable
 
-Recommended next readability split:
+Implemented readability split:
 
 - `ThumbnailCollectionCoordinator`
-  - owns collection-facing commands such as register, remove, focus, boost, reset, and folder-bridge operations
+  - owns collection-facing commands such as register, remove, delete, focus, boost, and reset
 - `ThumbnailPlaybackCoordinator`
   - owns player-facing commands such as boost video, boost playback window, and player active state transitions
 - `ThumbnailRuntimeController`
@@ -608,15 +607,15 @@ Recommended next readability split:
 - `ThumbnailQueryService`
   - owns query-oriented operations such as status snapshot, task state lookup, and thumbnail byte lookup
 
-These names are still descriptive rather than mandatory. The important point is the seam:
+These boundaries are now in place. The important point is the seam:
 
 - collection and playback commands are user-intent entry points
 - runtime control commands are scheduler-operation entry points
 - query methods should stay read-oriented and side-effect-light
 
-With that split, `ThumbnailGenerator` becomes easier to read because each public method can usually delegate in one line to the right internal coordinator.
+With that split, `ThumbnailGenerator` reads primarily as a facade. Most public methods now delegate in one line to the right internal coordinator.
 
-Example direction:
+Current direction:
 
 ```csharp
 public void FocusCollection(string collectionId)
@@ -630,6 +629,14 @@ public void RefreshGenerationPaused()
 ```
 
 This is primarily a readability refactor, not a behavior refactor. The scheduler model, task store, worker pool, and renderer boundaries do not need to change just to gain this clarity.
+
+What still remains inside `ThumbnailGenerator` after this split is intentionally small:
+
+- startup and initialization
+- scheduler-loop wiring
+- worker start and completion hooks
+- preemption helpers shared by collection and playback coordinators
+- a small set of test hooks used by the unit tests
 
 These names are descriptive rather than mandatory. The important part is the responsibility boundary.
 
@@ -802,7 +809,7 @@ Recommended unit-test focus:
 - focused collection outranks background fill
 - removing a collection does not remove shared video tasks incorrectly
 - player-active throttling still blocks or limits starts according to current policy
-- legacy folder registration still seeds background work correctly
+- collection registration still seeds background work correctly
 
 This keeps tests aligned with user-facing semantics rather than with implementation arithmetic.
 

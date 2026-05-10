@@ -12,33 +12,23 @@ using AniNest.Infrastructure.Paths;
 using AniNest.Infrastructure.Persistence;
 using AniNest.Infrastructure.Media;
 using AniNest.Infrastructure.Thumbnails;
-using AniNest.Infrastructure.Interop;
 namespace AniNest.Infrastructure.Thumbnails;
 
 public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 {
     private static readonly Logger Log = AppLog.For<ThumbnailGenerator>();
 
-    // Dependencies
-    private readonly ISettingsService _settings;
-    private readonly IThumbnailDecodeStrategyService _decodeStrategyService;
-
-    // Paths
+    // Core state
     private readonly string _thumbBaseDir;
     private readonly string _ffmpegPath;
-
-    // Queue & state
     private readonly ThumbnailTaskStore _taskStore = new();
     private readonly ThumbnailWorkerPool _workerPool = new();
     private CancellationTokenSource? _loopCts;
     private Task? _loopTask;
     private TaskCompletionSource _initTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    private readonly ThumbnailIndexRepository _indexRepository;
     private readonly ThumbnailCacheMaintenance _cacheMaintenance;
-    private readonly ThumbnailGenerationRunner _generationRunner;
     private readonly ThumbnailWorkerExecutionHost _workerExecutionHost;
     private readonly ThumbnailWorkerCancellationCoordinator _workerCancellationCoordinator;
-    private readonly ThumbnailWorkerSuspensionCoordinator _workerSuspensionCoordinator;
     private readonly ThumbnailStatusTracker _statusTracker;
     private readonly ThumbnailQueueLoopRunner _queueLoopRunner;
     private readonly ThumbnailCollectionCoordinator _collectionCoordinator;
@@ -51,19 +41,21 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private ThumbnailPerformanceMode _performanceMode;
     private string? _lastSchedulerState;
 
-    // Events
+    // External surface
     public event EventHandler<ThumbnailProgressEventArgs>? ProgressChanged;
     public event Action<string, int>? VideoProgress; // videoPath, percent 0-100
     public event Action<string>? VideoReady; // videoPath
     public event Action? StatusChanged;
 
-    // Detection
     private bool _ffmpegAvailable;
 
     public bool IsFfmpegAvailable => _ffmpegAvailable;
 
     public ThumbnailGenerationStatusSnapshot GetStatusSnapshot()
         => _queryService.GetStatusSnapshot();
+
+    public ThumbnailState GetThumbnailState(string videoPath)
+        => _queryService.GetThumbnailState(videoPath);
 
     public ThumbnailGenerator(
         ISettingsService settings,
@@ -77,17 +69,15 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         IThumbnailDecodeStrategyService decodeStrategyService,
         IThumbnailProcessController? processController)
     {
-        _settings = settings;
-        _decodeStrategyService = decodeStrategyService;
-        _performanceMode = _settings.GetThumbnailPerformanceMode();
-        _isGenerationPaused = _settings.IsThumbnailGenerationPaused();
+        _performanceMode = settings.GetThumbnailPerformanceMode();
+        _isGenerationPaused = settings.IsThumbnailGenerationPaused();
         _thumbBaseDir = AppPaths.ThumbnailDirectory;
         _ffmpegPath = AppPaths.FfmpegPath;
         var components = ThumbnailGeneratorComponents.Create(
             _thumbBaseDir,
             _ffmpegPath,
-            _settings,
-            _decodeStrategyService,
+            settings,
+            decodeStrategyService,
             processController,
             _taskStore,
             _workerPool,
@@ -110,18 +100,15 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             path => VideoReady?.Invoke(path),
             BuildSchedulerSnapshot,
             GetVideoDuration);
-        _indexRepository = components.IndexRepository;
         _cacheMaintenance = components.CacheMaintenance;
         _statusTracker = components.StatusTracker;
-        _generationRunner = components.GenerationRunner;
         _workerExecutionHost = components.WorkerExecutionHost;
         _workerCancellationCoordinator = components.WorkerCancellationCoordinator;
-        _workerSuspensionCoordinator = components.WorkerSuspensionCoordinator;
         _queueLoopRunner = components.QueueLoopRunner;
         _collectionCoordinator = new ThumbnailCollectionCoordinator(
             _taskStore,
             _workerPool,
-            _indexRepository,
+            components.IndexRepository,
             EnsureLoopRunning,
             NotifyStatusChanged,
             SaveIndex,
@@ -143,11 +130,11 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             () => _isGenerationPaused,
             () => _isPlayerActive);
         _runtimeController = new ThumbnailRuntimeController(
-            _settings,
-            _decodeStrategyService,
+            settings,
+            decodeStrategyService,
             _workerPool,
             _workerCancellationCoordinator,
-            _workerSuspensionCoordinator,
+            components.WorkerSuspensionCoordinator,
             _cacheMaintenance,
             _statusTracker,
             EnsureLoopRunning,
@@ -169,6 +156,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         Task.Run(Initialize);
     }
 
+    // Initialization
     private void Initialize()
     {
         var sw = Stopwatch.StartNew();
@@ -215,12 +203,15 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         StartExpiryCleanup();
     }
 
-
+    // Public facade
     public void RegisterCollection(LibraryCollectionRef collection, IReadOnlyCollection<string> videoPaths)
         => _collectionCoordinator.RegisterCollection(collection, videoPaths);
 
     public void RemoveCollection(string collectionId)
         => _collectionCoordinator.RemoveCollection(collectionId);
+
+    public void DeleteCollection(string collectionId, IReadOnlyCollection<string>? videoPaths = null)
+        => _collectionCoordinator.DeleteCollection(collectionId, videoPaths);
 
     public void FocusCollection(string collectionId)
         => _collectionCoordinator.FocusCollection(collectionId);
@@ -237,13 +228,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     public void ResetCollection(string collectionId, bool boostAfterReset)
         => _collectionCoordinator.ResetCollection(collectionId, boostAfterReset);
 
-    public void EnqueueFolder(string folderPath, IReadOnlyCollection<string> videoFiles, int cardOrder,
-        string? lastPlayedPath, HashSet<string> playedPaths)
-        => _collectionCoordinator.EnqueueFolder(folderPath, videoFiles);
-
-    public void DeleteForFolder(string folderPath, IReadOnlyCollection<string>? videoFiles = null)
-        => _collectionCoordinator.DeleteForFolder(folderPath, videoFiles);
-
     public void SetPlayerActive(bool isActive)
         => _runtimeController.SetPlayerActive(isActive);
 
@@ -256,13 +240,10 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     public void RefreshDecodeStrategy()
         => _runtimeController.RefreshDecodeStrategy();
 
-    public ThumbnailState GetState(string videoPath)
-        => _queryService.GetState(videoPath);
-
     public byte[]? GetThumbnailBytes(string videoPath, long positionMs)
         => _queryService.GetThumbnailBytes(videoPath, positionMs, _ffmpegAvailable);
 
-
+    // Scheduler and worker orchestration
     private void EnsureLoopRunning()
     {
         if (_loopTask != null && !_loopTask.IsCompleted) return;
@@ -380,17 +361,10 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         }
     }
 
-    private void CancelActiveWorkersForShutdown()
-    {
-        List<ThumbnailGeneratorWorker> workers = _workerPool.MarkAllForShutdown();
-        _workerCancellationCoordinator.CancelWithReason(workers, "shutdown", "Thumbnail shutdown workers canceled");
-    }
-
-
     public void Shutdown()
         => _runtimeController.Shutdown(_loopCts, _loopTask, _expiryCts, () => _isShuttingDown = true);
 
-
+    // Background maintenance
     private CancellationTokenSource? _expiryCts;
 
     private void StartExpiryCleanup()
@@ -421,7 +395,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private void NotifyStatusChanged()
         => _statusTracker.NotifyStatusChanged();
 
-
+    // Shared helpers
     private static double GetVideoDuration(string videoPath)
     {
         try
@@ -477,11 +451,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         _loopCts?.Dispose();
     }
 
-    private int GetTaskCount()
-    {
-        return _taskStore.TotalCount;
-    }
-
+    // Test hooks
     internal int CountTasksByState(ThumbnailState state)
         => _taskStore.CountTasksByState(state);
 

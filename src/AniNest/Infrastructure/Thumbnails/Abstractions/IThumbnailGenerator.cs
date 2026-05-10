@@ -29,22 +29,25 @@ public enum ThumbnailWorkIntent
 public interface IThumbnailGenerator
 {
     bool IsFfmpegAvailable { get; }
-    ThumbnailGenerationStatusSnapshot GetStatusSnapshot();
 
-    ThumbnailState GetState(string videoPath);
+    // Query
+    ThumbnailGenerationStatusSnapshot GetStatusSnapshot();
+    ThumbnailState GetThumbnailState(string videoPath);
     byte[]? GetThumbnailBytes(string videoPath, long positionMs);
 
+    // Collection-oriented commands
     void RegisterCollection(LibraryCollectionRef collection, IReadOnlyCollection<string> videoPaths);
     void RemoveCollection(string collectionId);
+    void DeleteCollection(string collectionId, IReadOnlyCollection<string>? videoPaths = null);
     void FocusCollection(string collectionId);
     void BoostCollection(string collectionId);
-    void BoostVideo(string videoPath);
-    void BoostPlaybackWindow(IReadOnlyList<string> orderedVideoPaths, int currentIndex, int lookaheadCount);
     void ResetCollection(string collectionId, bool boostAfterReset);
 
-    void EnqueueFolder(string folderPath, IReadOnlyCollection<string> videoFiles, int cardOrder,
-        string? lastPlayedPath, HashSet<string> playedPaths);
-    void DeleteForFolder(string folderPath, IReadOnlyCollection<string>? videoFiles = null);
+    // Playback-oriented commands
+    void BoostVideo(string videoPath);
+    void BoostPlaybackWindow(IReadOnlyList<string> orderedVideoPaths, int currentIndex, int lookaheadCount);
+
+    // Runtime controls
     void SetPlayerActive(bool isActive);
     void RefreshPerformanceMode();
     void RefreshGenerationPaused();

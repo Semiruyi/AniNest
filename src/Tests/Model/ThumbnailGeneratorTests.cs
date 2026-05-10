@@ -36,12 +36,12 @@ public class ThumbnailGeneratorTests : IDisposable
     }
 
     [Fact]
-    public void EnqueueFolder_DuplicateVideos_DoesNotDuplicateTasks()
+    public void RegisterCollection_DuplicateVideos_DoesNotDuplicateTasks()
     {
         var videos = new[] { @"C:\videos\a.mp4", @"C:\videos\b.mp4" };
 
-        _generator.EnqueueFolder(@"C:\videos", videos, 0, null, []);
-        _generator.EnqueueFolder(@"C:\videos", videos, 0, null, []);
+        RegisterFolderCollection(@"C:\videos", videos);
+        RegisterFolderCollection(@"C:\videos", videos);
 
         var matchingPaths = _generator.GetTaskVideoPathsInOrder()
             .Where(videos.Contains)
@@ -52,11 +52,11 @@ public class ThumbnailGeneratorTests : IDisposable
     }
 
     [Fact]
-    public void EnqueueFolder_SeedsVideosAsBackgroundFill()
+    public void RegisterCollection_SeedsVideosAsBackgroundFill()
     {
         var videos = new[] { @"C:\videos\ep01.mp4", @"C:\videos\ep02.mp4" };
 
-        _generator.EnqueueFolder(@"C:\videos", videos, 2, videos[0], [videos[0]]);
+        RegisterFolderCollection(@"C:\videos", videos);
 
         _generator.GetIntent(videos[0]).Should().Be(ThumbnailWorkIntent.BackgroundFill);
         _generator.GetIntent(videos[1]).Should().Be(ThumbnailWorkIntent.BackgroundFill);
@@ -114,7 +114,7 @@ public class ThumbnailGeneratorTests : IDisposable
 
         _settingsService.SetThumbnailGenerationPaused(true);
         _generator.RefreshGenerationPaused();
-        _generator.EnqueueFolder(@"C:\videos", videos, 0, null, []);
+        RegisterFolderCollection(@"C:\videos", videos);
         _generator.BoostPlaybackWindow(videos, currentIndex: 1, lookaheadCount: 2);
 
         _generator.GetIntent(videos[1]).Should().Be(ThumbnailWorkIntent.PlaybackCurrent);
@@ -137,7 +137,7 @@ public class ThumbnailGeneratorTests : IDisposable
 
         _settingsService.SetThumbnailGenerationPaused(true);
         _generator.RefreshGenerationPaused();
-        _generator.EnqueueFolder(@"C:\videos", videos, 0, null, []);
+        RegisterFolderCollection(@"C:\videos", videos);
         _generator.BoostPlaybackWindow(videos, currentIndex: 1, lookaheadCount: 1);
 
         _generator.SetPlayerActive(false);
@@ -161,7 +161,7 @@ public class ThumbnailGeneratorTests : IDisposable
 
         _settingsService.SetThumbnailGenerationPaused(true);
         _generator.RefreshGenerationPaused();
-        _generator.EnqueueFolder(@"C:\videos", videos, 0, null, []);
+        RegisterFolderCollection(@"C:\videos", videos);
         _generator.BoostPlaybackWindow(videos, currentIndex: 0, lookaheadCount: 1);
         _generator.AddActiveWorkerForTest(videos[0]);
 
@@ -184,7 +184,7 @@ public class ThumbnailGeneratorTests : IDisposable
 
         _settingsService.SetThumbnailGenerationPaused(true);
         _generator.RefreshGenerationPaused();
-        _generator.EnqueueFolder(@"C:\videos", videos, 0, null, []);
+        RegisterFolderCollection(@"C:\videos", videos);
         _generator.BoostPlaybackWindow(videos, currentIndex: 0, lookaheadCount: 1);
         _generator.AddActiveWorkerForTest(videos[0]);
 
@@ -207,7 +207,7 @@ public class ThumbnailGeneratorTests : IDisposable
 
         _settingsService.SetThumbnailGenerationPaused(true);
         _generator.RefreshGenerationPaused();
-        _generator.EnqueueFolder(@"C:\videos", videos, 0, null, []);
+        RegisterFolderCollection(@"C:\videos", videos);
         _generator.ForceTaskState(videos[0], ThumbnailState.Ready);
         _generator.ForceTaskState(videos[1], ThumbnailState.Ready);
         _generator.ForceTaskState(videos[2], ThumbnailState.Ready);
@@ -232,7 +232,7 @@ public class ThumbnailGeneratorTests : IDisposable
         _generator.ForceTaskState(videos[0], ThumbnailState.Ready);
         _generator.ResetCollection("folder:reset", boostAfterReset: true);
 
-        _generator.GetState(videos[0]).Should().Be(ThumbnailState.Pending);
+        _generator.GetThumbnailState(videos[0]).Should().Be(ThumbnailState.Pending);
         _generator.GetIntent(videos[0]).Should().Be(ThumbnailWorkIntent.ManualCollection);
         _generator.GetIntent(videos[1]).Should().Be(ThumbnailWorkIntent.ManualCollection);
         _generator.GetStatusSnapshot().CurrentTargetIntent.Should().Be(nameof(ThumbnailWorkIntent.ManualCollection));
@@ -259,14 +259,14 @@ public class ThumbnailGeneratorTests : IDisposable
         var backgroundVideo = @"C:\videos\ep01.mp4";
         var boostedVideo = @"C:\videos\ep02.mp4";
 
-        _generator.EnqueueFolder(@"C:\videos", [backgroundVideo, boostedVideo], 0, null, []);
+        RegisterFolderCollection(@"C:\videos", [backgroundVideo, boostedVideo]);
         _generator.AddActiveWorkerForTest(backgroundVideo);
 
         _generator.BoostVideo(boostedVideo);
         _generator.PreemptLowerPriorityWorkersForTest(ThumbnailWorkIntent.ManualSingle);
         _generator.SimulateCanceledActiveWorkerForTest(backgroundVideo);
 
-        _generator.GetState(backgroundVideo).Should().Be(ThumbnailState.Pending);
+        _generator.GetThumbnailState(backgroundVideo).Should().Be(ThumbnailState.Pending);
         _generator.GetIntent(backgroundVideo).Should().Be(ThumbnailWorkIntent.BackgroundFill);
         _generator.GetIntent(boostedVideo).Should().Be(ThumbnailWorkIntent.ManualSingle);
     }
@@ -275,26 +275,26 @@ public class ThumbnailGeneratorTests : IDisposable
     public void RequeueActiveWorkers_WhenNoActiveWorkers_DoesNotChangePendingTaskState()
     {
         var video = @"C:\videos\ep01.mp4";
-        _generator.EnqueueFolder(@"C:\videos", [video], 0, null, []);
+        RegisterFolderCollection(@"C:\videos", [video]);
         _generator.ForceTaskState(video, ThumbnailState.Pending);
 
         _generator.RequeueActiveWorkersForTest("test-requeue");
 
-        _generator.GetState(video).Should().Be(ThumbnailState.Pending);
+        _generator.GetThumbnailState(video).Should().Be(ThumbnailState.Pending);
     }
 
     [Fact]
     public void TryRequeueTask_WhenGenerating_RevertsToPendingWithoutChangingReadyCount()
     {
         var video = @"C:\videos\ep01.mp4";
-        _generator.EnqueueFolder(@"C:\videos", [video], 0, null, []);
+        RegisterFolderCollection(@"C:\videos", [video]);
         _generator.BoostVideo(video);
         _generator.ForceTaskState(video, ThumbnailState.Generating);
 
         var requeued = _generator.TryRequeueTaskForTest(video);
 
         requeued.Should().BeTrue();
-        _generator.GetState(video).Should().Be(ThumbnailState.Pending);
+        _generator.GetThumbnailState(video).Should().Be(ThumbnailState.Pending);
         _generator.GetStatusSnapshot().ReadyCount.Should().Be(0);
         _generator.CountTasksByState(ThumbnailState.Pending).Should().BeGreaterThan(0);
         _generator.GetIntent(video).Should().Be(ThumbnailWorkIntent.ManualSingle);
@@ -306,14 +306,14 @@ public class ThumbnailGeneratorTests : IDisposable
         var currentVideo = @"C:\videos\ep01.mp4";
         var backgroundVideo = @"C:\videos\ep02.mp4";
 
-        _generator.EnqueueFolder(@"C:\videos", [currentVideo, backgroundVideo], 0, null, []);
+        RegisterFolderCollection(@"C:\videos", [currentVideo, backgroundVideo]);
         _generator.BoostVideo(currentVideo);
         _generator.AddActiveWorkerForTest(currentVideo, processId: 101);
         _settingsService.SetThumbnailGenerationPaused(true);
 
         _generator.RefreshGenerationPaused();
 
-        _generator.GetState(currentVideo).Should().Be(ThumbnailState.PausedGenerating);
+        _generator.GetThumbnailState(currentVideo).Should().Be(ThumbnailState.PausedGenerating);
         _generator.IsActiveWorkerCancellationRequestedForTest(currentVideo).Should().BeFalse();
         _generator.IsActiveWorkerSuspendedForTest(currentVideo).Should().BeTrue();
         _processController.Verify(controller => controller.Suspend(101), Times.Once);
@@ -324,7 +324,7 @@ public class ThumbnailGeneratorTests : IDisposable
     {
         var activeVideo = @"C:\videos\ep01.mp4";
 
-        _generator.EnqueueFolder(@"C:\videos", [activeVideo], 0, null, []);
+        RegisterFolderCollection(@"C:\videos", [activeVideo]);
         _generator.AddActiveWorkerForTest(activeVideo);
         _settingsService.SetThumbnailGenerationPaused(true);
 
@@ -332,7 +332,7 @@ public class ThumbnailGeneratorTests : IDisposable
         _generator.SimulateCanceledActiveWorkerForTest(activeVideo);
 
         _generator.IsActiveWorkerCancellationRequestedForTest(activeVideo).Should().BeTrue();
-        _generator.GetState(activeVideo).Should().Be(ThumbnailState.Pending);
+        _generator.GetThumbnailState(activeVideo).Should().Be(ThumbnailState.Pending);
     }
 
     [Fact]
@@ -340,7 +340,7 @@ public class ThumbnailGeneratorTests : IDisposable
     {
         var currentVideo = @"C:\videos\ep01.mp4";
 
-        _generator.EnqueueFolder(@"C:\videos", [currentVideo], 0, null, []);
+        RegisterFolderCollection(@"C:\videos", [currentVideo]);
         _generator.BoostVideo(currentVideo);
         _generator.AddActiveWorkerForTest(currentVideo, processId: 202);
         _settingsService.SetThumbnailGenerationPaused(true);
@@ -349,7 +349,7 @@ public class ThumbnailGeneratorTests : IDisposable
         _settingsService.SetThumbnailGenerationPaused(false);
         _generator.RefreshGenerationPaused();
 
-        _generator.GetState(currentVideo).Should().Be(ThumbnailState.Generating);
+        _generator.GetThumbnailState(currentVideo).Should().Be(ThumbnailState.Generating);
         _generator.IsActiveWorkerCancellationRequestedForTest(currentVideo).Should().BeFalse();
         _generator.IsActiveWorkerSuspendedForTest(currentVideo).Should().BeFalse();
         _processController.Verify(controller => controller.Suspend(202), Times.Once);
@@ -362,15 +362,15 @@ public class ThumbnailGeneratorTests : IDisposable
         var firstVideo = @"C:\videos\ep01.mp4";
         var secondVideo = @"C:\videos\ep02.mp4";
 
-        _generator.EnqueueFolder(@"C:\videos", [firstVideo, secondVideo], 0, null, []);
+        RegisterFolderCollection(@"C:\videos", [firstVideo, secondVideo]);
         _generator.AddActiveWorkerForTest(firstVideo, processId: 301);
         _generator.AddActiveWorkerForTest(secondVideo, processId: 302);
         _settingsService.SetThumbnailGenerationPaused(true);
 
         _generator.RefreshGenerationPaused();
 
-        _generator.GetState(firstVideo).Should().Be(ThumbnailState.PausedGenerating);
-        _generator.GetState(secondVideo).Should().Be(ThumbnailState.PausedGenerating);
+        _generator.GetThumbnailState(firstVideo).Should().Be(ThumbnailState.PausedGenerating);
+        _generator.GetThumbnailState(secondVideo).Should().Be(ThumbnailState.PausedGenerating);
         _processController.Verify(controller => controller.Suspend(301), Times.Once);
         _processController.Verify(controller => controller.Suspend(302), Times.Once);
     }
@@ -379,14 +379,14 @@ public class ThumbnailGeneratorTests : IDisposable
     public void TryRequeueTask_WhenReady_DoesNothingAndKeepsReadyCount()
     {
         var video = @"C:\videos\ep02.mp4";
-        _generator.EnqueueFolder(@"C:\videos", [video], 0, null, []);
+        RegisterFolderCollection(@"C:\videos", [video]);
         _generator.ForceTaskState(video, ThumbnailState.Ready);
         var readyBefore = _generator.GetStatusSnapshot().ReadyCount;
 
         var requeued = _generator.TryRequeueTaskForTest(video);
 
         requeued.Should().BeFalse();
-        _generator.GetState(video).Should().Be(ThumbnailState.Ready);
+        _generator.GetThumbnailState(video).Should().Be(ThumbnailState.Ready);
         _generator.GetStatusSnapshot().ReadyCount.Should().Be(readyBefore);
     }
 
@@ -394,13 +394,13 @@ public class ThumbnailGeneratorTests : IDisposable
     public void ForceTaskState_ReadyToPending_UpdatesReadyCount()
     {
         var video = @"C:\videos\ep03.mp4";
-        _generator.EnqueueFolder(@"C:\videos", [video], 0, null, []);
+        RegisterFolderCollection(@"C:\videos", [video]);
         _generator.ForceTaskState(video, ThumbnailState.Ready);
         _generator.GetStatusSnapshot().ReadyCount.Should().BeGreaterThan(0);
 
         _generator.ForceTaskState(video, ThumbnailState.Pending);
 
-        _generator.GetState(video).Should().Be(ThumbnailState.Pending);
+        _generator.GetThumbnailState(video).Should().Be(ThumbnailState.Pending);
         _generator.GetStatusSnapshot().ReadyCount.Should().Be(0);
     }
 
@@ -411,5 +411,12 @@ public class ThumbnailGeneratorTests : IDisposable
         {
             Thread.Sleep(50);
         }
+    }
+
+    private void RegisterFolderCollection(string folderPath, IReadOnlyCollection<string> videoPaths)
+    {
+        _generator.RegisterCollection(
+            new LibraryCollectionRef(folderPath, LibraryCollectionKind.Folder, Path.GetFileName(folderPath)),
+            videoPaths);
     }
 }
