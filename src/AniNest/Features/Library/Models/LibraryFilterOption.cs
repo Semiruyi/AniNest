@@ -16,4 +16,7 @@ public partial class LibraryFilterOption : ObservableObject
 
     [ObservableProperty]
     private string _displayName;
+
+    [ObservableProperty]
+    private bool _isSelected;
 }

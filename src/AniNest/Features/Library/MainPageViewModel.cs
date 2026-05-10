@@ -71,6 +71,7 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
         _libraryService.ThumbnailProgressChanged += _thumbnailProgressChangedHandler;
         _loc.PropertyChanged += _localizationChangedHandler;
         InitializeFilterOptions();
+        RefreshFilterOptionSelectionState();
     }
 
     public void AddFolderItem(string name, string path, int videoCount, string? coverPath)
@@ -391,6 +392,7 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
 
     partial void OnSelectedFilterChanged(LibraryFilter value)
     {
+        RefreshFilterOptionSelectionState();
         ApplyCurrentFilter();
     }
 
@@ -574,5 +576,11 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     {
         foreach (var option in FilterOptions)
             option.DisplayName = _loc[option.LocalizationKey];
+    }
+
+    private void RefreshFilterOptionSelectionState()
+    {
+        foreach (var option in FilterOptions)
+            option.IsSelected = option.Filter == SelectedFilter;
     }
 }
