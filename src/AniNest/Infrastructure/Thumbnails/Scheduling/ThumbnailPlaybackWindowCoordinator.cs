@@ -82,6 +82,9 @@ internal static class ThumbnailPlaybackWindowCoordinator
             currentVideoPath,
             keepPlaybackWorkerVideoPath);
 
+        bool shouldPrioritizeCurrentWorker =
+            currentOutcome is IntentApplyOutcome.Applied or IntentApplyOutcome.HigherIntentAlreadyPresent;
+
         return new ThumbnailPlaybackWindowUpdate
         {
             CurrentVideoPath = currentVideoPath,
@@ -93,7 +96,8 @@ internal static class ThumbnailPlaybackWindowCoordinator
             NearbyHigherIntent = nearbyHigherIntent,
             NearbyMissing = nearbyMissing,
             StalePlaybackWorkers = stalePlaybackWorkers,
-            ShouldPreemptLowerPriority = stalePlaybackWorkers == 0 &&
+            ShouldPreemptLowerPriority = shouldPrioritizeCurrentWorker &&
+                stalePlaybackWorkers == 0 &&
                 ThumbnailWorkerPreemption.ShouldPreemptForIncomingIntent(activeWorkers, ThumbnailWorkIntent.PlaybackCurrent)
         };
     }

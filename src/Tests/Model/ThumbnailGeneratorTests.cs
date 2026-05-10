@@ -222,6 +222,32 @@ public class ThumbnailGeneratorTests : IDisposable
     }
 
     [Fact]
+    public void BoostPlaybackWindow_CurrentReady_DoesNotPreemptKeptNearbyPlaybackWorker()
+    {
+        var videos = new[]
+        {
+            @"C:\videos\ep01.mp4",
+            @"C:\videos\ep02.mp4",
+            @"C:\videos\ep03.mp4",
+            @"C:\videos\ep04.mp4"
+        };
+
+        _settingsService.SetThumbnailGenerationPaused(true);
+        _generator.RefreshGenerationPaused();
+        RegisterFolderCollection(@"C:\videos", videos);
+        _generator.ForceTaskState(videos[0], ThumbnailState.Ready);
+        _generator.ForceTaskState(videos[1], ThumbnailState.Ready);
+        _generator.BoostPlaybackWindow(videos, currentIndex: 1, lookaheadCount: 2);
+        _generator.AddActiveWorkerForTest(videos[2]);
+
+        _generator.BoostPlaybackWindow(videos, currentIndex: 0, lookaheadCount: 2);
+
+        _generator.IsActiveWorkerCancellationRequestedForTest(videos[2]).Should().BeFalse();
+        _generator.GetIntent(videos[2]).Should().Be(ThumbnailWorkIntent.PlaybackNearby);
+        _generator.GetStatusSnapshot().CurrentTargetName.Should().Be("ep01.mp4");
+    }
+
+    [Fact]
     public void ResetCollection_WithBoostAfterReset_RequeuesCollectionAsManualCollection()
     {
         var videos = new[] { @"C:\videos\ep01.mp4", @"C:\videos\ep02.mp4" };
