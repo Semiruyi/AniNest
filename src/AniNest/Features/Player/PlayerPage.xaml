@@ -71,7 +71,8 @@
                                       Width="{StaticResource CheckIconSize}"
                                       Height="{StaticResource CheckIconSize}"
                                       Margin="0,-3,-3,0"
-                                      Visibility="{Binding ThumbnailProgress, Converter={StaticResource ProgressToVisibilityConverter}}">
+                                      anim:ScaleFadeVisibilityAnimator.IsEnabled="True"
+                                      anim:ScaleFadeVisibilityAnimator.VisibilityState="{Binding ThumbnailProgress, Converter={StaticResource ProgressToVisibilityConverter}}">
                                     <Ellipse Fill="#48484A"
                                              Width="{StaticResource CheckIconSize}"
                                              Height="{StaticResource CheckIconSize}"/>
