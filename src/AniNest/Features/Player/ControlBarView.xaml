@@ -46,7 +46,6 @@
                         ToolTip="{Binding PlayPauseTooltip}" Focusable="False"
                         animations:ButtonScaleHover.IsEnabled="True">
                     <Grid animations:IconCrossfader.IsActive="{Binding IsPlaying}"
-                          animations:IconCrossfader.DurationMs="300"
                           animations:IconCrossfader.ListenButton="{Binding ElementName=PlayPauseBtn}">
                         <Image Source="/Resources/Icons/play.png"
                                Width="{StaticResource IconSizeLarge}"

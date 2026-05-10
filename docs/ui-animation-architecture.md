@@ -108,7 +108,9 @@ It should expose reusable attached animators that translate UI state changes int
 Examples:
 
 - `ScaleFadeVisibilityAnimator`
+- `ButtonScaleHover`
 - `FadeVisibilityAnimator`
+- `FadeTextSwapAnimator`
 - `IconCrossfader`
 - `LoadedAnimator`
 - future `SlideVisibilityAnimator`
@@ -276,6 +278,29 @@ Do not use for:
 - large layout transitions
 - two-child visual swaps
 
+### `ButtonScaleHover`
+
+Use for:
+
+- button hover and press scale feedback
+- compact interactive controls that need tactile scale response
+
+Do not use for:
+
+- general visibility transitions
+- content swap or icon swap animation
+
+Configuration rule:
+
+- page code should use defaults or a named preset
+- page code should not set raw scale and duration numbers in ordinary XAML
+
+Current presets:
+
+- `Default`
+- `Compact`
+- `Menu`
+
 ### `FadeVisibilityAnimator`
 
 Use for:
@@ -286,6 +311,17 @@ Use for:
 Do not use for:
 
 - micro-badges that should feel more tactile
+
+Configuration rule:
+
+- page code should use defaults or a named preset
+- page code should not set raw duration numbers
+
+Current presets:
+
+- `Default`
+- `Emphasis`
+- `Badge`
 
 ### `IconCrossfader`
 
@@ -298,7 +334,61 @@ Do not use for:
 
 - generic visibility toggles for standalone elements
 
+Configuration rule:
+
+- page code should use defaults or a named preset
+- page code should not set raw duration numbers
+
+Current presets:
+
+- `Default`
+- `Emphasis`
+
+### `FadeTextSwapAnimator`
+
+Use for:
+
+- text content swaps where the old and new value should cross-fade
+- compact title or label changes
+
+Do not use for:
+
+- general element visibility
+- icon state transitions
+
+Configuration rule:
+
+- page code should use defaults or a named preset
+- page code should not set raw duration numbers
+
+Current presets:
+
+- `Default`
+- `Emphasis`
+
 ## Default Motion Style
+
+## Preset Vocabulary
+
+Preset naming should stay consistent across animators whenever the intent is shared.
+
+Shared preset names:
+
+- `Default`
+  - the standard motion profile for that animator
+- `Emphasis`
+  - a more noticeable or slower variant used when the transition carries more visual weight
+
+Animator-specific preset names are allowed only when the component has a truly specialized role.
+
+Current specialized preset:
+
+- `Badge`
+  - reserved for compact scale-fade badge or marker behavior in `ScaleFadeVisibilityAnimator`
+- `Compact`
+  - reserved for smaller hover and press scale feedback in `ButtonScaleHover`
+- `Menu`
+  - reserved for popup or menu-style press-first button interaction in `ButtonScaleHover`
 
 These defaults are intended as app-level animation guidance.
 
@@ -352,7 +442,31 @@ Recommended defaults:
 2. Use engine helpers directly only when building a reusable animator or a clearly custom transition.
 3. Keep page XAML focused on state bindings, not animation mechanics.
 4. Do not expose raw animation tuning values in ordinary page XAML. Prefer defaults first, presets second.
-5. For repeated visibility changes, do not use load-only animation tools.
+5. Do not explicitly set a `Default` preset in page XAML. Omit the preset unless a non-default intent is needed.
+6. For repeated visibility changes, do not use load-only animation tools.
+
+## Storyboard Exceptions
+
+The architecture does not ban `Storyboard` usage outright.
+
+Page-local `Storyboard` blocks are still reasonable when the animation is:
+
+- tightly coupled to a specific control template
+- about brush or color transitions rather than reusable visibility/state motion
+- a bespoke transition that would become awkward or misleading if forced into a generic animator
+
+Examples that are still reasonable:
+
+- hover and pressed color shifts inside a button template
+- template-specific emphasis transitions for selection states
+- larger page choreography that is intentionally custom
+
+Examples that should usually move to standard animators instead:
+
+- small badge appear/disappear motion
+- completion marker pop-in
+- lightweight visibility toggles
+- generic icon state visibility transitions
 
 ## Migration Strategy
 
@@ -389,6 +503,176 @@ This is a good pilot because:
 - revisit existing animators such as `FadeVisibilityAnimator` and `IconCrossfader`
 - align internal implementation where beneficial
 - keep external behavior stable where it already matches the app well
+
+## Storyboard Audit Snapshot
+
+This section records the current review of page-local storyboard usage so future cleanup work can stay intentional.
+
+### Keep
+
+These usages are currently reasonable to keep as page-local or template-local storyboard logic.
+
+#### Shared button hover fades
+
+Files:
+
+- `View/Styles/SharedStyles.xaml`
+
+Reason:
+
+- these are template-local hover opacity transitions
+- they are tightly coupled to button background visuals
+- they are not generic visibility-state animators
+
+Classification:
+
+- keep
+
+#### Player episode button background color transitions
+
+Files:
+
+- `Features/Player/PlayerPage.xaml`
+
+Reason:
+
+- these are template-specific hover, press, played, and selected color transitions
+- they are tied to one control template's brush behavior
+- forcing them into generic state animators would not make the system clearer
+
+Classification:
+
+- keep
+
+#### Menu selection indicator slide transitions
+
+Files:
+
+- `View/MainWindow.xaml`
+
+Reason:
+
+- these storyboards move a specific selection background between menu rows
+- this is a small piece of bespoke layout choreography
+- it is not the same category as micro badge or visibility-state motion
+
+Classification:
+
+- keep for now
+
+### Migrated
+
+These usages used to fit the old mixed model and are now intentionally handled by standard state animators.
+
+#### Playlist thumbnail progress pie
+
+Files:
+
+- `Features/Player/PlayerPage.xaml`
+- `Presentation/Animations/ScaleFadeVisibilityAnimator.cs`
+
+Previous shape:
+
+- page-local visibility plus bespoke motion
+
+Current shape:
+
+- `ScaleFadeVisibilityAnimator`
+
+Classification:
+
+- migrated
+
+#### Playlist thumbnail ready check
+
+Files:
+
+- `Features/Player/PlayerPage.xaml`
+- `Presentation/Animations/ScaleFadeVisibilityAnimator.cs`
+
+Previous shape:
+
+- page-local pop-in storyboard
+
+Current shape:
+
+- `ScaleFadeVisibilityAnimator`
+
+Classification:
+
+- migrated
+
+#### Title bar player-file visibility fade
+
+Files:
+
+- `View/MainWindowTitleBar.xaml`
+- `Presentation/Animations/FadeVisibilityAnimator.cs`
+
+Previous shape:
+
+- attached animator with raw duration override
+
+Current shape:
+
+- `FadeVisibilityAnimator` with default-or-preset rule
+
+Classification:
+
+- migrated to preset-based API
+
+#### Play/pause icon swap timing
+
+Files:
+
+- `Features/Player/ControlBarView.xaml`
+- `Presentation/Animations/IconCrossfader.cs`
+
+Previous shape:
+
+- specialized animator with raw duration override
+
+Current shape:
+
+- `IconCrossfader` with default-or-preset rule
+
+Classification:
+
+- migrated to preset-based API
+
+### Future Review Targets
+
+These are not urgent migrations, but they are worth revisiting when the animation layer grows.
+
+#### Popup menu hover color states
+
+Files:
+
+- `View/Styles/SharedStyles.xaml`
+
+Why revisit later:
+
+- they may remain correct as-is
+- but if a richer shared button-state animation layer appears, these could become candidates for consolidation
+
+Current decision:
+
+- leave in place
+
+#### Menu selection highlight movement
+
+Files:
+
+- `View/MainWindow.xaml`
+
+Why revisit later:
+
+- if the app later develops a reusable "selection indicator slide" pattern, this could move into a dedicated animator
+- today it is still specific enough that keeping the local storyboard is clearer
+
+Current decision:
+
+- leave in place
 
 ## Current Recommendation
 

@@ -5,11 +5,22 @@ using System.Windows.Media.Animation;
 
 namespace AniNest.Presentation.Animations;
 
+public enum ButtonScaleHoverPreset
+{
+    Default,
+    Compact,
+    Menu
+}
+
 public static class ButtonScaleHover
 {
     public static readonly DependencyProperty IsEnabledProperty =
         DependencyProperty.RegisterAttached("IsEnabled", typeof(bool), typeof(ButtonScaleHover),
             new PropertyMetadata(false, OnIsEnabledChanged));
+
+    public static readonly DependencyProperty PresetProperty =
+        DependencyProperty.RegisterAttached("Preset", typeof(ButtonScaleHoverPreset), typeof(ButtonScaleHover),
+            new PropertyMetadata(ButtonScaleHoverPreset.Default));
 
     public static readonly DependencyProperty HoverScaleProperty =
         DependencyProperty.RegisterAttached("HoverScale", typeof(double), typeof(ButtonScaleHover),
@@ -50,6 +61,9 @@ public static class ButtonScaleHover
 
     public static bool GetIsEnabled(DependencyObject obj) => (bool)obj.GetValue(IsEnabledProperty);
     public static void SetIsEnabled(DependencyObject obj, bool value) => obj.SetValue(IsEnabledProperty, value);
+
+    public static ButtonScaleHoverPreset GetPreset(DependencyObject obj) => (ButtonScaleHoverPreset)obj.GetValue(PresetProperty);
+    public static void SetPreset(DependencyObject obj, ButtonScaleHoverPreset value) => obj.SetValue(PresetProperty, value);
 
     public static double GetHoverScale(DependencyObject obj) => (double)obj.GetValue(HoverScaleProperty);
     public static void SetHoverScale(DependencyObject obj, double value) => obj.SetValue(HoverScaleProperty, value);
@@ -106,11 +120,11 @@ public static class ButtonScaleHover
         {
             btn.SetValue(AttachedScaleProperty, st);
             Attach(btn, st,
-                GetHoverScale(btn), GetPressScale(btn),
-                GetHoverScaleEnabled(btn),
-                GetHoverEnterDurationMs(btn), GetHoverExitDurationMs(btn),
-                GetPressDurationMs(btn), GetReleaseDurationMs(btn),
-                GetEasing(btn));
+                ResolveHoverScale(btn), ResolvePressScale(btn),
+                ResolveHoverScaleEnabled(btn),
+                ResolveHoverEnterDurationMs(btn), ResolveHoverExitDurationMs(btn),
+                ResolvePressDurationMs(btn), ResolveReleaseDurationMs(btn),
+                ResolveEasing(btn));
         }
     }
 
@@ -143,6 +157,69 @@ public static class ButtonScaleHover
         button.SetValue(ReleaseDurationMsProperty, releaseMs);
         button.SetValue(EasingProperty, easing);
     }
+
+    private static double ResolveHoverScale(Button button)
+        => GetPreset(button) switch
+        {
+            ButtonScaleHoverPreset.Compact => 1.04,
+            ButtonScaleHoverPreset.Menu => 1.0,
+            _ => GetHoverScale(button)
+        };
+
+    private static double ResolvePressScale(Button button)
+        => GetPreset(button) switch
+        {
+            ButtonScaleHoverPreset.Compact => 0.96,
+            ButtonScaleHoverPreset.Menu => 0.96,
+            _ => GetPressScale(button)
+        };
+
+    private static bool ResolveHoverScaleEnabled(Button button)
+        => GetPreset(button) switch
+        {
+            ButtonScaleHoverPreset.Menu => false,
+            _ => GetHoverScaleEnabled(button)
+        };
+
+    private static int ResolveHoverEnterDurationMs(Button button)
+        => GetPreset(button) switch
+        {
+            ButtonScaleHoverPreset.Compact => 150,
+            ButtonScaleHoverPreset.Menu => 150,
+            _ => GetHoverEnterDurationMs(button)
+        };
+
+    private static int ResolveHoverExitDurationMs(Button button)
+        => GetPreset(button) switch
+        {
+            ButtonScaleHoverPreset.Compact => 250,
+            ButtonScaleHoverPreset.Menu => 250,
+            _ => GetHoverExitDurationMs(button)
+        };
+
+    private static int ResolvePressDurationMs(Button button)
+        => GetPreset(button) switch
+        {
+            ButtonScaleHoverPreset.Compact => 130,
+            ButtonScaleHoverPreset.Menu => 80,
+            _ => GetPressDurationMs(button)
+        };
+
+    private static int ResolveReleaseDurationMs(Button button)
+        => GetPreset(button) switch
+        {
+            ButtonScaleHoverPreset.Compact => 280,
+            ButtonScaleHoverPreset.Menu => 250,
+            _ => GetReleaseDurationMs(button)
+        };
+
+    private static IEasingFunction? ResolveEasing(Button button)
+        => GetPreset(button) switch
+        {
+            ButtonScaleHoverPreset.Menu => GetEasing(button),
+            ButtonScaleHoverPreset.Compact => GetEasing(button),
+            _ => GetEasing(button)
+        };
 
     private static void OnMouseEnter(object sender, RoutedEventArgs e)
     {

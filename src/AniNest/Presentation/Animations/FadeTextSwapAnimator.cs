@@ -4,6 +4,12 @@ using System.Windows.Controls;
 
 namespace AniNest.Presentation.Animations;
 
+public enum FadeTextSwapPreset
+{
+    Default,
+    Emphasis
+}
+
 public static class FadeTextSwapAnimator
 {
     private static readonly HashSet<Panel> Initialized = [];
@@ -12,15 +18,15 @@ public static class FadeTextSwapAnimator
         DependencyProperty.RegisterAttached("Text", typeof(string), typeof(FadeTextSwapAnimator),
             new PropertyMetadata(null, OnTextChanged));
 
-    public static readonly DependencyProperty DurationMsProperty =
-        DependencyProperty.RegisterAttached("DurationMs", typeof(int), typeof(FadeTextSwapAnimator),
-            new PropertyMetadata(220));
+    public static readonly DependencyProperty PresetProperty =
+        DependencyProperty.RegisterAttached("Preset", typeof(FadeTextSwapPreset), typeof(FadeTextSwapAnimator),
+            new PropertyMetadata(FadeTextSwapPreset.Default));
 
     public static string GetText(DependencyObject obj) => (string)obj.GetValue(TextProperty);
     public static void SetText(DependencyObject obj, string value) => obj.SetValue(TextProperty, value);
 
-    public static int GetDurationMs(DependencyObject obj) => (int)obj.GetValue(DurationMsProperty);
-    public static void SetDurationMs(DependencyObject obj, int value) => obj.SetValue(DurationMsProperty, value);
+    public static FadeTextSwapPreset GetPreset(DependencyObject obj) => (FadeTextSwapPreset)obj.GetValue(PresetProperty);
+    public static void SetPreset(DependencyObject obj, FadeTextSwapPreset value) => obj.SetValue(PresetProperty, value);
 
     private static void OnTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
@@ -35,7 +41,7 @@ public static class FadeTextSwapAnimator
 
         var newText = (string?)e.NewValue ?? string.Empty;
         var oldText = (string?)e.OldValue ?? string.Empty;
-        var duration = GetDurationMs(panel);
+        var duration = ResolveDurationMs(GetPreset(panel));
 
         if (!Initialized.Contains(panel))
         {
@@ -74,4 +80,11 @@ public static class FadeTextSwapAnimator
         element.BeginAnimation(UIElement.OpacityProperty, null);
         element.Opacity = opacity;
     }
+
+    private static int ResolveDurationMs(FadeTextSwapPreset preset)
+        => preset switch
+        {
+            FadeTextSwapPreset.Emphasis => 420,
+            _ => 220
+        };
 }

@@ -122,10 +122,7 @@
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="animations:ButtonScaleHover.IsEnabled" Value="True"/>
-        <Setter Property="animations:ButtonScaleHover.HoverScaleEnabled" Value="False"/>
-        <Setter Property="animations:ButtonScaleHover.PressScale" Value="0.96"/>
-        <Setter Property="animations:ButtonScaleHover.PressDurationMs" Value="80"/>
-        <Setter Property="animations:ButtonScaleHover.ReleaseDurationMs" Value="250"/>
+        <Setter Property="animations:ButtonScaleHover.Preset" Value="Menu"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">

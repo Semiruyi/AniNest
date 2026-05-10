@@ -6,6 +6,12 @@ using System.Windows.Media;
 
 namespace AniNest.Presentation.Animations;
 
+public enum IconCrossfaderPreset
+{
+    Default,
+    Emphasis
+}
+
 public static class IconCrossfader
 {
     private static readonly HashSet<Panel> _initialized = new();
@@ -21,12 +27,12 @@ public static class IconCrossfader
             new PropertyMetadata(false, OnIsActiveChanged));
 
 
-    public static int GetDurationMs(DependencyObject obj) => (int)obj.GetValue(DurationMsProperty);
-    public static void SetDurationMs(DependencyObject obj, int value) => obj.SetValue(DurationMsProperty, value);
+    public static IconCrossfaderPreset GetPreset(DependencyObject obj) => (IconCrossfaderPreset)obj.GetValue(PresetProperty);
+    public static void SetPreset(DependencyObject obj, IconCrossfaderPreset value) => obj.SetValue(PresetProperty, value);
 
-    public static readonly DependencyProperty DurationMsProperty =
-        DependencyProperty.RegisterAttached("DurationMs", typeof(int), typeof(IconCrossfader),
-            new PropertyMetadata(300));
+    public static readonly DependencyProperty PresetProperty =
+        DependencyProperty.RegisterAttached("Preset", typeof(IconCrossfaderPreset), typeof(IconCrossfader),
+            new PropertyMetadata(IconCrossfaderPreset.Default));
 
 
     private static bool GetSuppressScale(DependencyObject obj) => (bool)obj.GetValue(SuppressScaleProperty);
@@ -110,7 +116,7 @@ public static class IconCrossfader
             scale.ScaleX = 1;
             scale.ScaleY = 1;
         }
-        AnimationHelper.AnimateFromCurrent(currentElement, UIElement.OpacityProperty, 0, GetDurationMs(panel));
+        AnimationHelper.AnimateFromCurrent(currentElement, UIElement.OpacityProperty, 0, ResolveDurationMs(GetPreset(panel)));
 
         _clickOutDone.Add(panel);
     }
@@ -135,7 +141,7 @@ public static class IconCrossfader
             return;
 
         bool isActive = (bool)e.NewValue;
-        int durationMs = GetDurationMs(panel);
+        int durationMs = ResolveDurationMs(GetPreset(panel));
         bool noScale = GetSuppressScale(panel);
         bool outWasDone = _clickOutDone.Remove(panel);
 
@@ -177,6 +183,13 @@ public static class IconCrossfader
         st.ScaleX = st.ScaleY = scale;
         element.Opacity = scale;
     }
+
+    private static int ResolveDurationMs(IconCrossfaderPreset preset)
+        => preset switch
+        {
+            IconCrossfaderPreset.Emphasis => 420,
+            _ => 300
+        };
 
     private static void AnimateIn(FrameworkElement element, int durationMs, bool noScale)
     {

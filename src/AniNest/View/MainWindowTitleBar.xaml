@@ -216,7 +216,7 @@
                                 <Setter Property="Opacity" Value="0"/>
                                 <Setter Property="Visibility" Value="Collapsed"/>
                                 <Setter Property="animations:FadeVisibilityAnimator.BindVisible" Value="{Binding IsOnPlayerPage}"/>
-                                <Setter Property="animations:FadeVisibilityAnimator.DurationMs" Value="420"/>
+                                <Setter Property="animations:FadeVisibilityAnimator.Preset" Value="Emphasis"/>
                             </Style>
                         </Grid.Style>
                         <Grid.ToolTip>
@@ -241,7 +241,7 @@
                             </ToolTip>
                         </Grid.ToolTip>
                         <Grid animations:FadeTextSwapAnimator.Text="{Binding CurrentPlayerTitleBarText}"
-                              animations:FadeTextSwapAnimator.DurationMs="420">
+                              animations:FadeTextSwapAnimator.Preset="Emphasis">
                             <TextBlock Text=""
                                        Style="{StaticResource AppTextTitleBar}"
                                        Foreground="{StaticResource TextSecondary}"
