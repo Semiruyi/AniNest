@@ -6,6 +6,7 @@
              xmlns:conv="clr-namespace:AniNest.Presentation.Converters"
              xmlns:models="clr-namespace:AniNest.Features.Library.Models"
              xmlns:loc="clr-namespace:AniNest.Infrastructure.Localization"
+             xmlns:primitives="clr-namespace:AniNest.Presentation.Primitives"
              xmlns:overlays="clr-namespace:AniNest.Presentation.Overlays"
              Background="{StaticResource BackgroundDark}">
     <UserControl.Resources>
@@ -15,32 +16,6 @@
         <conv:CoverImageSourceConverter x:Key="CoverImageSource" DecodePixelWidth="380"/>
         <conv:PercentToWidthConverter x:Key="PercentToWidthConverter"/>
 
-        <Style x:Key="LibraryFilterButtonStyle" TargetType="Button">
-            <Setter Property="Focusable" Value="False"/>
-            <Setter Property="Height" Value="{StaticResource LibraryFilterBarItemHeight}"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="Margin" Value="3,0"/>
-            <Setter Property="MinWidth" Value="{StaticResource LibraryFilterBarItemMinWidth}"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
-            <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
-            <Setter Property="FontSize" Value="{StaticResource AppFontSizeBody}"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="ItemRoot"
-                                Padding="{StaticResource LibraryFilterBarItemPadding}"
-                                Background="{TemplateBinding Background}"
-                                CornerRadius="{StaticResource LibraryFilterBarItemCornerRadius}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </UserControl.Resources>
 
     <Grid x:Name="RootGrid">
@@ -59,36 +34,28 @@
                         CornerRadius="{StaticResource LibraryFilterBarCornerRadius}"
                         MaxWidth="{StaticResource LibraryFilterBarMaxWidth}"
                         Height="{StaticResource LibraryFilterBarHeight}">
-                    <ItemsControl x:Name="LibraryFilterListBox"
-                                  ItemsSource="{Binding FilterOptions}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type models:LibraryFilterOption}">
-                                <Grid Margin="3,0">
-                                    <Border x:Name="SelectedBg"
-                                            Background="{StaticResource LibraryFilterBarItemSelected}"
-                                            CornerRadius="{StaticResource LibraryFilterBarItemCornerRadius}"
-                                            Visibility="Collapsed"/>
-                                    <Button Content="{Binding DisplayName}"
-                                            Style="{StaticResource LibraryFilterButtonStyle}"
-                                            Command="{Binding DataContext.SetSelectedFilterCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            CommandParameter="{Binding Filter}"/>
-                                </Grid>
-                                <DataTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                        <Setter TargetName="SelectedBg" Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsSelected}" Value="False">
-                                        <Setter TargetName="SelectedBg" Property="Visibility" Value="Collapsed"/>
-                                    </DataTrigger>
-                                </DataTemplate.Triggers>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <primitives:SelectableOptionGroup Style="{StaticResource SelectableOptionSegmentGroup}"
+                                                      SelectedIndex="{Binding SelectedFilterIndex}">
+                        <ItemsControl x:Name="LibraryFilterListBox"
+                                      ItemsSource="{Binding FilterOptions}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type models:LibraryFilterOption}">
+                                    <Grid Margin="3,0">
+                                        <Button Content="{Binding DisplayName}"
+                                                Style="{StaticResource SelectableOptionSegmentButton}"
+                                                animations:SelectableOptionState.IsSelected="{Binding IsSelected}"
+                                                Command="{Binding DataContext.SetSelectedFilterCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding Filter}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </primitives:SelectableOptionGroup>
                 </Border>
 
                 <ItemsControl Margin="0,20,0,0"

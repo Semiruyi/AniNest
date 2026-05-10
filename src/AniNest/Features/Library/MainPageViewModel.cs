@@ -41,6 +41,9 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     public string PlayedSummarySuffix => _loc["Library.PlayedSummary.Suffix"];
     public ObservableCollection<LibraryFilterOption> FilterOptions { get; } = new();
     public ObservableCollection<FolderListItem> FolderItems { get; } = new();
+    public int SelectedFilterIndex => FilterOptions
+        .Select((option, index) => new { option.Filter, index })
+        .FirstOrDefault(item => item.Filter == SelectedFilter)?.index ?? -1;
 
     [ObservableProperty]
     private string _folderCountText = "0 个文件夹";
@@ -55,6 +58,7 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     private bool _isThumbnailProgressVisible;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedFilterIndex))]
     private LibraryFilter _selectedFilter = LibraryFilter.All;
 
     public MainPageViewModel(

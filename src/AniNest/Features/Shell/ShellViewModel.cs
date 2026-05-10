@@ -36,6 +36,10 @@ public partial class ShellViewModel : ObservableObject
     private string? _lastThumbnailGenerationStatusLog;
     private bool _isPageTransitionPending;
     private string? _pendingTransitionTarget;
+    private readonly SelectableOptionItem _languageChineseOption = new("zh-CN", "简体中文");
+    private readonly SelectableOptionItem _languageEnglishOption = new("en-US", "English");
+    private readonly SelectableOptionItem _fullscreenAnimationNoneOption = new("none", string.Empty);
+    private readonly SelectableOptionItem _fullscreenAnimationContinuousOption = new("continuous", string.Empty);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsOnMainPage))]
@@ -72,15 +76,28 @@ public partial class ShellViewModel : ObservableObject
     private bool _isPlayerInputSubmenuOpen;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LanguageSelectedIndex))]
+    [NotifyPropertyChangedFor(nameof(IsLanguageChineseSelected))]
+    [NotifyPropertyChangedFor(nameof(IsLanguageEnglishSelected))]
     private string _currentLanguageCode = "zh-CN";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FullscreenAnimationSelectedIndex))]
+    [NotifyPropertyChangedFor(nameof(IsFullscreenAnimationNoneSelected))]
+    [NotifyPropertyChangedFor(nameof(IsFullscreenAnimationContinuousSelected))]
     private string _currentAnimationCode = "continuous";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ThumbnailPerformanceSelectedIndex))]
+    [NotifyPropertyChangedFor(nameof(IsThumbnailPerformanceQuietSelected))]
+    [NotifyPropertyChangedFor(nameof(IsThumbnailPerformanceBalancedSelected))]
+    [NotifyPropertyChangedFor(nameof(IsThumbnailPerformanceFastSelected))]
     private string _currentThumbnailPerformanceModeCode = "balanced";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ThumbnailAccelerationSelectedIndex))]
+    [NotifyPropertyChangedFor(nameof(IsThumbnailAccelerationAutoSelected))]
+    [NotifyPropertyChangedFor(nameof(IsThumbnailAccelerationCompatibleSelected))]
     private string _currentThumbnailAccelerationModeCode = "auto";
 
     [ObservableProperty]
@@ -99,6 +116,11 @@ public partial class ShellViewModel : ObservableObject
     private string _thumbnailFallbackChainSummary = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ThumbnailPerformanceSelectedIndex))]
+    [NotifyPropertyChangedFor(nameof(IsThumbnailPerformancePausedSelected))]
+    [NotifyPropertyChangedFor(nameof(IsThumbnailPerformanceQuietSelected))]
+    [NotifyPropertyChangedFor(nameof(IsThumbnailPerformanceBalancedSelected))]
+    [NotifyPropertyChangedFor(nameof(IsThumbnailPerformanceFastSelected))]
     private bool _isThumbnailGenerationPaused;
 
     [ObservableProperty]
@@ -123,12 +145,35 @@ public partial class ShellViewModel : ObservableObject
     private double _thumbnailGenerationProgressPercent;
 
     public ObservableCollection<ThumbnailBackgroundTaskItemViewModel> ThumbnailBackgroundTasks { get; } = new();
+    public ObservableCollection<SelectableOptionItem> LanguageOptions { get; } = new();
+    public ObservableCollection<SelectableOptionItem> FullscreenAnimationOptions { get; } = new();
 
     public event Action? ToggleFullscreenRequested;
 
     public ILocalizationService Localization => _loc;
     public IReadOnlyList<LanguageInfo> AvailableLanguages => _loc.AvailableLanguages;
     public PlayerInputSettingsViewModel PlayerInputSettings { get; }
+    public int LanguageSelectedIndex => string.Equals(CurrentLanguageCode, "en-US", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+    public int FullscreenAnimationSelectedIndex => string.Equals(CurrentAnimationCode, "continuous", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+    public int ThumbnailPerformanceSelectedIndex => IsThumbnailGenerationPaused
+        ? -1
+        : CurrentThumbnailPerformanceModeCode switch
+        {
+            "quiet" => 1,
+            "fast" => 3,
+            _ => 2
+        };
+    public int ThumbnailAccelerationSelectedIndex => string.Equals(CurrentThumbnailAccelerationModeCode, "compatible", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+    public bool IsLanguageChineseSelected => LanguageSelectedIndex == 0;
+    public bool IsLanguageEnglishSelected => LanguageSelectedIndex == 1;
+    public bool IsFullscreenAnimationNoneSelected => FullscreenAnimationSelectedIndex == 0;
+    public bool IsFullscreenAnimationContinuousSelected => FullscreenAnimationSelectedIndex == 1;
+    public bool IsThumbnailPerformancePausedSelected => ThumbnailPerformanceSelectedIndex == 0;
+    public bool IsThumbnailPerformanceQuietSelected => ThumbnailPerformanceSelectedIndex == 1;
+    public bool IsThumbnailPerformanceBalancedSelected => ThumbnailPerformanceSelectedIndex == 2;
+    public bool IsThumbnailPerformanceFastSelected => ThumbnailPerformanceSelectedIndex == 3;
+    public bool IsThumbnailAccelerationAutoSelected => ThumbnailAccelerationSelectedIndex == 0;
+    public bool IsThumbnailAccelerationCompatibleSelected => ThumbnailAccelerationSelectedIndex == 1;
 
     public ShellViewModel(
         ILocalizationService loc,
@@ -163,8 +208,11 @@ public partial class ShellViewModel : ObservableObject
         _playerPage.PropertyChanged += OnPlayerPagePropertyChanged;
         _thumbnailGenerator.StatusChanged += OnThumbnailGeneratorStatusChanged;
 
+        InitializeSelectableOptions();
         Application.Current.Exit += (_, _) => _taskbarAutoHide.RestoreIfNeeded();
         RefreshThumbnailSettingsStatus();
+        RefreshSelectableOptionContent();
+        RefreshSelectableOptionSelectionState();
 
         Log.Info($"ShellViewModel initialized. CurrentAnimation={_currentAnimationCode}, CurrentLanguage={_currentLanguageCode}");
         CurrentPage = _mainPage;
@@ -289,6 +337,8 @@ public partial class ShellViewModel : ObservableObject
         _preferencesService.SetLanguage(code);
         CurrentLanguageCode = _preferencesService.CurrentLanguageCode;
         RefreshThumbnailSettingsStatus();
+        RefreshSelectableOptionContent();
+        RefreshSelectableOptionSelectionState();
     }
 
     [RelayCommand]
@@ -296,6 +346,7 @@ public partial class ShellViewModel : ObservableObject
     {
         CurrentAnimationCode = code;
         _preferencesService.SetFullscreenAnimation(code);
+        RefreshSelectableOptionSelectionState();
     }
 
     [RelayCommand]
@@ -341,6 +392,32 @@ public partial class ShellViewModel : ObservableObject
         ThumbnailCurrentDecoderSummary = BuildCurrentDecoderSummary(status);
         ThumbnailFallbackChainSummary = string.Join(" -> ", status.StrategyChain.Select(FormatStrategyName));
         RefreshThumbnailGenerationStatus();
+    }
+
+    private void InitializeSelectableOptions()
+    {
+        LanguageOptions.Clear();
+        LanguageOptions.Add(_languageChineseOption);
+        LanguageOptions.Add(_languageEnglishOption);
+
+        FullscreenAnimationOptions.Clear();
+        FullscreenAnimationOptions.Add(_fullscreenAnimationNoneOption);
+        FullscreenAnimationOptions.Add(_fullscreenAnimationContinuousOption);
+    }
+
+    private void RefreshSelectableOptionContent()
+    {
+        _fullscreenAnimationNoneOption.DisplayName = _loc["Settings.FullscreenAnimation.NoAnimation"];
+        _fullscreenAnimationContinuousOption.DisplayName = _loc["Settings.FullscreenAnimation.ContinuousAnimation"];
+    }
+
+    private void RefreshSelectableOptionSelectionState()
+    {
+        foreach (var option in LanguageOptions)
+            option.IsSelected = string.Equals(option.Code, CurrentLanguageCode, StringComparison.OrdinalIgnoreCase);
+
+        foreach (var option in FullscreenAnimationOptions)
+            option.IsSelected = string.Equals(option.Code, CurrentAnimationCode, StringComparison.OrdinalIgnoreCase);
     }
 
     private void RefreshThumbnailGenerationStatus()
