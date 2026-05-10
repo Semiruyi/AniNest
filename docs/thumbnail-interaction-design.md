@@ -218,9 +218,14 @@ Entering the player should automatically create a small foreground working set:
 
 - current video
 - next `3-5` videos
-- optionally previous video
 
 This gives the player a strong "ready where it matters" feel without trying to regenerate the whole series at once.
+
+Current implementation note:
+
+- the playback window starts at the current item and extends forward by the configured lookahead count
+- already-ready items stay in the window for targeting purposes, but the scheduler skips regenerating them
+- if the current item is already ready, the first unresolved nearby item can still preempt lower-priority non-playback work so the next useful thumbnail starts promptly
 
 ## Status and Feedback
 
@@ -519,6 +524,7 @@ Already in place:
 - playback-window boosting with current and nearby videos
 - ready-item skipping inside the playback window
 - stale playback worker protection via keep-target logic
+- nearby playback candidates can preempt lower-priority non-playback workers even when the current item is already ready
 
 Still pending:
 

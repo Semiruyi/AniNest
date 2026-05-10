@@ -84,21 +84,30 @@ internal static class ThumbnailPlaybackWindowCoordinator
 
         bool shouldPrioritizeCurrentWorker =
             currentOutcome is IntentApplyOutcome.Applied or IntentApplyOutcome.HigherIntentAlreadyPresent;
+        bool shouldPrioritizeNearbyWorker =
+            !shouldPrioritizeCurrentWorker &&
+            !string.IsNullOrWhiteSpace(keepPlaybackWorkerVideoPath);
+        ThumbnailWorkIntent? lowerPriorityPreemptionIntent = shouldPrioritizeCurrentWorker
+            ? ThumbnailWorkIntent.PlaybackCurrent
+            : shouldPrioritizeNearbyWorker
+                ? ThumbnailWorkIntent.PlaybackNearby
+                : null;
 
         return new ThumbnailPlaybackWindowUpdate
         {
             CurrentVideoPath = currentVideoPath,
             CurrentOutcome = currentOutcome,
             KeepPlaybackWorkerVideoPath = keepPlaybackWorkerVideoPath,
+            LowerPriorityPreemptionIntent = lowerPriorityPreemptionIntent,
             CandidateWindowSummary = candidateWindow.Count == 0 ? "-" : string.Join(", ", candidateWindow),
             NearbyApplied = nearbyApplied,
             NearbyReady = nearbyReady,
             NearbyHigherIntent = nearbyHigherIntent,
             NearbyMissing = nearbyMissing,
             StalePlaybackWorkers = stalePlaybackWorkers,
-            ShouldPreemptLowerPriority = shouldPrioritizeCurrentWorker &&
+            ShouldPreemptLowerPriority = lowerPriorityPreemptionIntent.HasValue &&
                 stalePlaybackWorkers == 0 &&
-                ThumbnailWorkerPreemption.ShouldPreemptForIncomingIntent(activeWorkers, ThumbnailWorkIntent.PlaybackCurrent)
+                ThumbnailWorkerPreemption.ShouldPreemptForIncomingIntent(activeWorkers, lowerPriorityPreemptionIntent.Value)
         };
     }
 }
