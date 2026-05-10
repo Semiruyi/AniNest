@@ -14,6 +14,7 @@ internal sealed class ThumbnailPlaybackWindowUpdate
     public int NearbyHigherIntent { get; init; }
     public int NearbyMissing { get; init; }
     public int DemotedStalePlaybackIntents { get; init; }
+    public bool HasUnresolvedPlaybackDemand { get; init; }
     public int StalePlaybackWorkers { get; init; }
     public bool ShouldPreemptLowerPriority { get; init; }
 }

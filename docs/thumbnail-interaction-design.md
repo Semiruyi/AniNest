@@ -228,6 +228,7 @@ Current implementation note:
 - if the current item is already ready, the first unresolved nearby item can still preempt lower-priority non-playback work so the next useful thumbnail starts promptly
 - lower-priority worker preemption accepts an explicit protected video so the scheduler does not cancel the same task it is trying to prioritize
 - when the playback window moves, playback intents outside the new window are demoted before canceled workers requeue, so stale playback jobs do not immediately restart with old foreground priority
+- stale playback workers are canceled only when the new playback window still has unresolved demand; if the new window is already fully ready, the existing worker is left alone to avoid throwing away useful progress
 
 ## Status and Feedback
 
@@ -529,6 +530,7 @@ Already in place:
 - nearby playback candidates can preempt lower-priority non-playback workers even when the current item is already ready
 - lower-priority preemption can explicitly protect the prioritized video from self-cancellation instead of relying only on in-memory intent mutation
 - playback-window shifts demote stale playback intents outside the new window so a canceled nearby worker falls back to background priority instead of bouncing straight back into playback priority
+- playback-window shifts do not cancel an existing stale playback worker when the new window has no unresolved thumbnail demand
 
 Still pending:
 

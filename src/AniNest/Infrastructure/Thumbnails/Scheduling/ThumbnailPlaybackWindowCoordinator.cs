@@ -85,8 +85,14 @@ internal static class ThumbnailPlaybackWindowCoordinator
             activeWorkers,
             currentVideoPath,
             keepPlaybackWorkerVideoPath);
-        int stalePlaybackWorkers = stalePlaybackWorkerVideoPaths.Length;
-        int demotedStalePlaybackIntents = taskStore.DemotePlaybackIntentsOutside(retainedPlaybackWindowPaths);
+        bool hasUnresolvedPlaybackDemand = !string.IsNullOrWhiteSpace(keepPlaybackWorkerVideoPath);
+        string[] stalePlaybackWorkerVideoPathsToCancel = hasUnresolvedPlaybackDemand
+            ? stalePlaybackWorkerVideoPaths
+            : [];
+        int stalePlaybackWorkers = stalePlaybackWorkerVideoPathsToCancel.Length;
+        int demotedStalePlaybackIntents = hasUnresolvedPlaybackDemand
+            ? taskStore.DemotePlaybackIntentsOutside(retainedPlaybackWindowPaths)
+            : 0;
 
         bool shouldPrioritizeCurrentWorker =
             currentOutcome is IntentApplyOutcome.Applied or IntentApplyOutcome.HigherIntentAlreadyPresent;
@@ -107,7 +113,7 @@ internal static class ThumbnailPlaybackWindowCoordinator
             CurrentVideoPath = currentVideoPath,
             CurrentOutcome = currentOutcome,
             KeepPlaybackWorkerVideoPath = keepPlaybackWorkerVideoPath,
-            StalePlaybackWorkerVideoPaths = stalePlaybackWorkerVideoPaths,
+            StalePlaybackWorkerVideoPaths = stalePlaybackWorkerVideoPathsToCancel,
             ProtectedVideoPath = protectedVideoPath,
             LowerPriorityPreemptionIntent = lowerPriorityPreemptionIntent,
             CandidateWindowSummary = candidateWindow.Count == 0 ? "-" : string.Join(", ", candidateWindow),
@@ -116,6 +122,7 @@ internal static class ThumbnailPlaybackWindowCoordinator
             NearbyHigherIntent = nearbyHigherIntent,
             NearbyMissing = nearbyMissing,
             DemotedStalePlaybackIntents = demotedStalePlaybackIntents,
+            HasUnresolvedPlaybackDemand = hasUnresolvedPlaybackDemand,
             StalePlaybackWorkers = stalePlaybackWorkers,
             ShouldPreemptLowerPriority = lowerPriorityPreemptionIntent.HasValue &&
                 stalePlaybackWorkers == 0 &&
