@@ -20,6 +20,10 @@
     <SolidColorBrush x:Key="TextSecondary" Color="#AAFFFFFF"/>
 
     <SolidColorBrush x:Key="PopupMenuBackground" Color="#E6282828"/>
+    <SolidColorBrush x:Key="LibraryFilterBarBackground" Color="#B81A1A1A"/>
+    <SolidColorBrush x:Key="LibraryFilterBarBorder" Color="#26FFFFFF"/>
+    <SolidColorBrush x:Key="LibraryFilterBarItemHover" Color="#1FFFFFFF"/>
+    <SolidColorBrush x:Key="LibraryFilterBarItemSelected" Color="#2DFFFFFF"/>
 
     <SolidColorBrush x:Key="IconSecondary" Color="#AAAAAA"/>
 

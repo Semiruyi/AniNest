@@ -65,6 +65,10 @@
     <system:Double x:Key="FolderCardGradientHeight">100</system:Double>
     <system:Double x:Key="ToolbarHeight">64</system:Double>
     <system:Double x:Key="AddFolderButtonHeight">38</system:Double>
+    <system:Double x:Key="LibraryFilterBarMaxWidth">560</system:Double>
+    <system:Double x:Key="LibraryFilterBarHeight">44</system:Double>
+    <system:Double x:Key="LibraryFilterBarItemHeight">32</system:Double>
+    <system:Double x:Key="LibraryFilterBarItemMinWidth">68</system:Double>
 
     <GridLength x:Key="TitleBarRowHeight">40</GridLength>
 

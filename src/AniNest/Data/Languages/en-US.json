@@ -40,6 +40,12 @@
   "Player.EpisodeCount": "{0} episode(s)",
 
   "Library.NoCover": "No Cover",
+  "Library.All": "All",
+  "Library.Watching": "Watching",
+  "Library.Unsorted": "Unsorted",
+  "Library.Completed": "Completed",
+  "Library.Favorites": "Favorites",
+  "Library.Dropped": "Dropped",
   "Library.VideoCount": "{0} video(s)",
   "Library.PlayedSummary.Prefix": "Watched ",
   "Library.PlayedSummary.Total": " Total ",

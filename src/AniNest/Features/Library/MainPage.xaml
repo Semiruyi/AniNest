@@ -1,9 +1,10 @@
 <UserControl x:Class="AniNest.Features.Library.MainPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:behaviors="clr-namespace:AniNest.Presentation.Behaviors"
              xmlns:animations="clr-namespace:AniNest.Presentation.Animations"
+             xmlns:behaviors="clr-namespace:AniNest.Presentation.Behaviors"
              xmlns:conv="clr-namespace:AniNest.Presentation.Converters"
+             xmlns:models="clr-namespace:AniNest.Features.Library.Models"
              xmlns:loc="clr-namespace:AniNest.Infrastructure.Localization"
              xmlns:overlays="clr-namespace:AniNest.Presentation.Overlays"
              Background="{StaticResource BackgroundDark}">
@@ -13,6 +14,41 @@
         <conv:NullToVisibilityConverter x:Key="NullToHidden"  NullValue="Visible"    NotNullValue="Collapsed"/>
         <conv:CoverImageSourceConverter x:Key="CoverImageSource" DecodePixelWidth="380"/>
         <conv:PercentToWidthConverter x:Key="PercentToWidthConverter"/>
+
+        <Style x:Key="LibraryFilterItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Height" Value="{StaticResource LibraryFilterBarItemHeight}"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="3,0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="ItemRoot"
+                                MinWidth="{StaticResource LibraryFilterBarItemMinWidth}"
+                                Padding="{StaticResource LibraryFilterBarItemPadding}"
+                                Background="Transparent"
+                                CornerRadius="{StaticResource LibraryFilterBarItemCornerRadius}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ItemRoot" Property="Background" Value="{StaticResource LibraryFilterBarItemHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="ItemRoot" Property="Background" Value="{StaticResource LibraryFilterBarItemSelected}"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="False">
+                                <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Grid x:Name="RootGrid">
@@ -20,99 +56,133 @@
                       Background="Transparent"
                       VerticalScrollBarVisibility="Auto"
                       ScrollChanged="OnLibraryScrollChanged">
-            <ItemsControl Margin="{StaticResource LibraryPageMargin}"
-                          ItemsSource="{Binding FolderItems}"
-                          animations:StaggeredItemsAnimation.Enabled="True"
-                          animations:StaggeredItemsAnimation.StaggerMs="50"
-                          animations:StaggeredItemsAnimation.DurationMs="500">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel HorizontalAlignment="Center"/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border x:Name="CardBorder"
-                                Width="{StaticResource FolderCardWidth}"
-                                Height="{StaticResource FolderCardHeight}"
-                                Margin="{StaticResource FolderCardMargin}"
-                                Background="{StaticResource SurfaceOverlayDark}"
-                                CornerRadius="{StaticResource FolderCardCornerRadius}"
-                                Cursor="Hand"
-                                behaviors:MouseGestureBehavior.LeftClick="{Binding DataContext.SelectFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                behaviors:MouseGestureBehavior.CommandParameter="{Binding}"
-                                animations:CardAnimation.Enabled="True"
-                                animations:CardAnimation.HoverDurationMs="250"
-                                animations:CardAnimation.PressDipMs="100"
-                                animations:CardAnimation.PressRecoverMs="350"
-                                animations:CardAnimation.CoverScale="1.12"
-                                animations:CardAnimation.CoverShiftY="-8"
-                                animations:CardAnimation.CoverDurationMs="400"
-                                MouseEnter="OnCardMouseEnter"
-                                MouseLeave="OnCardMouseLeave"
-                                PreviewMouseRightButtonUp="OnCardPreviewMouseRightButtonUp">
-                            <Grid>
-                                <Grid.Clip>
-                                    <RectangleGeometry RadiusX="10" RadiusY="10"
-                                                      Rect="0,0,190,253"/>
-                                </Grid.Clip>
+            <StackPanel Margin="{StaticResource LibraryPageMargin}">
+                <Border x:Name="LibraryFilterBarContainer"
+                        HorizontalAlignment="Center"
+                        Margin="{StaticResource LibraryFilterBarMargin}"
+                        Padding="{StaticResource LibraryFilterBarOuterPadding}"
+                        Background="{StaticResource LibraryFilterBarBackground}"
+                        BorderBrush="{StaticResource LibraryFilterBarBorder}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource LibraryFilterBarCornerRadius}"
+                        MaxWidth="{StaticResource LibraryFilterBarMaxWidth}"
+                        Height="{StaticResource LibraryFilterBarHeight}">
+                    <ListBox x:Name="LibraryFilterListBox"
+                             ItemsSource="{Binding FilterOptions}"
+                             SelectedValue="{Binding SelectedFilter, Mode=TwoWay}"
+                             SelectedValuePath="Filter"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                             ItemContainerStyle="{StaticResource LibraryFilterItemStyle}">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type models:LibraryFilterOption}">
+                                <TextBlock Text="{Binding DisplayName}"
+                                           FontFamily="{StaticResource AppFontFamily}"
+                                           FontSize="{StaticResource AppFontSizeBody}"
+                                           FontWeight="SemiBold"
+                                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
+                                           TextAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Border>
 
-                                <Image Stretch="UniformToFill"
-                                       Source="{Binding CoverPath, Converter={StaticResource CoverImageSource}}"
-                                       Visibility="{Binding CoverPath, Converter={StaticResource NullToVis}}"/>
+                <ItemsControl Margin="0,20,0,0"
+                              ItemsSource="{Binding FolderItems}"
+                              animations:StaggeredItemsAnimation.Enabled="True"
+                              animations:StaggeredItemsAnimation.StaggerMs="50"
+                              animations:StaggeredItemsAnimation.DurationMs="500">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel HorizontalAlignment="Center"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border x:Name="CardBorder"
+                                    Width="{StaticResource FolderCardWidth}"
+                                    Height="{StaticResource FolderCardHeight}"
+                                    Margin="{StaticResource FolderCardMargin}"
+                                    Background="{StaticResource SurfaceOverlayDark}"
+                                    CornerRadius="{StaticResource FolderCardCornerRadius}"
+                                    Cursor="Hand"
+                                    behaviors:MouseGestureBehavior.LeftClick="{Binding DataContext.SelectFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    behaviors:MouseGestureBehavior.CommandParameter="{Binding}"
+                                    animations:CardAnimation.Enabled="True"
+                                    animations:CardAnimation.HoverDurationMs="250"
+                                    animations:CardAnimation.PressDipMs="100"
+                                    animations:CardAnimation.PressRecoverMs="350"
+                                    animations:CardAnimation.CoverScale="1.12"
+                                    animations:CardAnimation.CoverShiftY="-8"
+                                    animations:CardAnimation.CoverDurationMs="400"
+                                    MouseEnter="OnCardMouseEnter"
+                                    MouseLeave="OnCardMouseLeave"
+                                    PreviewMouseRightButtonUp="OnCardPreviewMouseRightButtonUp">
+                                <Grid>
+                                    <Grid.Clip>
+                                        <RectangleGeometry RadiusX="10" RadiusY="10"
+                                                          Rect="0,0,190,253"/>
+                                    </Grid.Clip>
 
-                                <Rectangle Fill="#252525"
-                                           Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
-                                <TextBlock Text="&#x1F3AC;"
-                                           Style="{StaticResource AppTextIconPlaceholder}"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                                           Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
+                                    <Image Stretch="UniformToFill"
+                                           Source="{Binding CoverPath, Converter={StaticResource CoverImageSource}}"
+                                           Visibility="{Binding CoverPath, Converter={StaticResource NullToVis}}"/>
 
-                                <Border x:Name="CardInfoRoot"
-                                        VerticalAlignment="Bottom"
-                                        Height="{StaticResource FolderCardGradientHeight}"
-                                        Padding="0,12,0,0">
-                                    <Border.Background>
-                                        <StaticResource ResourceKey="SurfaceOverlayDarkGradient"/>
-                                    </Border.Background>
+                                    <Rectangle Fill="#252525"
+                                               Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
+                                    <TextBlock Text="&#x1F3AC;"
+                                               Style="{StaticResource AppTextIconPlaceholder}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
+
+                                    <Border x:Name="CardInfoRoot"
+                                            VerticalAlignment="Bottom"
+                                            Height="{StaticResource FolderCardGradientHeight}"
+                                            Padding="0,12,0,0">
+                                        <Border.Background>
+                                            <StaticResource ResourceKey="SurfaceOverlayDarkGradient"/>
+                                        </Border.Background>
                                         <Grid Margin="{StaticResource CardInfoMargin}">
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        <TextBlock Text="{Binding Name}"
-                                                   Style="{StaticResource AppTextSectionTitle}"
-                                                   Foreground="White"
-                                                   TextTrimming="CharacterEllipsis"/>
-                                        <StackPanel Grid.Row="1"
-                                                    Orientation="Horizontal"
-                                                    Margin="0,4,0,0">
-                                            <TextBlock Text="{Binding DataContext.PlayedSummaryPrefix, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                       Style="{StaticResource AppTextCardSummary}"
-                                                       Foreground="#BFC7D5"
-                                                       />
-                                            <TextBlock Text="{Binding PlayedCount}"
-                                                       Style="{StaticResource AppTextCardSummary}"
-                                                       Foreground="{StaticResource AccentBlue}"
-                                                       />
-                                            <TextBlock Text=" / "
-                                                       Style="{StaticResource AppTextCardSummary}"
-                                                       Foreground="#BFC7D5"
-                                                       />
-                                            <TextBlock Text="{Binding DataContext.PlayedSummaryTotal, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                       Style="{StaticResource AppTextCardSummary}"
-                                                       Foreground="#BFC7D5"
-                                                       />
-                                            <TextBlock Text="{Binding VideoCount}"
-                                                       Style="{StaticResource AppTextCardSummary}"
-                                                       Foreground="#8A93A3"
-                                                       />
-                                            <TextBlock Text="{Binding DataContext.PlayedSummarySuffix, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                       Style="{StaticResource AppTextCardSummary}"
-                                                       Foreground="#BFC7D5"
-                                                       />
-                                        </StackPanel>
+                                            </Grid.RowDefinitions>
+                                            <TextBlock Text="{Binding Name}"
+                                                       Style="{StaticResource AppTextSectionTitle}"
+                                                       Foreground="White"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <StackPanel Grid.Row="1"
+                                                        Orientation="Horizontal"
+                                                        Margin="0,4,0,0">
+                                                <TextBlock Text="{Binding DataContext.PlayedSummaryPrefix, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                           Style="{StaticResource AppTextCardSummary}"
+                                                           Foreground="#BFC7D5"/>
+                                                <TextBlock Text="{Binding PlayedCount}"
+                                                           Style="{StaticResource AppTextCardSummary}"
+                                                           Foreground="{StaticResource AccentBlue}"/>
+                                                <TextBlock Text=" / "
+                                                           Style="{StaticResource AppTextCardSummary}"
+                                                           Foreground="#BFC7D5"/>
+                                                <TextBlock Text="{Binding DataContext.PlayedSummaryTotal, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                           Style="{StaticResource AppTextCardSummary}"
+                                                           Foreground="#BFC7D5"/>
+                                                <TextBlock Text="{Binding VideoCount}"
+                                                           Style="{StaticResource AppTextCardSummary}"
+                                                           Foreground="#8A93A3"/>
+                                                <TextBlock Text="{Binding DataContext.PlayedSummarySuffix, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                           Style="{StaticResource AppTextCardSummary}"
+                                                           Foreground="#BFC7D5"/>
+                                            </StackPanel>
                                             <Grid Grid.Row="2"
                                                   Margin="0,8,0,0"
                                                   Height="14"
@@ -131,12 +201,13 @@
                                                 </Grid>
                                             </Grid>
                                         </Grid>
-                                </Border>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
         </ScrollViewer>
 
         <overlays:AnimatedOverlay x:Name="CardContextMenuOverlay"

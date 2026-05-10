@@ -24,6 +24,9 @@
     <Thickness x:Key="PauseBigIconMargin">0,0,32,75</Thickness>
 
     <Thickness x:Key="LibraryPageMargin">24</Thickness>
+    <Thickness x:Key="LibraryFilterBarMargin">0,8,0,20</Thickness>
+    <Thickness x:Key="LibraryFilterBarOuterPadding">6,4</Thickness>
+    <Thickness x:Key="LibraryFilterBarItemPadding">14,0</Thickness>
     <Thickness x:Key="FolderCardMargin">12</Thickness>
     <Thickness x:Key="ToolbarHorizontalMargin">24,0</Thickness>
     <Thickness x:Key="CardInfoMargin">12,16,12,12</Thickness>
@@ -37,5 +40,7 @@
     <system:Double x:Key="PopupMenuHorizontalOffset">-4</system:Double>
     <system:Double x:Key="SubmenuPopupHorizontalOffset">2</system:Double>
     <Thickness x:Key="SubmenuChevronLeftMargin">8,0,0,0</Thickness>
+    <CornerRadius x:Key="LibraryFilterBarCornerRadius">22</CornerRadius>
+    <CornerRadius x:Key="LibraryFilterBarItemCornerRadius">18</CornerRadius>
 
 </ResourceDictionary>

@@ -39,6 +39,7 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     public string PlayedSummaryPrefix => _loc["Library.PlayedSummary.Prefix"];
     public string PlayedSummaryTotal => _loc["Library.PlayedSummary.Total"];
     public string PlayedSummarySuffix => _loc["Library.PlayedSummary.Suffix"];
+    public ObservableCollection<LibraryFilterOption> FilterOptions { get; } = new();
     public ObservableCollection<FolderListItem> FolderItems { get; } = new();
 
     [ObservableProperty]
@@ -69,6 +70,7 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
 
         _libraryService.ThumbnailProgressChanged += _thumbnailProgressChangedHandler;
         _loc.PropertyChanged += _localizationChangedHandler;
+        InitializeFilterOptions();
     }
 
     public void AddFolderItem(string name, string path, int videoCount, string? coverPath)
@@ -401,6 +403,7 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
         OnPropertyChanged(nameof(PlayedSummaryPrefix));
         OnPropertyChanged(nameof(PlayedSummaryTotal));
         OnPropertyChanged(nameof(PlayedSummarySuffix));
+        RefreshFilterOptionLabels();
     }
 
     private void OnFolderItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -554,5 +557,22 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
         }
 
         return count;
+    }
+
+    private void InitializeFilterOptions()
+    {
+        FilterOptions.Clear();
+        FilterOptions.Add(new LibraryFilterOption(LibraryFilter.All, "Library.All", _loc["Library.All"]));
+        FilterOptions.Add(new LibraryFilterOption(LibraryFilter.Watching, "Library.Watching", _loc["Library.Watching"]));
+        FilterOptions.Add(new LibraryFilterOption(LibraryFilter.Unsorted, "Library.Unsorted", _loc["Library.Unsorted"]));
+        FilterOptions.Add(new LibraryFilterOption(LibraryFilter.Completed, "Library.Completed", _loc["Library.Completed"]));
+        FilterOptions.Add(new LibraryFilterOption(LibraryFilter.Favorites, "Library.Favorites", _loc["Library.Favorites"]));
+        FilterOptions.Add(new LibraryFilterOption(LibraryFilter.Dropped, "Library.Dropped", _loc["Library.Dropped"]));
+    }
+
+    private void RefreshFilterOptionLabels()
+    {
+        foreach (var option in FilterOptions)
+            option.DisplayName = _loc[option.LocalizationKey];
     }
 }

@@ -40,6 +40,12 @@
   "Player.EpisodeCount": "{0} 集",
 
   "Library.NoCover": "暂无封面",
+  "Library.All": "全部",
+  "Library.Watching": "正在看",
+  "Library.Unsorted": "未归类",
+  "Library.Completed": "已看完",
+  "Library.Favorites": "收藏",
+  "Library.Dropped": "弃看",
   "Library.VideoCount": "{0} 个视频",
   "Library.PlayedSummary.Prefix": "已观看 ",
   "Library.PlayedSummary.Total": " 总共 ",
