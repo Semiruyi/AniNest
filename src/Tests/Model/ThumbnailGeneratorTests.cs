@@ -102,7 +102,7 @@ public class ThumbnailGeneratorTests : IDisposable
     }
 
     [Fact]
-    public void BoostPlaybackWindow_PromotesCurrentAndNearbyVideos()
+    public void BoostPlaybackWindow_PromotesCurrentAndForwardNearbyVideos()
     {
         var videos = new[]
         {
@@ -118,7 +118,7 @@ public class ThumbnailGeneratorTests : IDisposable
         _generator.BoostPlaybackWindow(videos, currentIndex: 1, lookaheadCount: 2);
 
         _generator.GetIntent(videos[1]).Should().Be(ThumbnailWorkIntent.PlaybackCurrent);
-        _generator.GetIntent(videos[0]).Should().Be(ThumbnailWorkIntent.PlaybackNearby);
+        _generator.GetIntent(videos[0]).Should().Be(ThumbnailWorkIntent.BackgroundFill);
         _generator.GetIntent(videos[2]).Should().Be(ThumbnailWorkIntent.PlaybackNearby);
         _generator.GetIntent(videos[3]).Should().Be(ThumbnailWorkIntent.PlaybackNearby);
         _generator.GetStatusSnapshot().CurrentTargetName.Should().Be("ep02.mp4");

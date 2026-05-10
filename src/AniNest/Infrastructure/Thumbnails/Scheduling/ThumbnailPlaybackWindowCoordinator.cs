@@ -22,7 +22,7 @@ internal static class ThumbnailPlaybackWindowCoordinator
         int nearbyMissing = 0;
         string? keepPlaybackWorkerVideoPath = null;
 
-        int start = Math.Max(0, currentIndex - 1);
+        int start = currentIndex;
         int end = Math.Min(orderedVideoPaths.Count - 1, currentIndex + Math.Max(0, lookaheadCount));
         List<string> candidateWindow = [];
         for (int i = start; i <= end; i++)
