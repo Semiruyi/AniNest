@@ -13,6 +13,7 @@ internal sealed class ThumbnailGeneratorComponents
     public required ThumbnailGenerationRunner GenerationRunner { get; init; }
     public required ThumbnailWorkerExecutionHost WorkerExecutionHost { get; init; }
     public required ThumbnailWorkerCancellationCoordinator WorkerCancellationCoordinator { get; init; }
+    public required ThumbnailWorkerSuspensionCoordinator WorkerSuspensionCoordinator { get; init; }
     public required ThumbnailQueueLoopRunner QueueLoopRunner { get; init; }
 
     public static ThumbnailGeneratorComponents Create(
@@ -20,6 +21,7 @@ internal sealed class ThumbnailGeneratorComponents
         string ffmpegPath,
         ISettingsService settings,
         IThumbnailDecodeStrategyService decodeStrategyService,
+        IThumbnailProcessController? processController,
         ThumbnailTaskStore taskStore,
         ThumbnailWorkerPool workerPool,
         Task initTask,
@@ -57,6 +59,11 @@ internal sealed class ThumbnailGeneratorComponents
             onVideoProgress,
             onVideoReady);
         var workerCancellationCoordinator = new ThumbnailWorkerCancellationCoordinator(buildSchedulerSnapshot);
+        processController ??= new WindowsThumbnailProcessController();
+        var workerSuspensionCoordinator = new ThumbnailWorkerSuspensionCoordinator(
+            processController,
+            workerCancellationCoordinator,
+            buildSchedulerSnapshot);
         var queueLoopRunner = new ThumbnailQueueLoopRunner(
             () => initTask,
             isShuttingDown,
@@ -78,6 +85,7 @@ internal sealed class ThumbnailGeneratorComponents
             GenerationRunner = generationRunner,
             WorkerExecutionHost = workerExecutionHost,
             WorkerCancellationCoordinator = workerCancellationCoordinator,
+            WorkerSuspensionCoordinator = workerSuspensionCoordinator,
             QueueLoopRunner = queueLoopRunner
         };
     }

@@ -10,6 +10,7 @@ public class ThumbnailGeneratorTests : IDisposable
     private readonly string _tempDir;
     private readonly SettingsService _settingsService;
     private readonly Mock<IThumbnailDecodeStrategyService> _decodeStrategyService = new();
+    private readonly Mock<IThumbnailProcessController> _processController = new();
     private readonly ThumbnailGenerator _generator;
 
     public ThumbnailGeneratorTests()
@@ -22,7 +23,7 @@ public class ThumbnailGeneratorTests : IDisposable
         _decodeStrategyService.Setup(service => service.GetStrategyChain())
             .Returns(new[] { ThumbnailDecodeStrategy.Software });
 
-        _generator = new ThumbnailGenerator(_settingsService, _decodeStrategyService.Object);
+        _generator = new ThumbnailGenerator(_settingsService, _decodeStrategyService.Object, _processController.Object);
         WaitForInitialization();
     }
 
@@ -307,24 +308,24 @@ public class ThumbnailGeneratorTests : IDisposable
 
         _generator.EnqueueFolder(@"C:\videos", [currentVideo, backgroundVideo], 0, null, []);
         _generator.BoostVideo(currentVideo);
-        _generator.AddActiveWorkerForTest(currentVideo);
+        _generator.AddActiveWorkerForTest(currentVideo, processId: 101);
         _settingsService.SetThumbnailGenerationPaused(true);
 
         _generator.RefreshGenerationPaused();
 
         _generator.GetState(currentVideo).Should().Be(ThumbnailState.PausedGenerating);
         _generator.IsActiveWorkerCancellationRequestedForTest(currentVideo).Should().BeFalse();
+        _generator.IsActiveWorkerSuspendedForTest(currentVideo).Should().BeTrue();
+        _processController.Verify(controller => controller.Suspend(101), Times.Once);
     }
 
     [Fact]
-    public void RefreshGenerationPaused_CancelsWorkerThatLostHeadPosition()
+    public void RefreshGenerationPaused_FallbackCancelsWorkerWhenProcessIdMissing()
     {
         var activeVideo = @"C:\videos\ep01.mp4";
-        var boostedVideo = @"C:\videos\ep02.mp4";
 
-        _generator.EnqueueFolder(@"C:\videos", [activeVideo, boostedVideo], 0, null, []);
+        _generator.EnqueueFolder(@"C:\videos", [activeVideo], 0, null, []);
         _generator.AddActiveWorkerForTest(activeVideo);
-        _generator.BoostVideo(boostedVideo);
         _settingsService.SetThumbnailGenerationPaused(true);
 
         _generator.RefreshGenerationPaused();
@@ -341,7 +342,7 @@ public class ThumbnailGeneratorTests : IDisposable
 
         _generator.EnqueueFolder(@"C:\videos", [currentVideo], 0, null, []);
         _generator.BoostVideo(currentVideo);
-        _generator.AddActiveWorkerForTest(currentVideo);
+        _generator.AddActiveWorkerForTest(currentVideo, processId: 202);
         _settingsService.SetThumbnailGenerationPaused(true);
         _generator.RefreshGenerationPaused();
 
@@ -350,6 +351,28 @@ public class ThumbnailGeneratorTests : IDisposable
 
         _generator.GetState(currentVideo).Should().Be(ThumbnailState.Generating);
         _generator.IsActiveWorkerCancellationRequestedForTest(currentVideo).Should().BeFalse();
+        _generator.IsActiveWorkerSuspendedForTest(currentVideo).Should().BeFalse();
+        _processController.Verify(controller => controller.Suspend(202), Times.Once);
+        _processController.Verify(controller => controller.Resume(202), Times.Once);
+    }
+
+    [Fact]
+    public void RefreshGenerationPaused_HighPerformanceSuspendsAllActiveWorkers()
+    {
+        var firstVideo = @"C:\videos\ep01.mp4";
+        var secondVideo = @"C:\videos\ep02.mp4";
+
+        _generator.EnqueueFolder(@"C:\videos", [firstVideo, secondVideo], 0, null, []);
+        _generator.AddActiveWorkerForTest(firstVideo, processId: 301);
+        _generator.AddActiveWorkerForTest(secondVideo, processId: 302);
+        _settingsService.SetThumbnailGenerationPaused(true);
+
+        _generator.RefreshGenerationPaused();
+
+        _generator.GetState(firstVideo).Should().Be(ThumbnailState.PausedGenerating);
+        _generator.GetState(secondVideo).Should().Be(ThumbnailState.PausedGenerating);
+        _processController.Verify(controller => controller.Suspend(301), Times.Once);
+        _processController.Verify(controller => controller.Suspend(302), Times.Once);
     }
 
     [Fact]

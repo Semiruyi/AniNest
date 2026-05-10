@@ -64,7 +64,7 @@ internal sealed class ThumbnailWorkerPool
         }
     }
 
-    public void AddTestWorker(ThumbnailTask task, string cancellationReason)
+    public void AddTestWorker(ThumbnailTask task, string cancellationReason, int? processId = null)
     {
         lock (_lock)
         {
@@ -73,7 +73,8 @@ internal sealed class ThumbnailWorkerPool
                 Task = task,
                 Execution = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously).Task,
                 Cancellation = new CancellationTokenSource(),
-                CancellationReason = cancellationReason
+                CancellationReason = cancellationReason,
+                ProcessId = processId
             });
         }
     }
@@ -116,6 +117,16 @@ internal sealed class ThumbnailWorkerPool
                 worker.CancellationReason ??= "shutdown";
 
             return workers;
+        }
+    }
+
+    public bool IsSuspended(string videoPath)
+    {
+        lock (_lock)
+        {
+            var worker = _activeWorkers.FirstOrDefault(activeWorker =>
+                string.Equals(activeWorker.Task.VideoPath, videoPath, StringComparison.OrdinalIgnoreCase));
+            return worker?.IsSuspended ?? false;
         }
     }
 }

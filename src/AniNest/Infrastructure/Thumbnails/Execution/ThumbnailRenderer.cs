@@ -54,7 +54,8 @@ internal class ThumbnailRenderer
         ThumbnailTask task,
         ThumbnailDecodeStrategy strategy,
         CancellationToken ct,
-        Action<string, int>? onProgress = null)
+        Action<string, int>? onProgress = null,
+        Action<int>? processStartedCallback = null)
     {
         string tmpDir = Path.Combine(_thumbBaseDir, $".tmp_{task.Md5Dir}");
         string finalDir = Path.Combine(_thumbBaseDir, task.Md5Dir);
@@ -101,6 +102,7 @@ internal class ThumbnailRenderer
         {
             ct.ThrowIfCancellationRequested();
             process.Start();
+            processStartedCallback?.Invoke(process.Id);
             Log.Info(MemorySnapshot.Capture("ThumbnailRenderer.GenerateAsync.process-start",
                 ("file", Path.GetFileName(task.VideoPath)),
                 ("pid", process.Id),

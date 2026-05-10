@@ -53,9 +53,12 @@ internal static class ThumbnailQueueScheduler
         ThumbnailPerformanceMode performanceMode)
     {
         ThumbnailExecutionPolicy policy = ThumbnailPerformancePolicy.Create(performanceMode, isPlayerActive);
+        bool allowStartNewJobs = !isGenerationPaused &&
+            policy.AllowStartNewJobs &&
+            workerPool.Count < policy.MaxConcurrency;
         return
             $"playerActive={isPlayerActive}, mode={performanceMode}, paused={isGenerationPaused}, maxConcurrency={policy.MaxConcurrency}, " +
-            $"allowStartNewJobs={policy.AllowStartNewJobs}, activeWorkers={workerPool.Count}, " +
+            $"allowStartNewJobs={allowStartNewJobs}, activeWorkers={workerPool.Count}, " +
             $"pendingTasks={taskStore.CountTasksByState(ThumbnailState.Pending)}, ready={taskStore.ReadyCount}, total={taskStore.TotalCount}, " +
             $"foregroundPending={taskStore.CountForegroundPending()}";
     }

@@ -25,7 +25,8 @@ internal sealed class ThumbnailGenerationRunner
     public async Task<RenderResult> GenerateAsync(
         ThumbnailTask task,
         CancellationToken ct,
-        Action<string, int>? progressCallback = null)
+        Action<string, int>? progressCallback = null,
+        Action<int>? processStartedCallback = null)
     {
         IReadOnlyList<ThumbnailDecodeStrategy> strategies = _decodeStrategyService.GetStrategyChain();
         RenderResult lastResult = new(ThumbnailState.Failed);
@@ -34,7 +35,7 @@ internal sealed class ThumbnailGenerationRunner
         {
             ct.ThrowIfCancellationRequested();
             Log.Info($"Thumbnail render attempt: file={Path.GetFileName(task.VideoPath)}, strategy={strategy}");
-            lastResult = await _renderer.GenerateAsync(task, strategy, ct, progressCallback);
+            lastResult = await _renderer.GenerateAsync(task, strategy, ct, progressCallback, processStartedCallback);
 
             if (lastResult.State == ThumbnailState.Ready)
             {

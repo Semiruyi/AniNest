@@ -6,4 +6,6 @@ internal sealed class ThumbnailGeneratorWorker
     public required Task Execution { get; set; }
     public required CancellationTokenSource Cancellation { get; init; }
     public string? CancellationReason { get; set; }
+    public int? ProcessId { get; set; }
+    public bool IsSuspended { get; set; }
 }

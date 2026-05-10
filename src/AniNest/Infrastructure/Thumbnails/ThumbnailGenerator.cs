@@ -39,6 +39,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private readonly ThumbnailGenerationRunner _generationRunner;
     private readonly ThumbnailWorkerExecutionHost _workerExecutionHost;
     private readonly ThumbnailWorkerCancellationCoordinator _workerCancellationCoordinator;
+    private readonly ThumbnailWorkerSuspensionCoordinator _workerSuspensionCoordinator;
     private readonly ThumbnailStatusTracker _statusTracker;
     private readonly ThumbnailQueueLoopRunner _queueLoopRunner;
     private bool _isShuttingDown;
@@ -64,6 +65,14 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     public ThumbnailGenerator(
         ISettingsService settings,
         IThumbnailDecodeStrategyService decodeStrategyService)
+        : this(settings, decodeStrategyService, processController: null)
+    {
+    }
+
+    internal ThumbnailGenerator(
+        ISettingsService settings,
+        IThumbnailDecodeStrategyService decodeStrategyService,
+        IThumbnailProcessController? processController)
     {
         _settings = settings;
         _decodeStrategyService = decodeStrategyService;
@@ -76,6 +85,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             _ffmpegPath,
             _settings,
             _decodeStrategyService,
+            processController,
             _taskStore,
             _workerPool,
             _initTcs.Task,
@@ -103,6 +113,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         _generationRunner = components.GenerationRunner;
         _workerExecutionHost = components.WorkerExecutionHost;
         _workerCancellationCoordinator = components.WorkerCancellationCoordinator;
+        _workerSuspensionCoordinator = components.WorkerSuspensionCoordinator;
         _queueLoopRunner = components.QueueLoopRunner;
 
         Directory.CreateDirectory(_thumbBaseDir);
@@ -483,32 +494,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         if (activeWorkers.Length == 0)
             return;
 
-        ThumbnailGeneratorWorker? workerToPreserve = activeWorkers
-            .OrderBy(worker => worker.Task, WorkerTaskPriorityComparer.Instance)
-            .FirstOrDefault();
-
-        bool canPreserveWorker = workerToPreserve != null &&
-            !ThumbnailQueueScheduler.IsTaskOutrankedByPendingWork(_taskStore, workerToPreserve.Task);
-
-        foreach (var worker in activeWorkers)
-        {
-            if (canPreserveWorker && ReferenceEquals(worker, workerToPreserve))
-            {
-                SetTaskState(worker.Task, ThumbnailState.PausedGenerating);
-                Log.Info(
-                    $"Thumbnail worker pause-preserved: file={Path.GetFileName(worker.Task.VideoPath)}, intent={worker.Task.Intent}, {BuildSchedulerSnapshot()}");
-                continue;
-            }
-
-            worker.CancellationReason = "generation-paused";
-            try
-            {
-                worker.Cancellation.Cancel();
-            }
-            catch
-            {
-            }
-        }
+        _workerSuspensionCoordinator.SuspendActiveWorkers(activeWorkers, SetTaskState);
     }
 
     private void ResumePausedWorkers()
@@ -518,12 +504,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             .Where(worker => worker.Task.State == ThumbnailState.PausedGenerating)
             .ToArray();
 
-        foreach (var worker in pausedWorkers)
-        {
-            SetTaskState(worker.Task, ThumbnailState.Generating);
-            Log.Info(
-                $"Thumbnail worker resume-marked: file={Path.GetFileName(worker.Task.VideoPath)}, intent={worker.Task.Intent}, {BuildSchedulerSnapshot()}");
-        }
+        _workerSuspensionCoordinator.ResumePausedWorkers(pausedWorkers, SetTaskState);
     }
 
     private void PreemptLowerPriorityWorkers(ThumbnailWorkIntent incomingIntent)
@@ -728,8 +709,20 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         _workerPool.AddTestWorker(task, cancellationReason);
     }
 
+    internal void AddActiveWorkerForTest(string videoPath, int processId, string cancellationReason = "test-worker")
+    {
+        if (!_taskStore.TryGetTask(videoPath, out var task))
+            return;
+
+        task.State = ThumbnailState.Generating;
+        _workerPool.AddTestWorker(task, cancellationReason, processId);
+    }
+
     internal bool IsActiveWorkerCancellationRequestedForTest(string videoPath)
         => _workerPool.IsCancellationRequested(videoPath);
+
+    internal bool IsActiveWorkerSuspendedForTest(string videoPath)
+        => _workerPool.IsSuspended(videoPath);
 
     internal void SimulateCanceledActiveWorkerForTest(string videoPath)
     {
@@ -747,35 +740,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
 
     private void ClearPlaybackForegroundTarget()
         => _taskStore.ClearPlaybackForegroundTarget();
-
-    private sealed class WorkerTaskPriorityComparer : IComparer<ThumbnailTask>
-    {
-        public static WorkerTaskPriorityComparer Instance { get; } = new();
-
-        public int Compare(ThumbnailTask? x, ThumbnailTask? y)
-        {
-            if (ReferenceEquals(x, y))
-                return 0;
-
-            if (x == null)
-                return 1;
-
-            if (y == null)
-                return -1;
-
-            int rankComparison = ThumbnailWorkIntentPriority.GetRank(y.Intent)
-                .CompareTo(ThumbnailWorkIntentPriority.GetRank(x.Intent));
-            if (rankComparison != 0)
-                return rankComparison;
-
-            int updatedAtComparison = y.IntentUpdatedAtUtcTicks.CompareTo(x.IntentUpdatedAtUtcTicks);
-            if (updatedAtComparison != 0)
-                return updatedAtComparison;
-
-            return StringComparer.OrdinalIgnoreCase.Compare(x.VideoPath, y.VideoPath);
-        }
-    }
-
 }
 
 

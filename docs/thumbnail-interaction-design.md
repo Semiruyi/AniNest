@@ -374,8 +374,8 @@ This model stays intentionally modest:
 `PausedGenerating` is a narrow-purpose state:
 
 - it exists only for pause and resume behavior
-- it is used only for the currently running head task that is still worth preserving
-- it means the task keeps its in-memory generation progress and should resume before falling back to a fresh restart
+- it is used only for tasks whose ffmpeg worker process was successfully suspended
+- it means the task keeps its current in-memory generation progress and should resume on the same worker
 - it is not a general queue state for all interrupted work
 
 ### 4.2 Suggested scheduler responsibilities
@@ -418,24 +418,39 @@ This gives the system predictable behavior without reintroducing opaque weightin
 
 ### 4.4 Pause and resume strategy
 
-Pause and resume should distinguish between two kinds of interruption:
-
-1. interruption where the current generating video is still the strongest candidate after resume
-2. interruption where the current generating video has already lost its head position to stronger work
+Pause and resume should be implemented as real worker suspension, not only as queue mutation.
 
 Recommended behavior:
 
-- when generation is paused, inspect the currently running worker
-- if its task is still the current head task under the same scheduler ordering, move it from `Generating` to `PausedGenerating`
-- a `PausedGenerating` task should not be canceled or requeued, because that would discard its current in-memory generation progress
-- if the running task is no longer the head task, cancel it and return it to `Pending`
-- on resume, `PausedGenerating` should be resumed first
-- once a `PausedGenerating` task loses head position because of stronger incoming work, it may be demoted back to `Pending` and regenerated later from scratch
+- when generation is paused, suspend every active ffmpeg worker process that has already started successfully
+- after suspend succeeds, move the corresponding task from `Generating` to `PausedGenerating`
+- a `PausedGenerating` task stays owned by the same worker and keeps its current partial generation progress
+- while paused, the scheduler must not start new workers
+- when generation is resumed, resume every suspended worker process and move its task back to `Generating`
+- if suspend fails for a worker, fall back to cancel and requeue that task as `Pending`
+- if resume fails for a worker, fall back to cancel and requeue that task as `Pending`
 
-This keeps the rule simple:
+This keeps pause semantics intuitive:
 
-- preserve progress only when the same task still deserves to run first
-- otherwise prefer scheduler correctness over partial work preservation
+- pause means the current ffmpeg work actually stops consuming decode time
+- resume means the same worker continues instead of regenerating from the beginning
+
+#### Recommended internal boundary
+
+The thumbnail scheduler should not call platform APIs directly.
+
+Suggested split:
+
+- `IThumbnailProcessController`
+  - owns suspend and resume of a started worker process
+- `ThumbnailWorkerSuspensionCoordinator`
+  - owns pause and resume orchestration for active thumbnail workers
+- `ThumbnailRenderer`
+  - reports the started ffmpeg process id back to the worker lifecycle layer
+- `ThumbnailGeneratorWorker`
+  - keeps runtime-only process metadata such as process id and suspended flag
+
+This lets the scheduling layer reason in terms of workers and task states while platform-specific process control stays isolated.
 
 ## Mapping to the Current Codebase
 
@@ -507,7 +522,7 @@ Already in place:
 
 Still pending:
 
-- pause and resume behavior based on `PausedGenerating` instead of unconditional cancel and requeue
+- real ffmpeg suspend and resume behavior behind `PausedGenerating`
 - library-side collection actions beyond the current folder-based bridge
 - player-side single-video manual thumbnail actions
 

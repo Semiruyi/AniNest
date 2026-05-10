@@ -45,7 +45,7 @@ internal sealed class ThumbnailWorkerExecutionHost
         var task = worker.Task;
         try
         {
-            await GenerateForTaskAsync(task, ct);
+            await GenerateForTaskAsync(worker, ct);
             LogWorkerCompletion(task, "completed");
         }
         catch (OperationCanceledException)
@@ -71,15 +71,20 @@ internal sealed class ThumbnailWorkerExecutionHost
         }
     }
 
-    private async Task GenerateForTaskAsync(ThumbnailTask task, CancellationToken ct)
+    private async Task GenerateForTaskAsync(ThumbnailGeneratorWorker worker, CancellationToken ct)
     {
+        var task = worker.Task;
         _setTaskState(task, ThumbnailState.Generating);
         _saveIndex();
         Log.Info($"Thumbnail task generating: file={Path.GetFileName(task.VideoPath)}, {_buildSnapshot()}");
 
         try
         {
-            var result = await _generationRunner.GenerateAsync(task, ct, _videoProgress);
+            var result = await _generationRunner.GenerateAsync(
+                task,
+                ct,
+                _videoProgress,
+                processId => worker.ProcessId = processId);
 
             if (result.State == ThumbnailState.Ready)
             {
@@ -87,10 +92,14 @@ internal sealed class ThumbnailWorkerExecutionHost
                 _setTaskState(task, ThumbnailState.Ready);
                 _videoProgress?.Invoke(task.VideoPath, 100);
                 _videoReady?.Invoke(task.VideoPath);
+                worker.ProcessId = null;
+                worker.IsSuspended = false;
             }
             else
             {
                 _setTaskState(task, ThumbnailState.Failed);
+                worker.ProcessId = null;
+                worker.IsSuspended = false;
             }
         }
         catch (OperationCanceledException)
@@ -98,6 +107,8 @@ internal sealed class ThumbnailWorkerExecutionHost
             var cancelSw = Stopwatch.StartNew();
             _taskStore.TryRequeueTask(task.VideoPath);
             cancelSw.Stop();
+            worker.ProcessId = null;
+            worker.IsSuspended = false;
             Log.Info($"Thumbnail task canceled: file={Path.GetFileName(task.VideoPath)}, elapsed={cancelSw.ElapsedMilliseconds}ms, newState={task.State}");
             throw;
         }
