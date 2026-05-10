@@ -141,11 +141,13 @@ public class SeekBar : ContentControl
 
     private void LoadResources()
     {
-        if (TryFindResource("AccentBlue") is Brush ab) _accentBrush = ab;
-        if (TryFindResource("SliderTrackBackground") is Brush tb) _trackBgBrush = tb;
-        if (TryFindResource("SeekBarTrackHeight") is double th) _trackHeight = th;
-        if (TryFindResource("SeekBarThumbSize") is double ts) _thumbSize = ts;
-        if (TryFindResource("SeekBarThumbShadowSize") is double tss) _thumbShadowSize = tss;
+        if (TryFindResource("ProgressFillPrimary") is Brush progressFill) _accentBrush = progressFill;
+        else if (TryFindResource("AccentBlue") is Brush ab) _accentBrush = ab;
+        if (TryFindResource("ProgressTrackBackground") is Brush progressTrack) _trackBgBrush = progressTrack;
+        if (TryFindResource("ProgressBufferBackground") is Brush progressBuffer) _bufferedBrush = progressBuffer;
+        if (TryFindResource("ProgressBarThinHeight") is double progressHeight) _trackHeight = progressHeight;
+        if (TryFindResource("ProgressThumbSize") is double ts) _thumbSize = ts;
+        if (TryFindResource("ProgressThumbShadowSize") is double tss) _thumbShadowSize = tss;
         if (TryFindResource("AppFontFamily") is FontFamily ff) _appFontFamily = ff;
         if (TryFindResource("AppFontSizeCaption") is double fs) _appFontSizeCaption = fs;
         if (_tooltipText != null)
@@ -157,11 +159,13 @@ public class SeekBar : ContentControl
 
     private void BuildVisualTree()
     {
+        double trackRadius = _trackHeight / 2d;
+
         _trackBg = new Border
         {
             Background = _trackBgBrush,
             Height = _trackHeight,
-            CornerRadius = new CornerRadius(2),
+            CornerRadius = new CornerRadius(trackRadius),
             VerticalAlignment = VerticalAlignment.Center
         };
 
@@ -181,8 +185,8 @@ public class SeekBar : ContentControl
             HorizontalAlignment = HorizontalAlignment.Left,
             VerticalAlignment = VerticalAlignment.Center,
             Width = 0,
-            RadiusX = 2,
-            RadiusY = 2
+            RadiusX = trackRadius,
+            RadiusY = trackRadius
         };
 
         var trackContainer = new Grid { ClipToBounds = true };

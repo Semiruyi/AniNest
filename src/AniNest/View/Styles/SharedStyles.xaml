@@ -184,6 +184,68 @@
         </Setter>
     </Style>
 
+    <Style x:Key="AppProgressBarThin" TargetType="ProgressBar">
+        <Setter Property="Height" Value="{StaticResource ProgressBarThinHeight}"/>
+        <Setter Property="Minimum" Value="0"/>
+        <Setter Property="Maximum" Value="100"/>
+        <Setter Property="Foreground" Value="{StaticResource ProgressFillPrimary}"/>
+        <Setter Property="Background" Value="{StaticResource ProgressTrackBackground}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ProgressBar">
+                    <Border Background="{TemplateBinding Background}"
+                            CornerRadius="{StaticResource ProgressBarThinCornerRadius}">
+                        <Grid x:Name="PART_Track"
+                              ClipToBounds="True">
+                            <Border x:Name="PART_Indicator"
+                                    HorizontalAlignment="Left"
+                                    Background="{TemplateBinding Foreground}"
+                                    CornerRadius="{StaticResource ProgressBarThinCornerRadius}"/>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="AppProgressBarMedium" TargetType="ProgressBar" BasedOn="{StaticResource AppProgressBarThin}">
+        <Setter Property="Height" Value="{StaticResource ProgressBarMediumHeight}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ProgressBar">
+                    <Border Background="{TemplateBinding Background}"
+                            CornerRadius="{StaticResource ProgressBarMediumCornerRadius}">
+                        <Grid x:Name="PART_Track"
+                              ClipToBounds="True">
+                            <Border x:Name="PART_Indicator"
+                                    HorizontalAlignment="Left"
+                                    Background="{TemplateBinding Foreground}"
+                                    CornerRadius="{StaticResource ProgressBarMediumCornerRadius}"/>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="AppProgressBarThinWarning" TargetType="ProgressBar" BasedOn="{StaticResource AppProgressBarThin}">
+        <Setter Property="Foreground" Value="{StaticResource ProgressFillWarning}"/>
+    </Style>
+
+    <Style x:Key="AppProgressBarThinSuccess" TargetType="ProgressBar" BasedOn="{StaticResource AppProgressBarThin}">
+        <Setter Property="Foreground" Value="{StaticResource ProgressFillSuccess}"/>
+    </Style>
+
+    <Style x:Key="AppProgressBarMediumWarning" TargetType="ProgressBar" BasedOn="{StaticResource AppProgressBarMedium}">
+        <Setter Property="Foreground" Value="{StaticResource ProgressFillWarning}"/>
+    </Style>
+
+    <Style x:Key="AppProgressBarMediumSuccess" TargetType="ProgressBar" BasedOn="{StaticResource AppProgressBarMedium}">
+        <Setter Property="Foreground" Value="{StaticResource ProgressFillSuccess}"/>
+    </Style>
+
     <Style TargetType="{x:Type overlays:AnimatedOverlay}">
         <Setter Property="Focusable" Value="False"/>
         <Setter Property="Visibility" Value="Collapsed"/>

@@ -24,7 +24,6 @@
 
     <system:Double x:Key="ControlBarHeight">63</system:Double>
     <system:Double x:Key="PlayPauseButtonSize">34</system:Double>
-    <system:Double x:Key="SliderTrackHeight">4</system:Double>
     <system:Double x:Key="SliderThumbSize">14</system:Double>
     <system:Double x:Key="SliderThumbInnerSize">12</system:Double>
     <system:Double x:Key="SliderThumbShadowSize">16</system:Double>
@@ -36,14 +35,20 @@
     <system:Double x:Key="SpeedOptionHeight">34</system:Double>
     <system:Double x:Key="SpeedPopupMinWidth">70</system:Double>
 
+    <system:Double x:Key="ProgressBarThinHeight">4</system:Double>
+    <system:Double x:Key="ProgressBarThinRadius">2</system:Double>
+    <CornerRadius x:Key="ProgressBarThinCornerRadius">2</CornerRadius>
+    <system:Double x:Key="ProgressBarMediumHeight">6</system:Double>
+    <system:Double x:Key="ProgressBarMediumRadius">3</system:Double>
+    <CornerRadius x:Key="ProgressBarMediumCornerRadius">3</CornerRadius>
+    <system:Double x:Key="ProgressThumbSize">14</system:Double>
+    <system:Double x:Key="ProgressThumbShadowSize">16</system:Double>
+
     <system:Double x:Key="ThumbnailPreviewImageClipRadius">10</system:Double>
     <CornerRadius x:Key="ThumbnailPreviewTimeCornerRadius">4</CornerRadius>
     <Thickness x:Key="ThumbnailPreviewTimePadding">6,2</Thickness>
     <Thickness x:Key="ThumbnailPreviewTimeMargin">0,0,0,4</Thickness>
 
-    <system:Double x:Key="SeekBarTrackHeight">4</system:Double>
-    <system:Double x:Key="SeekBarThumbSize">14</system:Double>
-    <system:Double x:Key="SeekBarThumbShadowSize">16</system:Double>
     <system:Double x:Key="SeekBarThumbHoverScale">1.35</system:Double>
     <system:Double x:Key="SeekBarTooltipOffset">-28</system:Double>
 

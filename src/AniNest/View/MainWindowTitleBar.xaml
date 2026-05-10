@@ -152,11 +152,22 @@
                                                HorizontalAlignment="Right"
                                                Foreground="{StaticResource TextSecondary}"/>
                                 </Grid>
-                                <ProgressBar Height="4"
-                                             Minimum="0"
-                                             Maximum="100"
-                                             Value="{Binding ThumbnailGenerationProgressPercent}"
-                                             Margin="0,0,0,8"/>
+                                <ProgressBar Value="{Binding ThumbnailGenerationProgressPercent}"
+                                             Margin="0,0,0,8">
+                                    <ProgressBar.Style>
+                                        <Style TargetType="ProgressBar"
+                                               BasedOn="{StaticResource AppProgressBarThin}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ThumbnailGenerationStatusCode}" Value="waiting">
+                                                    <Setter Property="Foreground" Value="{StaticResource ProgressFillWarning}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding ThumbnailGenerationStatusCode}" Value="complete">
+                                                    <Setter Property="Foreground" Value="{StaticResource ProgressFillSuccess}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ProgressBar.Style>
+                                </ProgressBar>
                                 <TextBlock Text="{Binding ThumbnailBackgroundTasksHeaderText}"
                                            Style="{StaticResource AppTextBodyEmphasis}"
                                            Foreground="{StaticResource TextSecondary}"
@@ -175,10 +186,21 @@
                                                            TextWrapping="Wrap"
                                                            TextTrimming="CharacterEllipsis"
                                                            Margin="0,0,0,4"/>
-                                                <ProgressBar Height="4"
-                                                             Minimum="0"
-                                                             Maximum="100"
-                                                             Value="{Binding ProgressPercent, Mode=OneWay}"/>
+                                                <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}">
+                                                    <ProgressBar.Style>
+                                                        <Style TargetType="ProgressBar"
+                                                               BasedOn="{StaticResource AppProgressBarThin}">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding StatusCode}" Value="waiting">
+                                                                    <Setter Property="Foreground" Value="{StaticResource ProgressFillWarning}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding StatusCode}" Value="complete">
+                                                                    <Setter Property="Foreground" Value="{StaticResource ProgressFillSuccess}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </ProgressBar.Style>
+                                                </ProgressBar>
                                             </StackPanel>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>

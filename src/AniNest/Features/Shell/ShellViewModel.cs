@@ -436,6 +436,7 @@ public partial class ShellViewModel : ObservableObject
         {
             FileName = snapshot.VideoName;
             IntentText = FormatIntent(snapshot.Intent, loc);
+            StatusCode = FormatStatusCode(snapshot);
             ProgressPercent = snapshot.ProgressPercent;
             IsSuspended = snapshot.IsSuspended;
             StatusText = snapshot.IsSuspended
@@ -446,6 +447,7 @@ public partial class ShellViewModel : ObservableObject
         public string FileName { get; }
         public string IntentText { get; }
         public string StatusText { get; }
+        public string StatusCode { get; }
         public int ProgressPercent { get; }
         public bool IsSuspended { get; }
 
@@ -459,6 +461,21 @@ public partial class ShellViewModel : ObservableObject
                 ThumbnailWorkIntent.FocusedCollection => loc["Settings.ThumbnailGeneration.Intent.Focused"],
                 _ => loc["Settings.ThumbnailGeneration.Intent.Background"]
             };
+
+        private static string FormatStatusCode(ThumbnailActiveTaskSnapshot snapshot)
+        {
+            if (snapshot.IsSuspended)
+                return "paused";
+
+            return snapshot.State switch
+            {
+                ThumbnailState.Pending => "waiting",
+                ThumbnailState.PausedGenerating => "paused",
+                ThumbnailState.Ready => "complete",
+                ThumbnailState.Failed => "waiting",
+                _ => "generating"
+            };
+        }
     }
 
     [RelayCommand]

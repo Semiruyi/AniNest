@@ -28,7 +28,11 @@
     <Color x:Key="PressedBackgroundColor">#33FFFFFF</Color>
 
     <SolidColorBrush x:Key="ControlBarBackground" Color="#CC0F0F0F"/>
-    <SolidColorBrush x:Key="SliderTrackBackground" Color="#33FFFFFF"/>
+    <SolidColorBrush x:Key="ProgressTrackBackground" Color="#33FFFFFF"/>
+    <SolidColorBrush x:Key="ProgressBufferBackground" Color="#55FFFFFF"/>
+    <SolidColorBrush x:Key="ProgressFillPrimary" Color="{StaticResource AccentBlueColor}"/>
+    <SolidColorBrush x:Key="ProgressFillWarning" Color="#FFF39C12"/>
+    <SolidColorBrush x:Key="ProgressFillSuccess" Color="#FF2E7D32"/>
 
     <SolidColorBrush x:Key="CloseButtonHover" Color="#E81123"/>
     <SolidColorBrush x:Key="DeleteButtonBackground" Color="#CCFF4444"/>
