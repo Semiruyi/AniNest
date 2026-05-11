@@ -99,10 +99,10 @@ public static class SelectionHighlightAnimation
             highlight.Unloaded += OnHighlightUnloaded;
             if (highlight.IsLoaded)
             {
-                var state = GetOrCreateState(highlight);
-                state.IsLoaded = true;
-                UpdateTargetSubscription(highlight, state);
-                QueueUpdate(highlight, state);
+                var activeState = GetOrCreateState(highlight);
+                activeState.IsLoaded = true;
+                UpdateTargetSubscription(highlight, activeState);
+                QueueUpdate(highlight, activeState);
             }
 
             return;
@@ -110,7 +110,12 @@ public static class SelectionHighlightAnimation
 
         highlight.Loaded -= OnHighlightLoaded;
         highlight.Unloaded -= OnHighlightUnloaded;
-        UnsubscribeTarget(highlight, GetOrCreateState(highlight));
+        var state = GetOrCreateState(highlight);
+        state.IsLoaded = false;
+        state.UpdateQueued = false;
+        state.HasPosition = false;
+        highlight.Visibility = Visibility.Collapsed;
+        UnsubscribeTarget(highlight, state);
     }
 
     private static void OnHighlightLoaded(object sender, RoutedEventArgs e)
@@ -132,6 +137,7 @@ public static class SelectionHighlightAnimation
         var state = GetOrCreateState(highlight);
         state.IsLoaded = false;
         state.UpdateQueued = false;
+        state.HasPosition = false;
         UnsubscribeTarget(highlight, state);
     }
 

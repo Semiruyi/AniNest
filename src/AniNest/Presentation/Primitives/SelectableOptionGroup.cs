@@ -19,6 +19,13 @@ public class SelectableOptionGroup : ContentControl
             typeof(SelectableOptionGroup),
             new PropertyMetadata(null));
 
+    public static readonly DependencyProperty IsSelectionHighlightActiveProperty =
+        DependencyProperty.Register(
+            nameof(IsSelectionHighlightActive),
+            typeof(bool),
+            typeof(SelectableOptionGroup),
+            new PropertyMetadata(true));
+
     public int SelectedIndex
     {
         get => (int)GetValue(SelectedIndexProperty);
@@ -29,5 +36,11 @@ public class SelectableOptionGroup : ContentControl
     {
         get => (Style?)GetValue(HighlightStyleProperty);
         set => SetValue(HighlightStyleProperty, value);
+    }
+
+    public bool IsSelectionHighlightActive
+    {
+        get => (bool)GetValue(IsSelectionHighlightActiveProperty);
+        set => SetValue(IsSelectionHighlightActiveProperty, value);
     }
 }

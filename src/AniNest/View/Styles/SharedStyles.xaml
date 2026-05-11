@@ -260,7 +260,9 @@
                 <ControlTemplate TargetType="{x:Type primitives:SelectableOptionGroup}">
                     <Grid>
                         <Border Style="{TemplateBinding HighlightStyle}"
-                                animations:SelectionHighlightAnimation.IsEnabled="True"
+                                animations:FadeVisibilityAnimator.BindVisible="{Binding IsSelectionHighlightActive, RelativeSource={RelativeSource TemplatedParent}}"
+                                animations:FadeVisibilityAnimator.Preset="Default"
+                                animations:SelectionHighlightAnimation.IsEnabled="{Binding IsSelectionHighlightActive, RelativeSource={RelativeSource TemplatedParent}}"
                                 animations:SelectionHighlightAnimation.Target="{Binding ElementName=PART_ContentHost}"
                                 animations:SelectionHighlightAnimation.SelectedIndex="{Binding SelectedIndex, RelativeSource={RelativeSource TemplatedParent}}"/>
                         <ContentPresenter x:Name="PART_ContentHost"/>

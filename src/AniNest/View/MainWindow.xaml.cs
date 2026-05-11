@@ -38,15 +38,27 @@ public partial class MainWindow : Window
         FileOverlay.Closed += OnFileOverlayClosed;
         SettingsOverlay.Closed += OnSettingsOverlayClosed;
         LanguageOverlay.Closed += OnLanguageOverlayClosed;
+        LanguageOverlay.Opening += OnSelectableOverlayOpening;
         LanguageOverlay.Opened += OnSelectableOverlayOpened;
+        LanguageOverlay.Closing += OnSelectableOverlayClosing;
         FullscreenAnimationOverlay.Closed += OnFullscreenAnimationOverlayClosed;
+        FullscreenAnimationOverlay.Opening += OnSelectableOverlayOpening;
         FullscreenAnimationOverlay.Opened += OnSelectableOverlayOpened;
+        FullscreenAnimationOverlay.Closing += OnSelectableOverlayClosing;
         ThumbnailSettingsOverlay.Closed += OnThumbnailSettingsOverlayClosed;
         ThumbnailPerformanceOverlay.Closed += OnThumbnailPerformanceOverlayClosed;
+        ThumbnailPerformanceOverlay.Opening += OnSelectableOverlayOpening;
         ThumbnailPerformanceOverlay.Opened += OnSelectableOverlayOpened;
+        ThumbnailPerformanceOverlay.Closing += OnSelectableOverlayClosing;
         ThumbnailAccelerationOverlay.Closed += OnThumbnailAccelerationOverlayClosed;
+        ThumbnailAccelerationOverlay.Opening += OnSelectableOverlayOpening;
         ThumbnailAccelerationOverlay.Opened += OnSelectableOverlayOpened;
+        ThumbnailAccelerationOverlay.Closing += OnSelectableOverlayClosing;
         PlayerInputOverlay.Closed += OnPlayerInputOverlayClosed;
+        LanguageOptionGroup.IsSelectionHighlightActive = false;
+        FullscreenAnimationOptionGroup.IsSelectionHighlightActive = false;
+        ThumbnailPerformanceOptionGroup.IsSelectionHighlightActive = false;
+        ThumbnailAccelerationOptionGroup.IsSelectionHighlightActive = false;
         _fps = new FpsMonitor(this);
         _fps.Attach();
 
@@ -288,6 +300,7 @@ public partial class MainWindow : Window
         Action<ShellViewModel>? onOpened = null,
         Action<ShellViewModel>? onClosed = null)
     {
+        SetSelectableHighlightActivation(overlay, false);
         var opened = overlay.ToggleForAnchor(anchor);
         syncState(Shell, opened);
 
@@ -536,11 +549,42 @@ public partial class MainWindow : Window
         if (sender is not AnimatedOverlay overlay)
             return;
 
+        SetSelectableHighlightActivation(overlay, true);
         SelectionHighlightAnimation.InvalidateDescendants(overlay);
         Dispatcher.BeginInvoke(
             new Action(() => SelectionHighlightAnimation.InvalidateDescendants(overlay)),
             DispatcherPriority.Loaded);
-        MainWindowLog.Debug($"OnSelectableOverlayOpened: overlay={overlay.Name}");
+    }
+
+    private void OnSelectableOverlayOpening(object? sender, EventArgs e)
+    {
+        if (sender is AnimatedOverlay overlay)
+            SetSelectableHighlightActivation(overlay, false);
+    }
+
+    private void OnSelectableOverlayClosing(object? sender, EventArgs e)
+    {
+        if (sender is AnimatedOverlay overlay)
+            SetSelectableHighlightActivation(overlay, false);
+    }
+
+    private void SetSelectableHighlightActivation(AnimatedOverlay overlay, bool isActive)
+    {
+        switch (overlay.Name)
+        {
+            case nameof(LanguageOverlay):
+                LanguageOptionGroup.IsSelectionHighlightActive = isActive;
+                break;
+            case nameof(FullscreenAnimationOverlay):
+                FullscreenAnimationOptionGroup.IsSelectionHighlightActive = isActive;
+                break;
+            case nameof(ThumbnailPerformanceOverlay):
+                ThumbnailPerformanceOptionGroup.IsSelectionHighlightActive = isActive;
+                break;
+            case nameof(ThumbnailAccelerationOverlay):
+                ThumbnailAccelerationOptionGroup.IsSelectionHighlightActive = isActive;
+                break;
+        }
     }
 
     private void OnPlayerInputOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)

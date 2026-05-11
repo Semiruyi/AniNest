@@ -141,7 +141,8 @@
                 <Border Style="{StaticResource PopupMenuOverlayBorder}"
                         MinWidth="{StaticResource PopupSubmenuMinWidth}"
                         shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                    <primitives:SelectableOptionGroup Style="{StaticResource SelectableOptionMenuGroup}"
+                    <primitives:SelectableOptionGroup x:Name="LanguageOptionGroup"
+                                                      Style="{StaticResource SelectableOptionMenuGroup}"
                                                       SelectedIndex="{Binding DataContext.LanguageSelectedIndex, RelativeSource={RelativeSource AncestorType=Window}}">
                         <ItemsControl x:Name="LanguageOptionsPanel"
                                       ItemsSource="{Binding DataContext.LanguageOptions, RelativeSource={RelativeSource AncestorType=Window}}">
@@ -174,7 +175,8 @@
                 <Border Style="{StaticResource PopupMenuOverlayBorder}"
                         MinWidth="{StaticResource PopupSubmenuMinWidth}"
                         shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                    <primitives:SelectableOptionGroup Style="{StaticResource SelectableOptionMenuGroup}"
+                    <primitives:SelectableOptionGroup x:Name="FullscreenAnimationOptionGroup"
+                                                      Style="{StaticResource SelectableOptionMenuGroup}"
                                                       SelectedIndex="{Binding DataContext.FullscreenAnimationSelectedIndex, RelativeSource={RelativeSource AncestorType=Window}}">
                         <ItemsControl x:Name="FullscreenAnimationOptionsPanel"
                                       ItemsSource="{Binding DataContext.FullscreenAnimationOptions, RelativeSource={RelativeSource AncestorType=Window}}">
@@ -266,7 +268,8 @@
                         shell:WindowChrome.IsHitTestVisibleInChrome="True">
                     <StackPanel>
                         <Grid>
-                            <primitives:SelectableOptionGroup Style="{StaticResource SelectableOptionMenuGroup}"
+                            <primitives:SelectableOptionGroup x:Name="ThumbnailPerformanceOptionGroup"
+                                                              Style="{StaticResource SelectableOptionMenuGroup}"
                                                               SelectedIndex="{Binding DataContext.ThumbnailPerformanceSelectedIndex, RelativeSource={RelativeSource AncestorType=Window}}">
                                 <StackPanel x:Name="ThumbnailPerformanceOptionsPanel">
                                     <Button Style="{StaticResource SelectableOptionMenuButton}"
@@ -329,7 +332,8 @@
                         MinWidth="320"
                         shell:WindowChrome.IsHitTestVisibleInChrome="True">
                     <StackPanel>
-                        <primitives:SelectableOptionGroup Style="{StaticResource SelectableOptionMenuGroup}"
+                        <primitives:SelectableOptionGroup x:Name="ThumbnailAccelerationOptionGroup"
+                                                          Style="{StaticResource SelectableOptionMenuGroup}"
                                                           SelectedIndex="{Binding DataContext.ThumbnailAccelerationSelectedIndex, RelativeSource={RelativeSource AncestorType=Window}}">
                             <StackPanel x:Name="ThumbnailAccelerationOptionsPanel">
                                 <Button Style="{StaticResource SelectableOptionMenuButton}"
