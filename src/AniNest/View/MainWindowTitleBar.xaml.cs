@@ -36,7 +36,6 @@ public partial class MainWindowTitleBar : UserControl
 
     public Border TitleBarRootElement => TitleBarRoot;
     public Button FileButtonElement => FileButton;
-    public Button BackButtonElement => BackButton;
     public Button SettingsButtonElement => SettingsButton;
     public Grid TitleBarDragZoneElement => TitleBarDragZone;
     public Grid TitleBarFileNameHostElement => TitleBarFileNameHost;

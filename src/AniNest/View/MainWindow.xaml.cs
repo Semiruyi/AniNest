@@ -110,7 +110,6 @@ public partial class MainWindow : Window
     private void RegisterPopupRegions()
     {
         var coordinator = PopupInputCoordinator.Instance;
-        coordinator.RegisterRegion(BackButton, PopupHitKind.TitleBarInteractive);
         coordinator.RegisterRegion(FileButton, PopupHitKind.TitleBarInteractive);
         coordinator.RegisterRegion(SettingsButton, PopupHitKind.TitleBarInteractive);
         coordinator.RegisterRegion(MinimizeButton, PopupHitKind.TitleBarInteractive);
@@ -119,7 +118,6 @@ public partial class MainWindow : Window
         coordinator.RegisterRegion(TitleBarDragZone, PopupHitKind.TitleBarDragZone);
 
         var overlayCoordinator = OverlayCoordinator.Instance;
-        overlayCoordinator.RegisterRegion(BackButton, OverlayOutsideHitKind.TitleBarInteractive);
         overlayCoordinator.RegisterRegion(FileButton, OverlayOutsideHitKind.TitleBarInteractive);
         overlayCoordinator.RegisterRegion(SettingsButton, OverlayOutsideHitKind.TitleBarInteractive);
         overlayCoordinator.RegisterRegion(MinimizeButton, OverlayOutsideHitKind.TitleBarInteractive);
@@ -283,7 +281,6 @@ public partial class MainWindow : Window
     private ShellViewModel Shell => (ShellViewModel)DataContext;
     private Border TitleBarRoot => TitleBar.TitleBarRootElement;
     private Button FileButton => TitleBar.FileButtonElement;
-    private Button BackButton => TitleBar.BackButtonElement;
     private Button SettingsButton => TitleBar.SettingsButtonElement;
     private Grid TitleBarDragZone => TitleBar.TitleBarDragZoneElement;
     private Grid TitleBarFileNameHost => TitleBar.TitleBarFileNameHostElement;
@@ -353,6 +350,13 @@ public partial class MainWindow : Window
     private void FileButton_Click(object sender, RoutedEventArgs e)
     {
         MainWindowLog.Debug("FileButton_Click");
+        var shell = (ShellViewModel)DataContext;
+        if (shell.IsOnPlayerPage)
+        {
+            shell.GoBackFromPlayerTitleBarCommand.Execute(null);
+            return;
+        }
+
         CloseOverlay(SettingsOverlay, shell => shell.IsSettingsPopupOpen = false);
         ToggleAnchoredOverlay(
             FileOverlay,

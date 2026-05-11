@@ -45,12 +45,24 @@ public partial class ShellViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsOnMainPage))]
     [NotifyPropertyChangedFor(nameof(IsOnPlayerPage))]
+    [NotifyPropertyChangedFor(nameof(TitleBarPrimaryActionText))]
+    [NotifyPropertyChangedFor(nameof(TitleBarPrimaryActionToolTip))]
     private object? _currentPage;
 
     public bool IsOnMainPage => CurrentPage is MainPageViewModel;
     public bool IsOnPlayerPage => CurrentPage is PlayerViewModel;
     public string CurrentPlayerTitleBarText => _playerPage.CurrentVideoFileName;
     public string? CurrentPlayerTitleBarToolTip => _playerPage.CurrentVideoPath;
+    public string TitleBarPrimaryActionText => IsOnPlayerPage
+        ? _loc["KeyBinding.Back"]
+        : _loc["App.File"];
+    public string TitleBarPrimaryActionToolTip => TitleBarPrimaryActionText;
+
+    partial void OnCurrentPageChanged(object? value)
+    {
+        OnPropertyChanged(nameof(CurrentPlayerTitleBarText));
+        OnPropertyChanged(nameof(CurrentPlayerTitleBarToolTip));
+    }
 
     [ObservableProperty]
     private bool _isFilePopupOpen;
@@ -212,12 +224,6 @@ public partial class ShellViewModel : ObservableObject
 
     public void SetPlayerFullscreen(bool value)
         => _playerPage.SetFullscreen(value);
-
-    partial void OnCurrentPageChanged(object? value)
-    {
-        OnPropertyChanged(nameof(CurrentPlayerTitleBarText));
-        OnPropertyChanged(nameof(CurrentPlayerTitleBarToolTip));
-    }
 
     private void OnMainPageFolderSelected(string path, string name)
     {

@@ -30,38 +30,26 @@
                        VerticalAlignment="Center"
                        Margin="0,0,8,0"
                        SnapsToDevicePixels="True"/>
-                <Grid>
-                    <Grid.Style>
-                        <Style TargetType="Grid">
-                            <Setter Property="Visibility" Value="Visible"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsOnMainPage}" Value="False">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Grid.Style>
+                <Grid x:Name="PrimaryActionHost"
+                      Visibility="Visible">
                     <Button x:Name="FileButton"
                             Style="{StaticResource TitleBarActionButton}"
-                            Content="{Binding DataContext.Localization[App.File], RelativeSource={RelativeSource AncestorType=Window}}"
-                            shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
-                </Grid>
-                <Grid>
-                    <Grid.Style>
-                        <Style TargetType="Grid">
-                            <Setter Property="Visibility" Value="Collapsed"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsOnPlayerPage}" Value="True">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Grid.Style>
-                    <Button x:Name="BackButton"
-                            Style="{StaticResource TitleBarActionButton}"
-                            Command="{Binding GoBackFromPlayerTitleBarCommand}"
-                            Content="{Binding DataContext.Localization[KeyBinding.Back], RelativeSource={RelativeSource AncestorType=Window}}"
-                            shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+                            ToolTip="{Binding DataContext.TitleBarPrimaryActionToolTip, RelativeSource={RelativeSource AncestorType=Window}}"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <Grid animations:FadeTextSwapAnimator.Text="{Binding DataContext.TitleBarPrimaryActionText, RelativeSource={RelativeSource AncestorType=Window}}"
+                              animations:FadeTextSwapAnimator.Preset="Default">
+                            <TextBlock Text=""
+                                       Style="{StaticResource AppTextTitleBar}"
+                                       Foreground="{StaticResource TextPrimary}"
+                                       Opacity="0"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text=""
+                                       Style="{StaticResource AppTextTitleBar}"
+                                       Foreground="{StaticResource TextPrimary}"
+                                       Opacity="1"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </Grid>
+                    </Button>
                 </Grid>
                 <Grid>
                     <Button x:Name="SettingsButton"
