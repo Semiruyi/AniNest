@@ -104,8 +104,9 @@ dotnet test .\src\Tests\AniNest.Tests.csproj
 
 ## 文档
 
-- [docs/architecture.md](docs/architecture.md)：架构、依赖方向、运行时主链路和关键模块
-- [docs/offline-update.md](docs/offline-update.md)：离线更新与补丁流程
+- [docs/README.md](docs/README.md)：文档索引
+- [docs/architecture/overview.md](docs/architecture/overview.md)：架构、依赖方向、运行时主链路和关键模块
+- [docs/operations/offline-update.md](docs/operations/offline-update.md)：离线更新与补丁流程
 
 ## 技术栈
 
