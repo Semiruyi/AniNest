@@ -270,6 +270,7 @@
                                                               SelectedIndex="{Binding DataContext.ThumbnailPerformanceSelectedIndex, RelativeSource={RelativeSource AncestorType=Window}}">
                                 <StackPanel x:Name="ThumbnailPerformanceOptionsPanel">
                                     <Button Style="{StaticResource SelectableOptionMenuButton}"
+                                            IsEnabled="{Binding DataContext.CanSelectThumbnailPerformanceMode, RelativeSource={RelativeSource AncestorType=Window}}"
                                             animations:SelectableOptionState.IsSelected="{Binding DataContext.IsThumbnailPerformancePausedSelected, RelativeSource={RelativeSource AncestorType=Window}}"
                                             Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="paused"
@@ -279,6 +280,7 @@
                                                    VerticalAlignment="Center"/>
                                     </Button>
                                     <Button Style="{StaticResource SelectableOptionMenuButton}"
+                                            IsEnabled="{Binding DataContext.CanSelectThumbnailPerformanceMode, RelativeSource={RelativeSource AncestorType=Window}}"
                                             animations:SelectableOptionState.IsSelected="{Binding DataContext.IsThumbnailPerformanceQuietSelected, RelativeSource={RelativeSource AncestorType=Window}}"
                                             Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="quiet"
@@ -288,6 +290,7 @@
                                         <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Quiet], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
                                     </Button>
                                     <Button Style="{StaticResource SelectableOptionMenuButton}"
+                                            IsEnabled="{Binding DataContext.CanSelectThumbnailPerformanceMode, RelativeSource={RelativeSource AncestorType=Window}}"
                                             animations:SelectableOptionState.IsSelected="{Binding DataContext.IsThumbnailPerformanceBalancedSelected, RelativeSource={RelativeSource AncestorType=Window}}"
                                             Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="balanced"
@@ -297,6 +300,7 @@
                                         <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Balanced], RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center"/>
                                     </Button>
                                     <Button Style="{StaticResource SelectableOptionMenuButton}"
+                                            IsEnabled="{Binding DataContext.CanSelectThumbnailPerformanceMode, RelativeSource={RelativeSource AncestorType=Window}}"
                                             animations:SelectableOptionState.IsSelected="{Binding DataContext.IsThumbnailPerformanceFastSelected, RelativeSource={RelativeSource AncestorType=Window}}"
                                             Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="fast"

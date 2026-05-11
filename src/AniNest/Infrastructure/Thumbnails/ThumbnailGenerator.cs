@@ -230,6 +230,9 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     public void SetPlayerActive(bool isActive)
         => _runtimeController.SetPlayerActive(isActive);
 
+    public bool TryApplyPerformanceMode(ThumbnailPerformanceMode mode)
+        => _runtimeController.ApplyPerformanceMode(mode);
+
     public void RefreshPerformanceMode()
         => _runtimeController.RefreshPerformanceMode();
 

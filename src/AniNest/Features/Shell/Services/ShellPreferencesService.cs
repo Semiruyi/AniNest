@@ -41,19 +41,6 @@ public sealed class ShellPreferencesService : IShellPreferencesService
         _settings.Save();
     }
 
-    public void SetThumbnailPerformanceMode(string code)
-    {
-        ThumbnailPerformanceMode mode = code.ToLowerInvariant() switch
-        {
-            "paused" => ThumbnailPerformanceMode.Paused,
-            "quiet" => ThumbnailPerformanceMode.Quiet,
-            "fast" => ThumbnailPerformanceMode.Fast,
-            _ => ThumbnailPerformanceMode.Balanced
-        };
-
-        _settings.SetThumbnailPerformanceMode(mode);
-    }
-
     public void SetThumbnailAccelerationMode(string code)
     {
         ThumbnailAccelerationMode mode = code.ToLowerInvariant() switch

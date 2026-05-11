@@ -161,6 +161,63 @@ That is acceptable. The state model becomes simpler even if the runtime transiti
 - non-paused -> paused
 - paused -> non-paused
 
+## Atomic mode switching
+
+Changing thumbnail performance mode should be treated as one user operation, not as two loosely related updates.
+
+The old failure mode was:
+
+1. UI writes the new persisted mode
+2. UI asks the runtime to refresh
+3. runtime and UI can temporarily disagree if either step fails or lags
+
+The recommended rule is:
+
+> A thumbnail performance mode switch succeeds only when both persisted settings and runtime state have switched successfully.
+
+### Command semantics
+
+The app should expose one application-level command for performance switching:
+
+- input: requested `ThumbnailPerformanceMode`
+- output: success or failure
+
+In the current project structure, this command fits best as a `Features/Shell` app-service level operation, not as a thin preferences helper:
+
+- it coordinates runtime state and persisted settings
+- it owns the rollback rule when one side succeeds and the other fails
+- it provides the async boundary used by the UI command
+
+`ShellPreferencesService` should remain a lightweight settings-facing adapter, while the mode-switch sequence itself should live in a dedicated shell app service.
+
+Behavior:
+
+1. read the previous mode
+2. attempt the runtime mode change
+3. if runtime change fails, keep settings unchanged and report failure
+4. if runtime change succeeds, persist the new setting
+5. if persistence fails, attempt to restore the previous runtime mode and report failure
+6. only after both parts succeed should the UI treat the new mode as committed
+
+This keeps mode switching atomic from the user's perspective even though it spans two subsystems.
+
+### UI data source guidance
+
+Once atomic switching is in place, the UI can safely read either:
+
+- persisted current mode
+- runtime current mode
+
+because they should converge immediately on success and should remain unchanged on failure.
+
+Practical recommendation:
+
+- option-group selected state can follow persisted current mode
+- generation activity state should continue to follow runtime snapshot
+- while a mode switch is in progress, performance mode controls should be temporarily disabled to prevent overlapping mode-change commands
+
+The important rule is not which source is used for each label. The important rule is that the switch itself must not leave those two sources diverged after the command returns.
+
 ## Runtime Modes
 
 The system should react to app context rather than only static settings.

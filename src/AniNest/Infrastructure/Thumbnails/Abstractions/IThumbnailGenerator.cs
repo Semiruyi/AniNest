@@ -49,6 +49,7 @@ public interface IThumbnailGenerator
 
     // Runtime controls
     void SetPlayerActive(bool isActive);
+    bool TryApplyPerformanceMode(ThumbnailPerformanceMode mode);
     void RefreshPerformanceMode();
     void RefreshDecodeStrategy();
 

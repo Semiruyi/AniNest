@@ -29,6 +29,7 @@ public partial class ShellViewModel : ObservableObject
     private readonly ITaskbarAutoHideCoordinator _taskbarAutoHide;
     private readonly IPlayerAppService _playerAppService;
     private readonly IShellPreferencesService _preferencesService;
+    private readonly IShellThumbnailPerformanceAppService _thumbnailPerformanceAppService;
     private readonly IThumbnailGenerator _thumbnailGenerator;
     private readonly IThumbnailDecodeStrategyService _thumbnailDecodeStrategyService;
     private readonly MainPageViewModel _mainPage;
@@ -94,6 +95,10 @@ public partial class ShellViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsThumbnailPerformanceBalancedSelected))]
     [NotifyPropertyChangedFor(nameof(IsThumbnailPerformanceFastSelected))]
     private string _currentThumbnailPerformanceModeCode = "balanced";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanSelectThumbnailPerformanceMode))]
+    private bool _isApplyingThumbnailPerformanceMode;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ThumbnailAccelerationSelectedIndex))]
@@ -162,6 +167,7 @@ public partial class ShellViewModel : ObservableObject
     public bool IsThumbnailPerformanceBalancedSelected => ThumbnailPerformanceSelectedIndex == 2;
     public bool IsThumbnailPerformanceFastSelected => ThumbnailPerformanceSelectedIndex == 3;
     public bool IsThumbnailPerformancePaused => string.Equals(CurrentThumbnailPerformanceModeCode, "paused", StringComparison.OrdinalIgnoreCase);
+    public bool CanSelectThumbnailPerformanceMode => !IsApplyingThumbnailPerformanceMode;
     public bool IsThumbnailAccelerationAutoSelected => ThumbnailAccelerationSelectedIndex == 0;
     public bool IsThumbnailAccelerationCompatibleSelected => ThumbnailAccelerationSelectedIndex == 1;
 
@@ -171,6 +177,7 @@ public partial class ShellViewModel : ObservableObject
         ITaskbarAutoHideCoordinator taskbarAutoHide,
         IPlayerAppService playerAppService,
         IShellPreferencesService preferencesService,
+        IShellThumbnailPerformanceAppService thumbnailPerformanceAppService,
         IThumbnailGenerator thumbnailGenerator,
         IThumbnailDecodeStrategyService thumbnailDecodeStrategyService,
         MainPageViewModel mainPage,
@@ -182,6 +189,7 @@ public partial class ShellViewModel : ObservableObject
         _taskbarAutoHide = taskbarAutoHide;
         _playerAppService = playerAppService;
         _preferencesService = preferencesService;
+        _thumbnailPerformanceAppService = thumbnailPerformanceAppService;
         _thumbnailGenerator = thumbnailGenerator;
         _thumbnailDecodeStrategyService = thumbnailDecodeStrategyService;
         _currentLanguageCode = _loc.CurrentLanguage;
@@ -338,13 +346,24 @@ public partial class ShellViewModel : ObservableObject
         RefreshSelectableOptionSelectionState();
     }
 
-    [RelayCommand]
-    private void SelectThumbnailPerformanceMode(string code)
+    [RelayCommand(CanExecute = nameof(CanSelectThumbnailPerformanceMode))]
+    private async Task SelectThumbnailPerformanceModeAsync(string code)
     {
-        _preferencesService.SetThumbnailPerformanceMode(code);
-        CurrentThumbnailPerformanceModeCode = _preferencesService.CurrentThumbnailPerformanceModeCode;
-        _thumbnailGenerator.RefreshPerformanceMode();
-        RefreshThumbnailSettingsStatus();
+        if (IsApplyingThumbnailPerformanceMode)
+            return;
+
+        try
+        {
+            IsApplyingThumbnailPerformanceMode = true;
+            SelectThumbnailPerformanceModeCommand.NotifyCanExecuteChanged();
+            await _thumbnailPerformanceAppService.TrySetPerformanceModeAsync(code);
+        }
+        finally
+        {
+            RefreshThumbnailSettingsStatus();
+            IsApplyingThumbnailPerformanceMode = false;
+            SelectThumbnailPerformanceModeCommand.NotifyCanExecuteChanged();
+        }
     }
 
     [RelayCommand]
@@ -358,6 +377,7 @@ public partial class ShellViewModel : ObservableObject
 
     private void RefreshThumbnailSettingsStatus()
     {
+        CurrentThumbnailPerformanceModeCode = _preferencesService.CurrentThumbnailPerformanceModeCode;
         ThumbnailPerformanceSummary = IsThumbnailPerformancePaused
             ? _loc["Settings.ThumbnailPerformance.Paused"]
             : _loc[$"Settings.ThumbnailPerformance.{CapitalizeCode(CurrentThumbnailPerformanceModeCode)}"];
@@ -443,7 +463,7 @@ public partial class ShellViewModel : ObservableObject
 
     private void OnThumbnailGeneratorStatusChanged()
     {
-        Application.Current.Dispatcher.BeginInvoke((Action)RefreshThumbnailGenerationStatus);
+        Application.Current.Dispatcher.BeginInvoke((Action)RefreshThumbnailSettingsStatus);
     }
 
     private string BuildHardwareSummary(ThumbnailDecodeStatusSnapshot status)

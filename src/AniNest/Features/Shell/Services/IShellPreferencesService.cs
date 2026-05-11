@@ -12,6 +12,5 @@ public interface IShellPreferencesService
 
     void SetLanguage(string code);
     void SetFullscreenAnimation(string code);
-    void SetThumbnailPerformanceMode(string code);
     void SetThumbnailAccelerationMode(string code);
 }

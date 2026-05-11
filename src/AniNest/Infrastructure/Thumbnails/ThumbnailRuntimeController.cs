@@ -110,29 +110,40 @@ internal sealed class ThumbnailRuntimeController
     }
 
     public void RefreshPerformanceMode()
+        => ApplyPerformanceMode(_settings.GetThumbnailPerformanceMode());
+
+    public bool ApplyPerformanceMode(ThumbnailPerformanceMode mode)
     {
-        ThumbnailPerformanceMode mode = _settings.GetThumbnailPerformanceMode();
         ThumbnailPerformanceMode previousMode = _getPerformanceMode();
-        bool changed = previousMode != mode;
-        _setPerformanceMode(mode);
+        if (previousMode == mode)
+            return true;
 
-        string snapshot = _buildSchedulerSnapshot();
-        if (!changed)
-            return;
+        try
+        {
+            _setPerformanceMode(mode);
 
-        Log.Info($"Thumbnail performance mode changed: selectedMode={mode}, {snapshot}");
-        bool wasPaused = previousMode == ThumbnailPerformanceMode.Paused;
-        bool isPaused = mode == ThumbnailPerformanceMode.Paused;
+            string snapshot = _buildSchedulerSnapshot();
+            Log.Info($"Thumbnail performance mode changed: selectedMode={mode}, {snapshot}");
+            bool wasPaused = previousMode == ThumbnailPerformanceMode.Paused;
+            bool isPaused = mode == ThumbnailPerformanceMode.Paused;
 
-        if (!wasPaused && isPaused)
-            PauseActiveWorkers();
-        else if (wasPaused && !isPaused)
-            ResumePausedWorkers();
-        else
-            RequeueActiveWorkers("performance-mode-changed");
+            if (!wasPaused && isPaused)
+                PauseActiveWorkers();
+            else if (wasPaused && !isPaused)
+                ResumePausedWorkers();
+            else
+                RequeueActiveWorkers("performance-mode-changed");
 
-        _notifyStatusChanged();
-        _ensureLoopRunning();
+            _notifyStatusChanged();
+            _ensureLoopRunning();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _setPerformanceMode(previousMode);
+            Log.Error($"Thumbnail performance mode apply failed: selectedMode={mode}, restoringMode={previousMode}", ex);
+            return false;
+        }
     }
 
     public void RefreshDecodeStrategy()
