@@ -15,6 +15,11 @@
         <conv:NullToVisibilityConverter x:Key="NullToHidden"  NullValue="Visible"    NotNullValue="Collapsed"/>
         <conv:CoverImageSourceConverter x:Key="CoverImageSource" DecodePixelWidth="380"/>
         <conv:PercentToWidthConverter x:Key="PercentToWidthConverter"/>
+        <Style x:Key="LibraryPopupMenuSubmenuButton"
+               TargetType="Button"
+               BasedOn="{StaticResource PopupMenuSubmenuButton}">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
 
     </UserControl.Resources>
 
@@ -180,10 +185,8 @@
                                   VerticalOffset="8"
                                   AnimationOrigin="0,0"
                                   Panel.ZIndex="1000">
-            <Border Background="{StaticResource PopupMenuBackground}"
-                    CornerRadius="{StaticResource SpeedPopupCornerRadius}"
-                    Padding="{StaticResource PopupMenuPadding}"
-                    MinWidth="128">
+            <Border Style="{StaticResource PopupMenuOverlayBorder}"
+                    MinWidth="{StaticResource PopupSubmenuMinWidth}">
                 <StackPanel>
                     <Button Style="{StaticResource PopupMenuButton}"
                             Command="{Binding DataContext.MoveFolderToFrontCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -208,6 +211,30 @@
                                    Foreground="#FFFF7070"
                                    VerticalAlignment="Center"/>
                     </Button>
+                    <Button x:Name="ThumbnailActionsMenuButton"
+                            Style="{StaticResource LibraryPopupMenuSubmenuButton}"
+                            Click="ThumbnailActionsMenuButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding DataContext.Localization[Library.Thumbnails], RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                       VerticalAlignment="Center"/>
+                            <Path Style="{StaticResource PopupMenuChevronIcon}"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
+        </overlays:AnimatedOverlay>
+
+        <overlays:AnimatedOverlay x:Name="ThumbnailActionsOverlay"
+                                  DataContext="{Binding DataContext, ElementName=CardContextMenuOverlay}"
+                                  InteractionPreset="MenuLike"
+                                  Placement="RightTop"
+                                  HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
+                                  VerticalOffset="0"
+                                  AnimationOrigin="0,0"
+                                  Panel.ZIndex="1001">
+            <Border Style="{StaticResource PopupMenuOverlayBorder}"
+                    MinWidth="{StaticResource PopupSubmenuMinWidth}">
+                <StackPanel>
                     <Button Style="{StaticResource PopupMenuButton}"
                             Command="{Binding DataContext.PrioritizeFolderThumbnailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             CommandParameter="{Binding DataContext, ElementName=CardContextMenuOverlay}"

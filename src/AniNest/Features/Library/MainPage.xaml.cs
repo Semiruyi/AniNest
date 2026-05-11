@@ -32,6 +32,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
     private void OnInitialized(object? sender, EventArgs e)
     {
         CardContextMenuOverlay.Closed += OnCardContextMenuClosed;
+        ThumbnailActionsOverlay.Closed += OnThumbnailActionsOverlayClosed;
         RegisterOverlayRegions();
     }
 
@@ -163,6 +164,16 @@ public partial class MainPage : System.Windows.Controls.UserControl
         }), DispatcherPriority.Background);
     }
 
+    private void ThumbnailActionsMenuButton_Click(object sender, RoutedEventArgs e)
+    {
+        Log.Debug(
+            $"ThumbnailActionsMenuButton_Click: item={_overlayItem?.Name ?? "null"} " +
+            $"submenuOpen={ThumbnailActionsOverlay.IsOpen}");
+
+        var opened = ThumbnailActionsOverlay.ToggleForAnchor(ThumbnailActionsMenuButton);
+        Log.Debug($"ThumbnailActionsMenuButton_Click.Toggle: opened={opened}");
+    }
+
     private void OnLibraryScrollChanged(object sender, ScrollChangedEventArgs e)
     {
         if (CardContextMenuOverlay.IsOpen)
@@ -176,6 +187,10 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     private void CloseCardContextMenu(OverlayCloseReason reason)
     {
+        CloseCardContextMenuChildOverlays(reason == OverlayCloseReason.Programmatic
+            ? OverlayCloseReason.ParentClosed
+            : reason);
+
         if (!CardContextMenuOverlay.IsOpen)
             return;
 
@@ -183,11 +198,25 @@ public partial class MainPage : System.Windows.Controls.UserControl
         CardContextMenuOverlay.Close(reason);
     }
 
+    private void CloseCardContextMenuChildOverlays(OverlayCloseReason reason)
+    {
+        if (!ThumbnailActionsOverlay.IsOpen)
+            return;
+
+        Log.Debug($"CloseCardContextMenuChildOverlays: reason={reason}");
+        ThumbnailActionsOverlay.Close(reason);
+    }
+
     private void OnCardContextMenuClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
     {
         Log.Debug($"OnCardContextMenuClosed: reason={e.Reason} overlayItem={_overlayItem?.Name ?? "null"}");
         CardContextMenuOverlay.DataContext = null;
         _overlayItem = null;
+    }
+
+    private void OnThumbnailActionsOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
+    {
+        Log.Debug($"OnThumbnailActionsOverlayClosed: reason={e.Reason} overlayItem={_overlayItem?.Name ?? "null"}");
     }
 
     private void OnCardMouseEnter(object sender, MouseEventArgs e)

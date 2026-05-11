@@ -214,41 +214,27 @@
                                 Style="{StaticResource PopupMenuSubmenuButton}"
                                 Click="ThumbnailPerformanceMenuButton_Click"
                                 shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
+                            <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance], RelativeSource={RelativeSource AncestorType=Window}}"
                                            VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="1"
-                                           Text="{Binding DataContext.ThumbnailPerformanceSummary, RelativeSource={RelativeSource AncestorType=Window}}"
+                                <TextBlock Text="{Binding DataContext.ThumbnailPerformanceSummary, RelativeSource={RelativeSource AncestorType=Window}}"
                                            Style="{StaticResource OverlaySummaryText}"
                                            Margin="12,0,6,0"/>
-                                <Path Grid.Column="2"
-                                      Style="{StaticResource PopupMenuChevronIcon}"/>
-                            </Grid>
+                                <Path Style="{StaticResource PopupMenuChevronIcon}"/>
+                            </StackPanel>
                         </Button>
                         <Button x:Name="ThumbnailAccelerationMenuButton"
                                 Style="{StaticResource PopupMenuSubmenuButton}"
                                 Click="ThumbnailAccelerationMenuButton_Click"
                                 shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
+                            <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailAcceleration], RelativeSource={RelativeSource AncestorType=Window}}"
                                            VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="1"
-                                           Text="{Binding DataContext.ThumbnailAccelerationSummary, RelativeSource={RelativeSource AncestorType=Window}}"
+                                <TextBlock Text="{Binding DataContext.ThumbnailAccelerationSummary, RelativeSource={RelativeSource AncestorType=Window}}"
                                            Style="{StaticResource OverlaySummaryText}"
                                            Margin="12,0,6,0"/>
-                                <Path Grid.Column="2"
-                                      Style="{StaticResource PopupMenuChevronIcon}"/>
-                            </Grid>
+                                <Path Style="{StaticResource PopupMenuChevronIcon}"/>
+                            </StackPanel>
                         </Button>
                     </StackPanel>
                 </Border>
