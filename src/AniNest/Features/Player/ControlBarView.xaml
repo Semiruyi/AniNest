@@ -29,22 +29,20 @@
 
             <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left"
                         VerticalAlignment="Center">
-                <Button x:Name="PreviousBtn" Style="{StaticResource IconButton}"
+                <Button x:Name="PreviousBtn" Style="{StaticResource AnimatedIconButton}"
                         Command="{Binding PreviousCommand}" ToolTip="{Binding PreviousTooltip}"
                         Focusable="False"
-                        Margin="{StaticResource ButtonGapRight}"
-                        animations:ButtonScaleHover.IsEnabled="True">
+                        Margin="{StaticResource ButtonGapRight}">
                     <Image Source="/Resources/Icons/previous.png"
                            Width="{StaticResource IconSizeSmall}"
                            Height="{StaticResource IconSizeSmall}"/>
                 </Button>
-                <Button x:Name="PlayPauseBtn" Style="{StaticResource IconButton}"
+                <Button x:Name="PlayPauseBtn" Style="{StaticResource AnimatedIconButton}"
                         Width="{StaticResource PlayPauseButtonSize}"
                         Height="{StaticResource PlayPauseButtonSize}"
                         Opacity="0.85" Command="{Binding PlayPauseCommand}"
                         Margin="{StaticResource ButtonGapBoth}"
-                        ToolTip="{Binding PlayPauseTooltip}" Focusable="False"
-                        animations:ButtonScaleHover.IsEnabled="True">
+                        ToolTip="{Binding PlayPauseTooltip}" Focusable="False">
                     <Grid animations:IconCrossfader.IsActive="{Binding IsPlaying}"
                           animations:IconCrossfader.ListenButton="{Binding ElementName=PlayPauseBtn}">
                         <Image Source="/Resources/Icons/play.png"
@@ -57,16 +55,15 @@
                                Opacity="0"/>
                     </Grid>
                 </Button>
-                <Button x:Name="NextBtn" Style="{StaticResource IconButton}"
+                <Button x:Name="NextBtn" Style="{StaticResource AnimatedIconButton}"
                         Command="{Binding NextCommand}" ToolTip="{Binding NextTooltip}"
                         Focusable="False"
-                        Margin="{StaticResource ButtonGapRight}"
-                        animations:ButtonScaleHover.IsEnabled="True">
+                        Margin="{StaticResource ButtonGapRight}">
                     <Image Source="/Resources/Icons/next.png"
                            Width="{StaticResource IconSizeSmall}"
                            Height="{StaticResource IconSizeSmall}"/>
                 </Button>
-                <Button x:Name="StopBtn" Style="{StaticResource IconButton}"
+                <Button x:Name="StopBtn" Style="{StaticResource AnimatedIconButton}"
                         Command="{Binding StopCommand}"
                         Margin="{StaticResource ButtonGapLeft}" ToolTip="{Binding DataContext.Localization[Player.Stop], RelativeSource={RelativeSource AncestorType=UserControl}}"
                         Focusable="False">
@@ -151,7 +148,7 @@
                             Click="SpeedBtn_Click"
                             animations:ButtonScaleHover.IsEnabled="True">
                         <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
+                            <Style TargetType="Button" BasedOn="{StaticResource AnimatedIconButton}">
                                 <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
                                 <Setter Property="FontSize" Value="{StaticResource AppFontSizeCaption}"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>
@@ -174,7 +171,7 @@
                     </Button>
                 </Grid>
 
-                <Button x:Name="PlaylistToggleBtn" Style="{StaticResource IconButton}"
+                <Button x:Name="PlaylistToggleBtn" Style="{StaticResource AnimatedIconButton}"
                         Command="{Binding TogglePlaylistCommand}"
                         Margin="{StaticResource ButtonGapLeft}" ToolTip="{Binding DataContext.Localization[Player.Playlist], RelativeSource={RelativeSource AncestorType=UserControl}}"
                         Focusable="False">
@@ -187,7 +184,7 @@
                         Command="{Binding ToggleFullscreenCommand}"
                         animations:ButtonScaleHover.IsEnabled="True">
                     <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
+                        <Style TargetType="Button" BasedOn="{StaticResource AnimatedIconButton}">
                             <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Player.Fullscreen], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsFullscreen}" Value="True">

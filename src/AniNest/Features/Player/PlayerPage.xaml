@@ -21,7 +21,7 @@
             <converters:ProgressToPieConverter x:Key="ProgressToPieConverter"/>
             <converters:ProgressToVisibilityConverter x:Key="ProgressToVisibilityConverter"/>
 
-            <Style x:Key="EpisodeButton" TargetType="Button">
+            <Style x:Key="EpisodeButton" TargetType="Button" BasedOn="{StaticResource AnimatedCompactButtonBase}">
                 <Setter Property="Width" Value="{StaticResource EpisodeButtonSize}"/>
                 <Setter Property="Height" Value="{StaticResource EpisodeButtonSize}"/>
                 <Setter Property="Foreground" Value="#EBEBF5"/>
@@ -31,8 +31,6 @@
                 <Setter Property="FontWeight" Value="Medium"/>
                 <Setter Property="FontSize" Value="{StaticResource AppFontSizePanelTitle}"/>
                 <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
-                <Setter Property="anim:ButtonScaleHover.IsEnabled" Value="True"/>
-                <Setter Property="anim:ButtonScaleHover.Preset" Value="Compact"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">

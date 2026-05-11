@@ -12,6 +12,7 @@
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Opacity" Value="{StaticResource IconButtonOpacity}"/>
         <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Tag" Value="{StaticResource ButtonCornerRadius}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -20,7 +21,7 @@
                         <Grid.RenderTransform>
                             <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
                         </Grid.RenderTransform>
-                        <Border x:Name="HoverBg" CornerRadius="{DynamicResource ButtonCornerRadius}"
+                        <Border x:Name="HoverBg" CornerRadius="{TemplateBinding Tag}"
                                 Background="{DynamicResource HoverBackground}" Opacity="0"/>
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Grid>
@@ -52,17 +53,100 @@
         </Setter>
     </Style>
 
-    <Style x:Key="TitleBarIconButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
+    <Style x:Key="AnimatedIconButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
+        <Setter Property="animations:ButtonScaleHover.IsEnabled" Value="True"/>
+        <Setter Property="animations:ButtonScaleHover.Preset" Value="Default"/>
+    </Style>
+
+    <Style x:Key="AnimatedCompactIconButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
+        <Setter Property="animations:ButtonScaleHover.IsEnabled" Value="True"/>
+        <Setter Property="animations:ButtonScaleHover.Preset" Value="Compact"/>
+    </Style>
+
+    <Style x:Key="AnimatedMenuButtonBase" TargetType="Button">
+        <Setter Property="animations:ButtonScaleHover.IsEnabled" Value="True"/>
+        <Setter Property="animations:ButtonScaleHover.Preset" Value="Menu"/>
+    </Style>
+
+    <Style x:Key="AnimatedCompactButtonBase" TargetType="Button">
+        <Setter Property="animations:ButtonScaleHover.IsEnabled" Value="True"/>
+        <Setter Property="animations:ButtonScaleHover.Preset" Value="Compact"/>
+    </Style>
+
+    <Style x:Key="MenuButtonBase" TargetType="Button" BasedOn="{StaticResource AnimatedMenuButtonBase}">
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+        <Setter Property="FontSize" Value="{StaticResource AppFontSizeTitleBar}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="BgBorder"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding Tag}"
+                            RenderTransformOrigin="0.5,0.5">
+                        <Border.RenderTransform>
+                            <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
+                        </Border.RenderTransform>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup Name="CommonStates">
+                                <VisualState Name="Normal">
+                                    <Storyboard>
+                                        <ColorAnimation Storyboard.TargetName="BgBorder"
+                                                        Storyboard.TargetProperty="Background.Color"
+                                                        To="Transparent"
+                                                        Duration="0:0:0.2"/>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState Name="MouseOver">
+                                    <Storyboard>
+                                        <ColorAnimation Storyboard.TargetName="BgBorder"
+                                                        Storyboard.TargetProperty="Background.Color"
+                                                        To="{StaticResource PressedBackgroundColor}"
+                                                        Duration="0:0:0.1"/>
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="Center"
+                                          Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="TitleBarIconButton" TargetType="Button" BasedOn="{StaticResource AnimatedCompactIconButton}">
+        <Setter Property="Tag" Value="0"/>
+    </Style>
+
+    <Style x:Key="CloseIconButton" TargetType="Button" BasedOn="{StaticResource TitleBarIconButton}">
         <Style.Resources>
-            <CornerRadius x:Key="ButtonCornerRadius">0</CornerRadius>
+            <SolidColorBrush x:Key="HoverBackground" Color="#E81123"/>
         </Style.Resources>
     </Style>
 
-    <Style x:Key="CloseIconButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
-        <Style.Resources>
-            <SolidColorBrush x:Key="HoverBackground" Color="#E81123"/>
-            <CornerRadius x:Key="ButtonCornerRadius">0</CornerRadius>
-        </Style.Resources>
+    <Style x:Key="TitleBarMaximizeButton" TargetType="Button" BasedOn="{StaticResource TitleBarIconButton}">
+        <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Window.Maximize], RelativeSource={RelativeSource AncestorType=Window}}"/>
+        <Style.Triggers>
+            <DataTrigger Value="Maximized"
+                         Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}">
+                <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Window.Restore], RelativeSource={RelativeSource AncestorType=Window}}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="TitleBarMaximizeIconPath" TargetType="Path">
+        <Setter Property="Data" Value="{StaticResource MaximizeIconGeometry}"/>
+        <Style.Triggers>
+            <DataTrigger Value="Maximized"
+                         Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}">
+                <Setter Property="Data" Value="{StaticResource RestoreIconGeometry}"/>
+            </DataTrigger>
+        </Style.Triggers>
     </Style>
 
     <Style x:Key="TitleBarTextButton" TargetType="Button">
@@ -112,104 +196,16 @@
         </Setter>
     </Style>
 
-    <Style x:Key="PopupMenuButton" TargetType="Button">
+    <Style x:Key="PopupMenuButton" TargetType="Button" BasedOn="{StaticResource MenuButtonBase}">
         <Setter Property="Height" Value="{StaticResource SpeedOptionHeight}"/>
         <Setter Property="Padding" Value="{StaticResource PopupMenuButtonPadding}"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Cursor" Value="Hand"/>
-        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-        <Setter Property="FontSize" Value="{StaticResource AppFontSizeTitleBar}"/>
-        <Setter Property="HorizontalContentAlignment" Value="Left"/>
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="animations:ButtonScaleHover.IsEnabled" Value="True"/>
-        <Setter Property="animations:ButtonScaleHover.Preset" Value="Menu"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Border x:Name="BgBorder"
-                            CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
-                            Background="Transparent"
-                            RenderTransformOrigin="0.5,0.5">
-                        <Border.RenderTransform>
-                            <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
-                        </Border.RenderTransform>
-                        <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup Name="CommonStates">
-                                <VisualState Name="Normal">
-                                    <Storyboard>
-                                        <ColorAnimation Storyboard.TargetName="BgBorder"
-                                                        Storyboard.TargetProperty="Background.Color"
-                                                        To="Transparent"
-                                                        Duration="0:0:0.2"/>
-                                    </Storyboard>
-                                </VisualState>
-                                <VisualState Name="MouseOver">
-                                    <Storyboard>
-                                        <ColorAnimation Storyboard.TargetName="BgBorder"
-                                                        Storyboard.TargetProperty="Background.Color"
-                                                        To="{StaticResource PressedBackgroundColor}"
-                                                        Duration="0:0:0.1"/>
-                                    </Storyboard>
-                                </VisualState>
-                            </VisualStateGroup>
-                        </VisualStateManager.VisualStateGroups>
-                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                          VerticalAlignment="Center"
-                                          Margin="{TemplateBinding Padding}"/>
-                    </Border>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
+        <Setter Property="Tag" Value="{StaticResource PopupMenuButtonCornerRadius}"/>
     </Style>
 
-    <Style x:Key="SelectableOptionButtonBase" TargetType="Button">
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Cursor" Value="Hand"/>
-        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
-        <Setter Property="FontSize" Value="{StaticResource AppFontSizeTitleBar}"/>
+    <Style x:Key="SelectableOptionButtonBase" TargetType="Button" BasedOn="{StaticResource MenuButtonBase}">
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="animations:ButtonScaleHover.IsEnabled" Value="True"/>
-        <Setter Property="animations:ButtonScaleHover.Preset" Value="Menu"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Border x:Name="BgBorder"
-                            Background="{TemplateBinding Background}"
-                            CornerRadius="{TemplateBinding Tag}"
-                            RenderTransformOrigin="0.5,0.5">
-                        <Border.RenderTransform>
-                            <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
-                        </Border.RenderTransform>
-                        <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup Name="CommonStates">
-                                <VisualState Name="Normal">
-                                    <Storyboard>
-                                        <ColorAnimation Storyboard.TargetName="BgBorder"
-                                                        Storyboard.TargetProperty="Background.Color"
-                                                        To="Transparent"
-                                                        Duration="0:0:0.2"/>
-                                    </Storyboard>
-                                </VisualState>
-                                <VisualState Name="MouseOver">
-                                    <Storyboard>
-                                        <ColorAnimation Storyboard.TargetName="BgBorder"
-                                                        Storyboard.TargetProperty="Background.Color"
-                                                        To="{StaticResource PressedBackgroundColor}"
-                                                        Duration="0:0:0.1"/>
-                                    </Storyboard>
-                                </VisualState>
-                            </VisualStateGroup>
-                        </VisualStateManager.VisualStateGroups>
-                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                          VerticalAlignment="Center"
-                                          Margin="{TemplateBinding Padding}"/>
-                    </Border>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
         <Style.Triggers>
             <Trigger Property="animations:SelectableOptionState.IsSelected" Value="True">
                 <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>

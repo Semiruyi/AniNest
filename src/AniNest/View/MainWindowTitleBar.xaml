@@ -276,41 +276,17 @@
                 </Button>
 
                 <Button x:Name="MaximizeButton"
+                        Style="{StaticResource TitleBarMaximizeButton}"
                         Width="{StaticResource TitleBarButtonWidth}"
                         Height="{StaticResource TitleBarButtonHeight}"
                         shell:WindowChrome.IsHitTestVisibleInChrome="True">
                     <Viewbox Width="{StaticResource TitleBarIconSize}"
                              Height="{StaticResource TitleBarIconSize}">
-                        <Path Stroke="White"
+                        <Path Style="{StaticResource TitleBarMaximizeIconPath}"
+                              Stroke="White"
                               StrokeThickness="{StaticResource TitleBarIconStroke}"
-                              StrokeLineJoin="Round">
-                            <Path.Style>
-                                <Style TargetType="Path">
-                                    <Setter Property="Data"
-                                            Value="{StaticResource MaximizeIconGeometry}"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Value="Maximized"
-                                                     Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}">
-                                            <Setter Property="Data"
-                                                    Value="{StaticResource RestoreIconGeometry}"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Path.Style>
-                        </Path>
+                              StrokeLineJoin="Round"/>
                     </Viewbox>
-                    <Button.Style>
-                        <Style TargetType="Button"
-                               BasedOn="{StaticResource TitleBarIconButton}">
-                            <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Window.Maximize], RelativeSource={RelativeSource AncestorType=Window}}"/>
-                            <Style.Triggers>
-                                <DataTrigger Value="Maximized"
-                                             Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}">
-                                    <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Window.Restore], RelativeSource={RelativeSource AncestorType=Window}}"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
                 </Button>
 
                 <Button x:Name="CloseButton"
