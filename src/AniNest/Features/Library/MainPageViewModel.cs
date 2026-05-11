@@ -293,10 +293,22 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
 
         CloseFolderPopup();
         bool nextFavorite = !item.IsFavorite;
-        Log.Info($"ToggleFolderFavorite: name={item.Name} path={item.Path} isFavorite={nextFavorite}");
+        Log.Info(
+            $"ToggleFolderFavorite start: name={item.Name} path={item.Path} " +
+            $"selectedFilter={SelectedFilter} isFavoriteBefore={item.IsFavorite} isFavoriteAfter={nextFavorite} " +
+            $"visibleCountBefore={FolderItems.Count} totalCount={_allFolderItems.Count}");
         await _libraryService.SetFolderFavoriteAsync(item.Path, nextFavorite);
         item.IsFavorite = nextFavorite;
+        bool matchesAfterToggle = MatchesSelectedFilter(item);
+        Log.Debug(
+            $"ToggleFolderFavorite post-update: name={item.Name} path={item.Path} " +
+            $"selectedFilter={SelectedFilter} matchesAfterToggle={matchesAfterToggle}");
         ApplyCurrentFilter();
+        Log.Info(
+            $"ToggleFolderFavorite complete: name={item.Name} path={item.Path} " +
+            $"selectedFilter={SelectedFilter} isFavoriteNow={item.IsFavorite} " +
+            $"visibleCountAfter={FolderItems.Count} stillVisible={FolderItems.Contains(item)} " +
+            $"folderItemsOrder=[{string.Join(", ", FolderItems.Select(x => x.Name))}]");
     }
 
     [RelayCommand]
@@ -470,9 +482,33 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     {
         var filteredItems = _allFolderItems.Where(MatchesSelectedFilter).ToList();
 
-        FolderItems.Clear();
-        foreach (var item in filteredItems)
-            FolderItems.Add(item);
+        Log.Debug(
+            $"ApplyCurrentFilter: selectedFilter={SelectedFilter} totalCount={_allFolderItems.Count} " +
+            $"filteredCount={filteredItems.Count}");
+
+        for (int i = FolderItems.Count - 1; i >= 0; i--)
+        {
+            var existingItem = FolderItems[i];
+            if (!filteredItems.Contains(existingItem))
+                FolderItems.RemoveAt(i);
+        }
+
+        for (int targetIndex = 0; targetIndex < filteredItems.Count; targetIndex++)
+        {
+            var targetItem = filteredItems[targetIndex];
+
+            if (targetIndex < FolderItems.Count && ReferenceEquals(FolderItems[targetIndex], targetItem))
+                continue;
+
+            int existingIndex = FolderItems.IndexOf(targetItem);
+            if (existingIndex >= 0)
+            {
+                FolderItems.Move(existingIndex, targetIndex);
+                continue;
+            }
+
+            FolderItems.Insert(targetIndex, targetItem);
+        }
     }
 
     private bool MatchesSelectedFilter(FolderListItem item)

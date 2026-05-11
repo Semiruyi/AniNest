@@ -164,6 +164,19 @@ public partial class MainPage : System.Windows.Controls.UserControl
         }), DispatcherPriority.Background);
     }
 
+    private void OnFavoriteButtonClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || button.DataContext is not FolderListItem item)
+            return;
+
+        string filter = _viewModel?.SelectedFilter.ToString() ?? "null";
+        Log.Debug(
+            $"OnFavoriteButtonClick: name={item.Name} path={item.Path} isFavoriteBefore={item.IsFavorite} " +
+            $"selectedFilter={filter} original={DescribeSource(e.OriginalSource as DependencyObject)} " +
+            $"buttonIsMouseOver={button.IsMouseOver} buttonIsPressed={button.IsPressed} " +
+            $"buttonVisibility={button.Visibility} buttonOpacity={button.Opacity}");
+    }
+
     private void ThumbnailActionsMenuButton_Click(object sender, RoutedEventArgs e)
     {
         Log.Debug(
