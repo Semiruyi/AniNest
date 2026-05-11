@@ -9,8 +9,4 @@ public interface IShellPreferencesService
     string CurrentThumbnailPerformanceModeCode { get; }
     string CurrentThumbnailAccelerationModeCode { get; }
     ThumbnailDecodeStatusSnapshot CurrentThumbnailDecodeStatus { get; }
-
-    void SetLanguage(string code);
-    void SetFullscreenAnimation(string code);
-    void SetThumbnailAccelerationMode(string code);
 }

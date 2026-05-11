@@ -25,30 +25,4 @@ public sealed class ShellPreferencesService : IShellPreferencesService
     public string CurrentThumbnailPerformanceModeCode => _settings.GetThumbnailPerformanceMode().ToString().ToLowerInvariant();
     public string CurrentThumbnailAccelerationModeCode => _settings.GetThumbnailAccelerationMode().ToString().ToLowerInvariant();
     public ThumbnailDecodeStatusSnapshot CurrentThumbnailDecodeStatus => _thumbnailDecodeStrategyService.GetStatusSnapshot();
-
-    public void SetLanguage(string code)
-    {
-        _localization.SetLanguage(code);
-        var settings = _settings.Load();
-        settings.Language = code;
-        _settings.Save();
-    }
-
-    public void SetFullscreenAnimation(string code)
-    {
-        var settings = _settings.Load();
-        settings.FullscreenAnimation = code;
-        _settings.Save();
-    }
-
-    public void SetThumbnailAccelerationMode(string code)
-    {
-        ThumbnailAccelerationMode mode = code.ToLowerInvariant() switch
-        {
-            "compatible" => ThumbnailAccelerationMode.Compatible,
-            _ => ThumbnailAccelerationMode.Auto
-        };
-
-        _settings.SetThumbnailAccelerationMode(mode);
-    }
 }

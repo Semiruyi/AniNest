@@ -30,6 +30,7 @@ public static class ServiceRegistration
         services.AddSingleton<IThumbnailGenerator, ThumbnailGenerator>();
         services.AddSingleton<ILibraryAppService, LibraryAppService>();
         services.AddSingleton<IShellPreferencesService, ShellPreferencesService>();
+        services.AddSingleton<IShellSettingsAppService, ShellSettingsAppService>();
         services.AddSingleton<IShellThumbnailPerformanceAppService, ShellThumbnailPerformanceAppService>();
         services.AddSingleton<IPlayerAppService, PlayerAppService>();
         services.AddSingleton<IPlayerPlaybackFacade, PlayerPlaybackFacade>();

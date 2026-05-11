@@ -29,9 +29,9 @@ public partial class ShellViewModel : ObservableObject
     private readonly ITaskbarAutoHideCoordinator _taskbarAutoHide;
     private readonly IPlayerAppService _playerAppService;
     private readonly IShellPreferencesService _preferencesService;
+    private readonly IShellSettingsAppService _shellSettingsAppService;
     private readonly IShellThumbnailPerformanceAppService _thumbnailPerformanceAppService;
     private readonly IThumbnailGenerator _thumbnailGenerator;
-    private readonly IThumbnailDecodeStrategyService _thumbnailDecodeStrategyService;
     private readonly MainPageViewModel _mainPage;
     private readonly PlayerViewModel _playerPage;
     private string? _lastThumbnailGenerationStatusLog;
@@ -77,40 +77,8 @@ public partial class ShellViewModel : ObservableObject
     private bool _isPlayerInputSubmenuOpen;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(LanguageSelectedIndex))]
-    [NotifyPropertyChangedFor(nameof(IsLanguageChineseSelected))]
-    [NotifyPropertyChangedFor(nameof(IsLanguageEnglishSelected))]
-    private string _currentLanguageCode = "zh-CN";
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(FullscreenAnimationSelectedIndex))]
-    [NotifyPropertyChangedFor(nameof(IsFullscreenAnimationNoneSelected))]
-    [NotifyPropertyChangedFor(nameof(IsFullscreenAnimationContinuousSelected))]
-    private string _currentAnimationCode = "continuous";
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ThumbnailPerformanceSelectedIndex))]
-    [NotifyPropertyChangedFor(nameof(IsThumbnailPerformancePausedSelected))]
-    [NotifyPropertyChangedFor(nameof(IsThumbnailPerformanceQuietSelected))]
-    [NotifyPropertyChangedFor(nameof(IsThumbnailPerformanceBalancedSelected))]
-    [NotifyPropertyChangedFor(nameof(IsThumbnailPerformanceFastSelected))]
-    private string _currentThumbnailPerformanceModeCode = "balanced";
-
-    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanSelectThumbnailPerformanceMode))]
     private bool _isApplyingThumbnailPerformanceMode;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ThumbnailAccelerationSelectedIndex))]
-    [NotifyPropertyChangedFor(nameof(IsThumbnailAccelerationAutoSelected))]
-    [NotifyPropertyChangedFor(nameof(IsThumbnailAccelerationCompatibleSelected))]
-    private string _currentThumbnailAccelerationModeCode = "auto";
-
-    [ObservableProperty]
-    private string _thumbnailPerformanceSummary = string.Empty;
-
-    [ObservableProperty]
-    private string _thumbnailAccelerationSummary = string.Empty;
 
     [ObservableProperty]
     private string _thumbnailDetectedHardwareSummary = string.Empty;
@@ -148,6 +116,14 @@ public partial class ShellViewModel : ObservableObject
     public ILocalizationService Localization => _loc;
     public IReadOnlyList<LanguageInfo> AvailableLanguages => _loc.AvailableLanguages;
     public PlayerInputSettingsViewModel PlayerInputSettings { get; }
+    public string CurrentLanguageCode => _preferencesService.CurrentLanguageCode;
+    public string CurrentAnimationCode => _preferencesService.CurrentFullscreenAnimationCode;
+    public string CurrentThumbnailPerformanceModeCode => _preferencesService.CurrentThumbnailPerformanceModeCode;
+    public string CurrentThumbnailAccelerationModeCode => _preferencesService.CurrentThumbnailAccelerationModeCode;
+    public string ThumbnailPerformanceSummary => IsThumbnailPerformancePaused
+        ? _loc["Settings.ThumbnailPerformance.Paused"]
+        : _loc[$"Settings.ThumbnailPerformance.{CapitalizeCode(CurrentThumbnailPerformanceModeCode)}"];
+    public string ThumbnailAccelerationSummary => _loc[$"Settings.ThumbnailAcceleration.{CapitalizeCode(CurrentThumbnailAccelerationModeCode)}"];
     public int LanguageSelectedIndex => string.Equals(CurrentLanguageCode, "en-US", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
     public int FullscreenAnimationSelectedIndex => string.Equals(CurrentAnimationCode, "continuous", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
     public int ThumbnailPerformanceSelectedIndex => CurrentThumbnailPerformanceModeCode switch
@@ -177,9 +153,9 @@ public partial class ShellViewModel : ObservableObject
         ITaskbarAutoHideCoordinator taskbarAutoHide,
         IPlayerAppService playerAppService,
         IShellPreferencesService preferencesService,
+        IShellSettingsAppService shellSettingsAppService,
         IShellThumbnailPerformanceAppService thumbnailPerformanceAppService,
         IThumbnailGenerator thumbnailGenerator,
-        IThumbnailDecodeStrategyService thumbnailDecodeStrategyService,
         MainPageViewModel mainPage,
         PlayerViewModel playerPage,
         PlayerInputSettingsViewModel playerInputSettings)
@@ -189,13 +165,9 @@ public partial class ShellViewModel : ObservableObject
         _taskbarAutoHide = taskbarAutoHide;
         _playerAppService = playerAppService;
         _preferencesService = preferencesService;
+        _shellSettingsAppService = shellSettingsAppService;
         _thumbnailPerformanceAppService = thumbnailPerformanceAppService;
         _thumbnailGenerator = thumbnailGenerator;
-        _thumbnailDecodeStrategyService = thumbnailDecodeStrategyService;
-        _currentLanguageCode = _loc.CurrentLanguage;
-        _currentAnimationCode = _preferencesService.CurrentFullscreenAnimationCode;
-        _currentThumbnailPerformanceModeCode = _preferencesService.CurrentThumbnailPerformanceModeCode;
-        _currentThumbnailAccelerationModeCode = _preferencesService.CurrentThumbnailAccelerationModeCode;
         _mainPage = mainPage;
         _playerPage = playerPage;
         PlayerInputSettings = playerInputSettings;
@@ -211,7 +183,7 @@ public partial class ShellViewModel : ObservableObject
         RefreshSelectableOptionContent();
         RefreshSelectableOptionSelectionState();
 
-        Log.Info($"ShellViewModel initialized. CurrentAnimation={_currentAnimationCode}, CurrentLanguage={_currentLanguageCode}");
+        Log.Info($"ShellViewModel initialized. CurrentAnimation={CurrentAnimationCode}, CurrentLanguage={CurrentLanguageCode}");
         CurrentPage = _mainPage;
     }
 
@@ -331,8 +303,8 @@ public partial class ShellViewModel : ObservableObject
     [RelayCommand]
     private void SwitchLanguage(string code)
     {
-        _preferencesService.SetLanguage(code);
-        CurrentLanguageCode = _preferencesService.CurrentLanguageCode;
+        _shellSettingsAppService.SetLanguage(code);
+        NotifyLanguageSettingsChanged();
         RefreshThumbnailSettingsStatus();
         RefreshSelectableOptionContent();
         RefreshSelectableOptionSelectionState();
@@ -341,8 +313,8 @@ public partial class ShellViewModel : ObservableObject
     [RelayCommand]
     private void SelectFullscreenAnimation(string code)
     {
-        CurrentAnimationCode = code;
-        _preferencesService.SetFullscreenAnimation(code);
+        _shellSettingsAppService.SetFullscreenAnimation(code);
+        NotifyFullscreenAnimationSettingsChanged();
         RefreshSelectableOptionSelectionState();
     }
 
@@ -360,6 +332,7 @@ public partial class ShellViewModel : ObservableObject
         }
         finally
         {
+            NotifyThumbnailPerformanceSettingsChanged();
             RefreshThumbnailSettingsStatus();
             IsApplyingThumbnailPerformanceMode = false;
             SelectThumbnailPerformanceModeCommand.NotifyCanExecuteChanged();
@@ -369,20 +342,13 @@ public partial class ShellViewModel : ObservableObject
     [RelayCommand]
     private void SelectThumbnailAccelerationMode(string code)
     {
-        _preferencesService.SetThumbnailAccelerationMode(code);
-        CurrentThumbnailAccelerationModeCode = _preferencesService.CurrentThumbnailAccelerationModeCode;
-        _thumbnailGenerator.RefreshDecodeStrategy();
+        _shellSettingsAppService.SetThumbnailAccelerationMode(code);
+        NotifyThumbnailAccelerationSettingsChanged();
         RefreshThumbnailSettingsStatus();
     }
 
     private void RefreshThumbnailSettingsStatus()
     {
-        CurrentThumbnailPerformanceModeCode = _preferencesService.CurrentThumbnailPerformanceModeCode;
-        ThumbnailPerformanceSummary = IsThumbnailPerformancePaused
-            ? _loc["Settings.ThumbnailPerformance.Paused"]
-            : _loc[$"Settings.ThumbnailPerformance.{CapitalizeCode(CurrentThumbnailPerformanceModeCode)}"];
-        ThumbnailAccelerationSummary = _loc[$"Settings.ThumbnailAcceleration.{CapitalizeCode(CurrentThumbnailAccelerationModeCode)}"];
-
         var status = _preferencesService.CurrentThumbnailDecodeStatus;
         ThumbnailDetectedHardwareSummary = BuildHardwareSummary(status);
         ThumbnailCurrentDecoderSummary = BuildCurrentDecoderSummary(status);
@@ -464,6 +430,43 @@ public partial class ShellViewModel : ObservableObject
     private void OnThumbnailGeneratorStatusChanged()
     {
         Application.Current.Dispatcher.BeginInvoke((Action)RefreshThumbnailSettingsStatus);
+    }
+
+    private void NotifyLanguageSettingsChanged()
+    {
+        OnPropertyChanged(nameof(CurrentLanguageCode));
+        OnPropertyChanged(nameof(LanguageSelectedIndex));
+        OnPropertyChanged(nameof(IsLanguageChineseSelected));
+        OnPropertyChanged(nameof(IsLanguageEnglishSelected));
+    }
+
+    private void NotifyFullscreenAnimationSettingsChanged()
+    {
+        OnPropertyChanged(nameof(CurrentAnimationCode));
+        OnPropertyChanged(nameof(FullscreenAnimationSelectedIndex));
+        OnPropertyChanged(nameof(IsFullscreenAnimationNoneSelected));
+        OnPropertyChanged(nameof(IsFullscreenAnimationContinuousSelected));
+    }
+
+    private void NotifyThumbnailPerformanceSettingsChanged()
+    {
+        OnPropertyChanged(nameof(CurrentThumbnailPerformanceModeCode));
+        OnPropertyChanged(nameof(ThumbnailPerformanceSelectedIndex));
+        OnPropertyChanged(nameof(ThumbnailPerformanceSummary));
+        OnPropertyChanged(nameof(IsThumbnailPerformancePausedSelected));
+        OnPropertyChanged(nameof(IsThumbnailPerformanceQuietSelected));
+        OnPropertyChanged(nameof(IsThumbnailPerformanceBalancedSelected));
+        OnPropertyChanged(nameof(IsThumbnailPerformanceFastSelected));
+        OnPropertyChanged(nameof(IsThumbnailPerformancePaused));
+    }
+
+    private void NotifyThumbnailAccelerationSettingsChanged()
+    {
+        OnPropertyChanged(nameof(CurrentThumbnailAccelerationModeCode));
+        OnPropertyChanged(nameof(ThumbnailAccelerationSelectedIndex));
+        OnPropertyChanged(nameof(ThumbnailAccelerationSummary));
+        OnPropertyChanged(nameof(IsThumbnailAccelerationAutoSelected));
+        OnPropertyChanged(nameof(IsThumbnailAccelerationCompatibleSelected));
     }
 
     private string BuildHardwareSummary(ThumbnailDecodeStatusSnapshot status)
