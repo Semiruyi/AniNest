@@ -50,7 +50,6 @@ public interface IThumbnailGenerator
     // Runtime controls
     void SetPlayerActive(bool isActive);
     void RefreshPerformanceMode();
-    void RefreshGenerationPaused();
     void RefreshDecodeStrategy();
 
     void Shutdown();

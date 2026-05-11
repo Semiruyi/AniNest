@@ -79,11 +79,12 @@ Two user-facing settings are enough for the first version.
 
 ### Thumbnail Performance Mode
 
+- `Paused`
 - `Quiet`
 - `Balanced` (default)
 - `Fast`
 
-These modes control concurrency and player-time throttling.
+These modes control concurrency, pause behavior, and player-time throttling.
 
 ### Thumbnail Acceleration Mode
 
@@ -94,6 +95,71 @@ Meaning:
 
 - `Auto`: try hardware-capable decode strategies first, then fall back to software
 - `Compatible`: use a more conservative strategy order and prefer stability over acceleration
+
+## Performance State Model
+
+The current implementation conceptually exposes one thumbnail performance menu, but internally it still uses two independent state sources:
+
+- `ThumbnailPerformanceMode`
+  - `Quiet`
+  - `Balanced`
+  - `Fast`
+- `ThumbnailGenerationPaused`
+  - `true`
+  - `false`
+
+This split was useful while pause and performance were introduced incrementally, but it creates an awkward model now:
+
+- the UI presents pause as if it were one option inside the same selection group
+- persistence stores pause separately from the selected performance mode
+- runtime scheduling first checks pause, then applies performance mode policy
+- state combinations such as `paused + fast` or `paused + quiet` exist internally even though they do not express a meaningful user choice
+
+In practice, the backend is carrying two control planes for one user-facing concept.
+
+### Recommended direction
+
+Unify pause into `ThumbnailPerformanceMode` and treat it as a first-class performance mode:
+
+```csharp
+public enum ThumbnailPerformanceMode
+{
+    Paused,
+    Quiet,
+    Balanced,
+    Fast
+}
+```
+
+After this change:
+
+- the UI chooses exactly one thumbnail performance mode
+- settings persist exactly one thumbnail performance mode
+- the runtime controller reacts to exactly one source of truth
+- scheduler policy is derived from one enum instead of one enum plus one override flag
+
+This gives the system a simpler mental model:
+
+> Thumbnail generation always runs in one explicit mode, and `Paused` is one of those modes.
+
+### Why unify instead of keeping a separate pause flag
+
+Benefits:
+
+- fewer invalid or redundant state combinations
+- simpler UI binding and selection state
+- simpler persistence and migration logic over time
+- simpler runtime reasoning when reading logs and debugging behavior
+- easier future expansion if the app later adds more user-visible modes
+
+Tradeoff:
+
+- the runtime controller still needs edge-aware behavior when entering or leaving `Paused`
+
+That is acceptable. The state model becomes simpler even if the runtime transition logic still distinguishes:
+
+- non-paused -> paused
+- paused -> non-paused
 
 ## Runtime Modes
 
@@ -129,6 +195,14 @@ For the first version this can behave the same as library-active mode.
 
 Keep the scheduling policy very simple.
 
+### Paused
+
+- library page: `max concurrency = 0`
+- player page: `max concurrency = 0`
+- no new jobs start
+- active workers are suspended when possible
+- if worker suspension fails, cancel and requeue as pending
+
 ### Quiet
 
 - library page: `max concurrency = 1`
@@ -145,6 +219,41 @@ Keep the scheduling policy very simple.
 - player page: reduce to `max concurrency = 1`
 
 This is enough to stop CPU runaway without building a complicated scheduler.
+
+### Unified policy shape
+
+The scheduling policy should be derived from `ThumbnailPerformanceMode` only.
+
+The previous model effectively behaved like:
+
+- `if paused => block everything`
+- `else => apply Quiet/Balanced/Fast policy`
+
+After unification, policy lookup should directly map one enum to one execution policy. For example:
+
+```csharp
+public static ThumbnailExecutionPolicy Create(
+    ThumbnailPerformanceMode mode,
+    bool isPlayerActive)
+    => mode switch
+    {
+        ThumbnailPerformanceMode.Paused => new ThumbnailExecutionPolicy(0, false),
+        ThumbnailPerformanceMode.Quiet => isPlayerActive
+            ? new ThumbnailExecutionPolicy(0, false)
+            : new ThumbnailExecutionPolicy(1, true),
+        ThumbnailPerformanceMode.Fast => isPlayerActive
+            ? new ThumbnailExecutionPolicy(1, true)
+            : new ThumbnailExecutionPolicy(2, true),
+        _ => isPlayerActive
+            ? new ThumbnailExecutionPolicy(1, false)
+            : new ThumbnailExecutionPolicy(1, true)
+    };
+```
+
+The exact numbers may evolve, but the important rule is:
+
+- `Paused` is not an extra override outside policy creation
+- `Paused` is itself a valid policy input
 
 ## Architecture Changes
 
@@ -165,7 +274,7 @@ New responsibilities:
 - track current performance mode
 - track whether player page is active
 - limit concurrent generation workers
-- pause or resume starting new jobs
+- pause or resume workers when the selected mode enters or leaves `Paused`
 - ask for the current decoder strategy chain when launching `ffmpeg`
 - record success/failure of decoder attempts
 
@@ -187,6 +296,28 @@ Example output:
 - `AllowStartNewJobs = false`
 
 This can stay internal at first if that keeps the code smaller.
+
+### Runtime transition rule for `Paused`
+
+Even after the state model is unified, runtime transitions still need special handling around `Paused`.
+
+Required behavior:
+
+1. When switching from `Quiet`, `Balanced`, or `Fast` to `Paused`
+   - stop launching new workers immediately
+   - suspend active workers when supported
+   - if suspend fails, cancel and requeue those tasks
+
+2. When switching from `Paused` to `Quiet`, `Balanced`, or `Fast`
+   - resume suspended workers
+   - if resume fails, cancel and requeue those tasks
+   - let the normal scheduler continue draining pending work under the new policy
+
+3. When switching among `Quiet`, `Balanced`, and `Fast`
+   - re-evaluate concurrency policy
+   - requeue or retain workers according to the existing runtime design
+
+This means the runtime layer still cares about the edge around `Paused`, but it does not need a separate persisted pause flag anymore.
 
 #### 3. `IHardwareCapabilityService`
 
@@ -308,6 +439,7 @@ The easiest first implementation is to extend `AppSettings`.
 
 - `ThumbnailPerformanceMode`
 - `ThumbnailAccelerationMode`
+- no standalone `ThumbnailGenerationPaused`
 
 ### Machine-scoped fields
 
@@ -354,7 +486,22 @@ If this becomes crowded later, it can move into nested settings objects without 
 
 Keep delivery incremental.
 
-### Phase 1: Scheduling Control
+### Phase 1: Unified Performance State
+
+Goal:
+
+- replace split pause and performance state with one backend model
+
+Work:
+
+- extend `ThumbnailPerformanceMode` with `Paused`
+- remove the standalone thumbnail pause setting path
+- make scheduler policy depend on the unified mode only
+- keep runtime pause and resume behavior when crossing the `Paused` boundary
+
+This phase removes the most confusing state split before any larger behavioral changes.
+
+### Phase 2: Scheduling Control
 
 Goal:
 
@@ -363,14 +510,13 @@ Goal:
 
 Work:
 
-- add performance mode setting
 - add player-active signal into thumbnail generator
 - add concurrency limit
-- add pause-or-don't-start policy during playback
+- add mode policy during playback
 
 This phase should already produce a visible UX improvement.
 
-### Phase 2: User Settings Surface
+### Phase 3: User Settings Surface
 
 Goal:
 
@@ -378,12 +524,12 @@ Goal:
 
 Work:
 
-- add `Quiet / Balanced / Fast`
-- add `Auto / Compatible`
+- present `Paused / Quiet / Balanced / Fast`
+- present `Auto / Compatible`
 - persist these in settings
 - reflect them in localization resources and settings UI
 
-### Phase 3: Hardware Capability and Fallback
+### Phase 4: Hardware Capability and Fallback
 
 Goal:
 
@@ -396,7 +542,7 @@ Work:
 - define decoder strategy chain
 - make thumbnail execution try decoder fallback chain
 
-### Phase 4: Machine-Scoped Caching
+### Phase 5: Machine-Scoped Caching
 
 Goal:
 
@@ -408,7 +554,7 @@ Work:
 - invalidate when machine changes
 - reuse preferred decoder as first choice on later runs
 
-### Phase 5: Refinement
+### Phase 6: Refinement
 
 Possible follow-ups:
 
@@ -422,24 +568,29 @@ Possible follow-ups:
 This is the recommended implementation order.
 
 1. Add new settings fields for thumbnail performance and acceleration modes.
-2. Add enum types for performance mode and decoder mode.
-3. Extend `SettingsService` read/write logic for the new fields.
-4. Add a lightweight player-active signal path into `ThumbnailGenerator`.
-5. Implement simple concurrency limiting in `ThumbnailGenerator`.
-6. Implement first-version mode policy:
+2. Extend `ThumbnailPerformanceMode` with `Paused`.
+3. Remove the standalone persisted thumbnail pause flag from the active model.
+4. Remove any legacy pause-state migration from `SettingsService`.
+5. Make `ThumbnailPerformancePolicy` derive behavior from the unified mode only.
+6. Merge runtime refresh behavior so the performance-mode refresh path owns pause and resume transitions.
+7. Add a lightweight player-active signal path into `ThumbnailGenerator`.
+8. Implement simple concurrency limiting in `ThumbnailGenerator`.
+9. Implement first-version mode policy:
+   - `Paused`
    - `Quiet`
    - `Balanced`
    - `Fast`
-7. Wire player enter/leave lifecycle to update thumbnail scheduling behavior.
-8. Add settings UI and localization strings for the two new user-facing options.
-9. Add a hardware capability service with machine fingerprint generation.
-10. Define decoder strategy enum and ffmpeg argument mapping.
-11. Update thumbnail generation execution to try decoder candidates in order.
-12. Persist machine-scoped preferred decoder cache.
-13. Invalidate machine-scoped cache when machine identity changes.
-14. Add logs for decoder selection, fallback, and scheduling decisions.
-15. Add tests for:
+10. Wire player enter/leave lifecycle to update thumbnail scheduling behavior.
+11. Add settings UI and localization strings for the user-facing options.
+12. Add a hardware capability service with machine fingerprint generation.
+13. Define decoder strategy enum and ffmpeg argument mapping.
+14. Update thumbnail generation execution to try decoder candidates in order.
+15. Persist machine-scoped preferred decoder cache.
+16. Invalidate machine-scoped cache when machine identity changes.
+17. Add logs for decoder selection, fallback, and scheduling decisions.
+18. Add tests for:
    - settings persistence
+   - settings migration from the old pause flag
    - performance mode policy
    - machine-id change invalidation
    - decoder fallback ordering
@@ -449,6 +600,9 @@ This is the recommended implementation order.
 ### Unit tests
 
 - performance mode maps to expected concurrency and start policy
+- switching into `Paused` suspends active workers when possible
+- switching out of `Paused` resumes suspended workers when possible
+- fallback cancel-and-requeue still works when suspend or resume is unavailable
 - machine id change clears stale preferred decoder
 - decoder chain is ordered correctly for a mocked capability result
 - thumbnail generator does not start new jobs while player-active under `Quiet` and `Balanced`
@@ -457,6 +611,7 @@ This is the recommended implementation order.
 
 - entering player reduces thumbnail throughput policy
 - leaving player resumes background work
+- selecting `Paused` from settings stops new work and preserves resumable work when supported
 - decoder failure falls through to software decode
 
 ## Risks and Tradeoffs
@@ -507,8 +662,7 @@ Start with Phase 1.
 
 The best first slice is:
 
-1. add `ThumbnailPerformanceMode`
-2. teach `ThumbnailGenerator` to cap concurrency
-3. notify it when the player becomes active/inactive
+1. extend `ThumbnailPerformanceMode` with `Paused`
+2. teach the runtime controller to treat `Paused` transitions as suspend and resume edges
 
-That will solve the most visible pain quickly, while keeping the later hardware work compatible with the same design.
+That will remove the current state-model mismatch quickly, while keeping the later hardware work compatible with the same design.

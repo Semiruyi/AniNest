@@ -112,8 +112,8 @@ public class ThumbnailGeneratorTests : IDisposable
             @"C:\videos\ep04.mp4"
         };
 
-        _settingsService.SetThumbnailGenerationPaused(true);
-        _generator.RefreshGenerationPaused();
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
+        _generator.RefreshPerformanceMode();
         RegisterFolderCollection(@"C:\videos", videos);
         _generator.BoostPlaybackWindow(videos, currentIndex: 1, lookaheadCount: 2);
 
@@ -135,8 +135,8 @@ public class ThumbnailGeneratorTests : IDisposable
             @"C:\videos\ep03.mp4"
         };
 
-        _settingsService.SetThumbnailGenerationPaused(true);
-        _generator.RefreshGenerationPaused();
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
+        _generator.RefreshPerformanceMode();
         RegisterFolderCollection(@"C:\videos", videos);
         _generator.BoostPlaybackWindow(videos, currentIndex: 1, lookaheadCount: 1);
 
@@ -159,8 +159,8 @@ public class ThumbnailGeneratorTests : IDisposable
             @"C:\videos\ep03.mp4"
         };
 
-        _settingsService.SetThumbnailGenerationPaused(true);
-        _generator.RefreshGenerationPaused();
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
+        _generator.RefreshPerformanceMode();
         RegisterFolderCollection(@"C:\videos", videos);
         _generator.BoostPlaybackWindow(videos, currentIndex: 0, lookaheadCount: 1);
         _generator.AddActiveWorkerForTest(videos[0]);
@@ -173,7 +173,7 @@ public class ThumbnailGeneratorTests : IDisposable
     }
 
     [Fact]
-    public void BoostPlaybackWindow_NewCurrent_KeepsPreviousFirstNearbyPlaybackWorker()
+    public void BoostPlaybackWindow_NewCurrent_CancelsPreviousPlaybackWorkerOutsideNewWindow()
     {
         var videos = new[]
         {
@@ -182,15 +182,15 @@ public class ThumbnailGeneratorTests : IDisposable
             @"C:\videos\ep03.mp4"
         };
 
-        _settingsService.SetThumbnailGenerationPaused(true);
-        _generator.RefreshGenerationPaused();
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
+        _generator.RefreshPerformanceMode();
         RegisterFolderCollection(@"C:\videos", videos);
         _generator.BoostPlaybackWindow(videos, currentIndex: 0, lookaheadCount: 1);
         _generator.AddActiveWorkerForTest(videos[0]);
 
         _generator.BoostPlaybackWindow(videos, currentIndex: 1, lookaheadCount: 1);
 
-        _generator.IsActiveWorkerCancellationRequestedForTest(videos[0]).Should().BeFalse();
+        _generator.IsActiveWorkerCancellationRequestedForTest(videos[0]).Should().BeTrue();
         _generator.IsActiveWorkerCancellationRequestedForTest(videos[1]).Should().BeFalse();
     }
 
@@ -205,8 +205,8 @@ public class ThumbnailGeneratorTests : IDisposable
             @"C:\videos\ep04.mp4"
         };
 
-        _settingsService.SetThumbnailGenerationPaused(true);
-        _generator.RefreshGenerationPaused();
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
+        _generator.RefreshPerformanceMode();
         RegisterFolderCollection(@"C:\videos", videos);
         _generator.ForceTaskState(videos[0], ThumbnailState.Ready);
         _generator.ForceTaskState(videos[1], ThumbnailState.Ready);
@@ -232,8 +232,8 @@ public class ThumbnailGeneratorTests : IDisposable
             @"C:\videos\ep04.mp4"
         };
 
-        _settingsService.SetThumbnailGenerationPaused(true);
-        _generator.RefreshGenerationPaused();
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
+        _generator.RefreshPerformanceMode();
         RegisterFolderCollection(@"C:\videos", videos);
         _generator.ForceTaskState(videos[0], ThumbnailState.Ready);
         _generator.ForceTaskState(videos[1], ThumbnailState.Ready);
@@ -260,10 +260,10 @@ public class ThumbnailGeneratorTests : IDisposable
             @"C:\videos\ep06.mp4"
         };
 
-        _settingsService.SetThumbnailGenerationPaused(true);
-        _generator.RefreshGenerationPaused();
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
+        _generator.RefreshPerformanceMode();
         RegisterFolderCollection(@"C:\videos", videos);
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 2; i++)
             _generator.ForceTaskState(videos[i], ThumbnailState.Ready);
 
         _generator.BoostPlaybackWindow(videos, currentIndex: 4, lookaheadCount: 1);
@@ -290,10 +290,10 @@ public class ThumbnailGeneratorTests : IDisposable
             @"C:\videos\ep07.mp4"
         };
 
-        _settingsService.SetThumbnailGenerationPaused(true);
-        _generator.RefreshGenerationPaused();
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
+        _generator.RefreshPerformanceMode();
         RegisterFolderCollection(@"C:\videos", videos);
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < 2; i++)
             _generator.ForceTaskState(videos[i], ThumbnailState.Ready);
 
         _generator.BoostPlaybackWindow(videos, currentIndex: 5, lookaheadCount: 1);
@@ -320,8 +320,8 @@ public class ThumbnailGeneratorTests : IDisposable
             @"C:\videos\ep07.mp4"
         };
 
-        _settingsService.SetThumbnailGenerationPaused(true);
-        _generator.RefreshGenerationPaused();
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
+        _generator.RefreshPerformanceMode();
         RegisterFolderCollection(@"C:\videos", videos);
         for (int i = 0; i < 6; i++)
             _generator.ForceTaskState(videos[i], ThumbnailState.Ready);
@@ -352,8 +352,8 @@ public class ThumbnailGeneratorTests : IDisposable
             @"C:\videos\ep06.mp4"
         };
 
-        _settingsService.SetThumbnailGenerationPaused(true);
-        _generator.RefreshGenerationPaused();
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
+        _generator.RefreshPerformanceMode();
         RegisterFolderCollection(@"C:\videos", videos);
         for (int i = 0; i < 5; i++)
             _generator.ForceTaskState(videos[i], ThumbnailState.Ready);
@@ -383,8 +383,8 @@ public class ThumbnailGeneratorTests : IDisposable
     {
         var videos = new[] { @"C:\videos\ep01.mp4", @"C:\videos\ep02.mp4" };
 
-        _settingsService.SetThumbnailGenerationPaused(true);
-        _generator.RefreshGenerationPaused();
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
+        _generator.RefreshPerformanceMode();
         _generator.RegisterCollection(new LibraryCollectionRef("folder:reset", LibraryCollectionKind.Folder, "Reset"), videos);
         _generator.ForceTaskState(videos[0], ThumbnailState.Ready);
         _generator.ResetCollection("folder:reset", boostAfterReset: true);
@@ -400,8 +400,8 @@ public class ThumbnailGeneratorTests : IDisposable
     {
         var videos = new[] { @"C:\videos\ep01.mp4", @"C:\videos\ep02.mp4" };
 
-        _settingsService.SetThumbnailGenerationPaused(true);
-        _generator.RefreshGenerationPaused();
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
+        _generator.RefreshPerformanceMode();
         _generator.RegisterCollection(new LibraryCollectionRef("folder:clear", LibraryCollectionKind.Folder, "Clear"), videos);
         _generator.BoostCollection("folder:clear");
         _generator.ResetCollection("folder:clear", boostAfterReset: false);
@@ -449,6 +449,8 @@ public class ThumbnailGeneratorTests : IDisposable
     public void RequeueActiveWorkers_WhenNoActiveWorkers_DoesNotChangePendingTaskState()
     {
         var video = @"C:\videos\ep01.mp4";
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
+        _generator.RefreshPerformanceMode();
         RegisterFolderCollection(@"C:\videos", [video]);
         _generator.ForceTaskState(video, ThumbnailState.Pending);
 
@@ -475,7 +477,7 @@ public class ThumbnailGeneratorTests : IDisposable
     }
 
     [Fact]
-    public void RefreshGenerationPaused_PreservesHeadWorkerAsPausedGenerating()
+    public void RefreshPerformanceMode_PreservesHeadWorkerAsPausedGenerating()
     {
         var currentVideo = @"C:\videos\ep01.mp4";
         var backgroundVideo = @"C:\videos\ep02.mp4";
@@ -483,9 +485,9 @@ public class ThumbnailGeneratorTests : IDisposable
         RegisterFolderCollection(@"C:\videos", [currentVideo, backgroundVideo]);
         _generator.BoostVideo(currentVideo);
         _generator.AddActiveWorkerForTest(currentVideo, processId: 101);
-        _settingsService.SetThumbnailGenerationPaused(true);
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
 
-        _generator.RefreshGenerationPaused();
+        _generator.RefreshPerformanceMode();
 
         _generator.GetThumbnailState(currentVideo).Should().Be(ThumbnailState.PausedGenerating);
         _generator.IsActiveWorkerCancellationRequestedForTest(currentVideo).Should().BeFalse();
@@ -494,15 +496,15 @@ public class ThumbnailGeneratorTests : IDisposable
     }
 
     [Fact]
-    public void RefreshGenerationPaused_FallbackCancelsWorkerWhenProcessIdMissing()
+    public void RefreshPerformanceMode_FallbackCancelsWorkerWhenProcessIdMissing()
     {
         var activeVideo = @"C:\videos\ep01.mp4";
 
         RegisterFolderCollection(@"C:\videos", [activeVideo]);
         _generator.AddActiveWorkerForTest(activeVideo);
-        _settingsService.SetThumbnailGenerationPaused(true);
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
 
-        _generator.RefreshGenerationPaused();
+        _generator.RefreshPerformanceMode();
         _generator.SimulateCanceledActiveWorkerForTest(activeVideo);
 
         _generator.IsActiveWorkerCancellationRequestedForTest(activeVideo).Should().BeTrue();
@@ -510,18 +512,18 @@ public class ThumbnailGeneratorTests : IDisposable
     }
 
     [Fact]
-    public void RefreshGenerationPaused_False_ResumesPausedGeneratingWorkerState()
+    public void RefreshPerformanceMode_False_ResumesPausedGeneratingWorkerState()
     {
         var currentVideo = @"C:\videos\ep01.mp4";
 
         RegisterFolderCollection(@"C:\videos", [currentVideo]);
         _generator.BoostVideo(currentVideo);
         _generator.AddActiveWorkerForTest(currentVideo, processId: 202);
-        _settingsService.SetThumbnailGenerationPaused(true);
-        _generator.RefreshGenerationPaused();
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
+        _generator.RefreshPerformanceMode();
 
-        _settingsService.SetThumbnailGenerationPaused(false);
-        _generator.RefreshGenerationPaused();
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Balanced);
+        _generator.RefreshPerformanceMode();
 
         _generator.GetThumbnailState(currentVideo).Should().Be(ThumbnailState.Generating);
         _generator.IsActiveWorkerCancellationRequestedForTest(currentVideo).Should().BeFalse();
@@ -531,7 +533,7 @@ public class ThumbnailGeneratorTests : IDisposable
     }
 
     [Fact]
-    public void RefreshGenerationPaused_HighPerformanceSuspendsAllActiveWorkers()
+    public void RefreshPerformanceMode_HighPerformanceSuspendsAllActiveWorkers()
     {
         var firstVideo = @"C:\videos\ep01.mp4";
         var secondVideo = @"C:\videos\ep02.mp4";
@@ -539,9 +541,9 @@ public class ThumbnailGeneratorTests : IDisposable
         RegisterFolderCollection(@"C:\videos", [firstVideo, secondVideo]);
         _generator.AddActiveWorkerForTest(firstVideo, processId: 301);
         _generator.AddActiveWorkerForTest(secondVideo, processId: 302);
-        _settingsService.SetThumbnailGenerationPaused(true);
+        _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
 
-        _generator.RefreshGenerationPaused();
+        _generator.RefreshPerformanceMode();
 
         _generator.GetThumbnailState(firstVideo).Should().Be(ThumbnailState.PausedGenerating);
         _generator.GetThumbnailState(secondVideo).Should().Be(ThumbnailState.PausedGenerating);

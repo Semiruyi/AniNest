@@ -9,6 +9,7 @@ using System.IO;
 
 namespace AniNest.Tests.Model;
 
+[Collection(ThumbnailStorageTestCollection.Name)]
 public class ThumbnailIndexTests : IDisposable
 {
     private readonly string _tempDir;
@@ -24,6 +25,8 @@ public class ThumbnailIndexTests : IDisposable
 
     public void Dispose()
     {
+        ThumbnailIndex.TestFileMoveOverride = null;
+        ThumbnailBundle.TestFileMoveOverride = null;
         try { Directory.Delete(_tempDir, true); } catch { }
     }
 

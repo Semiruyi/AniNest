@@ -28,8 +28,6 @@ internal sealed class ThumbnailRuntimeController
     private readonly Action<bool> _setPlayerActive;
     private readonly Func<ThumbnailPerformanceMode> _getPerformanceMode;
     private readonly Action<ThumbnailPerformanceMode> _setPerformanceMode;
-    private readonly Func<bool> _isGenerationPaused;
-    private readonly Action<bool> _setGenerationPaused;
     private readonly Func<int> _demotePlaybackIntents;
     private readonly Action _clearPlaybackForegroundTarget;
 
@@ -50,8 +48,6 @@ internal sealed class ThumbnailRuntimeController
         Action<bool> setPlayerActive,
         Func<ThumbnailPerformanceMode> getPerformanceMode,
         Action<ThumbnailPerformanceMode> setPerformanceMode,
-        Func<bool> isGenerationPaused,
-        Action<bool> setGenerationPaused,
         Func<int> demotePlaybackIntents,
         Action clearPlaybackForegroundTarget)
     {
@@ -71,8 +67,6 @@ internal sealed class ThumbnailRuntimeController
         _setPlayerActive = setPlayerActive;
         _getPerformanceMode = getPerformanceMode;
         _setPerformanceMode = setPerformanceMode;
-        _isGenerationPaused = isGenerationPaused;
-        _setGenerationPaused = setGenerationPaused;
         _demotePlaybackIntents = demotePlaybackIntents;
         _clearPlaybackForegroundTarget = clearPlaybackForegroundTarget;
     }
@@ -118,7 +112,8 @@ internal sealed class ThumbnailRuntimeController
     public void RefreshPerformanceMode()
     {
         ThumbnailPerformanceMode mode = _settings.GetThumbnailPerformanceMode();
-        bool changed = _getPerformanceMode() != mode;
+        ThumbnailPerformanceMode previousMode = _getPerformanceMode();
+        bool changed = previousMode != mode;
         _setPerformanceMode(mode);
 
         string snapshot = _buildSchedulerSnapshot();
@@ -126,26 +121,16 @@ internal sealed class ThumbnailRuntimeController
             return;
 
         Log.Info($"Thumbnail performance mode changed: selectedMode={mode}, {snapshot}");
-        RequeueActiveWorkers("performance-mode-changed");
-        _notifyStatusChanged();
-        _ensureLoopRunning();
-    }
+        bool wasPaused = previousMode == ThumbnailPerformanceMode.Paused;
+        bool isPaused = mode == ThumbnailPerformanceMode.Paused;
 
-    public void RefreshGenerationPaused()
-    {
-        bool paused = _settings.IsThumbnailGenerationPaused();
-        bool changed = _isGenerationPaused() != paused;
-        _setGenerationPaused(paused);
-
-        string snapshot = _buildSchedulerSnapshot();
-        if (!changed)
-            return;
-
-        Log.Info($"Thumbnail generation paused changed: paused={paused}, {snapshot}");
-        if (paused)
+        if (!wasPaused && isPaused)
             PauseActiveWorkers();
-        else
+        else if (wasPaused && !isPaused)
             ResumePausedWorkers();
+        else
+            RequeueActiveWorkers("performance-mode-changed");
+
         _notifyStatusChanged();
         _ensureLoopRunning();
     }

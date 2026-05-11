@@ -476,19 +476,6 @@ public class SettingsService : ISettingsService, IDisposable
         Save();
     }
 
-    public bool IsThumbnailGenerationPaused()
-        => Load().ThumbnailGenerationPaused;
-
-    public void SetThumbnailGenerationPaused(bool paused)
-    {
-        var current = Load();
-        if (current.ThumbnailGenerationPaused == paused)
-            return;
-
-        current.ThumbnailGenerationPaused = paused;
-        Save();
-    }
-
     public ThumbnailAccelerationMode GetThumbnailAccelerationMode()
         => Load().ThumbnailAccelerationMode;
 

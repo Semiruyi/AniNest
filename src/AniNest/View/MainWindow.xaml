@@ -266,33 +266,16 @@
                         shell:WindowChrome.IsHitTestVisibleInChrome="True">
                     <StackPanel>
                         <Grid>
-                            <Border CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"
-                                    Height="{StaticResource SpeedOptionHeight}"
-                                    VerticalAlignment="Top"
-                                    Visibility="{Binding DataContext.IsThumbnailGenerationPaused, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Setter Property="Background" Value="#2E7D32"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding DataContext.IsThumbnailGenerationPaused, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                <Setter Property="Background" Value="#4a9219"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                                <Border.RenderTransform>
-                                    <TranslateTransform Y="0"/>
-                                </Border.RenderTransform>
-                            </Border>
                             <primitives:SelectableOptionGroup Style="{StaticResource SelectableOptionMenuGroup}"
                                                               SelectedIndex="{Binding DataContext.ThumbnailPerformanceSelectedIndex, RelativeSource={RelativeSource AncestorType=Window}}">
                                 <StackPanel x:Name="ThumbnailPerformanceOptionsPanel">
                                     <Button Style="{StaticResource SelectableOptionMenuButton}"
                                             animations:SelectableOptionState.IsSelected="{Binding DataContext.IsThumbnailPerformancePausedSelected, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            Command="{Binding DataContext.ToggleThumbnailGenerationPausedCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="paused"
                                             Click="OnThumbnailPerformanceOverlayActionClick"
                                             shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                                        <TextBlock Text="{Binding DataContext.ThumbnailGenerationToggleText, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Paused], RelativeSource={RelativeSource AncestorType=Window}}"
                                                    VerticalAlignment="Center"/>
                                     </Button>
                                     <Button Style="{StaticResource SelectableOptionMenuButton}"

@@ -7,11 +7,10 @@ internal static class ThumbnailQueueScheduler
     public static ThumbnailTask? SelectNextTask(
         ThumbnailTaskStore taskStore,
         ThumbnailWorkerPool workerPool,
-        bool isGenerationPaused,
         ThumbnailPerformanceMode performanceMode,
         bool isPlayerActive)
     {
-        if (!CanStartMoreWorkers(workerPool, isGenerationPaused, performanceMode, isPlayerActive))
+        if (!CanStartMoreWorkers(workerPool, performanceMode, isPlayerActive))
             return null;
 
         return taskStore.SnapshotTasks()
@@ -31,13 +30,9 @@ internal static class ThumbnailQueueScheduler
 
     public static bool CanStartMoreWorkers(
         ThumbnailWorkerPool workerPool,
-        bool isGenerationPaused,
         ThumbnailPerformanceMode performanceMode,
         bool isPlayerActive)
     {
-        if (isGenerationPaused)
-            return false;
-
         ThumbnailExecutionPolicy policy = ThumbnailPerformancePolicy.Create(performanceMode, isPlayerActive);
         if (!policy.AllowStartNewJobs)
             return false;
@@ -48,16 +43,14 @@ internal static class ThumbnailQueueScheduler
     public static string BuildSnapshot(
         ThumbnailWorkerPool workerPool,
         ThumbnailTaskStore taskStore,
-        bool isGenerationPaused,
         bool isPlayerActive,
         ThumbnailPerformanceMode performanceMode)
     {
         ThumbnailExecutionPolicy policy = ThumbnailPerformancePolicy.Create(performanceMode, isPlayerActive);
-        bool allowStartNewJobs = !isGenerationPaused &&
-            policy.AllowStartNewJobs &&
+        bool allowStartNewJobs = policy.AllowStartNewJobs &&
             workerPool.Count < policy.MaxConcurrency;
         return
-            $"playerActive={isPlayerActive}, mode={performanceMode}, paused={isGenerationPaused}, maxConcurrency={policy.MaxConcurrency}, " +
+            $"playerActive={isPlayerActive}, mode={performanceMode}, paused={performanceMode == ThumbnailPerformanceMode.Paused}, maxConcurrency={policy.MaxConcurrency}, " +
             $"allowStartNewJobs={allowStartNewJobs}, activeWorkers={workerPool.Count}, " +
             $"pendingTasks={taskStore.CountTasksByState(ThumbnailState.Pending)}, ready={taskStore.ReadyCount}, total={taskStore.TotalCount}, " +
             $"foregroundPending={taskStore.CountForegroundPending()}";
@@ -65,11 +58,10 @@ internal static class ThumbnailQueueScheduler
 
     public static string GetBlockedReason(
         ThumbnailWorkerPool workerPool,
-        bool isGenerationPaused,
         ThumbnailPerformanceMode performanceMode,
         bool isPlayerActive)
     {
-        if (isGenerationPaused)
+        if (performanceMode == ThumbnailPerformanceMode.Paused)
             return "blocked-generation-paused";
 
         ThumbnailExecutionPolicy policy = ThumbnailPerformancePolicy.Create(performanceMode, isPlayerActive);

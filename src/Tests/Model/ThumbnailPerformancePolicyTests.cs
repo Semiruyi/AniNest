@@ -7,6 +7,8 @@ namespace AniNest.Tests.Model;
 public class ThumbnailPerformancePolicyTests
 {
     [Theory]
+    [InlineData(ThumbnailPerformanceMode.Paused, false, 0, false)]
+    [InlineData(ThumbnailPerformanceMode.Paused, true, 0, false)]
     [InlineData(ThumbnailPerformanceMode.Quiet, false, 1, true)]
     [InlineData(ThumbnailPerformanceMode.Quiet, true, 0, false)]
     [InlineData(ThumbnailPerformanceMode.Balanced, false, 1, true)]

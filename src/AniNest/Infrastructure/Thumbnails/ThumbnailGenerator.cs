@@ -39,7 +39,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private readonly Dictionary<string, int> _videoProgressByPath = new(StringComparer.OrdinalIgnoreCase);
     private bool _isShuttingDown;
     private bool _isPlayerActive;
-    private bool _isGenerationPaused;
     private ThumbnailPerformanceMode _performanceMode;
     private string? _lastSchedulerState;
 
@@ -72,7 +71,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
         IThumbnailProcessController? processController)
     {
         _performanceMode = settings.GetThumbnailPerformanceMode();
-        _isGenerationPaused = settings.IsThumbnailGenerationPaused();
         _thumbBaseDir = AppPaths.ThumbnailDirectory;
         _ffmpegPath = AppPaths.FfmpegPath;
         var components = ThumbnailGeneratorComponents.Create(
@@ -86,8 +84,8 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             _initTcs.Task,
             () => _isShuttingDown,
             () => _taskStore.CountTasksByState(ThumbnailState.Pending) > 0,
-            () => ThumbnailQueueScheduler.CanStartMoreWorkers(_workerPool, _isGenerationPaused, _performanceMode, _isPlayerActive),
-            () => ThumbnailQueueScheduler.SelectNextTask(_taskStore, _workerPool, _isGenerationPaused, _performanceMode, _isPlayerActive),
+            () => ThumbnailQueueScheduler.CanStartMoreWorkers(_workerPool, _performanceMode, _isPlayerActive),
+            () => ThumbnailQueueScheduler.SelectNextTask(_taskStore, _workerPool, _performanceMode, _isPlayerActive),
             StartWorker,
             DrainCompletedWorkers,
             ReportSchedulerState,
@@ -130,7 +128,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             _workerPool,
             GetVideoProgressSnapshot,
             _thumbBaseDir,
-            () => _isGenerationPaused,
+            () => _performanceMode == ThumbnailPerformanceMode.Paused,
             () => _isPlayerActive);
         _runtimeController = new ThumbnailRuntimeController(
             settings,
@@ -149,8 +147,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             value => _isPlayerActive = value,
             () => _performanceMode,
             mode => _performanceMode = mode,
-            () => _isGenerationPaused,
-            paused => _isGenerationPaused = paused,
             DemotePlaybackIntents,
             ClearPlaybackForegroundTarget);
 
@@ -237,9 +233,6 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     public void RefreshPerformanceMode()
         => _runtimeController.RefreshPerformanceMode();
 
-    public void RefreshGenerationPaused()
-        => _runtimeController.RefreshGenerationPaused();
-
     public void RefreshDecodeStrategy()
         => _runtimeController.RefreshDecodeStrategy();
 
@@ -299,7 +292,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     private int GetActiveWorkerCount() => _workerPool.Count;
 
     private string BuildSchedulerSnapshot()
-        => ThumbnailQueueScheduler.BuildSnapshot(_workerPool, _taskStore, _isGenerationPaused, _isPlayerActive, _performanceMode);
+        => ThumbnailQueueScheduler.BuildSnapshot(_workerPool, _taskStore, _isPlayerActive, _performanceMode);
 
     private void ReportSchedulerState(string state)
     {
@@ -317,7 +310,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     }
 
     private string GetBlockedSchedulerReason()
-        => ThumbnailQueueScheduler.GetBlockedReason(_workerPool, _isGenerationPaused, _performanceMode, _isPlayerActive);
+        => ThumbnailQueueScheduler.GetBlockedReason(_workerPool, _performanceMode, _isPlayerActive);
 
     private void RequeueActiveWorkers(string reason)
         => _runtimeController.RequeueActiveWorkers(reason);

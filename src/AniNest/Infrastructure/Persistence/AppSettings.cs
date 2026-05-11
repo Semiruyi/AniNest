@@ -11,7 +11,6 @@ public class AppSettings
     public Dictionary<string, FolderClassification> FolderClassifications { get; set; } = new();
     public int ThumbnailExpiryDays { get; set; } = 30;
     public ThumbnailPerformanceMode ThumbnailPerformanceMode { get; set; } = ThumbnailPerformanceMode.Balanced;
-    public bool ThumbnailGenerationPaused { get; set; }
     public ThumbnailAccelerationMode ThumbnailAccelerationMode { get; set; } = ThumbnailAccelerationMode.Auto;
     public string ThumbnailDecoderMachineId { get; set; } = "";
     public string ThumbnailPreferredDecoder { get; set; } = "";

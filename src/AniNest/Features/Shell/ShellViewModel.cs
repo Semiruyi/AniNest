@@ -89,6 +89,7 @@ public partial class ShellViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ThumbnailPerformanceSelectedIndex))]
+    [NotifyPropertyChangedFor(nameof(IsThumbnailPerformancePausedSelected))]
     [NotifyPropertyChangedFor(nameof(IsThumbnailPerformanceQuietSelected))]
     [NotifyPropertyChangedFor(nameof(IsThumbnailPerformanceBalancedSelected))]
     [NotifyPropertyChangedFor(nameof(IsThumbnailPerformanceFastSelected))]
@@ -114,17 +115,6 @@ public partial class ShellViewModel : ObservableObject
 
     [ObservableProperty]
     private string _thumbnailFallbackChainSummary = string.Empty;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ThumbnailPerformanceSelectedIndex))]
-    [NotifyPropertyChangedFor(nameof(IsThumbnailPerformancePausedSelected))]
-    [NotifyPropertyChangedFor(nameof(IsThumbnailPerformanceQuietSelected))]
-    [NotifyPropertyChangedFor(nameof(IsThumbnailPerformanceBalancedSelected))]
-    [NotifyPropertyChangedFor(nameof(IsThumbnailPerformanceFastSelected))]
-    private bool _isThumbnailGenerationPaused;
-
-    [ObservableProperty]
-    private string _thumbnailGenerationToggleText = string.Empty;
 
     [ObservableProperty]
     private string _thumbnailGenerationStatusText = string.Empty;
@@ -155,10 +145,9 @@ public partial class ShellViewModel : ObservableObject
     public PlayerInputSettingsViewModel PlayerInputSettings { get; }
     public int LanguageSelectedIndex => string.Equals(CurrentLanguageCode, "en-US", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
     public int FullscreenAnimationSelectedIndex => string.Equals(CurrentAnimationCode, "continuous", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
-    public int ThumbnailPerformanceSelectedIndex => IsThumbnailGenerationPaused
-        ? -1
-        : CurrentThumbnailPerformanceModeCode switch
+    public int ThumbnailPerformanceSelectedIndex => CurrentThumbnailPerformanceModeCode switch
         {
+            "paused" => 0,
             "quiet" => 1,
             "fast" => 3,
             _ => 2
@@ -172,6 +161,7 @@ public partial class ShellViewModel : ObservableObject
     public bool IsThumbnailPerformanceQuietSelected => ThumbnailPerformanceSelectedIndex == 1;
     public bool IsThumbnailPerformanceBalancedSelected => ThumbnailPerformanceSelectedIndex == 2;
     public bool IsThumbnailPerformanceFastSelected => ThumbnailPerformanceSelectedIndex == 3;
+    public bool IsThumbnailPerformancePaused => string.Equals(CurrentThumbnailPerformanceModeCode, "paused", StringComparison.OrdinalIgnoreCase);
     public bool IsThumbnailAccelerationAutoSelected => ThumbnailAccelerationSelectedIndex == 0;
     public bool IsThumbnailAccelerationCompatibleSelected => ThumbnailAccelerationSelectedIndex == 1;
 
@@ -198,7 +188,6 @@ public partial class ShellViewModel : ObservableObject
         _currentAnimationCode = _preferencesService.CurrentFullscreenAnimationCode;
         _currentThumbnailPerformanceModeCode = _preferencesService.CurrentThumbnailPerformanceModeCode;
         _currentThumbnailAccelerationModeCode = _preferencesService.CurrentThumbnailAccelerationModeCode;
-        _isThumbnailGenerationPaused = _preferencesService.IsThumbnailGenerationPaused;
         _mainPage = mainPage;
         _playerPage = playerPage;
         PlayerInputSettings = playerInputSettings;
@@ -359,15 +348,6 @@ public partial class ShellViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ToggleThumbnailGenerationPaused()
-    {
-        bool paused = !_preferencesService.IsThumbnailGenerationPaused;
-        _preferencesService.SetThumbnailGenerationPaused(paused);
-        _thumbnailGenerator.RefreshGenerationPaused();
-        RefreshThumbnailSettingsStatus();
-    }
-
-    [RelayCommand]
     private void SelectThumbnailAccelerationMode(string code)
     {
         _preferencesService.SetThumbnailAccelerationMode(code);
@@ -378,14 +358,10 @@ public partial class ShellViewModel : ObservableObject
 
     private void RefreshThumbnailSettingsStatus()
     {
-        IsThumbnailGenerationPaused = _preferencesService.IsThumbnailGenerationPaused;
-        ThumbnailPerformanceSummary = IsThumbnailGenerationPaused
-            ? _loc["Settings.ThumbnailGeneration.Paused"]
+        ThumbnailPerformanceSummary = IsThumbnailPerformancePaused
+            ? _loc["Settings.ThumbnailPerformance.Paused"]
             : _loc[$"Settings.ThumbnailPerformance.{CapitalizeCode(CurrentThumbnailPerformanceModeCode)}"];
         ThumbnailAccelerationSummary = _loc[$"Settings.ThumbnailAcceleration.{CapitalizeCode(CurrentThumbnailAccelerationModeCode)}"];
-        ThumbnailGenerationToggleText = _loc[IsThumbnailGenerationPaused
-            ? "Settings.ThumbnailGeneration.Resume"
-            : "Settings.ThumbnailGeneration.Stop"];
 
         var status = _preferencesService.CurrentThumbnailDecodeStatus;
         ThumbnailDetectedHardwareSummary = BuildHardwareSummary(status);
