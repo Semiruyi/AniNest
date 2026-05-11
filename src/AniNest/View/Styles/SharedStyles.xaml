@@ -18,7 +18,10 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Grid>
+                    <Grid RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
+                        </Grid.RenderTransform>
                         <Border x:Name="HoverBg" CornerRadius="0"
                                 Background="{StaticResource PressedBackground}" Opacity="0"/>
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"

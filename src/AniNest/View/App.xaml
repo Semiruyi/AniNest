@@ -9,8 +9,8 @@
                 <ResourceDictionary Source="/Resources/Sizes.xaml"/>
                 <ResourceDictionary Source="/Resources/Spacings.xaml"/>
                 <ResourceDictionary Source="/View/Styles/IconGeometries.xaml"/>
-                <ResourceDictionary Source="/Presentation/Theming/Buttons.xaml"/>
                 <ResourceDictionary Source="/View/Styles/SharedStyles.xaml"/>
+                <ResourceDictionary Source="/Presentation/Theming/Buttons.xaml"/>
                 <ResourceDictionary Source="/View/Styles/MainWindowOverlayStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>

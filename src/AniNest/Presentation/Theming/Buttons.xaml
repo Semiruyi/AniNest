@@ -1,7 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:animations="clr-namespace:AniNest.Presentation.Animations"
-                    xmlns:primitives="clr-namespace:AniNest.Presentation.Primitives">
+                    xmlns:animations="clr-namespace:AniNest.Presentation.Animations">
 
     <Style x:Key="IconButton" TargetType="Button">
         <Setter Property="Width" Value="{StaticResource IconButtonDefault}"/>
@@ -145,6 +144,11 @@
                 <Setter Property="Data" Value="{StaticResource RestoreIconGeometry}"/>
             </DataTrigger>
         </Style.Triggers>
+    </Style>
+
+    <Style x:Key="TitleBarActionButton" TargetType="Button" BasedOn="{StaticResource TitleBarTextButton}">
+        <Setter Property="animations:ButtonScaleHover.IsEnabled" Value="True"/>
+        <Setter Property="animations:ButtonScaleHover.Preset" Value="Compact"/>
     </Style>
 
     <Style x:Key="PopupMenuButton" TargetType="Button" BasedOn="{StaticResource MenuButtonBase}">

@@ -42,7 +42,7 @@
                         </Style>
                     </Grid.Style>
                     <Button x:Name="FileButton"
-                            Style="{StaticResource TitleBarTextButton}"
+                            Style="{StaticResource TitleBarActionButton}"
                             Content="{Binding DataContext.Localization[App.File], RelativeSource={RelativeSource AncestorType=Window}}"
                             shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
                 </Grid>
@@ -58,14 +58,14 @@
                         </Style>
                     </Grid.Style>
                     <Button x:Name="BackButton"
-                            Style="{StaticResource TitleBarTextButton}"
+                            Style="{StaticResource TitleBarActionButton}"
                             Command="{Binding GoBackFromPlayerTitleBarCommand}"
                             Content="{Binding DataContext.Localization[KeyBinding.Back], RelativeSource={RelativeSource AncestorType=Window}}"
                             shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
                 </Grid>
                 <Grid>
                     <Button x:Name="SettingsButton"
-                            Style="{StaticResource TitleBarTextButton}"
+                            Style="{StaticResource TitleBarActionButton}"
                             Content="{Binding DataContext.Localization[App.Settings], RelativeSource={RelativeSource AncestorType=Window}}"
                             shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
                 </Grid>
