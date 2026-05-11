@@ -273,15 +273,26 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     }
 
     [RelayCommand]
-    private async Task SetFolderWatchStatus(FolderStatusChangeRequest? request)
+    private Task SetFolderWatchStatus(FolderStatusChangeRequest? request)
+        => request == null
+            ? Task.CompletedTask
+            : SetFolderWatchStatusAsync(request.Item, request.Status);
+
+    internal async Task SetFolderWatchStatusAsync(FolderListItem? item, Infrastructure.Persistence.WatchStatus status)
     {
-        if (request?.Item == null)
+        if (item == null)
             return;
 
         CloseFolderPopup();
-        Log.Info($"SetFolderWatchStatus: name={request.Item.Name} path={request.Item.Path} status={request.Status}");
-        await _libraryService.SetFolderWatchStatusAsync(request.Item.Path, request.Status);
-        request.Item.Status = request.Status;
+        if (item.Status == status)
+        {
+            Log.Debug($"SetFolderWatchStatus skipped: name={item.Name} path={item.Path} status={status}");
+            return;
+        }
+
+        Log.Info($"SetFolderWatchStatus: name={item.Name} path={item.Path} status={status}");
+        await _libraryService.SetFolderWatchStatusAsync(item.Path, status);
+        item.Status = status;
         ApplyCurrentFilter();
     }
 

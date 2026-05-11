@@ -3,10 +3,12 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using System.Threading.Tasks;
 using AniNest.Features.Library;
 using AniNest.Features.Library.Models;
 using AniNest.Infrastructure.Diagnostics;
 using AniNest.Infrastructure.Logging;
+using AniNest.Infrastructure.Persistence;
 using AniNest.Presentation.Behaviors;
 using AniNest.Presentation.Overlays;
 namespace AniNest.Features.Library;
@@ -174,6 +176,26 @@ public partial class MainPage : System.Windows.Controls.UserControl
         Log.Debug($"ThumbnailActionsMenuButton_Click.Toggle: opened={opened}");
     }
 
+    private async void MarkWatchingMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        await ExecuteFolderStatusChangeAsync(WatchStatus.Watching);
+    }
+
+    private async void MarkUnsortedMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        await ExecuteFolderStatusChangeAsync(WatchStatus.Unsorted);
+    }
+
+    private async void MarkCompletedMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        await ExecuteFolderStatusChangeAsync(WatchStatus.Completed);
+    }
+
+    private async void MarkDroppedMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        await ExecuteFolderStatusChangeAsync(WatchStatus.Dropped);
+    }
+
     private void OnLibraryScrollChanged(object sender, ScrollChangedEventArgs e)
     {
         if (CardContextMenuOverlay.IsOpen)
@@ -217,6 +239,17 @@ public partial class MainPage : System.Windows.Controls.UserControl
     private void OnThumbnailActionsOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
     {
         Log.Debug($"OnThumbnailActionsOverlayClosed: reason={e.Reason} overlayItem={_overlayItem?.Name ?? "null"}");
+    }
+
+    private async Task ExecuteFolderStatusChangeAsync(WatchStatus status)
+    {
+        var item = _overlayItem;
+        if (item == null || _viewModel == null)
+            return;
+
+        Log.Debug($"ExecuteFolderStatusChangeAsync: name={item.Name} status={status}");
+        CloseCardContextMenu(OverlayCloseReason.Programmatic);
+        await _viewModel.SetFolderWatchStatusAsync(item, status);
     }
 
     private static string DescribeSource(DependencyObject? source)

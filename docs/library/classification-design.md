@@ -206,6 +206,24 @@ The current status should have a visible check mark.
 
 This keeps the classification action close to the content and makes bulk browsing and light organization feel natural.
 
+### Classification wording
+
+In v1, user-facing wording should reflect that the app is editing metadata, not moving items between user-defined buckets.
+
+Recommended wording:
+
+- `Mark as Watching`
+- `Mark as Unsorted`
+- `Mark as Completed`
+- `Mark as Dropped`
+
+Avoid wording such as:
+
+- `Move to category`
+- `Move to Watching`
+
+because v1 does not support custom categories, and `Favorites` is not part of the same mutually exclusive status model.
+
 ## Recommended Right-Click Menu
 
 Desktop users will expect right-click support, and the current library page already uses a context menu overlay.
@@ -222,6 +240,17 @@ Recommended options:
 
 This should coexist with existing card actions such as thumbnail operations and library management actions.
 
+For v1, these classification actions should be shown directly in the top-level menu rather than hidden behind a `Move to category` submenu.
+
+Reasoning:
+
+- there are only four watch-status choices
+- classification is a high-frequency action
+- one fewer hover step makes the menu feel faster and more direct
+- flat actions better communicate that classification is a first-class library behavior
+
+`Favorite` / `Unfavorite` should remain a separate action in the same classification group, because it is an independent flag rather than one of the watch-status values.
+
 ### Suggested menu structure
 
 To avoid making the menu feel cluttered, classification items should appear near the top as one logical group.
@@ -231,6 +260,18 @@ Recommended grouping:
 1. classification actions
 2. library-management actions
 3. thumbnail-generation actions
+
+Recommended top-level order:
+
+1. `Favorite` or `Unfavorite`
+2. `Mark as Watching`
+3. `Mark as Unsorted`
+4. `Mark as Completed`
+5. `Mark as Dropped`
+6. separator
+7. library-management actions
+8. separator
+9. thumbnail-generation actions
 
 This improves discoverability because classification becomes a first-class library behavior rather than a hidden side capability.
 
