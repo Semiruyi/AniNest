@@ -164,19 +164,6 @@ public partial class MainPage : System.Windows.Controls.UserControl
         }), DispatcherPriority.Background);
     }
 
-    private void OnFavoriteButtonClick(object sender, RoutedEventArgs e)
-    {
-        if (sender is not Button button || button.DataContext is not FolderListItem item)
-            return;
-
-        string filter = _viewModel?.SelectedFilter.ToString() ?? "null";
-        Log.Debug(
-            $"OnFavoriteButtonClick: name={item.Name} path={item.Path} isFavoriteBefore={item.IsFavorite} " +
-            $"selectedFilter={filter} original={DescribeSource(e.OriginalSource as DependencyObject)} " +
-            $"buttonIsMouseOver={button.IsMouseOver} buttonIsPressed={button.IsPressed} " +
-            $"buttonVisibility={button.Visibility} buttonOpacity={button.Opacity}");
-    }
-
     private void ThumbnailActionsMenuButton_Click(object sender, RoutedEventArgs e)
     {
         Log.Debug(
@@ -230,29 +217,6 @@ public partial class MainPage : System.Windows.Controls.UserControl
     private void OnThumbnailActionsOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
     {
         Log.Debug($"OnThumbnailActionsOverlayClosed: reason={e.Reason} overlayItem={_overlayItem?.Name ?? "null"}");
-    }
-
-    private void OnCardMouseEnter(object sender, MouseEventArgs e)
-    {
-        if (sender is not Border border || border.DataContext is not FolderListItem item)
-            return;
-
-        Log.Debug(
-            $"OnCardMouseEnter: name={item.Name} original={DescribeSource(e.OriginalSource as DependencyObject)} " +
-            $"overlayOpen={CardContextMenuOverlay.IsOpen} overlayItem={_overlayItem?.Name ?? "null"}");
-    }
-
-    private void OnCardMouseLeave(object sender, MouseEventArgs e)
-    {
-        if (sender is not Border border || border.DataContext is not FolderListItem item)
-            return;
-
-        var position = e.GetPosition(border);
-        Log.Debug(
-            $"OnCardMouseLeave: name={item.Name} x={position.X:F1} y={position.Y:F1} " +
-            $"inside={position.X >= 0 && position.Y >= 0 && position.X <= border.ActualWidth && position.Y <= border.ActualHeight} " +
-            $"original={DescribeSource(e.OriginalSource as DependencyObject)} overlayOpen={CardContextMenuOverlay.IsOpen} " +
-            $"overlayItem={_overlayItem?.Name ?? "null"}");
     }
 
     private static string DescribeSource(DependencyObject? source)

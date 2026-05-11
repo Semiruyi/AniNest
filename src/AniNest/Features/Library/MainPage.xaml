@@ -91,8 +91,9 @@
                                     animations:CardAnimation.CoverScale="1.12"
                                     animations:CardAnimation.CoverShiftY="-8"
                                     animations:CardAnimation.CoverDurationMs="400"
-                                    MouseEnter="OnCardMouseEnter"
-                                    MouseLeave="OnCardMouseLeave"
+                                    behaviors:HoverRevealBehavior.IsEnabled="True"
+                                    behaviors:HoverRevealBehavior.HideDelayMs="120"
+                                    behaviors:HoverRevealBehavior.MinVisibleMs="220"
                                     PreviewMouseRightButtonUp="OnCardPreviewMouseRightButtonUp">
                                 <Grid>
                                     <Grid.Clip>
@@ -110,6 +111,22 @@
                                                Style="{StaticResource AppTextIconPlaceholder}"
                                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                                Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
+
+                                    <Grid
+                                          HorizontalAlignment="Right"
+                                          VerticalAlignment="Top"
+                                          Margin="8"
+                                          Panel.ZIndex="10"
+                                          Width="28"
+                                          Height="28"
+                                          animations:ScaleFadeVisibilityAnimator.IsEnabled="True"
+                                          animations:ScaleFadeVisibilityAnimator.Preset="Compact"
+                                          animations:ScaleFadeVisibilityAnimator.CollapseWhenInactive="False"
+                                          animations:ScaleFadeVisibilityAnimator.IsActive="{Binding ElementName=CardBorder, Path=(behaviors:HoverRevealBehavior.IsRevealActive)}">
+                                        <Button Style="{StaticResource LibraryCardFavoriteButton}"
+                                                Command="{Binding DataContext.ToggleFolderFavoriteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"/>
+                                    </Grid>
 
                                     <Border x:Name="CardInfoRoot"
                                             VerticalAlignment="Bottom"

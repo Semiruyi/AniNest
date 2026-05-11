@@ -1,3 +1,4 @@
+using System;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -7,6 +8,7 @@ namespace AniNest.Presentation.Animations;
 public enum ScaleFadeVisibilityPreset
 {
     Default,
+    Compact,
     Badge,
     Emphasis
 }
@@ -199,6 +201,7 @@ public static class ScaleFadeVisibilityAnimator
     private static double ResolveFromScale(FrameworkElement element)
         => GetPreset(element) switch
         {
+            ScaleFadeVisibilityPreset.Compact => 0.0,
             ScaleFadeVisibilityPreset.Badge => 0.84,
             ScaleFadeVisibilityPreset.Emphasis => 0.78,
             _ => GetFromScale(element)
@@ -207,6 +210,7 @@ public static class ScaleFadeVisibilityAnimator
     private static int ResolveEnterDurationMs(FrameworkElement element)
         => GetPreset(element) switch
         {
+            ScaleFadeVisibilityPreset.Compact => 200,
             ScaleFadeVisibilityPreset.Badge => 240,
             ScaleFadeVisibilityPreset.Emphasis => 260,
             _ => GetEnterDurationMs(element)
@@ -215,6 +219,7 @@ public static class ScaleFadeVisibilityAnimator
     private static int ResolveExitDurationMs(FrameworkElement element)
         => GetPreset(element) switch
         {
+            ScaleFadeVisibilityPreset.Compact => 160,
             ScaleFadeVisibilityPreset.Badge => 180,
             ScaleFadeVisibilityPreset.Emphasis => 200,
             _ => GetExitDurationMs(element)
@@ -223,6 +228,7 @@ public static class ScaleFadeVisibilityAnimator
     private static IEasingFunction ResolveEnterEase(FrameworkElement element)
         => GetPreset(element) switch
         {
+            ScaleFadeVisibilityPreset.Compact => AnimationHelper.EaseOut,
             ScaleFadeVisibilityPreset.Badge => AnimationHelper.EaseOut,
             ScaleFadeVisibilityPreset.Emphasis => AnimationHelper.EaseOut,
             _ => GetEnterEase(element)
@@ -231,6 +237,7 @@ public static class ScaleFadeVisibilityAnimator
     private static IEasingFunction ResolveExitEase(FrameworkElement element)
         => GetPreset(element) switch
         {
+            ScaleFadeVisibilityPreset.Compact => AnimationHelper.EaseIn,
             ScaleFadeVisibilityPreset.Badge => AnimationHelper.EaseIn,
             ScaleFadeVisibilityPreset.Emphasis => AnimationHelper.EaseIn,
             _ => GetExitEase(element)
@@ -244,11 +251,18 @@ public static class ScaleFadeVisibilityAnimator
 
     private static void StopCurrentAnimations(FrameworkElement element)
     {
+        double currentOpacity = element.Opacity;
         element.BeginAnimation(UIElement.OpacityProperty, null);
+        element.Opacity = currentOpacity;
+
         if (element.RenderTransform is ScaleTransform scale)
         {
+            double currentScaleX = scale.ScaleX;
+            double currentScaleY = scale.ScaleY;
             scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
             scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            scale.ScaleX = currentScaleX;
+            scale.ScaleY = currentScaleY;
         }
     }
 

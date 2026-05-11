@@ -45,6 +45,8 @@
   "Library.Unsorted": "未归类",
   "Library.Completed": "已看完",
   "Library.Favorites": "收藏",
+  "Library.Favorite": "收藏",
+  "Library.Unfavorite": "取消收藏",
   "Library.Dropped": "弃看",
   "Library.VideoCount": "{0} 个视频",
   "Library.PlayedSummary.Prefix": "已观看 ",
