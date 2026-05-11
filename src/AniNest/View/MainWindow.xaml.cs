@@ -7,6 +7,7 @@ using System.Windows.Threading;
 using AniNest.Features.Shell;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Persistence;
+using AniNest.Presentation.Animations;
 using AniNest.Presentation.Diagnostics;
 using AniNest.Presentation.Overlays;
 using AniNest.Presentation.Primitives;
@@ -37,10 +38,14 @@ public partial class MainWindow : Window
         FileOverlay.Closed += OnFileOverlayClosed;
         SettingsOverlay.Closed += OnSettingsOverlayClosed;
         LanguageOverlay.Closed += OnLanguageOverlayClosed;
+        LanguageOverlay.Opened += OnSelectableOverlayOpened;
         FullscreenAnimationOverlay.Closed += OnFullscreenAnimationOverlayClosed;
+        FullscreenAnimationOverlay.Opened += OnSelectableOverlayOpened;
         ThumbnailSettingsOverlay.Closed += OnThumbnailSettingsOverlayClosed;
         ThumbnailPerformanceOverlay.Closed += OnThumbnailPerformanceOverlayClosed;
+        ThumbnailPerformanceOverlay.Opened += OnSelectableOverlayOpened;
         ThumbnailAccelerationOverlay.Closed += OnThumbnailAccelerationOverlayClosed;
+        ThumbnailAccelerationOverlay.Opened += OnSelectableOverlayOpened;
         PlayerInputOverlay.Closed += OnPlayerInputOverlayClosed;
         _fps = new FpsMonitor(this);
         _fps.Attach();
@@ -524,6 +529,18 @@ public partial class MainWindow : Window
     {
         Shell.IsThumbnailAccelerationSubmenuOpen = false;
         MainWindowLog.Debug($"OnThumbnailAccelerationOverlayClosed: reason={e.Reason}");
+    }
+
+    private void OnSelectableOverlayOpened(object? sender, EventArgs e)
+    {
+        if (sender is not AnimatedOverlay overlay)
+            return;
+
+        SelectionHighlightAnimation.InvalidateDescendants(overlay);
+        Dispatcher.BeginInvoke(
+            new Action(() => SelectionHighlightAnimation.InvalidateDescendants(overlay)),
+            DispatcherPriority.Loaded);
+        MainWindowLog.Debug($"OnSelectableOverlayOpened: overlay={overlay.Name}");
     }
 
     private void OnPlayerInputOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)

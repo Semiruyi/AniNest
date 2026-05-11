@@ -65,6 +65,29 @@ public static class SelectionHighlightAnimation
     public static int GetDurationMs(DependencyObject obj) => (int)obj.GetValue(DurationMsProperty);
     public static void SetDurationMs(DependencyObject obj, int value) => obj.SetValue(DurationMsProperty, value);
 
+    public static void Invalidate(FrameworkElement highlight)
+    {
+        if (!GetIsEnabled(highlight))
+            return;
+
+        var state = GetOrCreateState(highlight);
+        if (!highlight.IsLoaded)
+            return;
+
+        state.IsLoaded = true;
+        UpdateTargetSubscription(highlight, state);
+        QueueUpdate(highlight, state);
+    }
+
+    public static void InvalidateDescendants(DependencyObject root)
+    {
+        if (root is FrameworkElement highlight && GetIsEnabled(highlight))
+            Invalidate(highlight);
+
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            InvalidateDescendants(VisualTreeHelper.GetChild(root, i));
+    }
+
     private static void OnIsEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is not FrameworkElement highlight)
@@ -206,6 +229,14 @@ public static class SelectionHighlightAnimation
             return;
         }
 
+        if (!IsEligibleForHighlightLayout(itemsHost) ||
+            parentElement is not FrameworkElement parentFrameworkElement ||
+            !IsEligibleForHighlightLayout(parentFrameworkElement) ||
+            !IsEligibleForHighlightLayout(selectedElement))
+        {
+            return;
+        }
+
         var position = selectedElement.TranslatePoint(new Point(0, 0), parentElement);
         var transform = EnsureTranslateTransform(highlight);
         highlight.Visibility = Visibility.Visible;
@@ -288,4 +319,10 @@ public static class SelectionHighlightAnimation
 
         target.SetValue(property, nextValue);
     }
+
+    private static bool IsEligibleForHighlightLayout(UIElement element)
+        => element.Visibility == Visibility.Visible &&
+           element.IsVisible &&
+           (!(element is FrameworkElement frameworkElement) ||
+            (frameworkElement.ActualWidth > 0 && frameworkElement.ActualHeight > 0));
 }
