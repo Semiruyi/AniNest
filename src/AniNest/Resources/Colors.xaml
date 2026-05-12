@@ -3,8 +3,6 @@
 
     <Color x:Key="AccentBlueColor">#FF007AFF</Color>
     <SolidColorBrush x:Key="AccentBlue" Color="{StaticResource AccentBlueColor}"/>
-    <SolidColorBrush x:Key="AccentBlueHover" Color="#FF3399FF"/>
-    <SolidColorBrush x:Key="AccentBlueActive" Color="#FF66B5FF"/>
     <Color x:Key="AccentGreenColor">#FF2E9E57</Color>
     <SolidColorBrush x:Key="AccentGreen" Color="{StaticResource AccentGreenColor}"/>
     <Color x:Key="AccentRedColor">#FFD14B4B</Color>
@@ -15,8 +13,6 @@
     <SolidColorBrush x:Key="NeutralBlack" Color="{StaticResource NeutralBlackColor}"/>
 
     <SolidColorBrush x:Key="BackgroundDark" Color="#FF1E1E1E"/>
-    <SolidColorBrush x:Key="SurfaceDark" Color="#FF141414"/>
-    <SolidColorBrush x:Key="SurfaceLight" Color="#FF1E1E1E"/>
     <SolidColorBrush x:Key="SurfaceOverlayDark" Color="#B8000000"/>
     <LinearGradientBrush x:Key="SurfaceOverlayDarkGradient" StartPoint="0,0" EndPoint="0,1">
         <GradientStop Color="#00000000" Offset="0"/>
@@ -33,10 +29,16 @@
     <SolidColorBrush x:Key="LibraryFilterBarItemHover" Color="#1FFFFFFF"/>
     <SolidColorBrush x:Key="LibraryFilterBarItemSelected" Color="{StaticResource AccentBlueColor}"/>
     <SolidColorBrush x:Key="LibraryFavoriteColor" Color="#FFD7B24C"/>
+    <SolidColorBrush x:Key="LibraryCardPlaceholderBackground" Color="#FF252525"/>
+    <SolidColorBrush x:Key="LibraryCardInfoSecondaryText" Color="#BFC7D5"/>
+    <SolidColorBrush x:Key="LibraryCardInfoMutedText" Color="#8A93A3"/>
+    <SolidColorBrush x:Key="LibraryCardProgressTrack" Color="#33FFFFFF"/>
     <SolidColorBrush x:Key="LibraryStatusWatchingBackground" Color="{StaticResource AccentBlueColor}"/>
     <SolidColorBrush x:Key="LibraryStatusUnsortedBackground" Color="{StaticResource NeutralBlackColor}"/>
     <SolidColorBrush x:Key="LibraryStatusCompletedBackground" Color="{StaticResource AccentGreenColor}"/>
     <SolidColorBrush x:Key="LibraryStatusDroppedBackground" Color="{StaticResource NeutralGrayColor}"/>
+    <SolidColorBrush x:Key="PopupMenuDividerBrush" Color="#18FFFFFF"/>
+    <SolidColorBrush x:Key="DangerForeground" Color="#FFFF7070"/>
 
     <SolidColorBrush x:Key="IconSecondary" Color="#AAAAAA"/>
 

@@ -26,81 +26,6 @@
                BasedOn="{StaticResource PopupMenuButton}">
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         </Style>
-        <Style x:Key="LibraryCardStatusButton"
-               TargetType="Button"
-               BasedOn="{StaticResource MenuButtonBase}">
-            <Setter Property="Height" Value="25"/>
-            <Setter Property="MinWidth" Value="60"/>
-            <Setter Property="Padding" Value="8,0"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="FontSize" Value="{StaticResource AppFontSizeCaption}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-            <Setter Property="Background" Value="{StaticResource LibraryStatusUnsortedBackground}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="BgBorder"
-                                Background="{TemplateBinding Background}"
-                                CornerRadius="13"
-                                RenderTransformOrigin="0.5,0.5">
-                            <Border.RenderTransform>
-                                <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
-                            </Border.RenderTransform>
-                            <Grid>
-                                <Border x:Name="HoverBg"
-                                        Background="{StaticResource PressedBackground}"
-                                        CornerRadius="13"
-                                        Opacity="0"/>
-                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                                  Margin="{TemplateBinding Padding}"/>
-                            </Grid>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Opacity" Value="1"/>
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="HoverBg"
-                                                             Storyboard.TargetProperty="Opacity"
-                                                             To="1"
-                                                             Duration="0:0:0.12"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="HoverBg"
-                                                             Storyboard.TargetProperty="Opacity"
-                                                             To="0"
-                                                             Duration="0:0:0.18"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Watching}">
-                    <Setter Property="Background" Value="{StaticResource LibraryStatusWatchingBackground}"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Unsorted}">
-                    <Setter Property="Background" Value="{StaticResource LibraryStatusUnsortedBackground}"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Completed}">
-                    <Setter Property="Background" Value="{StaticResource LibraryStatusCompletedBackground}"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Dropped}">
-                    <Setter Property="Background" Value="{StaticResource LibraryStatusDroppedBackground}"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-
     </UserControl.Resources>
 
     <Grid x:Name="RootGrid">
@@ -130,7 +55,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type models:LibraryFilterOption}">
-                                    <Grid Margin="3,0">
+                                    <Grid Margin="{StaticResource LibraryFilterBarItemMargin}">
                                         <Button Content="{Binding DisplayName}"
                                                 Style="{StaticResource SelectableOptionSegmentButton}"
                                                 animations:SelectableOptionState.IsSelected="{Binding IsSelected}"
@@ -143,7 +68,7 @@
                     </primitives:SelectableOptionGroup>
                 </Border>
 
-                <ItemsControl Margin="0,20,0,0"
+                <ItemsControl Margin="{StaticResource LibraryFolderListMargin}"
                               ItemsSource="{Binding FolderItems}"
                               animations:StaggeredItemsAnimation.Enabled="True"
                               animations:StaggeredItemsAnimation.StaggerMs="50"
@@ -186,7 +111,7 @@
                                                Source="{Binding CoverPath, Converter={StaticResource CoverImageSource}}"
                                                Visibility="{Binding CoverPath, Converter={StaticResource NullToVis}}"/>
 
-                                        <Rectangle Fill="#252525"
+                                        <Rectangle Fill="{StaticResource LibraryCardPlaceholderBackground}"
                                                    Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
                                         <TextBlock Text="&#x1F3AC;"
                                                    Style="{StaticResource AppTextIconPlaceholder}"
@@ -196,10 +121,10 @@
                                         <Grid
                                               HorizontalAlignment="Right"
                                               VerticalAlignment="Top"
-                                              Margin="8"
+                                              Margin="{StaticResource LibraryCardFavoriteButtonMargin}"
                                               Panel.ZIndex="10"
-                                              Width="28"
-                                              Height="28"
+                                              Width="{StaticResource LibraryCardFavoriteButtonSize}"
+                                              Height="{StaticResource LibraryCardFavoriteButtonSize}"
                                               animations:ScaleFadeVisibilityAnimator.IsEnabled="True"
                                               animations:ScaleFadeVisibilityAnimator.Preset="Compact"
                                               animations:ScaleFadeVisibilityAnimator.CollapseWhenInactive="False"
@@ -212,7 +137,7 @@
                                         <Border x:Name="CardInfoRoot"
                                                 VerticalAlignment="Bottom"
                                                 Height="{StaticResource FolderCardGradientHeight}"
-                                                Padding="0,12,0,0">
+                                                Padding="{StaticResource LibraryCardInfoPadding}">
                                             <Border.Background>
                                                 <StaticResource ResourceKey="SurfaceOverlayDarkGradient"/>
                                             </Border.Background>
@@ -228,33 +153,33 @@
                                                            TextTrimming="CharacterEllipsis"/>
                                                 <StackPanel Grid.Row="1"
                                                             Orientation="Horizontal"
-                                                            Margin="0,4,0,0">
+                                                            Margin="{StaticResource LibraryCardSummaryRowMargin}">
                                                     <TextBlock Text="{Binding DataContext.PlayedSummaryPrefix, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                Style="{StaticResource AppTextCardSummary}"
-                                                               Foreground="#BFC7D5"/>
+                                                               Foreground="{StaticResource LibraryCardInfoSecondaryText}"/>
                                                     <TextBlock Text="{Binding PlayedCount}"
                                                                Style="{StaticResource AppTextCardSummary}"
                                                                Foreground="{StaticResource AccentBlue}"/>
                                                     <TextBlock Text=" / "
                                                                Style="{StaticResource AppTextCardSummary}"
-                                                               Foreground="#BFC7D5"/>
+                                                               Foreground="{StaticResource LibraryCardInfoSecondaryText}"/>
                                                     <TextBlock Text="{Binding DataContext.PlayedSummaryTotal, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                Style="{StaticResource AppTextCardSummary}"
-                                                               Foreground="#BFC7D5"/>
+                                                               Foreground="{StaticResource LibraryCardInfoSecondaryText}"/>
                                                     <TextBlock Text="{Binding VideoCount}"
                                                                Style="{StaticResource AppTextCardSummary}"
-                                                               Foreground="#8A93A3"/>
+                                                               Foreground="{StaticResource LibraryCardInfoMutedText}"/>
                                                     <TextBlock Text="{Binding DataContext.PlayedSummarySuffix, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                Style="{StaticResource AppTextCardSummary}"
-                                                               Foreground="#BFC7D5"/>
+                                                               Foreground="{StaticResource LibraryCardInfoSecondaryText}"/>
                                                 </StackPanel>
                                                 <Grid Grid.Row="3"
-                                                      Margin="0,8,0,0"
+                                                      Margin="{StaticResource LibraryCardProgressMargin}"
                                                       Height="14"
                                                       Background="Transparent">
                                                     <Border Height="3"
                                                             VerticalAlignment="Center"
-                                                            Background="#33FFFFFF"
+                                                            Background="{StaticResource LibraryCardProgressTrack}"
                                                             CornerRadius="1.5"/>
                                                     <Grid HorizontalAlignment="Left"
                                                           Width="{Binding PlayedPercent, Converter={StaticResource PercentToWidthConverter}, ConverterParameter=166}"
@@ -271,7 +196,7 @@
                                 </Border>
                                 <Button x:Name="CardStatusButton"
                                         Style="{StaticResource LibraryCardStatusButton}"
-                                        Margin="0,8,0,0"
+                                        Margin="{StaticResource LibraryCardStatusButtonMargin}"
                                         HorizontalAlignment="Center"
                                         Click="CardStatusButton_Click">
                                     <TextBlock VerticalAlignment="Center"
@@ -385,8 +310,8 @@
                         </StackPanel>
                     </Button>
                     <Border Height="1"
-                            Margin="8,4"
-                            Background="#18FFFFFF"/>
+                            Margin="{StaticResource PopupMenuDividerMargin}"
+                            Background="{StaticResource PopupMenuDividerBrush}"/>
                     <Button Style="{StaticResource PopupMenuButton}"
                             Command="{Binding DataContext.MoveFolderToFrontCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             CommandParameter="{Binding DataContext, ElementName=CardContextMenuOverlay}"
@@ -407,12 +332,12 @@
                             CommandParameter="{Binding DataContext, ElementName=CardContextMenuOverlay}"
                             Click="OnOverlayActionClick">
                         <TextBlock Text="{Binding DataContext.Localization[Library.RemoveFromLibrary], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                   Foreground="#FFFF7070"
+                                   Foreground="{StaticResource DangerForeground}"
                                    VerticalAlignment="Center"/>
                     </Button>
                     <Border Height="1"
-                            Margin="8,4"
-                            Background="#18FFFFFF"/>
+                            Margin="{StaticResource PopupMenuDividerMargin}"
+                            Background="{StaticResource PopupMenuDividerBrush}"/>
                     <Button x:Name="ThumbnailActionsMenuButton"
                             Style="{StaticResource LibraryPopupMenuSubmenuButton}"
                             Click="ThumbnailActionsMenuButton_Click">
