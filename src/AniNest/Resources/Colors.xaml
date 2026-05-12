@@ -5,6 +5,14 @@
     <SolidColorBrush x:Key="AccentBlue" Color="{StaticResource AccentBlueColor}"/>
     <SolidColorBrush x:Key="AccentBlueHover" Color="#FF3399FF"/>
     <SolidColorBrush x:Key="AccentBlueActive" Color="#FF66B5FF"/>
+    <Color x:Key="AccentGreenColor">#FF2E9E57</Color>
+    <SolidColorBrush x:Key="AccentGreen" Color="{StaticResource AccentGreenColor}"/>
+    <Color x:Key="AccentRedColor">#FFD14B4B</Color>
+    <SolidColorBrush x:Key="AccentRed" Color="{StaticResource AccentRedColor}"/>
+    <Color x:Key="NeutralGrayColor">#FFAAAAAA</Color>
+    <SolidColorBrush x:Key="NeutralGray" Color="{StaticResource NeutralGrayColor}"/>
+    <Color x:Key="NeutralBlackColor">#FF000000</Color>
+    <SolidColorBrush x:Key="NeutralBlack" Color="{StaticResource NeutralBlackColor}"/>
 
     <SolidColorBrush x:Key="BackgroundDark" Color="#FF1E1E1E"/>
     <SolidColorBrush x:Key="SurfaceDark" Color="#FF141414"/>
@@ -25,10 +33,10 @@
     <SolidColorBrush x:Key="LibraryFilterBarItemHover" Color="#1FFFFFFF"/>
     <SolidColorBrush x:Key="LibraryFilterBarItemSelected" Color="{StaticResource AccentBlueColor}"/>
     <SolidColorBrush x:Key="LibraryFavoriteColor" Color="#FFD7B24C"/>
-    <SolidColorBrush x:Key="LibraryStatusWatchingBackground" Color="#332D7DFF"/>
-    <SolidColorBrush x:Key="LibraryStatusUnsortedBackground" Color="#24FFFFFF"/>
-    <SolidColorBrush x:Key="LibraryStatusCompletedBackground" Color="#332E9E57"/>
-    <SolidColorBrush x:Key="LibraryStatusDroppedBackground" Color="#33D14B4B"/>
+    <SolidColorBrush x:Key="LibraryStatusWatchingBackground" Color="{StaticResource AccentBlueColor}"/>
+    <SolidColorBrush x:Key="LibraryStatusUnsortedBackground" Color="{StaticResource NeutralBlackColor}"/>
+    <SolidColorBrush x:Key="LibraryStatusCompletedBackground" Color="{StaticResource AccentGreenColor}"/>
+    <SolidColorBrush x:Key="LibraryStatusDroppedBackground" Color="{StaticResource NeutralGrayColor}"/>
 
     <SolidColorBrush x:Key="IconSecondary" Color="#AAAAAA"/>
 
@@ -44,7 +52,6 @@
     <SolidColorBrush x:Key="ProgressFillSuccess" Color="#FF2E7D32"/>
 
     <SolidColorBrush x:Key="CloseButtonHover" Color="#E81123"/>
-    <SolidColorBrush x:Key="DeleteButtonBackground" Color="#CCFF4444"/>
 
     <SolidColorBrush x:Key="ThumbnailPreviewTimeBackground" Color="#99000000"/>
 

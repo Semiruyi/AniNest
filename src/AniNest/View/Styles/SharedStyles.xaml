@@ -97,25 +97,6 @@
         <Setter Property="HighlightStyle" Value="{StaticResource SelectableOptionSegmentHighlight}"/>
     </Style>
 
-    <Style x:Key="DeleteIconButton" TargetType="Button">
-        <Setter Property="Width" Value="{StaticResource DeleteButtonSize}"/>
-        <Setter Property="Height" Value="{StaticResource DeleteButtonSize}"/>
-        <Setter Property="Background" Value="{StaticResource DeleteButtonBackground}"/>
-        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Cursor" Value="Hand"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Grid>
-                        <Ellipse Fill="{TemplateBinding Background}"/>
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Grid>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
     <Style x:Key="AppProgressBarThin" TargetType="ProgressBar">
         <Setter Property="Height" Value="{StaticResource ProgressBarThinHeight}"/>
         <Setter Property="Minimum" Value="0"/>

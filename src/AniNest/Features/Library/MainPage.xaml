@@ -29,14 +29,62 @@
         <Style x:Key="LibraryCardStatusButton"
                TargetType="Button"
                BasedOn="{StaticResource MenuButtonBase}">
-            <Setter Property="Height" Value="22"/>
-            <Setter Property="MinWidth" Value="86"/>
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="MinWidth" Value="60"/>
             <Setter Property="Padding" Value="8,0"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="FontSize" Value="{StaticResource AppFontSizeCaption}"/>
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-            <Setter Property="Tag" Value="11"/>
             <Setter Property="Background" Value="{StaticResource LibraryStatusUnsortedBackground}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="BgBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="13"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
+                            </Border.RenderTransform>
+                            <Grid>
+                                <Border x:Name="HoverBg"
+                                        Background="{StaticResource PressedBackground}"
+                                        CornerRadius="13"
+                                        Opacity="0"/>
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                  Margin="{TemplateBinding Padding}"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="1"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="HoverBg"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="1"
+                                                             Duration="0:0:0.12"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="HoverBg"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="0"
+                                                             Duration="0:0:0.18"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Watching}">
                     <Setter Property="Background" Value="{StaticResource LibraryStatusWatchingBackground}"/>
@@ -107,150 +155,149 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border x:Name="CardBorder"
-                                    Width="{StaticResource FolderCardWidth}"
-                                    Height="{StaticResource FolderCardHeight}"
-                                    Margin="{StaticResource FolderCardMargin}"
-                                    Background="{StaticResource SurfaceOverlayDark}"
-                                    CornerRadius="{StaticResource FolderCardCornerRadius}"
-                                    Cursor="Hand"
-                                    behaviors:MouseGestureBehavior.LeftClick="{Binding DataContext.SelectFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    behaviors:MouseGestureBehavior.CommandParameter="{Binding}"
-                                    animations:CardAnimation.Enabled="True"
-                                    animations:CardAnimation.HoverDurationMs="250"
-                                    animations:CardAnimation.PressDipMs="100"
-                                    animations:CardAnimation.PressRecoverMs="350"
-                                    animations:CardAnimation.CoverScale="1.12"
-                                    animations:CardAnimation.CoverShiftY="-8"
-                                    animations:CardAnimation.CoverDurationMs="400"
-                                    behaviors:HoverRevealBehavior.IsEnabled="True"
-                                    behaviors:HoverRevealBehavior.HideDelayMs="120"
-                                    behaviors:HoverRevealBehavior.MinVisibleMs="220"
-                                    PreviewMouseRightButtonUp="OnCardPreviewMouseRightButtonUp">
-                                <Grid>
-                                    <Grid.Clip>
-                                        <RectangleGeometry RadiusX="10" RadiusY="10"
-                                                          Rect="0,0,190,253"/>
-                                    </Grid.Clip>
+                            <StackPanel Margin="{StaticResource FolderCardMargin}"
+                                        HorizontalAlignment="Center">
+                                <Border x:Name="CardBorder"
+                                        Width="{StaticResource FolderCardWidth}"
+                                        Height="{StaticResource FolderCardHeight}"
+                                        Background="{StaticResource SurfaceOverlayDark}"
+                                        CornerRadius="{StaticResource FolderCardCornerRadius}"
+                                        Cursor="Hand"
+                                        behaviors:MouseGestureBehavior.LeftClick="{Binding DataContext.SelectFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        behaviors:MouseGestureBehavior.CommandParameter="{Binding}"
+                                        animations:CardAnimation.Enabled="True"
+                                        animations:CardAnimation.HoverDurationMs="250"
+                                        animations:CardAnimation.PressDipMs="100"
+                                        animations:CardAnimation.PressRecoverMs="350"
+                                        animations:CardAnimation.CoverScale="1.12"
+                                        animations:CardAnimation.CoverShiftY="-8"
+                                        animations:CardAnimation.CoverDurationMs="400"
+                                        behaviors:HoverRevealBehavior.IsEnabled="True"
+                                        behaviors:HoverRevealBehavior.HideDelayMs="120"
+                                        behaviors:HoverRevealBehavior.MinVisibleMs="220"
+                                        PreviewMouseRightButtonUp="OnCardPreviewMouseRightButtonUp">
+                                    <Grid>
+                                        <Grid.Clip>
+                                            <RectangleGeometry RadiusX="10" RadiusY="10"
+                                                              Rect="0,0,190,253"/>
+                                        </Grid.Clip>
 
-                                    <Image Stretch="UniformToFill"
-                                           Source="{Binding CoverPath, Converter={StaticResource CoverImageSource}}"
-                                           Visibility="{Binding CoverPath, Converter={StaticResource NullToVis}}"/>
+                                        <Image Stretch="UniformToFill"
+                                               Source="{Binding CoverPath, Converter={StaticResource CoverImageSource}}"
+                                               Visibility="{Binding CoverPath, Converter={StaticResource NullToVis}}"/>
 
-                                    <Rectangle Fill="#252525"
-                                               Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
-                                    <TextBlock Text="&#x1F3AC;"
-                                               Style="{StaticResource AppTextIconPlaceholder}"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                                               Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
+                                        <Rectangle Fill="#252525"
+                                                   Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
+                                        <TextBlock Text="&#x1F3AC;"
+                                                   Style="{StaticResource AppTextIconPlaceholder}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
 
-                                    <Grid
-                                          HorizontalAlignment="Right"
-                                          VerticalAlignment="Top"
-                                          Margin="8"
-                                          Panel.ZIndex="10"
-                                          Width="28"
-                                          Height="28"
-                                          animations:ScaleFadeVisibilityAnimator.IsEnabled="True"
-                                          animations:ScaleFadeVisibilityAnimator.Preset="Compact"
-                                          animations:ScaleFadeVisibilityAnimator.CollapseWhenInactive="False"
-                                          animations:ScaleFadeVisibilityAnimator.IsActive="{Binding ElementName=CardBorder, Path=(behaviors:HoverRevealBehavior.IsRevealActive)}">
-                                        <Button Style="{StaticResource LibraryCardFavoriteButton}"
-                                                Command="{Binding DataContext.ToggleFolderFavoriteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}"/>
-                                    </Grid>
+                                        <Grid
+                                              HorizontalAlignment="Right"
+                                              VerticalAlignment="Top"
+                                              Margin="8"
+                                              Panel.ZIndex="10"
+                                              Width="28"
+                                              Height="28"
+                                              animations:ScaleFadeVisibilityAnimator.IsEnabled="True"
+                                              animations:ScaleFadeVisibilityAnimator.Preset="Compact"
+                                              animations:ScaleFadeVisibilityAnimator.CollapseWhenInactive="False"
+                                              animations:ScaleFadeVisibilityAnimator.IsActive="{Binding ElementName=CardBorder, Path=(behaviors:HoverRevealBehavior.IsRevealActive)}">
+                                            <Button Style="{StaticResource LibraryCardFavoriteButton}"
+                                                    Command="{Binding DataContext.ToggleFolderFavoriteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"/>
+                                        </Grid>
 
-                                    <Border x:Name="CardInfoRoot"
-                                            VerticalAlignment="Bottom"
-                                            Height="{StaticResource FolderCardGradientHeight}"
-                                            Padding="0,12,0,0">
-                                        <Border.Background>
-                                            <StaticResource ResourceKey="SurfaceOverlayDarkGradient"/>
-                                        </Border.Background>
-                                        <Grid Margin="{StaticResource CardInfoMargin}">
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                            </Grid.RowDefinitions>
-                                            <TextBlock Text="{Binding Name}"
-                                                       Style="{StaticResource AppTextSectionTitle}"
-                                                       Foreground="White"
-                                                       TextTrimming="CharacterEllipsis"/>
-                                            <StackPanel Grid.Row="1"
-                                                        Orientation="Horizontal"
-                                                        Margin="0,4,0,0">
-                                                <TextBlock Text="{Binding DataContext.PlayedSummaryPrefix, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                           Style="{StaticResource AppTextCardSummary}"
-                                                           Foreground="#BFC7D5"/>
-                                                <TextBlock Text="{Binding PlayedCount}"
-                                                           Style="{StaticResource AppTextCardSummary}"
-                                                           Foreground="{StaticResource AccentBlue}"/>
-                                                <TextBlock Text=" / "
-                                                           Style="{StaticResource AppTextCardSummary}"
-                                                           Foreground="#BFC7D5"/>
-                                                <TextBlock Text="{Binding DataContext.PlayedSummaryTotal, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                           Style="{StaticResource AppTextCardSummary}"
-                                                           Foreground="#BFC7D5"/>
-                                                <TextBlock Text="{Binding VideoCount}"
-                                                           Style="{StaticResource AppTextCardSummary}"
-                                                           Foreground="#8A93A3"/>
-                                                <TextBlock Text="{Binding DataContext.PlayedSummarySuffix, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                           Style="{StaticResource AppTextCardSummary}"
-                                                           Foreground="#BFC7D5"/>
-                                            </StackPanel>
-                                            <Grid Grid.Row="2"
-                                                  Margin="0,8,0,0"
-                                                  Height="14"
-                                                  Background="Transparent">
-                                                <Border Height="3"
-                                                        VerticalAlignment="Center"
-                                                        Background="#33FFFFFF"
-                                                        CornerRadius="1.5"/>
-                                                <Grid HorizontalAlignment="Left"
-                                                      Width="{Binding PlayedPercent, Converter={StaticResource PercentToWidthConverter}, ConverterParameter=166}"
-                                                      ClipToBounds="True">
+                                        <Border x:Name="CardInfoRoot"
+                                                VerticalAlignment="Bottom"
+                                                Height="{StaticResource FolderCardGradientHeight}"
+                                                Padding="0,12,0,0">
+                                            <Border.Background>
+                                                <StaticResource ResourceKey="SurfaceOverlayDarkGradient"/>
+                                            </Border.Background>
+                                            <Grid Margin="{StaticResource CardInfoMargin}">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+                                                <TextBlock Text="{Binding Name}"
+                                                           Style="{StaticResource AppTextSectionTitle}"
+                                                           Foreground="White"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                                <StackPanel Grid.Row="1"
+                                                            Orientation="Horizontal"
+                                                            Margin="0,4,0,0">
+                                                    <TextBlock Text="{Binding DataContext.PlayedSummaryPrefix, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                               Style="{StaticResource AppTextCardSummary}"
+                                                               Foreground="#BFC7D5"/>
+                                                    <TextBlock Text="{Binding PlayedCount}"
+                                                               Style="{StaticResource AppTextCardSummary}"
+                                                               Foreground="{StaticResource AccentBlue}"/>
+                                                    <TextBlock Text=" / "
+                                                               Style="{StaticResource AppTextCardSummary}"
+                                                               Foreground="#BFC7D5"/>
+                                                    <TextBlock Text="{Binding DataContext.PlayedSummaryTotal, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                               Style="{StaticResource AppTextCardSummary}"
+                                                               Foreground="#BFC7D5"/>
+                                                    <TextBlock Text="{Binding VideoCount}"
+                                                               Style="{StaticResource AppTextCardSummary}"
+                                                               Foreground="#8A93A3"/>
+                                                    <TextBlock Text="{Binding DataContext.PlayedSummarySuffix, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                               Style="{StaticResource AppTextCardSummary}"
+                                                               Foreground="#BFC7D5"/>
+                                                </StackPanel>
+                                                <Grid Grid.Row="3"
+                                                      Margin="0,8,0,0"
+                                                      Height="14"
+                                                      Background="Transparent">
                                                     <Border Height="3"
                                                             VerticalAlignment="Center"
-                                                            Background="{StaticResource AccentBlue}"
+                                                            Background="#33FFFFFF"
                                                             CornerRadius="1.5"/>
+                                                    <Grid HorizontalAlignment="Left"
+                                                          Width="{Binding PlayedPercent, Converter={StaticResource PercentToWidthConverter}, ConverterParameter=166}"
+                                                          ClipToBounds="True">
+                                                        <Border Height="3"
+                                                                VerticalAlignment="Center"
+                                                                Background="{StaticResource AccentBlue}"
+                                                                CornerRadius="1.5"/>
+                                                    </Grid>
                                                 </Grid>
                                             </Grid>
-                                            <Grid Grid.Row="3"
-                                                  Margin="0,8,0,0"
-                                                  HorizontalAlignment="Center">
-                                                <Button x:Name="CardStatusButton"
-                                                        Style="{StaticResource LibraryCardStatusButton}"
-                                                Click="CardStatusButton_Click">
-                                                    <TextBlock VerticalAlignment="Center"
-                                                               TextTrimming="CharacterEllipsis">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Unsorted], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Watching}">
-                                                                        <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Watching], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Unsorted}">
-                                                                        <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Unsorted], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Completed}">
-                                                                        <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Completed], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Dropped}">
-                                                                        <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Dropped], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                </Button>
-                                            </Grid>
-                                        </Grid>
-                                    </Border>
-                                </Grid>
-                            </Border>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                                <Button x:Name="CardStatusButton"
+                                        Style="{StaticResource LibraryCardStatusButton}"
+                                        Margin="0,8,0,0"
+                                        HorizontalAlignment="Center"
+                                        Click="CardStatusButton_Click">
+                                    <TextBlock VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Unsorted], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Watching}">
+                                                        <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Watching], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Unsorted}">
+                                                        <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Unsorted], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Completed}">
+                                                        <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Completed], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Dropped}">
+                                                        <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Dropped], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Button>
+                            </StackPanel>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
