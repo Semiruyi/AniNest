@@ -7,7 +7,6 @@
              xmlns:conv="clr-namespace:AniNest.Presentation.Converters"
              xmlns:behaviors="clr-namespace:AniNest.Presentation.Behaviors"
              xmlns:primitives="clr-namespace:AniNest.Presentation.Primitives"
-             xmlns:converters="clr-namespace:AniNest.Presentation.Converters"
              Background="{StaticResource BackgroundDark}"
              Focusable="True"
              InputMethod.IsInputMethodEnabled="False"
@@ -18,189 +17,6 @@
         <ResourceDictionary>
             <BooleanToVisibilityConverter x:Key="BoolToVis"/>
             <conv:InverseBoolConverter x:Key="InverseBool"/>
-            <converters:ProgressToPieConverter x:Key="ProgressToPieConverter"/>
-            <converters:ProgressToVisibilityConverter x:Key="ProgressToVisibilityConverter"/>
-
-            <Style x:Key="EpisodeButton" TargetType="Button" BasedOn="{StaticResource AnimatedCompactButtonBase}">
-                <Setter Property="Width" Value="{StaticResource EpisodeButtonSize}"/>
-                <Setter Property="Height" Value="{StaticResource EpisodeButtonSize}"/>
-                <Setter Property="Foreground" Value="#EBEBF5"/>
-                <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="Focusable" Value="False"/>
-                <Setter Property="FontWeight" Value="Medium"/>
-                <Setter Property="FontSize" Value="{StaticResource AppFontSizePanelTitle}"/>
-                <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="Button">
-                            <Grid x:Name="ButtonRoot" RenderTransformOrigin="0.5,0.5">
-                                <Grid.RenderTransform>
-                                    <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
-                                </Grid.RenderTransform>
-                                <Border x:Name="BgBorder"
-                                        CornerRadius="{StaticResource CardCornerRadius}">
-                                    <Border.Background>
-                                        <SolidColorBrush x:Name="BgBrush" Color="#2C2C2E"/>
-                                    </Border.Background>
-                                </Border>
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                <Grid x:Name="CheckIcon" HorizontalAlignment="Right" VerticalAlignment="Top"
-                                      Width="{StaticResource CheckIconSize}"
-                                      Height="{StaticResource CheckIconSize}"
-                                      Margin="0,-3,-3,0"
-                                      anim:ScaleFadeVisibilityAnimator.IsEnabled="True"
-                                      anim:ScaleFadeVisibilityAnimator.IsActive="{Binding IsThumbnailReady}">
-                                    <Ellipse Fill="White"
-                                             Width="{StaticResource CheckIconSize}"
-                                             Height="{StaticResource CheckIconSize}"/>
-                                    <Image Source="/Resources/Icons/check.png"
-                                           Width="{StaticResource CheckIconSize}"
-                                           Height="{StaticResource CheckIconSize}">
-                                        <Image.Clip>
-                                            <EllipseGeometry RadiusX="10" RadiusY="10" Center="10,10"/>
-                                        </Image.Clip>
-                                    </Image>
-                                </Grid>
-                                <Grid HorizontalAlignment="Right" VerticalAlignment="Top"
-                                      Width="{StaticResource CheckIconSize}"
-                                      Height="{StaticResource CheckIconSize}"
-                                      Margin="0,-3,-3,0"
-                                      anim:ScaleFadeVisibilityAnimator.IsEnabled="True"
-                                      anim:ScaleFadeVisibilityAnimator.VisibilityState="{Binding ThumbnailProgress, Converter={StaticResource ProgressToVisibilityConverter}}">
-                                    <Ellipse Fill="#48484A"
-                                             Width="{StaticResource CheckIconSize}"
-                                             Height="{StaticResource CheckIconSize}"/>
-                                    <Path Fill="{StaticResource AccentBlue}" Opacity="0.85"
-                                          Width="{StaticResource CheckIconSize}"
-                                          Height="{StaticResource CheckIconSize}"
-                                          Data="{Binding ThumbnailProgress, Converter={StaticResource ProgressToPieConverter}}"/>
-                                </Grid>
-                            </Grid>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Foreground" Value="White"/>
-                                    <Trigger.EnterActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <ColorAnimation Storyboard.TargetName="BgBrush"
-                                                    Storyboard.TargetProperty="Color"
-                                                    To="#3A3A3C" Duration="0:0:0.2"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.EnterActions>
-                                    <Trigger.ExitActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <ColorAnimation Storyboard.TargetName="BgBrush"
-                                                    Storyboard.TargetProperty="Color"
-                                                    Duration="0:0:0.25" FillBehavior="Stop"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.ExitActions>
-                                </Trigger>
-                                <Trigger Property="IsPressed" Value="True">
-                                    <Setter Property="Foreground" Value="#EBEBF5"/>
-                                    <Trigger.EnterActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <ColorAnimation Storyboard.TargetName="BgBrush"
-                                                    Storyboard.TargetProperty="Color"
-                                                    To="#1C1C1E" Duration="0:0:0.08"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.EnterActions>
-                                    <Trigger.ExitActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <ColorAnimation Storyboard.TargetName="BgBrush"
-                                                    Storyboard.TargetProperty="Color"
-                                                    Duration="0:0:0.25" FillBehavior="Stop"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </Trigger.ExitActions>
-                                </Trigger>
-                                <DataTrigger Binding="{Binding IsPlayed}" Value="True">
-                                    <DataTrigger.EnterActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <ColorAnimation Storyboard.TargetName="BgBrush"
-                                                    Storyboard.TargetProperty="Color"
-                                                    To="#165396" Duration="0:0:0.22"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </DataTrigger.EnterActions>
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
-                                    <Setter Property="Foreground" Value="White"/>
-                                    <Setter Property="FontWeight" Value="SemiBold"/>
-                                    <DataTrigger.EnterActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <ColorAnimation Storyboard.TargetName="BgBrush"
-                                                    Storyboard.TargetProperty="Color"
-                                                    To="#007AFF" Duration="0:0:0.22"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </DataTrigger.EnterActions>
-                                    <DataTrigger.ExitActions>
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <ColorAnimation Storyboard.TargetName="BgBrush"
-                                                    Storyboard.TargetProperty="Color"
-                                                    To="#165396" Duration="0:0:0.22"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </DataTrigger.ExitActions>
-                                </DataTrigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-
-            <Style TargetType="ScrollBar">
-                <Setter Property="Width" Value="{StaticResource ScrollbarThumbWidth}"/>
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ScrollBar">
-                            <Grid>
-                                <Track x:Name="PART_Track" IsDirectionReversed="True">
-                                    <Track.Thumb>
-                                        <Thumb>
-                                            <Thumb.Template>
-                                                <ControlTemplate TargetType="Thumb">
-                                                    <Border Background="#28FFFFFF"
-                                                            CornerRadius="2"
-                                                            Width="{StaticResource ScrollbarThumbWidth}"/>
-                                                </ControlTemplate>
-                                            </Thumb.Template>
-                                        </Thumb>
-                                    </Track.Thumb>
-                                </Track>
-                            </Grid>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-
-            <Style TargetType="ListBoxItem">
-                <Setter Property="Padding" Value="0"/>
-                <Setter Property="Margin" Value="3"/>
-                <Setter Property="Width" Value="{StaticResource EpisodeButtonSize}"/>
-                <Setter Property="Height" Value="{StaticResource EpisodeButtonSize}"/>
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ListBoxItem">
-                            <ContentPresenter/>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
     <Grid x:Name="PageRoot" anim:LoadedAnimator.Enabled="True"
@@ -234,9 +50,7 @@
         </Grid>
 
         <Border x:Name="PlaylistPanel" Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
-                Width="{StaticResource PlaylistPanelWidth}"
-                Background="#1A1A1C"
-                BorderBrush="#222224" BorderThickness="1,0,0,0"
+                Style="{StaticResource PlayerPlaylistPanelStyle}"
                 DataContext="{Binding Playlist}"
                 Visibility="{Binding IsVisible, Converter={StaticResource BoolToVis}}">
             <Grid>
@@ -253,17 +67,18 @@
                                VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding EpisodeCountText, FallbackValue=''}"
                                Style="{StaticResource AppTextBody}"
-                               Foreground="#8E8E93"
+                               Foreground="{StaticResource PlayerPlaylistMetaForeground}"
                                VerticalAlignment="Center" HorizontalAlignment="Right"/>
                 </Grid>
 
                 <!-- Episode Grid -->
-                <ListBox Grid.Row="1" Background="Transparent" BorderThickness="0"
-                         Margin="{StaticResource PlaylistItemsMargin}"
+                <ListBox Grid.Row="1"
+                         Style="{StaticResource PlaylistEpisodeListBox}"
                          ItemsSource="{Binding Items}"
-                         SelectedIndex="{Binding CurrentIndex, Mode=OneWay}"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto">
+                         SelectedIndex="{Binding CurrentIndex, Mode=OneWay}">
+                    <ListBox.Resources>
+                        <Style TargetType="ScrollBar" BasedOn="{StaticResource OverlayThinScrollBar}"/>
+                    </ListBox.Resources>
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
                             <primitives:AnimatedWrapPanel Orientation="Horizontal"
@@ -272,7 +87,7 @@
                     </ListBox.ItemsPanel>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Button Style="{StaticResource EpisodeButton}"
+                            <Button Style="{StaticResource PlayerEpisodeButton}"
                                     Command="{Binding DataContext.PlayEpisodeCommand, RelativeSource={RelativeSource AncestorType=Border}}"
                                     CommandParameter="{Binding}">
                                 <TextBlock Text="{Binding Number, StringFormat={}{0:D2}}"
@@ -281,9 +96,7 @@
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center">
                                     <TextBlock.ToolTip>
-                                        <ToolTip Style="{StaticResource AppTooltipText}"
-                                                 Background="#1C1C1E" BorderBrush="#38383A"
-                                                 Foreground="White" Padding="10,5" BorderThickness="1">
+                                        <ToolTip Style="{StaticResource AppPanelToolTip}">
                                             <TextBlock Text="{Binding Title}" MaxWidth="220"
                                                        Style="{StaticResource AppTextBody}"
                                                        TextTrimming="CharacterEllipsis"/>

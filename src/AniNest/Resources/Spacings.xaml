@@ -21,6 +21,9 @@
     <Thickness x:Key="TimeSeparatorMargin">2,0</Thickness>
     <Thickness x:Key="PlaylistHeaderMargin">20,18,20,10</Thickness>
     <Thickness x:Key="PlaylistItemsMargin">14,4,14,14</Thickness>
+    <Thickness x:Key="PlaylistEpisodeItemMargin">3</Thickness>
+    <Thickness x:Key="PlaylistEpisodeStatusBadgeMargin">0,-3,-3,0</Thickness>
+    <Thickness x:Key="TooltipPanelPadding">10,5</Thickness>
     <Thickness x:Key="PauseBigIconMargin">0,0,32,75</Thickness>
 
     <Thickness x:Key="LibraryPageMargin">24</Thickness>

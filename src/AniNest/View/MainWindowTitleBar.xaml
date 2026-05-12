@@ -104,7 +104,7 @@
                                               VerticalOffset="8">
                         <Border x:Name="BackgroundTaskPopupContent"
                                 Background="{StaticResource PopupMenuBackground}"
-                                BorderBrush="#38383A"
+                                BorderBrush="{StaticResource PopupPanelBorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="{StaticResource SpeedPopupCornerRadius}"
                                 Padding="12,10"
@@ -216,7 +216,7 @@
                                      BorderThickness="0"
                                      Padding="0">
                                 <Border Background="{StaticResource PopupMenuBackground}"
-                                        BorderBrush="#38383A"
+                                        BorderBrush="{StaticResource PopupPanelBorderBrush}"
                                         BorderThickness="1"
                                         CornerRadius="{StaticResource SpeedPopupCornerRadius}"
                                         Padding="10,8"

@@ -16,7 +16,7 @@
     <Grid x:Name="RootGrid" Height="{StaticResource ControlBarHeight}"
           Focusable="True">
         <Grid.Background>
-            <SolidColorBrush Color="#CC0F0F0F"/>
+            <StaticResource ResourceKey="ControlBarBackground"/>
         </Grid.Background>
 
         <Grid Margin="{StaticResource ControlBarHorizontalMargin}"
@@ -76,7 +76,7 @@
                            Foreground="{StaticResource TextSecondary}"
                            VerticalAlignment="Center"
                            Margin="{StaticResource TimeTextLeftMargin}"/>
-                <TextBlock Text=" / " Style="{StaticResource AppTextCaption}" Foreground="#66FFFFFF"
+                <TextBlock Text=" / " Style="{StaticResource AppTextCaption}" Foreground="{StaticResource ControlBarTimeSeparatorForeground}"
                            VerticalAlignment="Center"
                            Margin="{StaticResource TimeSeparatorMargin}"/>
                 <TextBlock Text="{Binding TotalTimeText, FallbackValue='00:00'}"
@@ -143,17 +143,10 @@
                         VerticalAlignment="Center">
                 <Grid>
                     <Button x:Name="SpeedBtn"
-                            Foreground="White" Focusable="False"
+                            Style="{StaticResource PlayerSpeedButton}"
                             Margin="{StaticResource ButtonGapRight}"
                             Click="SpeedBtn_Click"
                             animations:ButtonScaleHover.IsEnabled="True">
-                        <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource AnimatedIconButton}">
-                                <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
-                                <Setter Property="FontSize" Value="{StaticResource AppFontSizeCaption}"/>
-                                <Setter Property="FontWeight" Value="SemiBold"/>
-                            </Style>
-                        </Button.Style>
                         <Grid animations:TextSwapAnimator.Text="{Binding Rate, StringFormat={}{0:0.0#}x}">
                             <TextBlock Text="" HorizontalAlignment="Center" VerticalAlignment="Center"
                                        Opacity="0" RenderTransformOrigin="0.5,0.5">
@@ -180,32 +173,13 @@
                            Height="{StaticResource IconSizeNormal}"/>
                 </Button>
                 <Button x:Name="FullscreenBtn"
+                        Style="{StaticResource PlayerFullscreenButton}"
                         Margin="{StaticResource ButtonGapLeft}" Focusable="False"
                         Command="{Binding ToggleFullscreenCommand}"
                         animations:ButtonScaleHover.IsEnabled="True">
-                    <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource AnimatedIconButton}">
-                            <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Player.Fullscreen], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
-                                    <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Player.ExitFullscreen], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
                     <Image Width="{StaticResource IconSizeNormal}"
-                           Height="{StaticResource IconSizeNormal}">
-                        <Image.Style>
-                            <Style TargetType="Image">
-                                <Setter Property="Source" Value="/Resources/Icons/fullScreen.png"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
-                                        <Setter Property="Source" Value="/Resources/Icons/exitFullScreen.png"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Image.Style>
-                    </Image>
+                           Height="{StaticResource IconSizeNormal}"
+                           Style="{StaticResource PlayerFullscreenButtonIcon}"/>
                 </Button>
             </StackPanel>
         </Grid>
