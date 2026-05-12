@@ -16,6 +16,19 @@
                            Style="{StaticResource PlayerSpeedOptionText}"/>
             </Button>
         </DataTemplate>
+
+        <Style x:Key="PlayerFullscreenControlBarButton"
+               TargetType="Button"
+               BasedOn="{StaticResource PlayerFullscreenButton}">
+            <Setter Property="ToolTip"
+                    Value="{Binding DataContext.Localization[Player.Fullscreen], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
+                    <Setter Property="ToolTip"
+                            Value="{Binding DataContext.Localization[Player.ExitFullscreen], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </UserControl.Resources>
 
     <Grid x:Name="RootGrid" Height="{StaticResource ControlBarHeight}"
@@ -34,11 +47,17 @@
 
             <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left"
                         VerticalAlignment="Center">
-                <Button x:Name="PreviousBtn" Style="{StaticResource PlayerPreviousButton}">
+                <Button x:Name="PreviousBtn"
+                        Style="{StaticResource PlayerPreviousButton}"
+                        Command="{Binding PreviousCommand}"
+                        ToolTip="{Binding PreviousTooltip}">
                     <Image Source="/Resources/Icons/previous.png"
                            Style="{StaticResource PlayerControlBarIconImageSmall}"/>
                 </Button>
-                <Button x:Name="PlayPauseBtn" Style="{StaticResource PlayerPlayPauseButton}">
+                <Button x:Name="PlayPauseBtn"
+                        Style="{StaticResource PlayerPlayPauseButton}"
+                        Command="{Binding PlayPauseCommand}"
+                        ToolTip="{Binding PlayPauseTooltip}">
                     <Grid animations:IconCrossfader.IsActive="{Binding IsPlaying}"
                           animations:IconCrossfader.ListenButton="{Binding ElementName=PlayPauseBtn}">
                         <Image Source="/Resources/Icons/play.png"
@@ -49,11 +68,17 @@
                                Opacity="0"/>
                     </Grid>
                 </Button>
-                <Button x:Name="NextBtn" Style="{StaticResource PlayerNextButton}">
+                <Button x:Name="NextBtn"
+                        Style="{StaticResource PlayerNextButton}"
+                        Command="{Binding NextCommand}"
+                        ToolTip="{Binding NextTooltip}">
                     <Image Source="/Resources/Icons/next.png"
                            Style="{StaticResource PlayerControlBarIconImageSmall}"/>
                 </Button>
-                <Button x:Name="StopBtn" Style="{StaticResource PlayerStopButton}">
+                <Button x:Name="StopBtn"
+                        Style="{StaticResource PlayerStopButton}"
+                        Command="{Binding StopCommand}"
+                        ToolTip="{Binding DataContext.Localization[Player.Stop], RelativeSource={RelativeSource AncestorType=UserControl}}">
                     <Image Source="/Resources/Icons/stop.png"
                            Style="{StaticResource PlayerControlBarIconImageSmall}"/>
                 </Button>
@@ -133,12 +158,15 @@
                     </Button>
                 </Grid>
 
-                <Button x:Name="PlaylistToggleBtn" Style="{StaticResource PlayerPlaylistButton}">
+                <Button x:Name="PlaylistToggleBtn"
+                        Style="{StaticResource PlayerPlaylistButton}"
+                        Command="{Binding TogglePlaylistCommand}"
+                        ToolTip="{Binding DataContext.Localization[Player.Playlist], RelativeSource={RelativeSource AncestorType=UserControl}}">
                     <Image Source="/Resources/Icons/playlist.png"
                            Style="{StaticResource PlayerControlBarIconImageNormal}"/>
                 </Button>
                 <Button x:Name="FullscreenBtn"
-                        Style="{StaticResource PlayerFullscreenButton}"
+                        Style="{StaticResource PlayerFullscreenControlBarButton}"
                         Margin="{StaticResource ButtonGapLeft}" Focusable="False"
                         Command="{Binding ToggleFullscreenCommand}"
                         animations:ButtonScaleHover.IsEnabled="True">

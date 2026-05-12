@@ -183,8 +183,6 @@
     </Style>
 
     <Style x:Key="PlayerPreviousButton" TargetType="Button" BasedOn="{StaticResource AnimatedIconButton}">
-        <Setter Property="Command" Value="{Binding PreviousCommand}"/>
-        <Setter Property="ToolTip" Value="{Binding PreviousTooltip}"/>
         <Setter Property="Focusable" Value="False"/>
         <Setter Property="Margin" Value="{StaticResource ButtonGapRight}"/>
     </Style>
@@ -193,29 +191,21 @@
         <Setter Property="Width" Value="{StaticResource PlayPauseButtonSize}"/>
         <Setter Property="Height" Value="{StaticResource PlayPauseButtonSize}"/>
         <Setter Property="Opacity" Value="0.85"/>
-        <Setter Property="Command" Value="{Binding PlayPauseCommand}"/>
-        <Setter Property="ToolTip" Value="{Binding PlayPauseTooltip}"/>
         <Setter Property="Focusable" Value="False"/>
         <Setter Property="Margin" Value="{StaticResource ButtonGapBoth}"/>
     </Style>
 
     <Style x:Key="PlayerNextButton" TargetType="Button" BasedOn="{StaticResource AnimatedIconButton}">
-        <Setter Property="Command" Value="{Binding NextCommand}"/>
-        <Setter Property="ToolTip" Value="{Binding NextTooltip}"/>
         <Setter Property="Focusable" Value="False"/>
         <Setter Property="Margin" Value="{StaticResource ButtonGapRight}"/>
     </Style>
 
     <Style x:Key="PlayerStopButton" TargetType="Button" BasedOn="{StaticResource AnimatedIconButton}">
-        <Setter Property="Command" Value="{Binding StopCommand}"/>
-        <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Player.Stop], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
         <Setter Property="Focusable" Value="False"/>
         <Setter Property="Margin" Value="{StaticResource ButtonGapLeft}"/>
     </Style>
 
     <Style x:Key="PlayerPlaylistButton" TargetType="Button" BasedOn="{StaticResource AnimatedIconButton}">
-        <Setter Property="Command" Value="{Binding TogglePlaylistCommand}"/>
-        <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Player.Playlist], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
         <Setter Property="Focusable" Value="False"/>
         <Setter Property="Margin" Value="{StaticResource ButtonGapLeft}"/>
     </Style>
@@ -234,12 +224,6 @@
     <!-- Fullscreen button -->
     <Style x:Key="PlayerFullscreenButton" TargetType="Button" BasedOn="{StaticResource AnimatedIconButton}">
         <Setter Property="Focusable" Value="False"/>
-        <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Player.Fullscreen], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-        <Style.Triggers>
-            <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
-                <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Player.ExitFullscreen], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-            </DataTrigger>
-        </Style.Triggers>
     </Style>
 
     <Style x:Key="PlayerFullscreenButtonIcon" TargetType="Image">

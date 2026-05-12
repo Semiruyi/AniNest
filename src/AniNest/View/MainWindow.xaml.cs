@@ -16,7 +16,34 @@ namespace AniNest.View;
 
 public partial class MainWindow : Window
 {
+    private enum SettingsOverlayId
+    {
+        Language,
+        FullscreenAnimation,
+        ThumbnailSettings,
+        ThumbnailPerformance,
+        ThumbnailAcceleration,
+        PlayerInput
+    }
+
+    private sealed class SettingsOverlayRegistration
+    {
+        public required SettingsOverlayId Id { get; init; }
+        public required AnimatedOverlay Overlay { get; init; }
+        public required Func<FrameworkElement> Anchor { get; init; }
+        public required Action<ShellViewModel, bool> SyncState { get; init; }
+        public required string LogName { get; init; }
+        public SettingsOverlayId? ParentId { get; init; }
+        public SelectableOptionGroup? HighlightGroup { get; init; }
+        public Action<ShellViewModel>? OnOpened { get; init; }
+        public Action<ShellViewModel>? OnToggleClosed { get; init; }
+        public Action<ShellViewModel>? OnCloseRequested { get; init; }
+        public Action<ShellViewModel>? OnClosed { get; init; }
+    }
+
     private readonly FpsMonitor _fps;
+    private readonly Dictionary<SettingsOverlayId, SettingsOverlayRegistration> _settingsOverlays = [];
+    private readonly Dictionary<AnimatedOverlay, SelectableOptionGroup> _selectableOverlayHighlights = [];
     private bool _isTrueFullscreen;
     private WindowStyle _savedWindowStyle;
     private WindowState _savedWindowState;
@@ -32,33 +59,12 @@ public partial class MainWindow : Window
         _settingsService = settingsService;
         DataContext = vm;
         InitializeComponent();
+        InitializeSettingsOverlays();
         WireTitleBarEvents();
         PopupInputCoordinator.Instance.Attach(this);
         RegisterPopupRegions();
         FileOverlay.Closed += OnFileOverlayClosed;
         SettingsOverlay.Closed += OnSettingsOverlayClosed;
-        LanguageOverlay.Closed += OnLanguageOverlayClosed;
-        LanguageOverlay.Opening += OnSelectableOverlayOpening;
-        LanguageOverlay.Opened += OnSelectableOverlayOpened;
-        LanguageOverlay.Closing += OnSelectableOverlayClosing;
-        FullscreenAnimationOverlay.Closed += OnFullscreenAnimationOverlayClosed;
-        FullscreenAnimationOverlay.Opening += OnSelectableOverlayOpening;
-        FullscreenAnimationOverlay.Opened += OnSelectableOverlayOpened;
-        FullscreenAnimationOverlay.Closing += OnSelectableOverlayClosing;
-        ThumbnailSettingsOverlay.Closed += OnThumbnailSettingsOverlayClosed;
-        ThumbnailPerformanceOverlay.Closed += OnThumbnailPerformanceOverlayClosed;
-        ThumbnailPerformanceOverlay.Opening += OnSelectableOverlayOpening;
-        ThumbnailPerformanceOverlay.Opened += OnSelectableOverlayOpened;
-        ThumbnailPerformanceOverlay.Closing += OnSelectableOverlayClosing;
-        ThumbnailAccelerationOverlay.Closed += OnThumbnailAccelerationOverlayClosed;
-        ThumbnailAccelerationOverlay.Opening += OnSelectableOverlayOpening;
-        ThumbnailAccelerationOverlay.Opened += OnSelectableOverlayOpened;
-        ThumbnailAccelerationOverlay.Closing += OnSelectableOverlayClosing;
-        PlayerInputOverlay.Closed += OnPlayerInputOverlayClosed;
-        LanguageOptionGroup.IsSelectionHighlightActive = false;
-        FullscreenAnimationOptionGroup.IsSelectionHighlightActive = false;
-        ThumbnailPerformanceOptionGroup.IsSelectionHighlightActive = false;
-        ThumbnailAccelerationOptionGroup.IsSelectionHighlightActive = false;
         _fps = new FpsMonitor(this);
         _fps.Attach();
 
@@ -91,6 +97,88 @@ public partial class MainWindow : Window
         MaximizeButton.Click += MaximizeButton_Click;
         CloseButton.Click += CloseButton_Click;
         TitleBarFileNameHost.PreviewMouseLeftButtonDown += TitleBarFileNameHost_PreviewMouseLeftButtonDown;
+    }
+
+    private void InitializeSettingsOverlays()
+    {
+        RegisterSettingsOverlay(new SettingsOverlayRegistration
+        {
+            Id = SettingsOverlayId.Language,
+            Overlay = LanguageOverlay,
+            Anchor = () => LanguageMenuButton,
+            SyncState = static (shell, opened) => shell.IsLanguageSubmenuOpen = opened,
+            LogName = nameof(LanguageMenuButton_Click),
+            HighlightGroup = LanguageOptionGroup
+        });
+
+        RegisterSettingsOverlay(new SettingsOverlayRegistration
+        {
+            Id = SettingsOverlayId.FullscreenAnimation,
+            Overlay = FullscreenAnimationOverlay,
+            Anchor = () => FullscreenAnimationMenuButton,
+            SyncState = static (shell, opened) => shell.IsFullscreenAnimationSubmenuOpen = opened,
+            LogName = nameof(FullscreenAnimationMenuButton_Click),
+            HighlightGroup = FullscreenAnimationOptionGroup
+        });
+
+        RegisterSettingsOverlay(new SettingsOverlayRegistration
+        {
+            Id = SettingsOverlayId.ThumbnailSettings,
+            Overlay = ThumbnailSettingsOverlay,
+            Anchor = () => ThumbnailSettingsMenuButton,
+            SyncState = static (shell, opened) => shell.IsThumbnailSettingsSubmenuOpen = opened,
+            LogName = nameof(ThumbnailSettingsMenuButton_Click)
+        });
+
+        RegisterSettingsOverlay(new SettingsOverlayRegistration
+        {
+            Id = SettingsOverlayId.ThumbnailPerformance,
+            Overlay = ThumbnailPerformanceOverlay,
+            Anchor = () => ThumbnailPerformanceMenuButton,
+            SyncState = static (shell, opened) => shell.IsThumbnailPerformanceSubmenuOpen = opened,
+            LogName = nameof(ThumbnailPerformanceMenuButton_Click),
+            ParentId = SettingsOverlayId.ThumbnailSettings,
+            HighlightGroup = ThumbnailPerformanceOptionGroup
+        });
+
+        RegisterSettingsOverlay(new SettingsOverlayRegistration
+        {
+            Id = SettingsOverlayId.ThumbnailAcceleration,
+            Overlay = ThumbnailAccelerationOverlay,
+            Anchor = () => ThumbnailAccelerationMenuButton,
+            SyncState = static (shell, opened) => shell.IsThumbnailAccelerationSubmenuOpen = opened,
+            LogName = nameof(ThumbnailAccelerationMenuButton_Click),
+            ParentId = SettingsOverlayId.ThumbnailSettings,
+            HighlightGroup = ThumbnailAccelerationOptionGroup
+        });
+
+        RegisterSettingsOverlay(new SettingsOverlayRegistration
+        {
+            Id = SettingsOverlayId.PlayerInput,
+            Overlay = PlayerInputOverlay,
+            Anchor = () => PlayerInputMenuButton,
+            SyncState = static (shell, opened) => shell.IsPlayerInputSubmenuOpen = opened,
+            LogName = nameof(PlayerInputMenuButton_Click),
+            OnOpened = shell => shell.PlayerInputSettings.RefreshFromService(),
+            OnToggleClosed = shell => shell.PlayerInputSettings.CancelCapture(),
+            OnCloseRequested = shell => shell.PlayerInputSettings.CancelCapture(),
+            OnClosed = shell => shell.PlayerInputSettings.CancelCapture()
+        });
+    }
+
+    private void RegisterSettingsOverlay(SettingsOverlayRegistration registration)
+    {
+        _settingsOverlays.Add(registration.Id, registration);
+        registration.Overlay.Closed += (_, e) => OnSettingsChildOverlayClosed(registration, e);
+
+        if (registration.HighlightGroup == null)
+            return;
+
+        registration.HighlightGroup.IsSelectionHighlightActive = false;
+        _selectableOverlayHighlights.Add(registration.Overlay, registration.HighlightGroup);
+        registration.Overlay.Opening += OnSelectableOverlayOpening;
+        registration.Overlay.Opened += OnSelectableOverlayOpened;
+        registration.Overlay.Closing += OnSelectableOverlayClosing;
     }
 
     private void OnToggleFullscreenRequested()
@@ -335,16 +423,75 @@ public partial class MainWindow : Window
 
     private void CloseSettingsChildOverlays(OverlayCloseReason reason)
     {
-        CloseOverlay(LanguageOverlay, shell => shell.IsLanguageSubmenuOpen = false, reason);
-        CloseOverlay(FullscreenAnimationOverlay, shell => shell.IsFullscreenAnimationSubmenuOpen = false, reason);
-        CloseOverlay(ThumbnailSettingsOverlay, shell => shell.IsThumbnailSettingsSubmenuOpen = false, reason);
-        CloseOverlay(ThumbnailPerformanceOverlay, shell => shell.IsThumbnailPerformanceSubmenuOpen = false, reason);
-        CloseOverlay(ThumbnailAccelerationOverlay, shell => shell.IsThumbnailAccelerationSubmenuOpen = false, reason);
+        foreach (var registration in _settingsOverlays.Values)
+            CloseSettingsOverlay(registration.Id, reason);
+    }
+
+    private void CloseSettingsOverlay(SettingsOverlayId id, OverlayCloseReason reason)
+    {
+        var registration = _settingsOverlays[id];
         CloseOverlay(
-            PlayerInputOverlay,
-            shell => shell.IsPlayerInputSubmenuOpen = false,
+            registration.Overlay,
+            shell => registration.SyncState(shell, false),
             reason,
-            shell => shell.PlayerInputSettings.CancelCapture());
+            registration.OnCloseRequested);
+    }
+
+    private void CloseSettingsOverlayBranchesExcept(SettingsOverlayId id, OverlayCloseReason reason)
+    {
+        var branch = GetSettingsOverlayBranch(id);
+        foreach (var registration in _settingsOverlays.Values)
+        {
+            if (branch.Contains(registration.Id))
+                continue;
+
+            CloseSettingsOverlay(registration.Id, reason);
+        }
+    }
+
+    private HashSet<SettingsOverlayId> GetSettingsOverlayBranch(SettingsOverlayId id)
+    {
+        var branch = new HashSet<SettingsOverlayId>();
+        SettingsOverlayId? current = id;
+        while (current.HasValue)
+        {
+            branch.Add(current.Value);
+            current = _settingsOverlays[current.Value].ParentId;
+        }
+
+        return branch;
+    }
+
+    private void ToggleSettingsOverlay(SettingsOverlayId id)
+    {
+        CloseSettingsOverlayBranchesExcept(id, OverlayCloseReason.ChainSwitch);
+
+        var registration = _settingsOverlays[id];
+        ToggleAnchoredOverlay(
+            registration.Overlay,
+            registration.Anchor(),
+            registration.SyncState,
+            registration.LogName,
+            onOpened: registration.OnOpened,
+            onClosed: registration.OnToggleClosed);
+    }
+
+    private void OnSettingsChildOverlayClosed(
+        SettingsOverlayRegistration registration,
+        AnimatedOverlay.OverlayClosedEventArgs e)
+    {
+        registration.SyncState(Shell, false);
+        registration.OnClosed?.Invoke(Shell);
+
+        foreach (var child in _settingsOverlays.Values)
+        {
+            if (child.ParentId != registration.Id)
+                continue;
+
+            CloseSettingsOverlay(child.Id, OverlayCloseReason.ParentClosed);
+        }
+
+        MainWindowLog.Debug($"On{registration.Overlay.Name}Closed: reason={e.Reason}");
     }
 
     private void FileButton_Click(object sender, RoutedEventArgs e)
@@ -400,160 +547,30 @@ public partial class MainWindow : Window
     }
 
     private void LanguageMenuButton_Click(object sender, RoutedEventArgs e)
-    {
-        CloseOverlay(FullscreenAnimationOverlay, shell => shell.IsFullscreenAnimationSubmenuOpen = false);
-        CloseOverlay(
-            PlayerInputOverlay,
-            shell => shell.IsPlayerInputSubmenuOpen = false,
-            afterClose: shell => shell.PlayerInputSettings.CancelCapture());
-        CloseOverlay(ThumbnailSettingsOverlay, shell => shell.IsThumbnailSettingsSubmenuOpen = false);
-        CloseOverlay(ThumbnailPerformanceOverlay, shell => shell.IsThumbnailPerformanceSubmenuOpen = false);
-        CloseOverlay(ThumbnailAccelerationOverlay, shell => shell.IsThumbnailAccelerationSubmenuOpen = false);
-        ToggleAnchoredOverlay(
-            LanguageOverlay,
-            LanguageMenuButton,
-            static (shell, opened) => shell.IsLanguageSubmenuOpen = opened,
-            nameof(LanguageMenuButton_Click));
-    }
+        => ToggleSettingsOverlay(SettingsOverlayId.Language);
 
     private void FullscreenAnimationMenuButton_Click(object sender, RoutedEventArgs e)
-    {
-        CloseOverlay(LanguageOverlay, shell => shell.IsLanguageSubmenuOpen = false);
-        CloseOverlay(ThumbnailSettingsOverlay, shell => shell.IsThumbnailSettingsSubmenuOpen = false);
-        CloseOverlay(ThumbnailPerformanceOverlay, shell => shell.IsThumbnailPerformanceSubmenuOpen = false);
-        CloseOverlay(ThumbnailAccelerationOverlay, shell => shell.IsThumbnailAccelerationSubmenuOpen = false);
-        CloseOverlay(
-            PlayerInputOverlay,
-            shell => shell.IsPlayerInputSubmenuOpen = false,
-            afterClose: shell => shell.PlayerInputSettings.CancelCapture());
-        ToggleAnchoredOverlay(
-            FullscreenAnimationOverlay,
-            FullscreenAnimationMenuButton,
-            static (shell, opened) => shell.IsFullscreenAnimationSubmenuOpen = opened,
-            nameof(FullscreenAnimationMenuButton_Click));
-    }
+        => ToggleSettingsOverlay(SettingsOverlayId.FullscreenAnimation);
 
     private void ThumbnailSettingsMenuButton_Click(object sender, RoutedEventArgs e)
-    {
-        CloseOverlay(LanguageOverlay, shell => shell.IsLanguageSubmenuOpen = false);
-        CloseOverlay(FullscreenAnimationOverlay, shell => shell.IsFullscreenAnimationSubmenuOpen = false);
-        CloseOverlay(
-            PlayerInputOverlay,
-            shell => shell.IsPlayerInputSubmenuOpen = false,
-            afterClose: shell => shell.PlayerInputSettings.CancelCapture());
-        ToggleAnchoredOverlay(
-            ThumbnailSettingsOverlay,
-            ThumbnailSettingsMenuButton,
-            static (shell, opened) => shell.IsThumbnailSettingsSubmenuOpen = opened,
-            nameof(ThumbnailSettingsMenuButton_Click));
-    }
+        => ToggleSettingsOverlay(SettingsOverlayId.ThumbnailSettings);
 
     private void ThumbnailPerformanceMenuButton_Click(object sender, RoutedEventArgs e)
-    {
-        CloseOverlay(LanguageOverlay, shell => shell.IsLanguageSubmenuOpen = false);
-        CloseOverlay(FullscreenAnimationOverlay, shell => shell.IsFullscreenAnimationSubmenuOpen = false);
-        CloseOverlay(ThumbnailAccelerationOverlay, shell => shell.IsThumbnailAccelerationSubmenuOpen = false);
-        CloseOverlay(
-            PlayerInputOverlay,
-            shell => shell.IsPlayerInputSubmenuOpen = false,
-            afterClose: shell => shell.PlayerInputSettings.CancelCapture());
-        ToggleAnchoredOverlay(
-            ThumbnailPerformanceOverlay,
-            ThumbnailPerformanceMenuButton,
-            static (shell, opened) => shell.IsThumbnailPerformanceSubmenuOpen = opened,
-            nameof(ThumbnailPerformanceMenuButton_Click));
-    }
+        => ToggleSettingsOverlay(SettingsOverlayId.ThumbnailPerformance);
 
     private void ThumbnailAccelerationMenuButton_Click(object sender, RoutedEventArgs e)
-    {
-        CloseOverlay(LanguageOverlay, shell => shell.IsLanguageSubmenuOpen = false);
-        CloseOverlay(FullscreenAnimationOverlay, shell => shell.IsFullscreenAnimationSubmenuOpen = false);
-        CloseOverlay(ThumbnailPerformanceOverlay, shell => shell.IsThumbnailPerformanceSubmenuOpen = false);
-        CloseOverlay(
-            PlayerInputOverlay,
-            shell => shell.IsPlayerInputSubmenuOpen = false,
-            afterClose: shell => shell.PlayerInputSettings.CancelCapture());
-        ToggleAnchoredOverlay(
-            ThumbnailAccelerationOverlay,
-            ThumbnailAccelerationMenuButton,
-            static (shell, opened) => shell.IsThumbnailAccelerationSubmenuOpen = opened,
-            nameof(ThumbnailAccelerationMenuButton_Click));
-    }
+        => ToggleSettingsOverlay(SettingsOverlayId.ThumbnailAcceleration);
 
     private void PlayerInputMenuButton_Click(object sender, RoutedEventArgs e)
-    {
-        CloseOverlay(LanguageOverlay, shell => shell.IsLanguageSubmenuOpen = false);
-        CloseOverlay(FullscreenAnimationOverlay, shell => shell.IsFullscreenAnimationSubmenuOpen = false);
-        CloseOverlay(ThumbnailSettingsOverlay, shell => shell.IsThumbnailSettingsSubmenuOpen = false);
-        CloseOverlay(ThumbnailPerformanceOverlay, shell => shell.IsThumbnailPerformanceSubmenuOpen = false);
-        CloseOverlay(ThumbnailAccelerationOverlay, shell => shell.IsThumbnailAccelerationSubmenuOpen = false);
-        ToggleAnchoredOverlay(
-            PlayerInputOverlay,
-            PlayerInputMenuButton,
-            static (shell, opened) => shell.IsPlayerInputSubmenuOpen = opened,
-            nameof(PlayerInputMenuButton_Click),
-            onOpened: shell => shell.PlayerInputSettings.RefreshFromService(),
-            onClosed: shell => shell.PlayerInputSettings.CancelCapture());
-    }
-
-    private void OnLanguageOverlayActionClick(object sender, RoutedEventArgs e)
-    {
-        MainWindowLog.Debug("OnLanguageOverlayActionClick");
-    }
-
-    private void OnFullscreenAnimationOverlayActionClick(object sender, RoutedEventArgs e)
-    {
-        MainWindowLog.Debug("OnFullscreenAnimationOverlayActionClick");
-    }
-
-    private void OnLanguageOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
-    {
-        Shell.IsLanguageSubmenuOpen = false;
-        MainWindowLog.Debug($"OnLanguageOverlayClosed: reason={e.Reason}");
-    }
-
-    private void OnFullscreenAnimationOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
-    {
-        Shell.IsFullscreenAnimationSubmenuOpen = false;
-        MainWindowLog.Debug($"OnFullscreenAnimationOverlayClosed: reason={e.Reason}");
-    }
-
-    private void OnThumbnailSettingsOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
-    {
-        Shell.IsThumbnailSettingsSubmenuOpen = false;
-        CloseOverlay(ThumbnailPerformanceOverlay, shell => shell.IsThumbnailPerformanceSubmenuOpen = false, OverlayCloseReason.ParentClosed);
-        CloseOverlay(ThumbnailAccelerationOverlay, shell => shell.IsThumbnailAccelerationSubmenuOpen = false, OverlayCloseReason.ParentClosed);
-        MainWindowLog.Debug($"OnThumbnailSettingsOverlayClosed: reason={e.Reason}");
-    }
-
-    private void OnThumbnailPerformanceOverlayActionClick(object sender, RoutedEventArgs e)
-    {
-        MainWindowLog.Debug("OnThumbnailPerformanceOverlayActionClick");
-    }
-
-    private void OnThumbnailPerformanceOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
-    {
-        Shell.IsThumbnailPerformanceSubmenuOpen = false;
-        MainWindowLog.Debug($"OnThumbnailPerformanceOverlayClosed: reason={e.Reason}");
-    }
-
-    private void OnThumbnailAccelerationOverlayActionClick(object sender, RoutedEventArgs e)
-    {
-        MainWindowLog.Debug("OnThumbnailAccelerationOverlayActionClick");
-    }
-
-    private void OnThumbnailAccelerationOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
-    {
-        Shell.IsThumbnailAccelerationSubmenuOpen = false;
-        MainWindowLog.Debug($"OnThumbnailAccelerationOverlayClosed: reason={e.Reason}");
-    }
+        => ToggleSettingsOverlay(SettingsOverlayId.PlayerInput);
 
     private void OnSelectableOverlayOpened(object? sender, EventArgs e)
     {
-        if (sender is not AnimatedOverlay overlay)
+        if (sender is not AnimatedOverlay overlay ||
+            !_selectableOverlayHighlights.TryGetValue(overlay, out var highlightGroup))
             return;
 
-        SetSelectableHighlightActivation(overlay, true);
+        highlightGroup.IsSelectionHighlightActive = true;
         SelectionHighlightAnimation.InvalidateDescendants(overlay);
         Dispatcher.BeginInvoke(
             new Action(() => SelectionHighlightAnimation.InvalidateDescendants(overlay)),
@@ -562,40 +579,21 @@ public partial class MainWindow : Window
 
     private void OnSelectableOverlayOpening(object? sender, EventArgs e)
     {
-        if (sender is AnimatedOverlay overlay)
-            SetSelectableHighlightActivation(overlay, false);
+        SetSelectableHighlightActivation(sender, false);
     }
 
     private void OnSelectableOverlayClosing(object? sender, EventArgs e)
     {
-        if (sender is AnimatedOverlay overlay)
-            SetSelectableHighlightActivation(overlay, false);
+        SetSelectableHighlightActivation(sender, false);
     }
 
-    private void SetSelectableHighlightActivation(AnimatedOverlay overlay, bool isActive)
+    private void SetSelectableHighlightActivation(object? sender, bool isActive)
     {
-        switch (overlay.Name)
+        if (sender is AnimatedOverlay overlay &&
+            _selectableOverlayHighlights.TryGetValue(overlay, out var highlightGroup))
         {
-            case nameof(LanguageOverlay):
-                LanguageOptionGroup.IsSelectionHighlightActive = isActive;
-                break;
-            case nameof(FullscreenAnimationOverlay):
-                FullscreenAnimationOptionGroup.IsSelectionHighlightActive = isActive;
-                break;
-            case nameof(ThumbnailPerformanceOverlay):
-                ThumbnailPerformanceOptionGroup.IsSelectionHighlightActive = isActive;
-                break;
-            case nameof(ThumbnailAccelerationOverlay):
-                ThumbnailAccelerationOptionGroup.IsSelectionHighlightActive = isActive;
-                break;
+            highlightGroup.IsSelectionHighlightActive = isActive;
         }
-    }
-
-    private void OnPlayerInputOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
-    {
-        Shell.IsPlayerInputSubmenuOpen = false;
-        Shell.PlayerInputSettings.CancelCapture();
-        MainWindowLog.Debug($"OnPlayerInputOverlayClosed: reason={e.Reason}");
     }
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)

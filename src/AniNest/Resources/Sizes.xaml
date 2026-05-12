@@ -89,7 +89,7 @@
     <system:Double x:Key="BackgroundTaskPopupMinWidth">120</system:Double>
     <system:Double x:Key="BackgroundTaskPopupMaxWidth">320</system:Double>
     <system:Double x:Key="TitleBarToolTipMaxWidth">560</system:Double>
-    <system:Double x:Key="ThumbnailPerformancePopupMinWidth">220</system:Double>
+    <system:Double x:Key="ThumbnailPerformancePopupMinWidth">50</system:Double>
     <system:Double x:Key="ThumbnailAccelerationPopupMinWidth">320</system:Double>
     <system:Double x:Key="PlayerInputPopupMinWidth">420</system:Double>
     <system:Double x:Key="PlayerInputScrollMaxHeight">380</system:Double>

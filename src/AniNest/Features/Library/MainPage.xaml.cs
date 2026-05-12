@@ -12,12 +12,31 @@ using AniNest.Infrastructure.Persistence;
 using AniNest.Presentation.Animations;
 using AniNest.Presentation.Behaviors;
 using AniNest.Presentation.Overlays;
+using AniNest.Presentation.Primitives;
 using Point = System.Windows.Point;
 namespace AniNest.Features.Library;
 
 public partial class MainPage : System.Windows.Controls.UserControl
 {
+    private enum CardOverlayId
+    {
+        StatusMenu,
+        ContextMenu,
+        ThumbnailActions
+    }
+
+    private sealed class CardOverlayRegistration
+    {
+        public required CardOverlayId Id { get; init; }
+        public required AnimatedOverlay Overlay { get; init; }
+        public CardOverlayId? ParentId { get; init; }
+        public SelectableOptionGroup? HighlightGroup { get; init; }
+        public Action? OnClosed { get; init; }
+    }
+
     private static readonly Logger Log = AppLog.For(nameof(MainPage));
+    private readonly Dictionary<CardOverlayId, CardOverlayRegistration> _cardOverlays = [];
+    private readonly Dictionary<AnimatedOverlay, SelectableOptionGroup> _overlayHighlightGroups = [];
     private PerfSceneSession? _initialLoadScene;
     private MainPageViewModel? _viewModel;
     private bool _initialLoadCompleted;
@@ -27,22 +46,59 @@ public partial class MainPage : System.Windows.Controls.UserControl
     public MainPage()
     {
         InitializeComponent();
+        InitializeCardOverlays();
+        RegisterOverlayRegions();
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         DataContextChanged += OnDataContextChanged;
-        Initialized += OnInitialized;
     }
 
-    private void OnInitialized(object? sender, EventArgs e)
+    private void InitializeCardOverlays()
     {
-        CardStatusMenuOverlay.Closed += OnCardStatusMenuClosed;
-        CardStatusMenuOverlay.Opening += OnCardStatusMenuOpening;
-        CardStatusMenuOverlay.Opened += OnCardStatusMenuOpened;
-        CardStatusMenuOverlay.Closing += OnCardStatusMenuClosing;
-        CardContextMenuOverlay.Closed += OnCardContextMenuClosed;
-        ThumbnailActionsOverlay.Closed += OnThumbnailActionsOverlayClosed;
-        CardStatusOptionGroup.IsSelectionHighlightActive = false;
-        RegisterOverlayRegions();
+        RegisterCardOverlay(new CardOverlayRegistration
+        {
+            Id = CardOverlayId.StatusMenu,
+            Overlay = CardStatusMenuOverlay,
+            HighlightGroup = CardStatusOptionGroup,
+            OnClosed = () =>
+            {
+                CardStatusMenuOverlay.DataContext = null;
+                _overlayItem = null;
+            }
+        });
+
+        RegisterCardOverlay(new CardOverlayRegistration
+        {
+            Id = CardOverlayId.ContextMenu,
+            Overlay = CardContextMenuOverlay,
+            OnClosed = () =>
+            {
+                CardContextMenuOverlay.DataContext = null;
+                _overlayItem = null;
+            }
+        });
+
+        RegisterCardOverlay(new CardOverlayRegistration
+        {
+            Id = CardOverlayId.ThumbnailActions,
+            Overlay = ThumbnailActionsOverlay,
+            ParentId = CardOverlayId.ContextMenu
+        });
+    }
+
+    private void RegisterCardOverlay(CardOverlayRegistration registration)
+    {
+        _cardOverlays.Add(registration.Id, registration);
+        registration.Overlay.Closed += (_, e) => OnCardOverlayClosed(registration, e);
+
+        if (registration.HighlightGroup == null)
+            return;
+
+        registration.HighlightGroup.IsSelectionHighlightActive = false;
+        _overlayHighlightGroups.Add(registration.Overlay, registration.HighlightGroup);
+        registration.Overlay.Opening += OnSelectableOverlayOpening;
+        registration.Overlay.Opened += OnSelectableOverlayOpened;
+        registration.Overlay.Closing += OnSelectableOverlayClosing;
     }
 
     private void RegisterOverlayRegions()
@@ -135,11 +191,8 @@ public partial class MainPage : System.Windows.Controls.UserControl
             return;
 
         OverlayCoordinator.Instance.RegisterRegion(border, OverlayOutsideHitKind.ContentInteractive);
-        if (CardStatusMenuOverlay.IsOpen)
-            CardStatusMenuOverlay.Close(OverlayCloseReason.ChainSwitch);
-
-        if (ThumbnailActionsOverlay.IsOpen)
-            ThumbnailActionsOverlay.Close(OverlayCloseReason.ChainSwitch);
+        CloseCardOverlay(CardOverlayId.StatusMenu, OverlayCloseReason.ChainSwitch);
+        CloseCardOverlay(CardOverlayId.ThumbnailActions, OverlayCloseReason.ChainSwitch);
 
         Log.Debug(
             $"OnCardPreviewMouseRightButtonUp: name={item.Name} handled={e.Handled} " +
@@ -184,8 +237,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
             $"ThumbnailActionsMenuButton_Click: item={_overlayItem?.Name ?? "null"} " +
             $"submenuOpen={ThumbnailActionsOverlay.IsOpen}");
 
-        if (CardStatusMenuOverlay.IsOpen)
-            CardStatusMenuOverlay.Close(OverlayCloseReason.ChainSwitch);
+        CloseCardOverlay(CardOverlayId.StatusMenu, OverlayCloseReason.ChainSwitch);
 
         var opened = ThumbnailActionsOverlay.ToggleForAnchor(ThumbnailActionsMenuButton);
         Log.Debug($"ThumbnailActionsMenuButton_Click.Toggle: opened={opened}");
@@ -213,8 +265,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
             return;
 
         OverlayCoordinator.Instance.RegisterRegion(button, OverlayOutsideHitKind.ContentInteractive);
-        if (ThumbnailActionsOverlay.IsOpen)
-            ThumbnailActionsOverlay.Close(OverlayCloseReason.ChainSwitch);
+        CloseCardOverlay(CardOverlayId.ThumbnailActions, OverlayCloseReason.ChainSwitch);
 
         Log.Debug(
             $"CardStatusMenuButton_Click: name={item.Name} status={item.Status} " +
@@ -269,56 +320,66 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     private void CloseCardContextMenuChildOverlays(OverlayCloseReason reason)
     {
-        if (CardStatusMenuOverlay.IsOpen)
-        {
-            Log.Debug($"CloseCardStatusMenu: reason={reason}");
-            CardStatusMenuOverlay.Close(reason);
-        }
+        CloseCardOverlay(CardOverlayId.StatusMenu, reason);
+        CloseCardOverlay(CardOverlayId.ThumbnailActions, reason);
+    }
 
-        if (!ThumbnailActionsOverlay.IsOpen)
+    private void CloseCardOverlay(CardOverlayId id, OverlayCloseReason reason)
+    {
+        var registration = _cardOverlays[id];
+        if (!registration.Overlay.IsOpen)
             return;
 
-        Log.Debug($"CloseCardContextMenuChildOverlays: reason={reason}");
-        ThumbnailActionsOverlay.Close(reason);
+        Log.Debug($"Close{registration.Overlay.Name}: reason={reason}");
+        registration.Overlay.Close(reason);
     }
 
-    private void OnCardStatusMenuClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
+    private void OnCardOverlayClosed(
+        CardOverlayRegistration registration,
+        AnimatedOverlay.OverlayClosedEventArgs e)
     {
-        Log.Debug($"OnCardStatusMenuClosed: reason={e.Reason} overlayItem={_overlayItem?.Name ?? "null"}");
-        CardStatusOptionGroup.IsSelectionHighlightActive = false;
-        CardStatusMenuOverlay.DataContext = null;
-        _overlayItem = null;
+        registration.OnClosed?.Invoke();
+        foreach (var child in _cardOverlays.Values)
+        {
+            if (child.ParentId != registration.Id)
+                continue;
+
+            CloseCardOverlay(child.Id, OverlayCloseReason.ParentClosed);
+        }
+
+        Log.Debug($"On{registration.Overlay.Name}Closed: reason={e.Reason} overlayItem={_overlayItem?.Name ?? "null"}");
     }
 
-    private void OnCardStatusMenuOpening(object? sender, EventArgs e)
+    private void OnSelectableOverlayOpening(object? sender, EventArgs e)
     {
-        CardStatusOptionGroup.IsSelectionHighlightActive = false;
+        SetSelectableHighlightActivation(sender, false);
     }
 
-    private void OnCardStatusMenuOpened(object? sender, EventArgs e)
+    private void OnSelectableOverlayOpened(object? sender, EventArgs e)
     {
-        CardStatusOptionGroup.IsSelectionHighlightActive = true;
-        SelectionHighlightAnimation.InvalidateDescendants(CardStatusOptionGroup);
+        if (sender is not AnimatedOverlay overlay ||
+            !_overlayHighlightGroups.TryGetValue(overlay, out var highlightGroup))
+            return;
+
+        highlightGroup.IsSelectionHighlightActive = true;
+        SelectionHighlightAnimation.InvalidateDescendants(highlightGroup);
         Dispatcher.BeginInvoke(
-            new Action(() => SelectionHighlightAnimation.InvalidateDescendants(CardStatusOptionGroup)),
+            new Action(() => SelectionHighlightAnimation.InvalidateDescendants(highlightGroup)),
             DispatcherPriority.Loaded);
     }
 
-    private void OnCardStatusMenuClosing(object? sender, EventArgs e)
+    private void OnSelectableOverlayClosing(object? sender, EventArgs e)
     {
-        CardStatusOptionGroup.IsSelectionHighlightActive = false;
+        SetSelectableHighlightActivation(sender, false);
     }
 
-    private void OnCardContextMenuClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
+    private void SetSelectableHighlightActivation(object? sender, bool isActive)
     {
-        Log.Debug($"OnCardContextMenuClosed: reason={e.Reason} overlayItem={_overlayItem?.Name ?? "null"}");
-        CardContextMenuOverlay.DataContext = null;
-        _overlayItem = null;
-    }
-
-    private void OnThumbnailActionsOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
-    {
-        Log.Debug($"OnThumbnailActionsOverlayClosed: reason={e.Reason} overlayItem={_overlayItem?.Name ?? "null"}");
+        if (sender is AnimatedOverlay overlay &&
+            _overlayHighlightGroups.TryGetValue(overlay, out var highlightGroup))
+        {
+            highlightGroup.IsSelectionHighlightActive = isActive;
+        }
     }
 
     private async Task ExecuteFolderStatusChangeAsync(WatchStatus status)

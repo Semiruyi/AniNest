@@ -5,6 +5,7 @@
              xmlns:behaviors="clr-namespace:AniNest.Presentation.Behaviors"
              xmlns:conv="clr-namespace:AniNest.Presentation.Converters"
              xmlns:models="clr-namespace:AniNest.Features.Library.Models"
+             xmlns:persistence="clr-namespace:AniNest.Infrastructure.Persistence"
              xmlns:primitives="clr-namespace:AniNest.Presentation.Primitives"
              xmlns:overlays="clr-namespace:AniNest.Presentation.Overlays"
              Background="{StaticResource BackgroundDark}">
@@ -14,6 +15,170 @@
         <conv:NullToVisibilityConverter x:Key="NullToHidden"  NullValue="Visible"    NotNullValue="Collapsed"/>
         <conv:CoverImageSourceConverter x:Key="CoverImageSource" DecodePixelWidth="380"/>
         <conv:PercentToWidthConverter x:Key="PercentToWidthConverter"/>
+
+        <Style x:Key="LibraryCardFavoriteToggleButton"
+               TargetType="Button"
+               BasedOn="{StaticResource LibraryCardFavoriteButton}">
+            <Setter Property="ToolTip"
+                    Value="{Binding DataContext.Localization[Library.Favorite], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                    <Setter Property="ToolTip"
+                            Value="{Binding DataContext.Localization[Library.Unfavorite], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="LibraryCardContextFavoriteText"
+               TargetType="TextBlock"
+               BasedOn="{StaticResource PopupMenuItemText}">
+            <Setter Property="Text"
+                    Value="{Binding DataContext.Localization[Library.Favorite], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                    <Setter Property="Text"
+                            Value="{Binding DataContext.Localization[Library.Unfavorite], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="LibraryCardStatusMenuOverlayStyle"
+               TargetType="{x:Type overlays:AnimatedOverlay}"
+               BasedOn="{StaticResource {x:Type overlays:AnimatedOverlay}}">
+            <Setter Property="InteractionPreset" Value="MenuLike"/>
+            <Setter Property="Placement" Value="TopLeft"/>
+            <Setter Property="HorizontalOffset" Value="0"/>
+            <Setter Property="VerticalOffset" Value="-4"/>
+            <Setter Property="AnimationOrigin" Value="0,1"/>
+            <Setter Property="Panel.ZIndex" Value="1000"/>
+        </Style>
+
+        <Style x:Key="LibraryCardContextMenuOverlayStyle"
+               TargetType="{x:Type overlays:AnimatedOverlay}"
+               BasedOn="{StaticResource {x:Type overlays:AnimatedOverlay}}">
+            <Setter Property="InteractionPreset" Value="CardContextLike"/>
+            <Setter Property="Placement" Value="RightTop"/>
+            <Setter Property="HorizontalOffset" Value="8"/>
+            <Setter Property="VerticalOffset" Value="8"/>
+            <Setter Property="AnimationOrigin" Value="0,0"/>
+            <Setter Property="Panel.ZIndex" Value="1000"/>
+        </Style>
+
+        <Style x:Key="LibraryThumbnailActionsOverlayStyle"
+               TargetType="{x:Type overlays:AnimatedOverlay}"
+               BasedOn="{StaticResource {x:Type overlays:AnimatedOverlay}}">
+            <Setter Property="InteractionPreset" Value="MenuLike"/>
+            <Setter Property="Placement" Value="RightTop"/>
+            <Setter Property="HorizontalOffset" Value="{StaticResource SubmenuPopupHorizontalOffset}"/>
+            <Setter Property="VerticalOffset" Value="0"/>
+            <Setter Property="AnimationOrigin" Value="0,0"/>
+            <Setter Property="Panel.ZIndex" Value="1001"/>
+        </Style>
+
+        <Style x:Key="LibraryCardStatusLocalizedText"
+               TargetType="TextBlock"
+               BasedOn="{StaticResource LibraryCardStatusValueText}">
+            <Setter Property="Text"
+                    Value="{Binding DataContext.Localization[Library.Unsorted], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Watching}">
+                    <Setter Property="Text"
+                            Value="{Binding DataContext.Localization[Library.Watching], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Completed}">
+                    <Setter Property="Text"
+                            Value="{Binding DataContext.Localization[Library.Completed], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Dropped}">
+                    <Setter Property="Text"
+                            Value="{Binding DataContext.Localization[Library.Dropped], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <DataTemplate x:Key="LibraryFilterOptionItemTemplate"
+                      DataType="{x:Type models:LibraryFilterOption}">
+            <Grid Margin="{StaticResource LibraryFilterBarItemMargin}">
+                <Button Content="{Binding DisplayName}"
+                        Style="{StaticResource SelectableOptionSegmentButton}"
+                        animations:SelectableOptionState.IsSelected="{Binding IsSelected}"
+                        Command="{Binding DataContext.SetSelectedFilterCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandParameter="{Binding Filter}"/>
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="LibraryFolderCardItemTemplate">
+            <StackPanel Margin="{StaticResource FolderCardMargin}"
+                        HorizontalAlignment="Center">
+                <Border x:Name="CardBorder"
+                        Style="{StaticResource LibraryCardSurfaceBorder}"
+                        behaviors:MouseGestureBehavior.LeftClick="{Binding DataContext.SelectFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        behaviors:MouseGestureBehavior.CommandParameter="{Binding}"
+                        PreviewMouseRightButtonUp="OnCardPreviewMouseRightButtonUp">
+                    <Grid Style="{StaticResource LibraryCardClipRootGrid}">
+                        <Image Stretch="UniformToFill"
+                               Source="{Binding CoverPath, Converter={StaticResource CoverImageSource}}"
+                               Visibility="{Binding CoverPath, Converter={StaticResource NullToVis}}"/>
+
+                        <Rectangle Fill="{StaticResource LibraryCardPlaceholderBackground}"
+                                   Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
+                        <TextBlock Style="{StaticResource LibraryCardPlaceholderIconText}"
+                                   Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
+
+                        <Grid Style="{StaticResource LibraryCardFavoriteHost}"
+                              animations:ScaleFadeVisibilityAnimator.IsActive="{Binding ElementName=CardBorder, Path=(behaviors:HoverRevealBehavior.IsRevealActive)}">
+                            <Button Style="{StaticResource LibraryCardFavoriteToggleButton}"
+                                    Command="{Binding DataContext.ToggleFolderFavoriteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"/>
+                        </Grid>
+
+                        <Border x:Name="CardInfoRoot"
+                                Style="{StaticResource LibraryCardInfoOverlayBorder}">
+                            <Grid Style="{StaticResource LibraryCardInfoLayoutGrid}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="{Binding Name}"
+                                           Style="{StaticResource LibraryCardTitleText}"/>
+                                <StackPanel Grid.Row="1"
+                                            Style="{StaticResource LibraryCardSummaryRowPanel}">
+                                    <TextBlock Text="{Binding DataContext.PlayedSummaryPrefix, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                               Style="{StaticResource LibraryCardSummaryText}"/>
+                                    <TextBlock Text="{Binding PlayedCount}"
+                                               Style="{StaticResource LibraryCardSummaryAccentText}"/>
+                                    <TextBlock Text=" / "
+                                               Style="{StaticResource LibraryCardSummaryText}"/>
+                                    <TextBlock Text="{Binding DataContext.PlayedSummaryTotal, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                               Style="{StaticResource LibraryCardSummaryText}"/>
+                                    <TextBlock Text="{Binding VideoCount}"
+                                               Style="{StaticResource LibraryCardSummaryMutedText}"/>
+                                    <TextBlock Text="{Binding DataContext.PlayedSummarySuffix, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                               Style="{StaticResource LibraryCardSummaryText}"/>
+                                </StackPanel>
+                                <Grid Grid.Row="3"
+                                      Style="{StaticResource LibraryCardProgressContainer}">
+                                    <Border Style="{StaticResource LibraryCardProgressTrackBorder}"/>
+                                    <Grid HorizontalAlignment="Left"
+                                          Width="{Binding PlayedPercent, Converter={StaticResource PercentToWidthConverter}, ConverterParameter=166}"
+                                          ClipToBounds="True">
+                                        <Border Style="{StaticResource LibraryCardProgressFillBorder}"/>
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Border>
+                <Button x:Name="CardStatusButton"
+                        Style="{StaticResource LibraryCardStatusButton}"
+                        Margin="{StaticResource LibraryCardStatusButtonMargin}"
+                        HorizontalAlignment="Center"
+                        Click="CardStatusButton_Click">
+                    <TextBlock Style="{StaticResource LibraryCardStatusLocalizedText}"/>
+                </Button>
+            </StackPanel>
+        </DataTemplate>
     </UserControl.Resources>
 
     <Grid x:Name="RootGrid">
@@ -38,15 +203,7 @@
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="{x:Type models:LibraryFilterOption}">
-                                    <Grid Margin="{StaticResource LibraryFilterBarItemMargin}">
-                                        <Button Content="{Binding DisplayName}"
-                                                Style="{StaticResource SelectableOptionSegmentButton}"
-                                                animations:SelectableOptionState.IsSelected="{Binding IsSelected}"
-                                                Command="{Binding DataContext.SetSelectedFilterCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding Filter}"/>
-                                    </Grid>
-                                </DataTemplate>
+                                <StaticResource ResourceKey="LibraryFilterOptionItemTemplate"/>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </primitives:SelectableOptionGroup>
@@ -63,78 +220,7 @@
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Margin="{StaticResource FolderCardMargin}"
-                                        HorizontalAlignment="Center">
-                                <Border x:Name="CardBorder"
-                                        Style="{StaticResource LibraryCardSurfaceBorder}"
-                                        behaviors:MouseGestureBehavior.LeftClick="{Binding DataContext.SelectFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        behaviors:MouseGestureBehavior.CommandParameter="{Binding}"
-                                        PreviewMouseRightButtonUp="OnCardPreviewMouseRightButtonUp">
-                                    <Grid Style="{StaticResource LibraryCardClipRootGrid}">
-                                        <Image Stretch="UniformToFill"
-                                               Source="{Binding CoverPath, Converter={StaticResource CoverImageSource}}"
-                                               Visibility="{Binding CoverPath, Converter={StaticResource NullToVis}}"/>
-
-                                        <Rectangle Fill="{StaticResource LibraryCardPlaceholderBackground}"
-                                                   Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
-                                        <TextBlock Style="{StaticResource LibraryCardPlaceholderIconText}"
-                                                   Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
-
-                                        <Grid Style="{StaticResource LibraryCardFavoriteHost}"
-                                              animations:ScaleFadeVisibilityAnimator.IsActive="{Binding ElementName=CardBorder, Path=(behaviors:HoverRevealBehavior.IsRevealActive)}">
-                                            <Button Style="{StaticResource LibraryCardFavoriteButton}"
-                                                    Command="{Binding DataContext.ToggleFolderFavoriteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding}"/>
-                                        </Grid>
-
-                                        <Border x:Name="CardInfoRoot"
-                                                Style="{StaticResource LibraryCardInfoOverlayBorder}">
-                                            <Grid Style="{StaticResource LibraryCardInfoLayoutGrid}">
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <TextBlock Text="{Binding Name}"
-                                                           Style="{StaticResource LibraryCardTitleText}"/>
-                                                <StackPanel Grid.Row="1"
-                                                            Style="{StaticResource LibraryCardSummaryRowPanel}">
-                                                    <TextBlock Text="{Binding DataContext.PlayedSummaryPrefix, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                               Style="{StaticResource LibraryCardSummaryText}"/>
-                                                    <TextBlock Text="{Binding PlayedCount}"
-                                                               Style="{StaticResource LibraryCardSummaryAccentText}"/>
-                                                    <TextBlock Text=" / "
-                                                               Style="{StaticResource LibraryCardSummaryText}"/>
-                                                    <TextBlock Text="{Binding DataContext.PlayedSummaryTotal, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                               Style="{StaticResource LibraryCardSummaryText}"/>
-                                                    <TextBlock Text="{Binding VideoCount}"
-                                                               Style="{StaticResource LibraryCardSummaryMutedText}"/>
-                                                    <TextBlock Text="{Binding DataContext.PlayedSummarySuffix, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                               Style="{StaticResource LibraryCardSummaryText}"/>
-                                                </StackPanel>
-                                                <Grid Grid.Row="3"
-                                                      Style="{StaticResource LibraryCardProgressContainer}">
-                                                    <Border Style="{StaticResource LibraryCardProgressTrackBorder}"/>
-                                                    <Grid HorizontalAlignment="Left"
-                                                          Width="{Binding PlayedPercent, Converter={StaticResource PercentToWidthConverter}, ConverterParameter=166}"
-                                                          ClipToBounds="True">
-                                                        <Border Style="{StaticResource LibraryCardProgressFillBorder}"/>
-                                                    </Grid>
-                                                </Grid>
-                                            </Grid>
-                                        </Border>
-                                    </Grid>
-                                </Border>
-                                <Button x:Name="CardStatusButton"
-                                        Style="{StaticResource LibraryCardStatusButton}"
-                                        Margin="{StaticResource LibraryCardStatusButtonMargin}"
-                                        HorizontalAlignment="Center"
-                                        Click="CardStatusButton_Click">
-                                    <TextBlock Style="{StaticResource LibraryCardStatusValueText}"/>
-                                </Button>
-                            </StackPanel>
-                        </DataTemplate>
+                        <StaticResource ResourceKey="LibraryFolderCardItemTemplate"/>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </StackPanel>
@@ -142,12 +228,7 @@
 
         <overlays:AnimatedOverlay x:Name="CardStatusMenuOverlay"
                                   DataContext="{x:Null}"
-                                  InteractionPreset="MenuLike"
-                                  Placement="TopLeft"
-                                  HorizontalOffset="0"
-                                  VerticalOffset="-4"
-                                  AnimationOrigin="0,1"
-                                  Panel.ZIndex="1000">
+                                  Style="{StaticResource LibraryCardStatusMenuOverlayStyle}">
             <Border Style="{StaticResource PopupMenuOverlayBorder}"
                     MinWidth="{StaticResource PopupSubmenuMinWidth}">
                 <primitives:SelectableOptionGroup x:Name="CardStatusOptionGroup"
@@ -185,12 +266,7 @@
 
         <overlays:AnimatedOverlay x:Name="CardContextMenuOverlay"
                                   DataContext="{x:Null}"
-                                  InteractionPreset="CardContextLike"
-                                  Placement="RightTop"
-                                  HorizontalOffset="8"
-                                  VerticalOffset="8"
-                                  AnimationOrigin="0,0"
-                                  Panel.ZIndex="1000">
+                                  Style="{StaticResource LibraryCardContextMenuOverlayStyle}">
             <Border Style="{StaticResource PopupMenuOverlayBorder}"
                     MinWidth="{StaticResource PopupSubmenuMinWidth}">
                 <StackPanel>
@@ -198,18 +274,7 @@
                             Command="{Binding DataContext.ToggleFolderFavoriteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             CommandParameter="{Binding DataContext, ElementName=CardContextMenuOverlay}"
                             Click="OnOverlayActionClick">
-                        <TextBlock>
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock" BasedOn="{StaticResource PopupMenuItemText}">
-                                    <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Favorite], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsFavorite}" Value="True">
-                                            <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Unfavorite], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                        <TextBlock Style="{StaticResource LibraryCardContextFavoriteText}"/>
                     </Button>
                     <Button x:Name="CardContextStatusMenuButton"
                             Style="{StaticResource PopupMenuStretchSubmenuButton}"
@@ -263,12 +328,7 @@
 
         <overlays:AnimatedOverlay x:Name="ThumbnailActionsOverlay"
                                   DataContext="{Binding DataContext, ElementName=CardContextMenuOverlay}"
-                                  InteractionPreset="MenuLike"
-                                  Placement="RightTop"
-                                  HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
-                                  VerticalOffset="0"
-                                  AnimationOrigin="0,0"
-                                  Panel.ZIndex="1001">
+                                  Style="{StaticResource LibraryThumbnailActionsOverlayStyle}">
             <Border Style="{StaticResource PopupMenuOverlayBorder}"
                     MinWidth="{StaticResource PopupSubmenuMinWidth}">
                 <StackPanel>
