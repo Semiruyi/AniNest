@@ -49,7 +49,6 @@
         <Setter Property="InteractionPreset" Value="MenuLike"/>
         <Setter Property="Placement" Value="TopLeft"/>
         <Setter Property="HorizontalOffset" Value="0"/>
-        <Setter Property="VerticalOffset" Value="{StaticResource LibraryCardStatusMenuTopOffset}"/>
         <Setter Property="AnimationOrigin" Value="0,1"/>
         <Setter Property="Panel.ZIndex" Value="{StaticResource LibraryCardOverlayZIndex}"/>
     </Style>
