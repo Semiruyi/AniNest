@@ -94,11 +94,11 @@ public static class AnimationHelper
 
     public static void EnsureScaleTransform(FrameworkElement element)
     {
-        if (element.RenderTransform is not ScaleTransform)
-        {
-            element.RenderTransformOrigin = new Point(0.5, 0.5);
-            element.RenderTransform = new ScaleTransform(1, 1);
-        }
+        if (TryEnsureMutableScaleTransform(element, out _))
+            return;
+
+        element.RenderTransformOrigin = new Point(0.5, 0.5);
+        element.RenderTransform = new ScaleTransform(1, 1);
     }
 
     public static void AnimateScaleTransform(ScaleTransform transform, double to,
@@ -165,9 +165,9 @@ public static class AnimationHelper
         element.RenderTransformOrigin = effect.Origin;
         element.IsHitTestVisible = false;
 
-        var scale = element.RenderTransform as ScaleTransform
-                    ?? (element.RenderTransform as TransformGroup)?.Children
-                        .OfType<ScaleTransform>().FirstOrDefault();
+        var scale = TryEnsureMutableScaleTransform(element, out var ensuredScale)
+            ? ensuredScale
+            : null;
         if (scale != null)
         {
             double curX = scale.ScaleX;
@@ -181,6 +181,44 @@ public static class AnimationHelper
 
         Animate(element, UIElement.OpacityProperty, effect.Opacity.From, effect.Opacity.To,
             effect.Opacity.DurationMs, effect.Opacity.Easing, onCompleted);
+    }
+
+    private static bool TryEnsureMutableScaleTransform(UIElement element, out ScaleTransform? scale)
+    {
+        scale = null;
+
+        switch (element.RenderTransform)
+        {
+            case ScaleTransform directScale when !directScale.IsFrozen:
+                scale = directScale;
+                return true;
+
+            case ScaleTransform directScale:
+                scale = directScale.CloneCurrentValue();
+                element.RenderTransform = scale;
+                return true;
+
+            case TransformGroup group:
+            {
+                var groupScale = group.Children.OfType<ScaleTransform>().FirstOrDefault();
+                if (groupScale == null)
+                    return false;
+
+                if (!group.IsFrozen && !groupScale.IsFrozen)
+                {
+                    scale = groupScale;
+                    return true;
+                }
+
+                var clonedGroup = group.CloneCurrentValue();
+                scale = clonedGroup.Children.OfType<ScaleTransform>().FirstOrDefault();
+                element.RenderTransform = clonedGroup;
+                return scale != null;
+            }
+
+            default:
+                return false;
+        }
     }
 }
 

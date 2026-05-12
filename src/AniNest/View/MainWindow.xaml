@@ -42,18 +42,8 @@
 
     <Border x:Name="RootBorder"
             ClipToBounds="True"
-            Background="{StaticResource BackgroundDark}">
-        <Border.Style>
-            <Style TargetType="Border">
-                <Setter Property="CornerRadius" Value="{StaticResource WindowCornerRadius}"/>
-                <Style.Triggers>
-                    <DataTrigger Value="Maximized"
-                        Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}">
-                        <Setter Property="CornerRadius" Value="0"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-        </Border.Style>
+            Background="{StaticResource BackgroundDark}"
+            Style="{StaticResource MainWindowRootBorder}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition x:Name="TitleBarRow" Height="{StaticResource TitleBarRowHeight}"/>
@@ -346,35 +336,13 @@
                                                     Style="{StaticResource PlayerInputBindingValueButton}"
                                                     Command="{Binding DataContext.BeginCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                     CommandParameter="{Binding Index}">
-                                                <TextBlock>
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock" BasedOn="{StaticResource PlayerInputButtonText}">
-                                                            <Setter Property="Text" Value="{Binding BindingDisplay}"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsCapturing}" Value="True">
-                                                                    <Setter Property="Text" Value="{Binding DataContext.CapturingButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
+                                                <TextBlock Style="{StaticResource PlayerInputBindingDisplayText}"/>
                                             </Button>
                                             <Button Grid.Column="2"
                                                     Style="{StaticResource PlayerInputInlineActionButton}"
                                                     Command="{Binding DataContext.BeginCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                     CommandParameter="{Binding Index}">
-                                                <TextBlock>
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock" BasedOn="{StaticResource PlayerInputButtonText}">
-                                                            <Setter Property="Text" Value="{Binding DataContext.CaptureButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsCapturing}" Value="True">
-                                                                    <Setter Property="Text" Value="{Binding DataContext.CapturingButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
+                                                <TextBlock Style="{StaticResource PlayerInputCaptureActionText}"/>
                                             </Button>
                                             <Button Grid.Column="3"
                                                     Style="{StaticResource PlayerInputInlineActionButton}"

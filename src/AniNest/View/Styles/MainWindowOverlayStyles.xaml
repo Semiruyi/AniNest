@@ -46,6 +46,15 @@
         <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
     </Style>
 
+    <Style x:Key="MainWindowRootBorder" TargetType="Border">
+        <Setter Property="CornerRadius" Value="{StaticResource WindowCornerRadius}"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}" Value="Maximized">
+                <Setter Property="CornerRadius" Value="0"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- Player input -->
     <Style x:Key="PlayerInputOverlayLayoutGrid"
            TargetType="Grid">
@@ -83,6 +92,31 @@
     <Style x:Key="PlayerInputButtonText"
            TargetType="TextBlock"
            BasedOn="{StaticResource PopupMenuItemText}"/>
+
+    <Style x:Key="PlayerInputBindingDisplayText"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource PlayerInputButtonText}">
+        <Setter Property="Text" Value="{Binding BindingDisplay}"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsCapturing}" Value="True">
+                <Setter Property="Text"
+                        Value="{Binding DataContext.CapturingButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="PlayerInputCaptureActionText"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource PlayerInputButtonText}">
+        <Setter Property="Text"
+                Value="{Binding DataContext.CaptureButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsCapturing}" Value="True">
+                <Setter Property="Text"
+                        Value="{Binding DataContext.CapturingButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
 
     <Style x:Key="PlayerInputBindingValueButton"
            TargetType="Button"

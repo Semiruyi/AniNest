@@ -163,6 +163,16 @@
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
+    <Style x:Key="PlayerSpeedOptionButton" TargetType="Button" BasedOn="{StaticResource PopupMenuButton}">
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="PlayerSpeedAnimatedText" TargetType="TextBlock" BasedOn="{StaticResource AppTextBody}">
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+    </Style>
+
     <Style x:Key="PlayerFullscreenButton" TargetType="Button" BasedOn="{StaticResource AnimatedIconButton}">
         <Setter Property="Focusable" Value="False"/>
         <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Player.Fullscreen], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
@@ -174,6 +184,8 @@
     </Style>
 
     <Style x:Key="PlayerFullscreenButtonIcon" TargetType="Image">
+        <Setter Property="Width" Value="{StaticResource IconSizeNormal}"/>
+        <Setter Property="Height" Value="{StaticResource IconSizeNormal}"/>
         <Setter Property="Source" Value="/Resources/Icons/fullScreen.png"/>
         <Style.Triggers>
             <DataTrigger Binding="{Binding IsFullscreen}" Value="True">

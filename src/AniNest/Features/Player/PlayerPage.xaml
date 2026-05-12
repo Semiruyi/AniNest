@@ -35,13 +35,7 @@
             <Image x:Name="VideoImage" Stretch="Uniform" Source="{Binding VideoSource}"/>
             <Image x:Name="PauseBigIcon"
                    Source="/Resources/Icons/pause-big.png"
-                   Width="{StaticResource PauseBigIconSize}"
-                   Height="{StaticResource PauseBigIconSize}"
-                   HorizontalAlignment="Right"
-                   VerticalAlignment="Bottom"
-                   Margin="{StaticResource PauseBigIconMargin}"
-                   Opacity="0"
-                   RenderTransformOrigin="0.5,0.5"
+                   Style="{StaticResource PlayerPauseBigIconImage}"
                    anim:PopupAnimator.BindVisible="{Binding IsPlaying, Converter={StaticResource InverseBool}}">
                 <Image.RenderTransform>
                     <ScaleTransform x:Name="PauseBigIconScale" ScaleX="0" ScaleY="0"/>
@@ -62,13 +56,9 @@
                 <!-- Header -->
                 <Grid Margin="{StaticResource PlaylistHeaderMargin}">
                     <TextBlock Text="{Binding DataContext.Localization[Player.Playlist], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                               Style="{StaticResource AppTextPanelTitle}"
-                               Foreground="{StaticResource TextPrimary}"
-                               VerticalAlignment="Center"/>
+                               Style="{StaticResource PlayerPlaylistHeaderText}"/>
                     <TextBlock Text="{Binding EpisodeCountText, FallbackValue=''}"
-                               Style="{StaticResource AppTextBody}"
-                               Foreground="{StaticResource PlayerPlaylistMetaForeground}"
-                               VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                               Style="{StaticResource PlayerPlaylistMetaText}"/>
                 </Grid>
 
                 <!-- Episode Grid -->
@@ -80,10 +70,7 @@
                         <Style TargetType="ScrollBar" BasedOn="{StaticResource OverlayThinScrollBar}"/>
                     </ListBox.Resources>
                     <ListBox.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <primitives:AnimatedWrapPanel Orientation="Horizontal"
-                                                     AnimationDuration="0:0:0.2"/>
-                        </ItemsPanelTemplate>
+                        <StaticResource ResourceKey="PlaylistEpisodeItemsPanelTemplate"/>
                     </ListBox.ItemsPanel>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
@@ -91,15 +78,12 @@
                                     Command="{Binding DataContext.PlayEpisodeCommand, RelativeSource={RelativeSource AncestorType=Border}}"
                                     CommandParameter="{Binding}">
                                 <TextBlock Text="{Binding Number, StringFormat={}{0:D2}}"
-                                           Style="{StaticResource AppTextPanelValue}"
-                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center">
+                                           Style="{StaticResource PlayerEpisodeNumberText}"
+                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}">
                                     <TextBlock.ToolTip>
-                                        <ToolTip Style="{StaticResource AppPanelToolTip}">
-                                            <TextBlock Text="{Binding Title}" MaxWidth="{StaticResource PlayerEpisodeToolTipMaxWidth}"
-                                                       Style="{StaticResource AppTextBody}"
-                                                       TextTrimming="CharacterEllipsis"/>
+                                        <ToolTip Style="{StaticResource PlayerEpisodeToolTip}">
+                                            <TextBlock Text="{Binding Title}"
+                                                       Style="{StaticResource PlayerEpisodeToolTipText}"/>
                                         </ToolTip>
                                     </TextBlock.ToolTip>
                                 </TextBlock>
@@ -112,40 +96,8 @@
 
         <local:ControlBarView x:Name="ControlBar"
                               Grid.Column="0"
+                              Style="{StaticResource PlayerControlBarViewStyle}"
                               DataContext="{Binding ControlBar}">
-            <UserControl.Style>
-                <Style TargetType="local:ControlBarView">
-                    <Setter Property="Grid.Row" Value="1"/>
-                    <Setter Property="Opacity" Value="1"/>
-                    <Setter Property="IsHitTestVisible" Value="True"/>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
-                            <Setter Property="Grid.Row" Value="0"/>
-                            <Setter Property="VerticalAlignment" Value="Bottom"/>
-                            <Setter Property="Panel.ZIndex" Value="1"/>
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding IsControlBarVisible}" Value="False">
-                            <Setter Property="IsHitTestVisible" Value="False"/>
-                            <DataTrigger.EnterActions>
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                                         To="0" Duration="0:0:0.25"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </DataTrigger.EnterActions>
-                            <DataTrigger.ExitActions>
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                                         To="1" Duration="0:0:0.12"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </DataTrigger.ExitActions>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </UserControl.Style>
         </local:ControlBarView>
     </Grid>
 </UserControl>
