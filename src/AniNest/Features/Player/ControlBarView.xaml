@@ -191,9 +191,7 @@
                                   VerticalOffset="12"
                                   AnimationOrigin="0.5,1"
                                   Panel.ZIndex="1000">
-            <Border Background="{StaticResource PopupMenuBackground}"
-                    CornerRadius="{StaticResource SpeedPopupCornerRadius}"
-                    Padding="{StaticResource PopupMenuPadding}"
+            <Border Style="{StaticResource PopupMenuOverlayBorder}"
                     MinWidth="{StaticResource SpeedPopupMinWidth}">
                 <Grid>
                     <Border CornerRadius="{StaticResource PopupMenuButtonCornerRadius}"

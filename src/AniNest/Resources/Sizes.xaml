@@ -78,6 +78,10 @@
     <system:Double x:Key="PopupFileMenuMinWidth">30</system:Double>
     <system:Double x:Key="PopupSettingsMenuMinWidth">30</system:Double>
     <system:Double x:Key="PopupSubmenuMinWidth">30</system:Double>
+    <system:Double x:Key="BackgroundTaskPopupMinWidth">120</system:Double>
+    <system:Double x:Key="BackgroundTaskPopupMaxWidth">320</system:Double>
+    <system:Double x:Key="TitleBarToolTipMaxWidth">560</system:Double>
+    <system:Double x:Key="PlayerInputPopupMinWidth">420</system:Double>
     <system:Double x:Key="SubmenuChevronWidth">8</system:Double>
     <system:Double x:Key="SubmenuChevronHeight">8</system:Double>
 

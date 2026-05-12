@@ -22,10 +22,24 @@
     <Style x:Key="PopupMenuOverlayBorder"
            TargetType="Border">
         <Setter Property="Background" Value="{StaticResource PopupMenuBackground}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource PopupPanelBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="{StaticResource SpeedPopupCornerRadius}"/>
         <Setter Property="Padding" Value="{StaticResource PopupMenuPadding}"/>
         <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
                 Value="True"/>
+    </Style>
+
+    <Style x:Key="PopupPanelBorder"
+           TargetType="Border"
+           BasedOn="{StaticResource PopupMenuOverlayBorder}">
+        <Setter Property="Padding" Value="{StaticResource PopupPanelPadding}"/>
+    </Style>
+
+    <Style x:Key="PopupPanelCompactBorder"
+           TargetType="Border"
+           BasedOn="{StaticResource PopupMenuOverlayBorder}">
+        <Setter Property="Padding" Value="{StaticResource PopupPanelCompactPadding}"/>
     </Style>
 
     <Style x:Key="OverlaySecondaryText"

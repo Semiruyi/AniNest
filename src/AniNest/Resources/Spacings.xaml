@@ -11,6 +11,8 @@
 
     <Thickness x:Key="TitleBarLeftMargin">12,0,0,0</Thickness>
     <Thickness x:Key="TitleBarTextButtonPadding">12,0</Thickness>
+    <Thickness x:Key="TitleBarBackgroundTaskHostPadding">10,5</Thickness>
+    <Thickness x:Key="TitleBarBackgroundTaskHostMargin">0,0,10,0</Thickness>
 
     <Thickness x:Key="ControlBarHorizontalMargin">10,0,10,0</Thickness>
     <Thickness x:Key="ControlBarSliderMargin">20,0</Thickness>
@@ -49,6 +51,8 @@
     <Thickness x:Key="PopupMenuPadding">4</Thickness>
     <Thickness x:Key="PopupMenuButtonPadding">12,0</Thickness>
     <Thickness x:Key="PopupMenuDividerMargin">8,4</Thickness>
+    <Thickness x:Key="PopupPanelPadding">12,10</Thickness>
+    <Thickness x:Key="PopupPanelCompactPadding">10,8</Thickness>
     <system:Double x:Key="PopupMenuHorizontalOffset">-4</system:Double>
     <system:Double x:Key="SubmenuPopupHorizontalOffset">2</system:Double>
     <Thickness x:Key="SubmenuChevronLeftMargin">8,0,0,0</Thickness>

@@ -98,11 +98,39 @@
     </Style>
 
     <Style x:Key="AppPanelToolTip" TargetType="ToolTip" BasedOn="{StaticResource AppTooltipText}">
-        <Setter Property="Background" Value="{StaticResource PlayerEpisodePressedBackground}"/>
+        <Setter Property="Background" Value="{StaticResource PopupMenuBackground}"/>
         <Setter Property="BorderBrush" Value="{StaticResource PopupPanelBorderBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
         <Setter Property="Padding" Value="{StaticResource TooltipPanelPadding}"/>
         <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <Style x:Key="AppPopupToolTip" TargetType="ToolTip" BasedOn="{StaticResource AppTooltipText}">
+        <Setter Property="Placement" Value="Bottom"/>
+        <Setter Property="HorizontalOffset" Value="0"/>
+        <Setter Property="VerticalOffset" Value="8"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+    </Style>
+
+    <Style x:Key="AppInsetPanelBorder" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource SurfaceOverlayDark}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource PopupMenuButtonCornerRadius}"/>
+        <Setter Property="Padding" Value="{StaticResource PopupPanelPadding}"/>
+    </Style>
+
+    <Style x:Key="AppSegmentedSurfaceBorder" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource LibraryFilterBarBackground}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource LibraryFilterBarBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource LibraryFilterBarCornerRadius}"/>
+        <Setter Property="Padding" Value="{StaticResource LibraryFilterBarOuterPadding}"/>
+    </Style>
+
+    <Style x:Key="AppCardSurfaceBorder" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource SurfaceOverlayDark}"/>
+        <Setter Property="CornerRadius" Value="{StaticResource FolderCardCornerRadius}"/>
     </Style>
 
     <Style x:Key="OverlayThinScrollBar" TargetType="ScrollBar">

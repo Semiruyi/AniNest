@@ -67,8 +67,8 @@
                             Margin="0,0,46,0"
                             shell:WindowChrome.IsHitTestVisibleInChrome="True">
                     <Border x:Name="BackgroundTaskHost"
-                            Margin="0,0,10,0"
-                            Padding="10,5"
+                            Margin="{StaticResource TitleBarBackgroundTaskHostMargin}"
+                            Padding="{StaticResource TitleBarBackgroundTaskHostPadding}"
                             Background="Transparent"
                             BorderThickness="0"
                             behaviors:HoverPopupBehavior.Controller="{Binding ElementName=RootControl, Path=BackgroundTaskPopupController}"
@@ -103,13 +103,9 @@
                                               HorizontalOffset="0"
                                               VerticalOffset="8">
                         <Border x:Name="BackgroundTaskPopupContent"
-                                Background="{StaticResource PopupMenuBackground}"
-                                BorderBrush="{StaticResource PopupPanelBorderBrush}"
-                                BorderThickness="1"
-                                CornerRadius="{StaticResource SpeedPopupCornerRadius}"
-                                Padding="12,10"
-                                MinWidth="120"
-                                MaxWidth="320"
+                                Style="{StaticResource PopupPanelBorder}"
+                                MinWidth="{StaticResource BackgroundTaskPopupMinWidth}"
+                                MaxWidth="{StaticResource BackgroundTaskPopupMaxWidth}"
                                 behaviors:HoverPopupBehavior.Controller="{Binding ElementName=RootControl, Path=BackgroundTaskPopupController}"
                                 behaviors:HoverPopupBehavior.Zone="Popup">
                             <StackPanel>
@@ -208,19 +204,9 @@
                             </Style>
                         </Grid.Style>
                         <Grid.ToolTip>
-                            <ToolTip Style="{StaticResource AppTooltipText}"
-                                     Placement="Bottom"
-                                     HorizontalOffset="0"
-                                     VerticalOffset="8"
-                                     Background="Transparent"
-                                     BorderThickness="0"
-                                     Padding="0">
-                                <Border Background="{StaticResource PopupMenuBackground}"
-                                        BorderBrush="{StaticResource PopupPanelBorderBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="{StaticResource SpeedPopupCornerRadius}"
-                                        Padding="10,8"
-                                        MaxWidth="560">
+                            <ToolTip Style="{StaticResource AppPopupToolTip}">
+                                <Border Style="{StaticResource PopupPanelCompactBorder}"
+                                        MaxWidth="{StaticResource TitleBarToolTipMaxWidth}">
                                     <TextBlock Text="{Binding CurrentPlayerTitleBarToolTip}"
                                                Style="{StaticResource AppTextBody}"
                                                Foreground="{StaticResource TextSecondary}"
