@@ -2,6 +2,7 @@
 
 ## Architecture
 - [Architecture Overview](architecture/overview.md)
+- [MPV Render API Evaluation](architecture/mpv-render-api-evaluation.md)
 - [UI Animation Architecture](presentation/ui-animation-architecture.md)
 - [UI Style System](presentation/ui-style-system.md)
 
