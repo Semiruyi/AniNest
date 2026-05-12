@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:behaviors="clr-namespace:AniNest.Presentation.Behaviors"
                     xmlns:overlays="clr-namespace:AniNest.Presentation.Overlays"
                     xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework">
     <!-- Main window overlay shells -->
@@ -40,6 +41,36 @@
 
     <Style x:Key="MainWindowMenuOverlayBorder" TargetType="Border" BasedOn="{StaticResource PopupMenuOverlayBorder}">
         <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+    </Style>
+
+    <Style x:Key="MainWindowSettingsMenuBorder"
+           TargetType="Border"
+           BasedOn="{StaticResource MainWindowMenuOverlayBorder}">
+        <Setter Property="MinWidth" Value="{StaticResource PopupSettingsMenuMinWidth}"/>
+    </Style>
+
+    <Style x:Key="MainWindowFileMenuBorder"
+           TargetType="Border"
+           BasedOn="{StaticResource MainWindowMenuOverlayBorder}">
+        <Setter Property="MinWidth" Value="{StaticResource PopupFileMenuMinWidth}"/>
+    </Style>
+
+    <Style x:Key="MainWindowSubmenuMenuBorder"
+           TargetType="Border"
+           BasedOn="{StaticResource MainWindowMenuOverlayBorder}">
+        <Setter Property="MinWidth" Value="{StaticResource PopupSubmenuMinWidth}"/>
+    </Style>
+
+    <Style x:Key="MainWindowThumbnailPerformanceMenuBorder"
+           TargetType="Border"
+           BasedOn="{StaticResource MainWindowMenuOverlayBorder}">
+        <Setter Property="MinWidth" Value="{StaticResource ThumbnailPerformancePopupMinWidth}"/>
+    </Style>
+
+    <Style x:Key="MainWindowThumbnailAccelerationMenuBorder"
+           TargetType="Border"
+           BasedOn="{StaticResource MainWindowMenuOverlayBorder}">
+        <Setter Property="MinWidth" Value="{StaticResource ThumbnailAccelerationPopupMinWidth}"/>
     </Style>
 
     <Style x:Key="MainWindowPanelOverlayBorder" TargetType="Border" BasedOn="{StaticResource PopupPanelBorder}">
@@ -92,6 +123,55 @@
     <Style x:Key="PlayerInputButtonText"
            TargetType="TextBlock"
            BasedOn="{StaticResource PopupMenuItemText}"/>
+
+    <!-- Main window menu content -->
+    <DataTemplate x:Key="MainWindowSubmenuButtonContentTemplate">
+        <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
+            <TextBlock Text="{Binding}"
+                       Style="{StaticResource PopupMenuItemText}"/>
+            <Path Style="{StaticResource PopupMenuChevronIcon}"/>
+        </StackPanel>
+    </DataTemplate>
+
+    <Style x:Key="MainWindowSubmenuButton"
+           TargetType="Button"
+           BasedOn="{StaticResource PopupMenuSubmenuButton}">
+        <Setter Property="ContentTemplate"
+                Value="{StaticResource MainWindowSubmenuButtonContentTemplate}"/>
+    </Style>
+
+    <DataTemplate x:Key="MainWindowSummarySubmenuButtonContentTemplate">
+        <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
+            <TextBlock Text="{Binding}"
+                       Style="{StaticResource PopupMenuItemText}"/>
+            <TextBlock Text="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=(behaviors:MenuVisualBehavior.SummaryText)}"
+                       Style="{StaticResource OverlaySummaryLabelText}"/>
+            <Path Style="{StaticResource PopupMenuChevronIcon}"/>
+        </StackPanel>
+    </DataTemplate>
+
+    <Style x:Key="MainWindowSummarySubmenuButton"
+           TargetType="Button"
+           BasedOn="{StaticResource PopupMenuSubmenuButton}">
+        <Setter Property="ContentTemplate"
+                Value="{StaticResource MainWindowSummarySubmenuButtonContentTemplate}"/>
+    </Style>
+
+    <DataTemplate x:Key="MainWindowIconMenuButtonContentTemplate">
+        <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
+            <Path Data="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=(behaviors:MenuVisualBehavior.IconData)}"
+                  Style="{StaticResource PopupMenuItemIcon}"/>
+            <TextBlock Text="{Binding}"
+                       Style="{StaticResource PopupMenuItemText}"/>
+        </StackPanel>
+    </DataTemplate>
+
+    <Style x:Key="MainWindowIconMenuButton"
+           TargetType="Button"
+           BasedOn="{StaticResource PopupMenuOverlayButton}">
+        <Setter Property="ContentTemplate"
+                Value="{StaticResource MainWindowIconMenuButtonContentTemplate}"/>
+    </Style>
 
     <!-- Player input overlay text states -->
     <Style x:Key="PlayerInputBindingDisplayText"
