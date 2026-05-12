@@ -32,6 +32,61 @@
         <DataTemplate DataType="{x:Type featuresPlayer:PlayerViewModel}">
             <pagesPlayer:PlayerPage/>
         </DataTemplate>
+
+        <DataTemplate x:Key="LanguageOverlayItemTemplate"
+                      DataType="{x:Type shellFeatures:SelectableOptionItem}">
+            <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
+                    animations:SelectableOptionState.IsSelected="{Binding IsSelected}"
+                    Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    CommandParameter="{Binding Code}"
+                    Click="OnLanguageOverlayActionClick">
+                <TextBlock Text="{Binding DisplayName}" Style="{StaticResource PopupMenuItemText}"/>
+            </Button>
+        </DataTemplate>
+
+        <DataTemplate x:Key="FullscreenAnimationOverlayItemTemplate"
+                      DataType="{x:Type shellFeatures:SelectableOptionItem}">
+            <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
+                    animations:SelectableOptionState.IsSelected="{Binding IsSelected}"
+                    Command="{Binding DataContext.SelectFullscreenAnimationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    CommandParameter="{Binding Code}"
+                    Click="OnFullscreenAnimationOverlayActionClick">
+                <TextBlock Text="{Binding DisplayName}" Style="{StaticResource PopupMenuItemText}"/>
+            </Button>
+        </DataTemplate>
+
+        <DataTemplate x:Key="PlayerInputBindingItemTemplate"
+                      DataType="{x:Type playerSettings:PlayerInputBindingItemViewModel}">
+            <Grid Style="{StaticResource PlayerInputBindingRowGrid}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="{StaticResource PlayerInputActionColumnWidth}"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding ActionDisplayName}"
+                           Style="{StaticResource PlayerInputActionText}"/>
+                <Button Grid.Column="1"
+                        Style="{StaticResource PlayerInputBindingValueButton}"
+                        Command="{Binding DataContext.BeginCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                        CommandParameter="{Binding Index}">
+                    <TextBlock Style="{StaticResource PlayerInputBindingDisplayText}"/>
+                </Button>
+                <Button Grid.Column="2"
+                        Style="{StaticResource PlayerInputInlineActionButton}"
+                        Command="{Binding DataContext.BeginCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                        CommandParameter="{Binding Index}">
+                    <TextBlock Style="{StaticResource PlayerInputCaptureActionText}"/>
+                </Button>
+                <Button Grid.Column="3"
+                        Style="{StaticResource PlayerInputInlineActionButton}"
+                        Command="{Binding DataContext.ClearBindingCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                        CommandParameter="{Binding Index}">
+                    <TextBlock Text="{Binding DataContext.ClearButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                               Style="{StaticResource PlayerInputButtonText}"/>
+                </Button>
+            </Grid>
+        </DataTemplate>
     </Window.Resources>
 
     <shell:WindowChrome.WindowChrome>
@@ -72,9 +127,8 @@
                                         </Grid>
                                         <Grid Style="{StaticResource PopupMenuButtonHost}">
                                             <Button x:Name="FullscreenAnimationMenuButton"
-                                                    Style="{StaticResource PopupMenuSubmenuButton}"
-                                                    Click="FullscreenAnimationMenuButton_Click"
-                                                    ToolTip="{Binding DataContext.Localization[Settings.FullscreenAnimation.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}">
+                                                    Style="{StaticResource FullscreenAnimationMenuTooltipButton}"
+                                                    Click="FullscreenAnimationMenuButton_Click">
                                                 <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
                                                     <TextBlock Text="{Binding DataContext.Localization[Settings.FullscreenAnimation], RelativeSource={RelativeSource AncestorType=Window}}"
                                                                Style="{StaticResource PopupMenuItemText}"/>
@@ -117,19 +171,8 @@
                                                       Style="{StaticResource SelectableOptionMenuGroup}"
                                                       SelectedIndex="{Binding DataContext.LanguageSelectedIndex, RelativeSource={RelativeSource AncestorType=Window}}">
                         <ItemsControl x:Name="LanguageOptionsPanel"
-                                      ItemsSource="{Binding DataContext.LanguageOptions, RelativeSource={RelativeSource AncestorType=Window}}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="{x:Type shellFeatures:SelectableOptionItem}">
-                                    <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
-                                            animations:SelectableOptionState.IsSelected="{Binding IsSelected}"
-                                            Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            CommandParameter="{Binding Code}"
-                                            Click="OnLanguageOverlayActionClick">
-                                        <TextBlock Text="{Binding DisplayName}" Style="{StaticResource PopupMenuItemText}"/>
-                                    </Button>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                                      ItemsSource="{Binding DataContext.LanguageOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                      ItemTemplate="{StaticResource LanguageOverlayItemTemplate}"/>
                     </primitives:SelectableOptionGroup>
                 </Border>
             </overlays:AnimatedOverlay>
@@ -143,19 +186,8 @@
                                                       Style="{StaticResource SelectableOptionMenuGroup}"
                                                       SelectedIndex="{Binding DataContext.FullscreenAnimationSelectedIndex, RelativeSource={RelativeSource AncestorType=Window}}">
                         <ItemsControl x:Name="FullscreenAnimationOptionsPanel"
-                                      ItemsSource="{Binding DataContext.FullscreenAnimationOptions, RelativeSource={RelativeSource AncestorType=Window}}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="{x:Type shellFeatures:SelectableOptionItem}">
-                                    <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
-                                            animations:SelectableOptionState.IsSelected="{Binding IsSelected}"
-                                            Command="{Binding DataContext.SelectFullscreenAnimationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            CommandParameter="{Binding Code}"
-                                            Click="OnFullscreenAnimationOverlayActionClick">
-                                        <TextBlock Text="{Binding DisplayName}" Style="{StaticResource PopupMenuItemText}"/>
-                                    </Button>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                                      ItemsSource="{Binding DataContext.FullscreenAnimationOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                      ItemTemplate="{StaticResource FullscreenAnimationOverlayItemTemplate}"/>
                     </primitives:SelectableOptionGroup>
                 </Border>
             </overlays:AnimatedOverlay>
@@ -204,40 +236,29 @@
                                                               SelectedIndex="{Binding DataContext.ThumbnailPerformanceSelectedIndex, RelativeSource={RelativeSource AncestorType=Window}}">
                                 <StackPanel x:Name="ThumbnailPerformanceOptionsPanel"
                                             Style="{StaticResource PopupMenuOptionListPanel}">
-                                    <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
-                                            IsEnabled="{Binding DataContext.CanSelectThumbnailPerformanceMode, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    <Button Style="{StaticResource ThumbnailPerformanceOptionButton}"
                                             animations:SelectableOptionState.IsSelected="{Binding DataContext.IsThumbnailPerformancePausedSelected, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="paused"
                                             Click="OnThumbnailPerformanceOverlayActionClick">
                                         <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Paused], RelativeSource={RelativeSource AncestorType=Window}}"
                                                    Style="{StaticResource PopupMenuItemText}"/>
                                     </Button>
-                                    <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
-                                            IsEnabled="{Binding DataContext.CanSelectThumbnailPerformanceMode, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    <Button Style="{StaticResource ThumbnailPerformanceQuietOptionButton}"
                                             animations:SelectableOptionState.IsSelected="{Binding DataContext.IsThumbnailPerformanceQuietSelected, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="quiet"
-                                            Click="OnThumbnailPerformanceOverlayActionClick"
-                                            ToolTip="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Quiet.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}">
+                                            Click="OnThumbnailPerformanceOverlayActionClick">
                                         <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Quiet], RelativeSource={RelativeSource AncestorType=Window}}" Style="{StaticResource PopupMenuItemText}"/>
                                     </Button>
-                                    <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
-                                            IsEnabled="{Binding DataContext.CanSelectThumbnailPerformanceMode, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    <Button Style="{StaticResource ThumbnailPerformanceBalancedOptionButton}"
                                             animations:SelectableOptionState.IsSelected="{Binding DataContext.IsThumbnailPerformanceBalancedSelected, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="balanced"
-                                            Click="OnThumbnailPerformanceOverlayActionClick"
-                                            ToolTip="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Balanced.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}">
+                                            Click="OnThumbnailPerformanceOverlayActionClick">
                                         <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Balanced], RelativeSource={RelativeSource AncestorType=Window}}" Style="{StaticResource PopupMenuItemText}"/>
                                     </Button>
-                                    <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
-                                            IsEnabled="{Binding DataContext.CanSelectThumbnailPerformanceMode, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    <Button Style="{StaticResource ThumbnailPerformanceFastOptionButton}"
                                             animations:SelectableOptionState.IsSelected="{Binding DataContext.IsThumbnailPerformanceFastSelected, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="fast"
-                                            Click="OnThumbnailPerformanceOverlayActionClick"
-                                            ToolTip="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Fast.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}">
+                                            Click="OnThumbnailPerformanceOverlayActionClick">
                                         <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Fast], RelativeSource={RelativeSource AncestorType=Window}}" Style="{StaticResource PopupMenuItemText}"/>
                                     </Button>
                                 </StackPanel>
@@ -258,20 +279,16 @@
                                                           SelectedIndex="{Binding DataContext.ThumbnailAccelerationSelectedIndex, RelativeSource={RelativeSource AncestorType=Window}}">
                             <StackPanel x:Name="ThumbnailAccelerationOptionsPanel"
                                         Style="{StaticResource PopupMenuOptionListPanel}">
-                                <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
+                                <Button Style="{StaticResource ThumbnailAccelerationAutoOptionButton}"
                                         animations:SelectableOptionState.IsSelected="{Binding DataContext.IsThumbnailAccelerationAutoSelected, RelativeSource={RelativeSource AncestorType=Window}}"
-                                        Command="{Binding DataContext.SelectThumbnailAccelerationModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                         CommandParameter="auto"
-                                        Click="OnThumbnailAccelerationOverlayActionClick"
-                                        ToolTip="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Auto.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}">
+                                        Click="OnThumbnailAccelerationOverlayActionClick">
                                     <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Auto], RelativeSource={RelativeSource AncestorType=Window}}" Style="{StaticResource PopupMenuItemText}"/>
                                 </Button>
-                                <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
+                                <Button Style="{StaticResource ThumbnailAccelerationCompatibleOptionButton}"
                                         animations:SelectableOptionState.IsSelected="{Binding DataContext.IsThumbnailAccelerationCompatibleSelected, RelativeSource={RelativeSource AncestorType=Window}}"
-                                        Command="{Binding DataContext.SelectThumbnailAccelerationModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                         CommandParameter="compatible"
-                                        Click="OnThumbnailAccelerationOverlayActionClick"
-                                        ToolTip="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Compatible.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}">
+                                        Click="OnThumbnailAccelerationOverlayActionClick">
                                     <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Compatible], RelativeSource={RelativeSource AncestorType=Window}}" Style="{StaticResource PopupMenuItemText}"/>
                                 </Button>
                             </StackPanel>
@@ -320,41 +337,8 @@
                                    Style="{StaticResource PlayerInputHintText}"/>
                         <ScrollViewer Grid.Row="1"
                                       Style="{StaticResource PlayerInputScrollViewer}">
-                            <ItemsControl ItemsSource="{Binding Items}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="{x:Type playerSettings:PlayerInputBindingItemViewModel}">
-                                        <Grid Style="{StaticResource PlayerInputBindingRowGrid}">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="{StaticResource PlayerInputActionColumnWidth}"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding ActionDisplayName}"
-                                                       Style="{StaticResource PlayerInputActionText}"/>
-                                            <Button Grid.Column="1"
-                                                    Style="{StaticResource PlayerInputBindingValueButton}"
-                                                    Command="{Binding DataContext.BeginCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                    CommandParameter="{Binding Index}">
-                                                <TextBlock Style="{StaticResource PlayerInputBindingDisplayText}"/>
-                                            </Button>
-                                            <Button Grid.Column="2"
-                                                    Style="{StaticResource PlayerInputInlineActionButton}"
-                                                    Command="{Binding DataContext.BeginCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                    CommandParameter="{Binding Index}">
-                                                <TextBlock Style="{StaticResource PlayerInputCaptureActionText}"/>
-                                            </Button>
-                                            <Button Grid.Column="3"
-                                                    Style="{StaticResource PlayerInputInlineActionButton}"
-                                                    Command="{Binding DataContext.ClearBindingCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                    CommandParameter="{Binding Index}">
-                                                <TextBlock Text="{Binding DataContext.ClearButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                           Style="{StaticResource PlayerInputButtonText}"/>
-                                            </Button>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            <ItemsControl ItemsSource="{Binding Items}"
+                                          ItemTemplate="{StaticResource PlayerInputBindingItemTemplate}"/>
                         </ScrollViewer>
                         <Button Grid.Row="2"
                                 Style="{StaticResource PlayerInputResetButton}"

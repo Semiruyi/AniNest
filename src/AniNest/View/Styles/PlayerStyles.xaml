@@ -62,6 +62,9 @@
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
         <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
         <Setter Property="ItemContainerStyle" Value="{StaticResource PlaylistEpisodeListBoxItem}"/>
+        <Style.Resources>
+            <Style TargetType="ScrollBar" BasedOn="{StaticResource OverlayThinScrollBar}"/>
+        </Style.Resources>
     </Style>
 
     <Style x:Key="PlayerPlaylistPanelStyle" TargetType="Border">
@@ -102,6 +105,24 @@
         <Setter Property="Padding" Value="{StaticResource ThumbnailPreviewTimePadding}"/>
         <Setter Property="HorizontalAlignment" Value="Center"/>
         <Setter Property="VerticalAlignment" Value="Bottom"/>
+    </Style>
+
+    <Style x:Key="PlayerThumbnailPreviewImageBorder" TargetType="Border">
+        <Setter Property="Width" Value="{StaticResource ThumbnailPopupWidth}"/>
+        <Setter Property="Height" Value="{StaticResource ThumbnailPopupHeight}"/>
+        <Setter Property="Clip">
+            <Setter.Value>
+                <RectangleGeometry RadiusX="{StaticResource ThumbnailPreviewImageClipRadius}"
+                                   RadiusY="{StaticResource ThumbnailPreviewImageClipRadius}"
+                                   Rect="0,0,160,90"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="PlayerThumbnailPreviewImage" TargetType="Image">
+        <Setter Property="Width" Value="{StaticResource ThumbnailPopupWidth}"/>
+        <Setter Property="Height" Value="{StaticResource ThumbnailPopupHeight}"/>
+        <Setter Property="Stretch" Value="UniformToFill"/>
     </Style>
 
     <Style x:Key="PlayerThumbnailPreviewTimeText" TargetType="TextBlock" BasedOn="{StaticResource AppTextThumbnailPreview}">

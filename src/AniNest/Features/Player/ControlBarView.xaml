@@ -6,6 +6,18 @@
              xmlns:overlays="clr-namespace:AniNest.Presentation.Overlays"
              xmlns:primitives="clr-namespace:AniNest.Presentation.Primitives"
              Focusable="True">
+    <UserControl.Resources>
+        <DataTemplate x:Key="PlayerSpeedOptionItemTemplate">
+            <Button Style="{StaticResource PlayerSpeedOptionButton}"
+                    Command="{Binding DataContext.ChangeSpeedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    CommandParameter="{Binding}"
+                    Click="SpeedOption_Click">
+                <TextBlock Text="{Binding StringFormat={}{0:0.0#}x}"
+                           Style="{StaticResource PlayerSpeedOptionText}"/>
+            </Button>
+        </DataTemplate>
+    </UserControl.Resources>
+
     <Grid x:Name="RootGrid" Height="{StaticResource ControlBarHeight}"
           Focusable="True">
         <Grid.Background>
@@ -22,19 +34,11 @@
 
             <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left"
                         VerticalAlignment="Center">
-                <Button x:Name="PreviousBtn" Style="{StaticResource AnimatedIconButton}"
-                        Command="{Binding PreviousCommand}" ToolTip="{Binding PreviousTooltip}"
-                        Focusable="False"
-                        Margin="{StaticResource ButtonGapRight}">
+                <Button x:Name="PreviousBtn" Style="{StaticResource PlayerPreviousButton}">
                     <Image Source="/Resources/Icons/previous.png"
                            Style="{StaticResource PlayerControlBarIconImageSmall}"/>
                 </Button>
-                <Button x:Name="PlayPauseBtn" Style="{StaticResource AnimatedIconButton}"
-                        Width="{StaticResource PlayPauseButtonSize}"
-                        Height="{StaticResource PlayPauseButtonSize}"
-                        Opacity="0.85" Command="{Binding PlayPauseCommand}"
-                        Margin="{StaticResource ButtonGapBoth}"
-                        ToolTip="{Binding PlayPauseTooltip}" Focusable="False">
+                <Button x:Name="PlayPauseBtn" Style="{StaticResource PlayerPlayPauseButton}">
                     <Grid animations:IconCrossfader.IsActive="{Binding IsPlaying}"
                           animations:IconCrossfader.ListenButton="{Binding ElementName=PlayPauseBtn}">
                         <Image Source="/Resources/Icons/play.png"
@@ -45,17 +49,11 @@
                                Opacity="0"/>
                     </Grid>
                 </Button>
-                <Button x:Name="NextBtn" Style="{StaticResource AnimatedIconButton}"
-                        Command="{Binding NextCommand}" ToolTip="{Binding NextTooltip}"
-                        Focusable="False"
-                        Margin="{StaticResource ButtonGapRight}">
+                <Button x:Name="NextBtn" Style="{StaticResource PlayerNextButton}">
                     <Image Source="/Resources/Icons/next.png"
                            Style="{StaticResource PlayerControlBarIconImageSmall}"/>
                 </Button>
-                <Button x:Name="StopBtn" Style="{StaticResource AnimatedIconButton}"
-                        Command="{Binding StopCommand}"
-                        Margin="{StaticResource ButtonGapLeft}" ToolTip="{Binding DataContext.Localization[Player.Stop], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                        Focusable="False">
+                <Button x:Name="StopBtn" Style="{StaticResource PlayerStopButton}">
                     <Image Source="/Resources/Icons/stop.png"
                            Style="{StaticResource PlayerControlBarIconImageSmall}"/>
                 </Button>
@@ -92,20 +90,12 @@
                    VerticalOffset="{Binding ThumbnailPreview.PopupVerticalOffset}">
                 <Grid Width="{Binding ThumbnailPreview.PopupWidth}">
                     <Border x:Name="ThumbnailImageBorder"
-                            Width="{StaticResource ThumbnailPopupWidth}"
-                            Height="{StaticResource ThumbnailPopupHeight}"
+                            Style="{StaticResource PlayerThumbnailPreviewImageBorder}"
                             behaviors:HoverPopupBehavior.Controller="{Binding ThumbnailPreview.HoverPopupController}"
                             behaviors:HoverPopupBehavior.Zone="Popup"
                             Visibility="{Binding ThumbnailPreview.ImageVisibility}">
-                        <Border.Clip>
-                            <RectangleGeometry RadiusX="{StaticResource ThumbnailPreviewImageClipRadius}"
-                                               RadiusY="{StaticResource ThumbnailPreviewImageClipRadius}"
-                                               Rect="0,0,160,90"/>
-                        </Border.Clip>
                         <Image Source="{Binding ThumbnailPreview.ImageSource}"
-                               Width="{StaticResource ThumbnailPopupWidth}"
-                               Height="{StaticResource ThumbnailPopupHeight}"
-                               Stretch="UniformToFill"/>
+                               Style="{StaticResource PlayerThumbnailPreviewImage}"/>
                     </Border>
                     <Border Style="{StaticResource PlayerThumbnailPreviewTimeBorder}"
                             behaviors:HoverPopupBehavior.Controller="{Binding ThumbnailPreview.HoverPopupController}"
@@ -143,10 +133,7 @@
                     </Button>
                 </Grid>
 
-                <Button x:Name="PlaylistToggleBtn" Style="{StaticResource AnimatedIconButton}"
-                        Command="{Binding TogglePlaylistCommand}"
-                        Margin="{StaticResource ButtonGapLeft}" ToolTip="{Binding DataContext.Localization[Player.Playlist], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                        Focusable="False">
+                <Button x:Name="PlaylistToggleBtn" Style="{StaticResource PlayerPlaylistButton}">
                     <Image Source="/Resources/Icons/playlist.png"
                            Style="{StaticResource PlayerControlBarIconImageNormal}"/>
                 </Button>
@@ -172,19 +159,8 @@
                             <TranslateTransform Y="0"/>
                         </Border.RenderTransform>
                     </Border>
-                    <ItemsControl ItemsSource="{Binding SpeedOptions}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Style="{StaticResource PlayerSpeedOptionButton}"
-                                        Command="{Binding DataContext.ChangeSpeedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        CommandParameter="{Binding}"
-                                        Click="SpeedOption_Click">
-                                    <TextBlock Text="{Binding StringFormat={}{0:0.0#}x}"
-                                               Style="{StaticResource PlayerSpeedOptionText}"/>
-                                </Button>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <ItemsControl ItemsSource="{Binding SpeedOptions}"
+                                  ItemTemplate="{StaticResource PlayerSpeedOptionItemTemplate}"/>
                 </Grid>
             </Border>
         </overlays:AnimatedOverlay>

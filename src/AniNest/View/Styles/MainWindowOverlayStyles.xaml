@@ -143,4 +143,63 @@
         <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
                 Value="True"/>
     </Style>
+
+    <!-- Main window submenu/menu option buttons -->
+    <Style x:Key="FullscreenAnimationMenuTooltipButton"
+           TargetType="Button"
+           BasedOn="{StaticResource PopupMenuSubmenuButton}">
+        <Setter Property="ToolTip"
+                Value="{Binding DataContext.Localization[Settings.FullscreenAnimation.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"/>
+    </Style>
+
+    <Style x:Key="ThumbnailPerformanceOptionButton"
+           TargetType="Button"
+           BasedOn="{StaticResource SelectableOptionOverlayMenuButton}">
+        <Setter Property="IsEnabled"
+                Value="{Binding DataContext.CanSelectThumbnailPerformanceMode, RelativeSource={RelativeSource AncestorType=Window}}"/>
+        <Setter Property="Command"
+                Value="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
+    </Style>
+
+    <Style x:Key="ThumbnailPerformanceQuietOptionButton"
+           TargetType="Button"
+           BasedOn="{StaticResource ThumbnailPerformanceOptionButton}">
+        <Setter Property="ToolTip"
+                Value="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Quiet.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"/>
+    </Style>
+
+    <Style x:Key="ThumbnailPerformanceBalancedOptionButton"
+           TargetType="Button"
+           BasedOn="{StaticResource ThumbnailPerformanceOptionButton}">
+        <Setter Property="ToolTip"
+                Value="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Balanced.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"/>
+    </Style>
+
+    <Style x:Key="ThumbnailPerformanceFastOptionButton"
+           TargetType="Button"
+           BasedOn="{StaticResource ThumbnailPerformanceOptionButton}">
+        <Setter Property="ToolTip"
+                Value="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Fast.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"/>
+    </Style>
+
+    <Style x:Key="ThumbnailAccelerationOptionButton"
+           TargetType="Button"
+           BasedOn="{StaticResource SelectableOptionOverlayMenuButton}">
+        <Setter Property="Command"
+                Value="{Binding DataContext.SelectThumbnailAccelerationModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
+    </Style>
+
+    <Style x:Key="ThumbnailAccelerationAutoOptionButton"
+           TargetType="Button"
+           BasedOn="{StaticResource ThumbnailAccelerationOptionButton}">
+        <Setter Property="ToolTip"
+                Value="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Auto.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"/>
+    </Style>
+
+    <Style x:Key="ThumbnailAccelerationCompatibleOptionButton"
+           TargetType="Button"
+           BasedOn="{StaticResource ThumbnailAccelerationOptionButton}">
+        <Setter Property="ToolTip"
+                Value="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Compatible.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"/>
+    </Style>
 </ResourceDictionary>

@@ -3,6 +3,7 @@
 ## Architecture
 - [Architecture Overview](architecture/overview.md)
 - [UI Animation Architecture](presentation/ui-animation-architecture.md)
+- [UI Style System](presentation/ui-style-system.md)
 
 ## Features
 - [Library Classification Design](library/classification-design.md)
