@@ -53,6 +53,11 @@
     <Thickness x:Key="LibraryCardProgressMargin">0,8,0,0</Thickness>
     <Thickness x:Key="LibraryCardStatusButtonMargin">0,8,0,0</Thickness>
     <Thickness x:Key="LibraryCardStatusButtonPadding">8,0</Thickness>
+    <system:Double x:Key="LibraryCardStatusMenuTopOffset">-4</system:Double>
+    <system:Double x:Key="LibraryCardContextMenuHorizontalOffset">8</system:Double>
+    <system:Double x:Key="LibraryCardContextMenuVerticalOffset">8</system:Double>
+    <system:Double x:Key="LibraryCardStatusSubmenuHorizontalOffset">2</system:Double>
+    <system:Double x:Key="LibraryCardStatusStandaloneVerticalOffset">12</system:Double>
 
     <system:Double x:Key="ThumbnailPopupOffset">-120</system:Double>
     <system:Double x:Key="SpeedPopupOffset">-140</system:Double>

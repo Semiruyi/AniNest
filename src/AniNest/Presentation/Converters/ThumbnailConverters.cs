@@ -119,37 +119,3 @@ public class ProgressToRingArcConverter : IValueConverter
             cy + radius * Math.Sin(angleRad));
     }
 }
-
-public class PercentToWidthConverter : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        double percent = value switch
-        {
-            double d => d,
-            int i => i,
-            float f => f,
-            _ => 0
-        };
-
-        double totalWidth = parameter switch
-        {
-            string s when double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) => parsed,
-            double d => d,
-            int i => i,
-            _ => 0
-        };
-
-        if (percent <= 0 || totalWidth <= 0)
-            return 0d;
-
-        if (percent >= 100)
-            return totalWidth;
-
-        return totalWidth * percent / 100.0;
-    }
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        => throw new NotImplementedException();
-}
-

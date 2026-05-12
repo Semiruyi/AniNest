@@ -67,24 +67,10 @@
         <Setter Property="Margin" Value="{StaticResource LibraryCardSummaryRowMargin}"/>
     </Style>
 
-    <Style x:Key="LibraryCardProgressContainer" TargetType="Grid">
+    <Style x:Key="LibraryCardProgressBar" TargetType="ProgressBar" BasedOn="{StaticResource AppProgressBarThin}">
         <Setter Property="Margin" Value="{StaticResource LibraryCardProgressMargin}"/>
-        <Setter Property="Height" Value="{StaticResource LibraryCardProgressContainerHeight}"/>
-        <Setter Property="Background" Value="{StaticResource TransparentBrush}"/>
-    </Style>
-
-    <Style x:Key="LibraryCardProgressTrackBorder" TargetType="Border">
-        <Setter Property="Height" Value="{StaticResource ProgressBarThinHeight}"/>
-        <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Background" Value="{StaticResource LibraryCardProgressTrack}"/>
-        <Setter Property="CornerRadius" Value="{StaticResource ProgressBarThinCornerRadius}"/>
-    </Style>
-
-    <Style x:Key="LibraryCardProgressFillBorder" TargetType="Border">
-        <Setter Property="Height" Value="{StaticResource ProgressBarThinHeight}"/>
-        <Setter Property="VerticalAlignment" Value="Center"/>
-        <Setter Property="Background" Value="{StaticResource AccentBlue}"/>
-        <Setter Property="CornerRadius" Value="{StaticResource ProgressBarThinCornerRadius}"/>
+        <Setter Property="Foreground" Value="{StaticResource AccentBlue}"/>
     </Style>
 
 </ResourceDictionary>

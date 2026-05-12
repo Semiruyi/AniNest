@@ -23,7 +23,9 @@
 
                 <!-- Window and overlay patterns -->
                 <ResourceDictionary Source="/View/Styles/OverlayMenuStyles.xaml"/>
+                <ResourceDictionary Source="/View/Styles/LibraryPageStyles.xaml"/>
                 <ResourceDictionary Source="/View/Styles/MainWindowOverlayStyles.xaml"/>
+                <ResourceDictionary Source="/View/Styles/MainWindowTemplates.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

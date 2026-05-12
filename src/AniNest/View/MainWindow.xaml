@@ -5,12 +5,6 @@
         xmlns:primitives="clr-namespace:AniNest.Presentation.Primitives"
         xmlns:overlays="clr-namespace:AniNest.Presentation.Overlays"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
-        xmlns:shellFeatures="clr-namespace:AniNest.Features.Shell"
-        xmlns:featuresLibrary="clr-namespace:AniNest.Features.Library"
-        xmlns:featuresPlayer="clr-namespace:AniNest.Features.Player"
-        xmlns:playerSettings="clr-namespace:AniNest.Features.Player.Settings"
-        xmlns:pagesLibrary="clr-namespace:AniNest.Features.Library"
-        xmlns:pagesPlayer="clr-namespace:AniNest.Features.Player"
         xmlns:animations="clr-namespace:AniNest.Presentation.Animations"
         Title="AniNest"
         Icon="/Resources/Icons/App.ico"
@@ -22,68 +16,6 @@
         InputMethod.IsInputMethodEnabled="False"
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize">
-
-    <Window.Resources>
-        <DataTemplate DataType="{x:Type featuresLibrary:MainPageViewModel}">
-            <pagesLibrary:MainPage/>
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type featuresPlayer:PlayerViewModel}">
-            <pagesPlayer:PlayerPage/>
-        </DataTemplate>
-
-        <DataTemplate x:Key="LanguageOverlayItemTemplate"
-                      DataType="{x:Type shellFeatures:SelectableOptionItem}">
-            <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
-                    animations:SelectableOptionState.IsSelected="{Binding IsSelected}"
-                    Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                    CommandParameter="{Binding Code}">
-                <TextBlock Text="{Binding DisplayName}" Style="{StaticResource PopupMenuItemText}"/>
-            </Button>
-        </DataTemplate>
-
-        <DataTemplate x:Key="FullscreenAnimationOverlayItemTemplate"
-                      DataType="{x:Type shellFeatures:SelectableOptionItem}">
-            <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
-                    animations:SelectableOptionState.IsSelected="{Binding IsSelected}"
-                    Command="{Binding DataContext.SelectFullscreenAnimationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                    CommandParameter="{Binding Code}">
-                <TextBlock Text="{Binding DisplayName}" Style="{StaticResource PopupMenuItemText}"/>
-            </Button>
-        </DataTemplate>
-
-        <DataTemplate x:Key="PlayerInputBindingItemTemplate"
-                      DataType="{x:Type playerSettings:PlayerInputBindingItemViewModel}">
-            <Grid Style="{StaticResource PlayerInputBindingRowGrid}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="{StaticResource PlayerInputActionColumnWidth}"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="{Binding ActionDisplayName}"
-                           Style="{StaticResource PlayerInputActionText}"/>
-                <Button Grid.Column="1"
-                        Style="{StaticResource PlayerInputBindingValueButton}"
-                        Command="{Binding DataContext.BeginCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                        CommandParameter="{Binding Index}">
-                    <TextBlock Style="{StaticResource PlayerInputBindingDisplayText}"/>
-                </Button>
-                <Button Grid.Column="2"
-                        Style="{StaticResource PlayerInputInlineActionButton}"
-                        Command="{Binding DataContext.BeginCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                        CommandParameter="{Binding Index}">
-                    <TextBlock Style="{StaticResource PlayerInputCaptureActionText}"/>
-                </Button>
-                <Button Grid.Column="3"
-                        Style="{StaticResource PlayerInputInlineActionButton}"
-                        Command="{Binding DataContext.ClearBindingCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                        CommandParameter="{Binding Index}">
-                    <TextBlock Text="{Binding DataContext.ClearButtonText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                               Style="{StaticResource PlayerInputButtonText}"/>
-                </Button>
-            </Grid>
-        </DataTemplate>
-    </Window.Resources>
 
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="{StaticResource TitleBarHeight}"

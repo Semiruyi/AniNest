@@ -18,6 +18,8 @@ namespace AniNest.Features.Library;
 
 public partial class MainPage : System.Windows.Controls.UserControl
 {
+    private const string CardBorderElementName = "CardBorder";
+
     private enum CardOverlayId
     {
         StatusMenu,
@@ -187,8 +189,15 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     private void OnCardPreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
     {
-        if (sender is not Border border || border.DataContext is not FolderListItem item)
+        if (sender is not FrameworkElement host || host.DataContext is not FolderListItem item)
             return;
+
+        var border = FindNamedDescendant<Border>(host, CardBorderElementName);
+        if (border == null)
+        {
+            Log.Warning($"OnCardPreviewMouseRightButtonUp: missing card anchor name={item.Name}");
+            return;
+        }
 
         OverlayCoordinator.Instance.RegisterRegion(border, OverlayOutsideHitKind.ContentInteractive);
         CloseCardOverlay(CardOverlayId.StatusMenu, OverlayCloseReason.ChainSwitch);
@@ -326,7 +335,9 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     private void CloseCardOverlay(CardOverlayId id, OverlayCloseReason reason)
     {
-        var registration = _cardOverlays[id];
+        if (!TryGetCardOverlayRegistration(id, out var registration))
+            return;
+
         if (!registration.Overlay.IsOpen)
             return;
 
@@ -382,6 +393,15 @@ public partial class MainPage : System.Windows.Controls.UserControl
         }
     }
 
+    private bool TryGetCardOverlayRegistration(CardOverlayId id, out CardOverlayRegistration registration)
+    {
+        if (_cardOverlays.TryGetValue(id, out registration!))
+            return true;
+
+        Log.Warning($"Missing card overlay registration: id={id}");
+        return false;
+    }
+
     private async Task ExecuteFolderStatusChangeAsync(WatchStatus status)
     {
         var item = _overlayItem;
@@ -412,9 +432,9 @@ public partial class MainPage : System.Windows.Controls.UserControl
         if (openAsSubmenu)
         {
             CardStatusMenuOverlay.Placement = OverlayPlacement.RightTop;
-            CardStatusMenuOverlay.HorizontalOffset = TryFindResource("SubmenuPopupHorizontalOffset") is double horizontal
+            CardStatusMenuOverlay.HorizontalOffset = TryFindResource("LibraryCardStatusSubmenuHorizontalOffset") is double horizontal
                 ? horizontal
-                : 2d;
+                : 0d;
             CardStatusMenuOverlay.VerticalOffset = 0;
             CardStatusMenuOverlay.AnimationOrigin = new Point(0, 0);
             return;
@@ -422,8 +442,26 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
         CardStatusMenuOverlay.Placement = OverlayPlacement.TopCenter;
         CardStatusMenuOverlay.HorizontalOffset = 0;
-        CardStatusMenuOverlay.VerticalOffset = 12;
+        CardStatusMenuOverlay.VerticalOffset = TryFindResource("LibraryCardStatusStandaloneVerticalOffset") is double vertical
+            ? vertical
+            : 0d;
         CardStatusMenuOverlay.AnimationOrigin = new Point(0.5, 1);
+    }
+
+    private static T? FindNamedDescendant<T>(DependencyObject root, string name) where T : FrameworkElement
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is T element && string.Equals(element.Name, name, StringComparison.Ordinal))
+                return element;
+
+            var nested = FindNamedDescendant<T>(child, name);
+            if (nested != null)
+                return nested;
+        }
+
+        return null;
     }
 
     private static string DescribeSource(DependencyObject? source)

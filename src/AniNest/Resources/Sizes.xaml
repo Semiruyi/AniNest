@@ -70,7 +70,6 @@
     <system:Double x:Key="LibraryCardClipRadius">10</system:Double>
     <Rect x:Key="LibraryCardClipRect">0,0,190,253</Rect>
     <system:Double x:Key="FolderCardGradientHeight">105</system:Double>
-    <system:Double x:Key="LibraryCardProgressContainerHeight">14</system:Double>
     <system:Double x:Key="LibraryCardFavoriteButtonSize">28</system:Double>
     <system:Double x:Key="LibraryCardStatusButtonHeight">25</system:Double>
     <system:Double x:Key="LibraryCardStatusButtonMinWidth">60</system:Double>
@@ -91,6 +90,8 @@
     <system:Double x:Key="TitleBarToolTipMaxWidth">560</system:Double>
     <system:Double x:Key="ThumbnailPerformancePopupMinWidth">50</system:Double>
     <system:Double x:Key="ThumbnailAccelerationPopupMinWidth">320</system:Double>
+    <system:Int32 x:Key="LibraryCardOverlayZIndex">1000</system:Int32>
+    <system:Int32 x:Key="LibraryCardSubmenuOverlayZIndex">1001</system:Int32>
     <system:Double x:Key="PlayerInputPopupMinWidth">420</system:Double>
     <system:Double x:Key="PlayerInputScrollMaxHeight">380</system:Double>
     <GridLength x:Key="PlayerInputActionColumnWidth">150</GridLength>

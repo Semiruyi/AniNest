@@ -65,6 +65,7 @@ Rules:
 Current files:
 
 - `src/AniNest/View/Styles/LibraryCardStyles.xaml`
+- `src/AniNest/View/Styles/LibraryPageStyles.xaml`
 - `src/AniNest/View/Styles/LibraryButtonStyles.xaml`
 - `src/AniNest/View/Styles/PlayerStyles.xaml`
 - `src/AniNest/View/Styles/PlayerButtonStyles.xaml`
@@ -115,7 +116,9 @@ Within a dictionary, group related resources with short section comments so the 
 12. `LibraryButtonStyles.xaml`
 13. `PlayerButtonStyles.xaml`
 14. `OverlayMenuStyles.xaml`
-15. `MainWindowOverlayStyles.xaml`
+15. `LibraryPageStyles.xaml`
+16. `MainWindowOverlayStyles.xaml`
+17. `MainWindowTemplates.xaml`
 
 This order matters.
 

@@ -429,7 +429,9 @@ public partial class MainWindow : Window
 
     private void CloseSettingsOverlay(SettingsOverlayId id, OverlayCloseReason reason)
     {
-        var registration = _settingsOverlays[id];
+        if (!TryGetSettingsOverlayRegistration(id, out var registration))
+            return;
+
         CloseOverlay(
             registration.Overlay,
             shell => registration.SyncState(shell, false),
@@ -456,7 +458,10 @@ public partial class MainWindow : Window
         while (current.HasValue)
         {
             branch.Add(current.Value);
-            current = _settingsOverlays[current.Value].ParentId;
+            if (!TryGetSettingsOverlayRegistration(current.Value, out var registration))
+                break;
+
+            current = registration.ParentId;
         }
 
         return branch;
@@ -466,7 +471,9 @@ public partial class MainWindow : Window
     {
         CloseSettingsOverlayBranchesExcept(id, OverlayCloseReason.ChainSwitch);
 
-        var registration = _settingsOverlays[id];
+        if (!TryGetSettingsOverlayRegistration(id, out var registration))
+            return;
+
         ToggleAnchoredOverlay(
             registration.Overlay,
             registration.Anchor(),
@@ -594,6 +601,17 @@ public partial class MainWindow : Window
         {
             highlightGroup.IsSelectionHighlightActive = isActive;
         }
+    }
+
+    private bool TryGetSettingsOverlayRegistration(
+        SettingsOverlayId id,
+        out SettingsOverlayRegistration registration)
+    {
+        if (_settingsOverlays.TryGetValue(id, out registration!))
+            return true;
+
+        MainWindowLog.Warning($"Missing settings overlay registration: id={id}");
+        return false;
     }
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
