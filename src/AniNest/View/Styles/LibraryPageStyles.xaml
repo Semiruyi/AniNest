@@ -97,6 +97,75 @@
         </Style.Triggers>
     </Style>
 
+    <Style x:Key="LibraryOverlayMenuBorder"
+           TargetType="Border"
+           BasedOn="{StaticResource PopupMenuOverlayBorder}">
+        <Setter Property="MinWidth"
+                Value="{StaticResource PopupSubmenuMinWidth}"/>
+    </Style>
+
+    <Style x:Key="LibraryOverlayDivider"
+           TargetType="Border">
+        <Setter Property="Height" Value="1"/>
+        <Setter Property="Margin" Value="{StaticResource PopupMenuDividerMargin}"/>
+        <Setter Property="Background" Value="{StaticResource PopupMenuDividerBrush}"/>
+    </Style>
+
+    <DataTemplate x:Key="LibraryOverlaySubmenuButtonContentTemplate">
+        <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
+            <TextBlock Text="{Binding}"
+                       Style="{StaticResource PopupMenuItemText}"/>
+            <Path Style="{StaticResource PopupMenuChevronIcon}"/>
+        </StackPanel>
+    </DataTemplate>
+
+    <Style x:Key="LibraryOverlaySubmenuButton"
+           TargetType="Button"
+           BasedOn="{StaticResource PopupMenuStretchSubmenuButton}">
+        <Setter Property="ContentTemplate"
+                Value="{StaticResource LibraryOverlaySubmenuButtonContentTemplate}"/>
+    </Style>
+
+    <Style x:Key="LibraryCardStatusMenuItemButton"
+           TargetType="Button"
+           BasedOn="{StaticResource SelectableOptionMenuButton}"/>
+
+    <Style x:Key="LibraryCardStatusWatchingMenuButton"
+           TargetType="Button"
+           BasedOn="{StaticResource LibraryCardStatusMenuItemButton}">
+        <Setter Property="CommandParameter"
+                Value="{x:Static persistence:WatchStatus.Watching}"/>
+        <Setter Property="animations:SelectableOptionState.IsSelected"
+                Value="{Binding IsStatusWatching}"/>
+    </Style>
+
+    <Style x:Key="LibraryCardStatusUnsortedMenuButton"
+           TargetType="Button"
+           BasedOn="{StaticResource LibraryCardStatusMenuItemButton}">
+        <Setter Property="CommandParameter"
+                Value="{x:Static persistence:WatchStatus.Unsorted}"/>
+        <Setter Property="animations:SelectableOptionState.IsSelected"
+                Value="{Binding IsStatusUnsorted}"/>
+    </Style>
+
+    <Style x:Key="LibraryCardStatusCompletedMenuButton"
+           TargetType="Button"
+           BasedOn="{StaticResource LibraryCardStatusMenuItemButton}">
+        <Setter Property="CommandParameter"
+                Value="{x:Static persistence:WatchStatus.Completed}"/>
+        <Setter Property="animations:SelectableOptionState.IsSelected"
+                Value="{Binding IsStatusCompleted}"/>
+    </Style>
+
+    <Style x:Key="LibraryCardStatusDroppedMenuButton"
+           TargetType="Button"
+           BasedOn="{StaticResource LibraryCardStatusMenuItemButton}">
+        <Setter Property="CommandParameter"
+                Value="{x:Static persistence:WatchStatus.Dropped}"/>
+        <Setter Property="animations:SelectableOptionState.IsSelected"
+                Value="{Binding IsStatusDropped}"/>
+    </Style>
+
     <!-- Library page-local templates -->
     <DataTemplate x:Key="LibraryFilterOptionItemTemplate"
                   DataType="{x:Type models:LibraryFilterOption}">

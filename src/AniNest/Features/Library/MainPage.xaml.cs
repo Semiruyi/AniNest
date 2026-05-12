@@ -283,24 +283,12 @@ public partial class MainPage : System.Windows.Controls.UserControl
         Dispatcher.BeginInvoke(new Action(() => OpenCardStatusMenu(button, item, openAsSubmenu: true)), DispatcherPriority.Input);
     }
 
-    private async void MarkWatchingMenuItem_Click(object sender, RoutedEventArgs e)
+    private async void CardStatusMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        await ExecuteFolderStatusChangeAsync(WatchStatus.Watching);
-    }
+        if (sender is not Button { CommandParameter: WatchStatus status })
+            return;
 
-    private async void MarkUnsortedMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        await ExecuteFolderStatusChangeAsync(WatchStatus.Unsorted);
-    }
-
-    private async void MarkCompletedMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        await ExecuteFolderStatusChangeAsync(WatchStatus.Completed);
-    }
-
-    private async void MarkDroppedMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        await ExecuteFolderStatusChangeAsync(WatchStatus.Dropped);
+        await ExecuteFolderStatusChangeAsync(status);
     }
 
     private void OnLibraryScrollChanged(object sender, ScrollChangedEventArgs e)

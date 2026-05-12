@@ -71,33 +71,28 @@
         <overlays:AnimatedOverlay x:Name="CardStatusMenuOverlay"
                                   DataContext="{x:Null}"
                                   Style="{StaticResource LibraryCardStatusMenuOverlayStyle}">
-            <Border Style="{StaticResource PopupMenuOverlayBorder}"
-                    MinWidth="{StaticResource PopupSubmenuMinWidth}">
+            <Border Style="{StaticResource LibraryOverlayMenuBorder}">
                 <primitives:SelectableOptionGroup x:Name="CardStatusOptionGroup"
                                                   Style="{StaticResource SelectableOptionMenuGroup}"
                                                   SelectedIndex="{Binding StatusMenuSelectedIndex}">
-                    <StackPanel>
-                        <Button Style="{StaticResource SelectableOptionMenuButton}"
-                                animations:SelectableOptionState.IsSelected="{Binding IsStatusWatching}"
-                                Click="MarkWatchingMenuItem_Click">
+                    <StackPanel Style="{StaticResource PopupMenuPanel}">
+                        <Button Style="{StaticResource LibraryCardStatusWatchingMenuButton}"
+                                Click="CardStatusMenuItem_Click">
                             <TextBlock Text="{Binding DataContext.Localization[Library.MarkAsWatching], RelativeSource={RelativeSource AncestorType=UserControl}}"
                                        Style="{StaticResource PopupMenuItemText}"/>
                         </Button>
-                        <Button Style="{StaticResource SelectableOptionMenuButton}"
-                                animations:SelectableOptionState.IsSelected="{Binding IsStatusUnsorted}"
-                                Click="MarkUnsortedMenuItem_Click">
+                        <Button Style="{StaticResource LibraryCardStatusUnsortedMenuButton}"
+                                Click="CardStatusMenuItem_Click">
                             <TextBlock Text="{Binding DataContext.Localization[Library.MarkAsUnsorted], RelativeSource={RelativeSource AncestorType=UserControl}}"
                                        Style="{StaticResource PopupMenuItemText}"/>
                         </Button>
-                        <Button Style="{StaticResource SelectableOptionMenuButton}"
-                                animations:SelectableOptionState.IsSelected="{Binding IsStatusCompleted}"
-                                Click="MarkCompletedMenuItem_Click">
+                        <Button Style="{StaticResource LibraryCardStatusCompletedMenuButton}"
+                                Click="CardStatusMenuItem_Click">
                             <TextBlock Text="{Binding DataContext.Localization[Library.MarkAsCompleted], RelativeSource={RelativeSource AncestorType=UserControl}}"
                                        Style="{StaticResource PopupMenuItemText}"/>
                         </Button>
-                        <Button Style="{StaticResource SelectableOptionMenuButton}"
-                                animations:SelectableOptionState.IsSelected="{Binding IsStatusDropped}"
-                                Click="MarkDroppedMenuItem_Click">
+                        <Button Style="{StaticResource LibraryCardStatusDroppedMenuButton}"
+                                Click="CardStatusMenuItem_Click">
                             <TextBlock Text="{Binding DataContext.Localization[Library.MarkAsDropped], RelativeSource={RelativeSource AncestorType=UserControl}}"
                                        Style="{StaticResource PopupMenuItemText}"/>
                         </Button>
@@ -109,9 +104,8 @@
         <overlays:AnimatedOverlay x:Name="CardContextMenuOverlay"
                                   DataContext="{x:Null}"
                                   Style="{StaticResource LibraryCardContextMenuOverlayStyle}">
-            <Border Style="{StaticResource PopupMenuOverlayBorder}"
-                    MinWidth="{StaticResource PopupSubmenuMinWidth}">
-                <StackPanel>
+            <Border Style="{StaticResource LibraryOverlayMenuBorder}">
+                <StackPanel Style="{StaticResource PopupMenuPanel}">
                     <Button Style="{StaticResource PopupMenuStretchButton}"
                             Command="{Binding DataContext.ToggleFolderFavoriteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             CommandParameter="{Binding DataContext, ElementName=CardContextMenuOverlay}"
@@ -119,17 +113,10 @@
                         <TextBlock Style="{StaticResource LibraryCardContextFavoriteText}"/>
                     </Button>
                     <Button x:Name="CardContextStatusMenuButton"
-                            Style="{StaticResource PopupMenuStretchSubmenuButton}"
-                            Click="CardStatusMenuButton_Click">
-                        <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
-                            <TextBlock Text="{Binding DataContext.Localization[Library.Status], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                       Style="{StaticResource PopupMenuItemText}"/>
-                            <Path Style="{StaticResource PopupMenuChevronIcon}"/>
-                        </StackPanel>
-                    </Button>
-                    <Border Height="1"
-                            Margin="{StaticResource PopupMenuDividerMargin}"
-                            Background="{StaticResource PopupMenuDividerBrush}"/>
+                            Style="{StaticResource LibraryOverlaySubmenuButton}"
+                            Content="{Binding DataContext.Localization[Library.Status], RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            Click="CardStatusMenuButton_Click"/>
+                    <Border Style="{StaticResource LibraryOverlayDivider}"/>
                     <Button Style="{StaticResource PopupMenuButton}"
                             Command="{Binding DataContext.MoveFolderToFrontCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             CommandParameter="{Binding DataContext, ElementName=CardContextMenuOverlay}"
@@ -152,18 +139,11 @@
                         <TextBlock Text="{Binding DataContext.Localization[Library.RemoveFromLibrary], RelativeSource={RelativeSource AncestorType=UserControl}}"
                                    Style="{StaticResource PopupMenuDangerText}"/>
                     </Button>
-                    <Border Height="1"
-                            Margin="{StaticResource PopupMenuDividerMargin}"
-                            Background="{StaticResource PopupMenuDividerBrush}"/>
+                    <Border Style="{StaticResource LibraryOverlayDivider}"/>
                     <Button x:Name="ThumbnailActionsMenuButton"
-                            Style="{StaticResource PopupMenuStretchSubmenuButton}"
-                            Click="ThumbnailActionsMenuButton_Click">
-                        <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
-                            <TextBlock Text="{Binding DataContext.Localization[Library.Thumbnails], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                       Style="{StaticResource PopupMenuItemText}"/>
-                            <Path Style="{StaticResource PopupMenuChevronIcon}"/>
-                        </StackPanel>
-                    </Button>
+                            Style="{StaticResource LibraryOverlaySubmenuButton}"
+                            Content="{Binding DataContext.Localization[Library.Thumbnails], RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            Click="ThumbnailActionsMenuButton_Click"/>
                 </StackPanel>
             </Border>
         </overlays:AnimatedOverlay>
@@ -171,9 +151,8 @@
         <overlays:AnimatedOverlay x:Name="ThumbnailActionsOverlay"
                                   DataContext="{Binding DataContext, ElementName=CardContextMenuOverlay}"
                                   Style="{StaticResource LibraryThumbnailActionsOverlayStyle}">
-            <Border Style="{StaticResource PopupMenuOverlayBorder}"
-                    MinWidth="{StaticResource PopupSubmenuMinWidth}">
-                <StackPanel>
+            <Border Style="{StaticResource LibraryOverlayMenuBorder}">
+                <StackPanel Style="{StaticResource PopupMenuPanel}">
                     <Button Style="{StaticResource PopupMenuButton}"
                             Command="{Binding DataContext.PrioritizeFolderThumbnailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             CommandParameter="{Binding DataContext, ElementName=CardContextMenuOverlay}"
