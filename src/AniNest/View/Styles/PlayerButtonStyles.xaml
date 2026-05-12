@@ -1,0 +1,185 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:animations="clr-namespace:AniNest.Presentation.Animations"
+                    xmlns:converters="clr-namespace:AniNest.Presentation.Converters">
+
+    <converters:ProgressToPieConverter x:Key="ProgressToPieConverter"/>
+    <converters:ProgressToVisibilityConverter x:Key="ProgressToVisibilityConverter"/>
+
+    <Style x:Key="PlayerEpisodeButton" TargetType="Button" BasedOn="{StaticResource AnimatedCompactButtonBase}">
+        <Setter Property="Width" Value="{StaticResource EpisodeButtonSize}"/>
+        <Setter Property="Height" Value="{StaticResource EpisodeButtonSize}"/>
+        <Setter Property="Foreground" Value="{StaticResource PlayerEpisodeForeground}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="FontSize" Value="{StaticResource AppFontSizePanelTitle}"/>
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid x:Name="ButtonRoot" RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
+                        </Grid.RenderTransform>
+                        <Border x:Name="BgBorder"
+                                CornerRadius="{StaticResource CardCornerRadius}">
+                            <Border.Background>
+                                <SolidColorBrush x:Name="BgBrush" Color="{StaticResource PlayerEpisodeBackgroundColor}"/>
+                            </Border.Background>
+                        </Border>
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Grid x:Name="CheckIcon"
+                              Width="{StaticResource CheckIconSize}"
+                              Height="{StaticResource CheckIconSize}"
+                              Margin="{StaticResource PlaylistEpisodeStatusBadgeMargin}"
+                              HorizontalAlignment="Right"
+                              VerticalAlignment="Top"
+                              animations:ScaleFadeVisibilityAnimator.IsEnabled="True"
+                              animations:ScaleFadeVisibilityAnimator.IsActive="{Binding IsThumbnailReady}">
+                            <Ellipse Fill="{StaticResource TextPrimary}"
+                                     Width="{StaticResource CheckIconSize}"
+                                     Height="{StaticResource CheckIconSize}"/>
+                            <Image Source="/Resources/Icons/check.png"
+                                   Width="{StaticResource CheckIconSize}"
+                                   Height="{StaticResource CheckIconSize}">
+                                <Image.Clip>
+                                    <EllipseGeometry RadiusX="10" RadiusY="10" Center="10,10"/>
+                                </Image.Clip>
+                            </Image>
+                        </Grid>
+                        <Grid Width="{StaticResource CheckIconSize}"
+                              Height="{StaticResource CheckIconSize}"
+                              Margin="{StaticResource PlaylistEpisodeStatusBadgeMargin}"
+                              HorizontalAlignment="Right"
+                              VerticalAlignment="Top"
+                              animations:ScaleFadeVisibilityAnimator.IsEnabled="True"
+                              animations:ScaleFadeVisibilityAnimator.VisibilityState="{Binding ThumbnailProgress, Converter={StaticResource ProgressToVisibilityConverter}}">
+                            <Ellipse Fill="{StaticResource PlayerEpisodeThumbnailProgressBackground}"
+                                     Width="{StaticResource CheckIconSize}"
+                                     Height="{StaticResource CheckIconSize}"/>
+                            <Path Fill="{StaticResource AccentBlue}"
+                                  Width="{StaticResource CheckIconSize}"
+                                  Height="{StaticResource CheckIconSize}"
+                                  Opacity="0.85"
+                                  Data="{Binding ThumbnailProgress, Converter={StaticResource ProgressToPieConverter}}"/>
+                        </Grid>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <ColorAnimation Storyboard.TargetName="BgBrush"
+                                                        Storyboard.TargetProperty="Color"
+                                                        To="{StaticResource PlayerEpisodeHoverBackgroundColor}"
+                                                        Duration="0:0:0.2"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <ColorAnimation Storyboard.TargetName="BgBrush"
+                                                        Storyboard.TargetProperty="Color"
+                                                        Duration="0:0:0.25"
+                                                        FillBehavior="Stop"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource PlayerEpisodeForeground}"/>
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <ColorAnimation Storyboard.TargetName="BgBrush"
+                                                        Storyboard.TargetProperty="Color"
+                                                        To="{StaticResource PlayerEpisodePressedBackgroundColor}"
+                                                        Duration="0:0:0.08"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <ColorAnimation Storyboard.TargetName="BgBrush"
+                                                        Storyboard.TargetProperty="Color"
+                                                        Duration="0:0:0.25"
+                                                        FillBehavior="Stop"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                        <DataTrigger Binding="{Binding IsPlayed}" Value="True">
+                            <DataTrigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <ColorAnimation Storyboard.TargetName="BgBrush"
+                                                        Storyboard.TargetProperty="Color"
+                                                        To="{StaticResource PlayerEpisodePlayedBackgroundColor}"
+                                                        Duration="0:0:0.22"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </DataTrigger.EnterActions>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <DataTrigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <ColorAnimation Storyboard.TargetName="BgBrush"
+                                                        Storyboard.TargetProperty="Color"
+                                                        To="{StaticResource AccentBlueColor}"
+                                                        Duration="0:0:0.22"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </DataTrigger.EnterActions>
+                            <DataTrigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <ColorAnimation Storyboard.TargetName="BgBrush"
+                                                        Storyboard.TargetProperty="Color"
+                                                        To="{StaticResource PlayerEpisodePlayedBackgroundColor}"
+                                                        Duration="0:0:0.22"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </DataTrigger.ExitActions>
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="PlayerSpeedButton" TargetType="Button" BasedOn="{StaticResource AnimatedIconButton}">
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
+        <Setter Property="FontSize" Value="{StaticResource AppFontSizeCaption}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="PlayerFullscreenButton" TargetType="Button" BasedOn="{StaticResource AnimatedIconButton}">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Player.Fullscreen], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
+                <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Player.ExitFullscreen], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="PlayerFullscreenButtonIcon" TargetType="Image">
+        <Setter Property="Source" Value="/Resources/Icons/fullScreen.png"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
+                <Setter Property="Source" Value="/Resources/Icons/exitFullScreen.png"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+</ResourceDictionary>

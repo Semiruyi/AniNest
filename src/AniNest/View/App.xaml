@@ -4,13 +4,25 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <!-- Tokens -->
                 <ResourceDictionary Source="/Resources/Colors.xaml"/>
                 <ResourceDictionary Source="/Resources/Typography.xaml"/>
                 <ResourceDictionary Source="/Resources/Sizes.xaml"/>
                 <ResourceDictionary Source="/Resources/Spacings.xaml"/>
+
+                <!-- Primitives and shared patterns -->
                 <ResourceDictionary Source="/View/Styles/IconGeometries.xaml"/>
                 <ResourceDictionary Source="/View/Styles/SharedStyles.xaml"/>
+                <ResourceDictionary Source="/View/Styles/LibraryCardStyles.xaml"/>
+                <ResourceDictionary Source="/View/Styles/PlayerStyles.xaml"/>
                 <ResourceDictionary Source="/Presentation/Theming/Buttons.xaml"/>
+                <ResourceDictionary Source="/View/Styles/TitleBarButtonStyles.xaml"/>
+                <ResourceDictionary Source="/View/Styles/TitleBarStyles.xaml"/>
+                <ResourceDictionary Source="/View/Styles/LibraryButtonStyles.xaml"/>
+                <ResourceDictionary Source="/View/Styles/PlayerButtonStyles.xaml"/>
+
+                <!-- Window and overlay patterns -->
+                <ResourceDictionary Source="/View/Styles/OverlayMenuStyles.xaml"/>
                 <ResourceDictionary Source="/View/Styles/MainWindowOverlayStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>

@@ -64,23 +64,15 @@
                                       Grid.Row="0"/>
 
             <overlays:AnimatedOverlay x:Name="SettingsOverlay"
-                                      Grid.RowSpan="2"
-                                      InteractionPreset="MenuLike"
-                                      Placement="BottomLeft"
-                                      HorizontalOffset="{StaticResource PopupMenuHorizontalOffset}"
-                                      VerticalOffset="{StaticResource OverlayVerticalOffsetCompact}"
-                                      AnimationOrigin="0,0"
-                                      Panel.ZIndex="2001"
-                                      shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                                <Border Style="{StaticResource PopupMenuOverlayBorder}"
-                                        MinWidth="{StaticResource PopupSettingsMenuMinWidth}"
-                                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                      Style="{StaticResource MainWindowBottomMenuOverlay}"
+                                      Panel.ZIndex="2001">
+                                <Border Style="{StaticResource MainWindowMenuOverlayBorder}"
+                                        MinWidth="{StaticResource PopupSettingsMenuMinWidth}">
                                     <StackPanel Style="{StaticResource PopupMenuPanel}">
                                         <Grid Style="{StaticResource PopupMenuButtonHost}">
                                             <Button x:Name="LanguageMenuButton"
                                                     Style="{StaticResource PopupMenuSubmenuButton}"
-                                                    Click="LanguageMenuButton_Click"
-                                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                                    Click="LanguageMenuButton_Click">
                                                 <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
                                                     <TextBlock Text="{Binding DataContext.Localization[Settings.Language], RelativeSource={RelativeSource AncestorType=Window}}"
                                                                Style="{StaticResource PopupMenuItemText}"/>
@@ -92,8 +84,7 @@
                                             <Button x:Name="FullscreenAnimationMenuButton"
                                                     Style="{StaticResource PopupMenuSubmenuButton}"
                                                     Click="FullscreenAnimationMenuButton_Click"
-                                                    ToolTip="{Binding DataContext.Localization[Settings.FullscreenAnimation.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"
-                                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                                    ToolTip="{Binding DataContext.Localization[Settings.FullscreenAnimation.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}">
                                                 <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
                                                     <TextBlock Text="{Binding DataContext.Localization[Settings.FullscreenAnimation], RelativeSource={RelativeSource AncestorType=Window}}"
                                                                Style="{StaticResource PopupMenuItemText}"/>
@@ -104,8 +95,7 @@
                                         <Grid Style="{StaticResource PopupMenuButtonHost}">
                                             <Button x:Name="ThumbnailSettingsMenuButton"
                                                     Style="{StaticResource PopupMenuSubmenuButton}"
-                                                    Click="ThumbnailSettingsMenuButton_Click"
-                                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                                    Click="ThumbnailSettingsMenuButton_Click">
                                                 <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
                                                     <TextBlock Text="{Binding DataContext.Localization[Settings.Thumbnails], RelativeSource={RelativeSource AncestorType=Window}}"
                                                                Style="{StaticResource PopupMenuItemText}"/>
@@ -116,8 +106,7 @@
                                         <Grid Style="{StaticResource PopupMenuButtonHost}">
                                             <Button x:Name="PlayerInputMenuButton"
                                                     Style="{StaticResource PopupMenuSubmenuButton}"
-                                                    Click="PlayerInputMenuButton_Click"
-                                                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                                    Click="PlayerInputMenuButton_Click">
                                                 <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
                                                     <TextBlock Text="{Binding PlayerInputSettings.Title}"
                                                                Style="{StaticResource PopupMenuItemText}"/>
@@ -130,17 +119,10 @@
             </overlays:AnimatedOverlay>
 
             <overlays:AnimatedOverlay x:Name="LanguageOverlay"
-                                      Grid.RowSpan="2"
-                                      InteractionPreset="MenuLike"
-                                      Placement="RightTop"
-                                      HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
-                                      VerticalOffset="0"
-                                      AnimationOrigin="0,0"
-                                      Panel.ZIndex="2002"
-                                      shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                <Border Style="{StaticResource PopupMenuOverlayBorder}"
-                        MinWidth="{StaticResource PopupSubmenuMinWidth}"
-                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                      Style="{StaticResource MainWindowRightSubmenuOverlay}"
+                                      Panel.ZIndex="2002">
+                <Border Style="{StaticResource MainWindowMenuOverlayBorder}"
+                        MinWidth="{StaticResource PopupSubmenuMinWidth}">
                     <primitives:SelectableOptionGroup x:Name="LanguageOptionGroup"
                                                       Style="{StaticResource SelectableOptionMenuGroup}"
                                                       SelectedIndex="{Binding DataContext.LanguageSelectedIndex, RelativeSource={RelativeSource AncestorType=Window}}">
@@ -148,12 +130,11 @@
                                       ItemsSource="{Binding DataContext.LanguageOptions, RelativeSource={RelativeSource AncestorType=Window}}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type shellFeatures:SelectableOptionItem}">
-                                    <Button Style="{StaticResource SelectableOptionMenuButton}"
+                                    <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
                                             animations:SelectableOptionState.IsSelected="{Binding IsSelected}"
                                             Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="{Binding Code}"
-                                            Click="OnLanguageOverlayActionClick"
-                                            shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                            Click="OnLanguageOverlayActionClick">
                                         <TextBlock Text="{Binding DisplayName}" Style="{StaticResource PopupMenuItemText}"/>
                                     </Button>
                                 </DataTemplate>
@@ -164,17 +145,10 @@
             </overlays:AnimatedOverlay>
 
             <overlays:AnimatedOverlay x:Name="FullscreenAnimationOverlay"
-                                      Grid.RowSpan="2"
-                                      InteractionPreset="MenuLike"
-                                      Placement="RightTop"
-                                      HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
-                                      VerticalOffset="0"
-                                      AnimationOrigin="0,0"
-                                      Panel.ZIndex="2003"
-                                      shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                <Border Style="{StaticResource PopupMenuOverlayBorder}"
-                        MinWidth="{StaticResource PopupSubmenuMinWidth}"
-                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                      Style="{StaticResource MainWindowRightSubmenuOverlay}"
+                                      Panel.ZIndex="2003">
+                <Border Style="{StaticResource MainWindowMenuOverlayBorder}"
+                        MinWidth="{StaticResource PopupSubmenuMinWidth}">
                     <primitives:SelectableOptionGroup x:Name="FullscreenAnimationOptionGroup"
                                                       Style="{StaticResource SelectableOptionMenuGroup}"
                                                       SelectedIndex="{Binding DataContext.FullscreenAnimationSelectedIndex, RelativeSource={RelativeSource AncestorType=Window}}">
@@ -182,12 +156,11 @@
                                       ItemsSource="{Binding DataContext.FullscreenAnimationOptions, RelativeSource={RelativeSource AncestorType=Window}}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type shellFeatures:SelectableOptionItem}">
-                                    <Button Style="{StaticResource SelectableOptionMenuButton}"
+                                    <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
                                             animations:SelectableOptionState.IsSelected="{Binding IsSelected}"
                                             Command="{Binding DataContext.SelectFullscreenAnimationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="{Binding Code}"
-                                            Click="OnFullscreenAnimationOverlayActionClick"
-                                            shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                            Click="OnFullscreenAnimationOverlayActionClick">
                                         <TextBlock Text="{Binding DisplayName}" Style="{StaticResource PopupMenuItemText}"/>
                                     </Button>
                                 </DataTemplate>
@@ -198,41 +171,30 @@
             </overlays:AnimatedOverlay>
 
             <overlays:AnimatedOverlay x:Name="ThumbnailSettingsOverlay"
-                                      Grid.RowSpan="2"
-                                      InteractionPreset="MenuLike"
-                                      Placement="RightTop"
-                                      HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
-                                      VerticalOffset="0"
-                                      AnimationOrigin="0,0"
-                                      Panel.ZIndex="2004"
-                                      shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                <Border Style="{StaticResource PopupMenuOverlayBorder}"
-                        MinWidth="{StaticResource PopupSubmenuMinWidth}"
-                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                      Style="{StaticResource MainWindowRightSubmenuOverlay}"
+                                      Panel.ZIndex="2004">
+                <Border Style="{StaticResource MainWindowMenuOverlayBorder}"
+                        MinWidth="{StaticResource PopupSubmenuMinWidth}">
                     <StackPanel Style="{StaticResource PopupMenuPanel}">
                         <Button x:Name="ThumbnailPerformanceMenuButton"
                                 Style="{StaticResource PopupMenuSubmenuButton}"
-                                Click="ThumbnailPerformanceMenuButton_Click"
-                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                Click="ThumbnailPerformanceMenuButton_Click">
                             <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
                                 <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance], RelativeSource={RelativeSource AncestorType=Window}}"
                                            Style="{StaticResource PopupMenuItemText}"/>
                                 <TextBlock Text="{Binding DataContext.ThumbnailPerformanceSummary, RelativeSource={RelativeSource AncestorType=Window}}"
-                                           Style="{StaticResource OverlaySummaryText}"
-                                           Margin="{StaticResource OverlaySummaryMargin}"/>
+                                           Style="{StaticResource OverlaySummaryLabelText}"/>
                                 <Path Style="{StaticResource PopupMenuChevronIcon}"/>
                             </StackPanel>
                         </Button>
                         <Button x:Name="ThumbnailAccelerationMenuButton"
                                 Style="{StaticResource PopupMenuSubmenuButton}"
-                                Click="ThumbnailAccelerationMenuButton_Click"
-                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                Click="ThumbnailAccelerationMenuButton_Click">
                             <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
                                 <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailAcceleration], RelativeSource={RelativeSource AncestorType=Window}}"
                                            Style="{StaticResource PopupMenuItemText}"/>
                                 <TextBlock Text="{Binding DataContext.ThumbnailAccelerationSummary, RelativeSource={RelativeSource AncestorType=Window}}"
-                                           Style="{StaticResource OverlaySummaryText}"
-                                           Margin="{StaticResource OverlaySummaryMargin}"/>
+                                           Style="{StaticResource OverlaySummaryLabelText}"/>
                                 <Path Style="{StaticResource PopupMenuChevronIcon}"/>
                             </StackPanel>
                         </Button>
@@ -241,17 +203,10 @@
             </overlays:AnimatedOverlay>
 
             <overlays:AnimatedOverlay x:Name="ThumbnailPerformanceOverlay"
-                                      Grid.RowSpan="2"
-                                      InteractionPreset="MenuLike"
-                                      Placement="RightTop"
-                                      HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
-                                      VerticalOffset="0"
-                                      AnimationOrigin="0,0"
-                                      Panel.ZIndex="2005"
-                                      shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                <Border Style="{StaticResource PopupMenuOverlayBorder}"
-                        MinWidth="{StaticResource ThumbnailPerformancePopupMinWidth}"
-                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                      Style="{StaticResource MainWindowRightSubmenuOverlay}"
+                                      Panel.ZIndex="2005">
+                <Border Style="{StaticResource MainWindowMenuOverlayBorder}"
+                        MinWidth="{StaticResource ThumbnailPerformancePopupMinWidth}">
                     <StackPanel Style="{StaticResource PopupMenuPanel}">
                         <Grid Style="{StaticResource PopupMenuOptionGroupHost}">
                             <primitives:SelectableOptionGroup x:Name="ThumbnailPerformanceOptionGroup"
@@ -259,44 +214,40 @@
                                                               SelectedIndex="{Binding DataContext.ThumbnailPerformanceSelectedIndex, RelativeSource={RelativeSource AncestorType=Window}}">
                                 <StackPanel x:Name="ThumbnailPerformanceOptionsPanel"
                                             Style="{StaticResource PopupMenuOptionListPanel}">
-                                    <Button Style="{StaticResource SelectableOptionMenuButton}"
+                                    <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
                                             IsEnabled="{Binding DataContext.CanSelectThumbnailPerformanceMode, RelativeSource={RelativeSource AncestorType=Window}}"
                                             animations:SelectableOptionState.IsSelected="{Binding DataContext.IsThumbnailPerformancePausedSelected, RelativeSource={RelativeSource AncestorType=Window}}"
                                             Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="paused"
-                                            Click="OnThumbnailPerformanceOverlayActionClick"
-                                            shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                            Click="OnThumbnailPerformanceOverlayActionClick">
                                         <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Paused], RelativeSource={RelativeSource AncestorType=Window}}"
                                                    Style="{StaticResource PopupMenuItemText}"/>
                                     </Button>
-                                    <Button Style="{StaticResource SelectableOptionMenuButton}"
+                                    <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
                                             IsEnabled="{Binding DataContext.CanSelectThumbnailPerformanceMode, RelativeSource={RelativeSource AncestorType=Window}}"
                                             animations:SelectableOptionState.IsSelected="{Binding DataContext.IsThumbnailPerformanceQuietSelected, RelativeSource={RelativeSource AncestorType=Window}}"
                                             Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="quiet"
                                             Click="OnThumbnailPerformanceOverlayActionClick"
-                                            ToolTip="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Quiet.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"
-                                            shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                            ToolTip="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Quiet.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}">
                                         <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Quiet], RelativeSource={RelativeSource AncestorType=Window}}" Style="{StaticResource PopupMenuItemText}"/>
                                     </Button>
-                                    <Button Style="{StaticResource SelectableOptionMenuButton}"
+                                    <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
                                             IsEnabled="{Binding DataContext.CanSelectThumbnailPerformanceMode, RelativeSource={RelativeSource AncestorType=Window}}"
                                             animations:SelectableOptionState.IsSelected="{Binding DataContext.IsThumbnailPerformanceBalancedSelected, RelativeSource={RelativeSource AncestorType=Window}}"
                                             Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="balanced"
                                             Click="OnThumbnailPerformanceOverlayActionClick"
-                                            ToolTip="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Balanced.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"
-                                            shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                            ToolTip="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Balanced.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}">
                                         <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Balanced], RelativeSource={RelativeSource AncestorType=Window}}" Style="{StaticResource PopupMenuItemText}"/>
                                     </Button>
-                                    <Button Style="{StaticResource SelectableOptionMenuButton}"
+                                    <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
                                             IsEnabled="{Binding DataContext.CanSelectThumbnailPerformanceMode, RelativeSource={RelativeSource AncestorType=Window}}"
                                             animations:SelectableOptionState.IsSelected="{Binding DataContext.IsThumbnailPerformanceFastSelected, RelativeSource={RelativeSource AncestorType=Window}}"
                                             Command="{Binding DataContext.SelectThumbnailPerformanceModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             CommandParameter="fast"
                                             Click="OnThumbnailPerformanceOverlayActionClick"
-                                            ToolTip="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Fast.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"
-                                            shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                            ToolTip="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Fast.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}">
                                         <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Fast], RelativeSource={RelativeSource AncestorType=Window}}" Style="{StaticResource PopupMenuItemText}"/>
                                     </Button>
                                 </StackPanel>
@@ -307,39 +258,30 @@
             </overlays:AnimatedOverlay>
 
             <overlays:AnimatedOverlay x:Name="ThumbnailAccelerationOverlay"
-                                      Grid.RowSpan="2"
-                                      InteractionPreset="MenuLike"
-                                      Placement="RightTop"
-                                      HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
-                                      VerticalOffset="0"
-                                      AnimationOrigin="0,0"
-                                      Panel.ZIndex="2006"
-                                      shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                <Border Style="{StaticResource PopupMenuOverlayBorder}"
-                        MinWidth="{StaticResource ThumbnailAccelerationPopupMinWidth}"
-                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                      Style="{StaticResource MainWindowRightSubmenuOverlay}"
+                                      Panel.ZIndex="2006">
+                <Border Style="{StaticResource MainWindowMenuOverlayBorder}"
+                        MinWidth="{StaticResource ThumbnailAccelerationPopupMinWidth}">
                     <StackPanel Style="{StaticResource PopupMenuPanel}">
                         <primitives:SelectableOptionGroup x:Name="ThumbnailAccelerationOptionGroup"
                                                           Style="{StaticResource SelectableOptionMenuGroup}"
                                                           SelectedIndex="{Binding DataContext.ThumbnailAccelerationSelectedIndex, RelativeSource={RelativeSource AncestorType=Window}}">
                             <StackPanel x:Name="ThumbnailAccelerationOptionsPanel"
                                         Style="{StaticResource PopupMenuOptionListPanel}">
-                                <Button Style="{StaticResource SelectableOptionMenuButton}"
+                                <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
                                         animations:SelectableOptionState.IsSelected="{Binding DataContext.IsThumbnailAccelerationAutoSelected, RelativeSource={RelativeSource AncestorType=Window}}"
                                         Command="{Binding DataContext.SelectThumbnailAccelerationModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                         CommandParameter="auto"
                                         Click="OnThumbnailAccelerationOverlayActionClick"
-                                        ToolTip="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Auto.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"
-                                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                        ToolTip="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Auto.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}">
                                     <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Auto], RelativeSource={RelativeSource AncestorType=Window}}" Style="{StaticResource PopupMenuItemText}"/>
                                 </Button>
-                                <Button Style="{StaticResource SelectableOptionMenuButton}"
+                                <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
                                         animations:SelectableOptionState.IsSelected="{Binding DataContext.IsThumbnailAccelerationCompatibleSelected, RelativeSource={RelativeSource AncestorType=Window}}"
                                         Command="{Binding DataContext.SelectThumbnailAccelerationModeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                         CommandParameter="compatible"
                                         Click="OnThumbnailAccelerationOverlayActionClick"
-                                        ToolTip="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Compatible.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"
-                                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                        ToolTip="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Compatible.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}">
                                     <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Compatible], RelativeSource={RelativeSource AncestorType=Window}}" Style="{StaticResource PopupMenuItemText}"/>
                                 </Button>
                             </StackPanel>
@@ -351,17 +293,17 @@
                                 <TextBlock Text="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Status], RelativeSource={RelativeSource AncestorType=Window}}"
                                            Style="{StaticResource OverlaySectionTitleText}"
                                            Margin="{StaticResource OverlaySectionTitleMargin}"/>
-                                <TextBlock TextWrapping="Wrap" Style="{StaticResource OverlaySecondaryText}" Margin="{StaticResource OverlaySecondaryItemMargin}">
+                                <TextBlock Style="{StaticResource OverlaySecondaryItemText}">
                                     <Run Text="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.Hardware], RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"/>
                                     <Run Text=": "/>
                                     <Run Text="{Binding DataContext.ThumbnailDetectedHardwareSummary, RelativeSource={RelativeSource AncestorType=Window}}"/>
                                 </TextBlock>
-                                <TextBlock TextWrapping="Wrap" Style="{StaticResource OverlaySecondaryText}" Margin="{StaticResource OverlaySecondaryItemMargin}">
+                                <TextBlock Style="{StaticResource OverlaySecondaryItemText}">
                                     <Run Text="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.CurrentDecoder], RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"/>
                                     <Run Text=": "/>
                                     <Run Text="{Binding DataContext.ThumbnailCurrentDecoderSummary, RelativeSource={RelativeSource AncestorType=Window}}"/>
                                 </TextBlock>
-                                <TextBlock TextWrapping="Wrap" Style="{StaticResource OverlaySecondaryText}">
+                                <TextBlock Style="{StaticResource OverlaySecondaryBlockText}">
                                     <Run Text="{Binding DataContext.Localization[Settings.ThumbnailAcceleration.FallbackChain], RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"/>
                                     <Run Text=": "/>
                                     <Run Text="{Binding DataContext.ThumbnailFallbackChainSummary, RelativeSource={RelativeSource AncestorType=Window}}"/>
@@ -373,17 +315,10 @@
             </overlays:AnimatedOverlay>
 
             <overlays:AnimatedOverlay x:Name="PlayerInputOverlay"
-                                      Grid.RowSpan="2"
-                                      InteractionPreset="CaptureLike"
-                                      Placement="RightTop"
-                                      HorizontalOffset="{StaticResource SubmenuPopupHorizontalOffset}"
-                                      VerticalOffset="0"
-                                      AnimationOrigin="0,0"
-                                      Panel.ZIndex="2007"
-                                      shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                <Border Style="{StaticResource PopupPanelBorder}"
-                        MinWidth="{StaticResource PlayerInputPopupMinWidth}"
-                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                      Style="{StaticResource MainWindowRightCaptureOverlay}"
+                                      Panel.ZIndex="2007">
+                <Border Style="{StaticResource MainWindowPanelOverlayBorder}"
+                        MinWidth="{StaticResource PlayerInputPopupMinWidth}">
                     <Grid DataContext="{Binding PlayerInputSettings}"
                           Style="{StaticResource PlayerInputOverlayLayoutGrid}">
                         <Grid.RowDefinitions>
@@ -392,14 +327,9 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <TextBlock Text="{Binding HintText}"
-                                   Style="{StaticResource OverlaySecondaryText}"
-                                   Margin="{StaticResource PlayerInputHintMargin}"
-                                   TextWrapping="Wrap"/>
+                                   Style="{StaticResource PlayerInputHintText}"/>
                         <ScrollViewer Grid.Row="1"
-                                      VerticalScrollBarVisibility="Auto"
-                                      HorizontalScrollBarVisibility="Disabled"
-                                      MaxHeight="{StaticResource PlayerInputScrollMaxHeight}"
-                                      shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                      Style="{StaticResource PlayerInputScrollViewer}">
                             <ItemsControl ItemsSource="{Binding Items}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type playerSettings:PlayerInputBindingItemViewModel}">
@@ -469,43 +399,26 @@
             </overlays:AnimatedOverlay>
 
             <overlays:AnimatedOverlay x:Name="FileOverlay"
-                                      Grid.RowSpan="2"
-                                      InteractionPreset="MenuLike"
-                                      Placement="BottomLeft"
-                                      HorizontalOffset="{StaticResource PopupMenuHorizontalOffset}"
-                                      VerticalOffset="{StaticResource OverlayVerticalOffsetCompact}"
-                                      AnimationOrigin="0,0"
-                                      Panel.ZIndex="2000"
-                                      shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                <Border Style="{StaticResource PopupMenuOverlayBorder}"
-                        MinWidth="{StaticResource PopupFileMenuMinWidth}"
-                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                      Style="{StaticResource MainWindowBottomMenuOverlay}"
+                                      Panel.ZIndex="2000">
+                <Border Style="{StaticResource MainWindowMenuOverlayBorder}"
+                        MinWidth="{StaticResource PopupFileMenuMinWidth}">
                     <StackPanel Style="{StaticResource PopupMenuPanel}">
-                        <Button Style="{StaticResource PopupMenuButton}"
+                        <Button Style="{StaticResource PopupMenuOverlayButton}"
                                 Command="{Binding AddFolderCommand}"
-                                Click="OnFileOverlayActionClick"
-                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                Click="OnFileOverlayActionClick">
                             <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
                                 <Path Data="M10 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6H12L10 4Z"
-                                      Fill="{StaticResource IconSecondary}"
-                                      Width="{StaticResource IconSizeNormal}"
-                                      Height="{StaticResource IconSizeNormal}"
-                                      Stretch="Uniform"
-                                      Margin="{StaticResource PopupMenuItemIconMargin}"/>
+                                      Style="{StaticResource PopupMenuItemIcon}"/>
                                 <TextBlock Text="{Binding DataContext.Localization[App.AddFolder], RelativeSource={RelativeSource AncestorType=Window}}" Style="{StaticResource PopupMenuItemText}"/>
                             </StackPanel>
                         </Button>
-                        <Button Style="{StaticResource PopupMenuButton}"
+                        <Button Style="{StaticResource PopupMenuOverlayButton}"
                                 Command="{Binding AddFolderBatchCommand}"
-                                Click="OnFileOverlayActionClick"
-                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                                Click="OnFileOverlayActionClick">
                             <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
                                 <Path Data="M10 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6H12L10 4Z M17 13H13V17H11V13H7V11H11V7H13V11H17V13Z"
-                                      Fill="{StaticResource IconSecondary}"
-                                      Width="{StaticResource IconSizeNormal}"
-                                      Height="{StaticResource IconSizeNormal}"
-                                      Stretch="Uniform"
-                                      Margin="{StaticResource PopupMenuItemIconMargin}"/>
+                                      Style="{StaticResource PopupMenuItemIcon}"/>
                                 <TextBlock Text="{Binding DataContext.Localization[App.AddFolderBatch], RelativeSource={RelativeSource AncestorType=Window}}" Style="{StaticResource PopupMenuItemText}"/>
                             </StackPanel>
                         </Button>

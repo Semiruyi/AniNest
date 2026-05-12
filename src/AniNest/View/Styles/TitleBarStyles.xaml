@@ -1,0 +1,38 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:animations="clr-namespace:AniNest.Presentation.Animations">
+
+    <Style x:Key="TitleBarBackgroundTaskSummaryProgressBar"
+           TargetType="ProgressBar"
+           BasedOn="{StaticResource AppProgressBarThin}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding ThumbnailGenerationStatusCode}" Value="waiting">
+                <Setter Property="Foreground" Value="{StaticResource ProgressFillWarning}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding ThumbnailGenerationStatusCode}" Value="complete">
+                <Setter Property="Foreground" Value="{StaticResource ProgressFillSuccess}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="TitleBarBackgroundTaskItemProgressBar"
+           TargetType="ProgressBar"
+           BasedOn="{StaticResource AppProgressBarThin}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding StatusCode}" Value="waiting">
+                <Setter Property="Foreground" Value="{StaticResource ProgressFillWarning}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding StatusCode}" Value="complete">
+                <Setter Property="Foreground" Value="{StaticResource ProgressFillSuccess}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="TitleBarFileNameHostGrid" TargetType="Grid">
+        <Setter Property="Opacity" Value="0"/>
+        <Setter Property="Visibility" Value="Collapsed"/>
+        <Setter Property="animations:FadeVisibilityAnimator.BindVisible" Value="{Binding IsOnPlayerPage}"/>
+        <Setter Property="animations:FadeVisibilityAnimator.Preset" Value="Emphasis"/>
+    </Style>
+
+</ResourceDictionary>

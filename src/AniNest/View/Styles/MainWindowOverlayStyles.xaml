@@ -1,65 +1,52 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:overlays="clr-namespace:AniNest.Presentation.Overlays"
                     xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework">
-    <Style x:Key="PopupMenuChevronIcon"
-           TargetType="Path">
-        <Setter Property="Data" Value="{StaticResource ChevronRightGeometry}"/>
-        <Setter Property="Fill" Value="{StaticResource IconSecondary}"/>
-        <Setter Property="Stretch" Value="Uniform"/>
-        <Setter Property="VerticalAlignment" Value="Center"/>
-        <Setter Property="Width" Value="{StaticResource SubmenuChevronWidth}"/>
-        <Setter Property="Height" Value="{StaticResource SubmenuChevronHeight}"/>
-        <Setter Property="Margin" Value="{StaticResource SubmenuChevronLeftMargin}"/>
+    <!-- Main window overlay shells -->
+    <Style x:Key="MainWindowBaseOverlay"
+           TargetType="{x:Type overlays:AnimatedOverlay}"
+           BasedOn="{StaticResource {x:Type overlays:AnimatedOverlay}}">
+        <Setter Property="Grid.RowSpan" Value="2"/>
+        <Setter Property="AnimationOrigin" Value="0,0"/>
+        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
     </Style>
 
-    <Style x:Key="PopupMenuSubmenuButton"
-           TargetType="Button"
-           BasedOn="{StaticResource PopupMenuButton}">
-        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
-                Value="True"/>
+    <Style x:Key="MainWindowBottomMenuOverlay"
+           TargetType="{x:Type overlays:AnimatedOverlay}"
+           BasedOn="{StaticResource MainWindowBaseOverlay}">
+        <Setter Property="InteractionPreset" Value="MenuLike"/>
+        <Setter Property="Placement" Value="BottomLeft"/>
+        <Setter Property="HorizontalOffset" Value="{StaticResource PopupMenuHorizontalOffset}"/>
+        <Setter Property="VerticalOffset" Value="{StaticResource OverlayVerticalOffsetCompact}"/>
     </Style>
 
-    <Style x:Key="PopupMenuPanel"
-           TargetType="StackPanel">
-        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
-                Value="True"/>
+    <Style x:Key="MainWindowRightSubmenuOverlay"
+           TargetType="{x:Type overlays:AnimatedOverlay}"
+           BasedOn="{StaticResource MainWindowBaseOverlay}">
+        <Setter Property="InteractionPreset" Value="MenuLike"/>
+        <Setter Property="Placement" Value="RightTop"/>
+        <Setter Property="HorizontalOffset" Value="{StaticResource SubmenuPopupHorizontalOffset}"/>
+        <Setter Property="VerticalOffset" Value="0"/>
     </Style>
 
-    <Style x:Key="PopupMenuButtonHost"
-           TargetType="Grid">
-        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
-                Value="True"/>
+    <Style x:Key="MainWindowRightCaptureOverlay"
+           TargetType="{x:Type overlays:AnimatedOverlay}"
+           BasedOn="{StaticResource MainWindowBaseOverlay}">
+        <Setter Property="InteractionPreset" Value="CaptureLike"/>
+        <Setter Property="Placement" Value="RightTop"/>
+        <Setter Property="HorizontalOffset" Value="{StaticResource SubmenuPopupHorizontalOffset}"/>
+        <Setter Property="VerticalOffset" Value="0"/>
     </Style>
 
-    <Style x:Key="PopupMenuOptionGroupHost"
-           TargetType="Grid">
-        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
-                Value="True"/>
+    <Style x:Key="MainWindowMenuOverlayBorder" TargetType="Border" BasedOn="{StaticResource PopupMenuOverlayBorder}">
+        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
     </Style>
 
-    <Style x:Key="PopupMenuOptionListPanel"
-           TargetType="StackPanel">
-        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
-                Value="True"/>
+    <Style x:Key="MainWindowPanelOverlayBorder" TargetType="Border" BasedOn="{StaticResource PopupPanelBorder}">
+        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
     </Style>
 
-    <Style x:Key="PopupMenuHorizontalContentPanel"
-           TargetType="StackPanel">
-        <Setter Property="Orientation" Value="Horizontal"/>
-    </Style>
-
-    <Style x:Key="PopupMenuItemText"
-           TargetType="TextBlock"
-           BasedOn="{StaticResource AppTextBody}">
-        <Setter Property="VerticalAlignment" Value="Center"/>
-    </Style>
-
-    <Style x:Key="PopupMenuDangerText"
-           TargetType="TextBlock"
-           BasedOn="{StaticResource PopupMenuItemText}">
-        <Setter Property="Foreground" Value="{StaticResource DangerForeground}"/>
-    </Style>
-
+    <!-- Player input -->
     <Style x:Key="PlayerInputOverlayLayoutGrid"
            TargetType="Grid">
         <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
@@ -69,6 +56,20 @@
     <Style x:Key="PlayerInputBindingRowGrid"
            TargetType="Grid">
         <Setter Property="Margin" Value="{StaticResource PlayerInputRowMargin}"/>
+    </Style>
+
+    <Style x:Key="PlayerInputHintText"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource OverlaySecondaryText}">
+        <Setter Property="Margin" Value="{StaticResource PlayerInputHintMargin}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <Style x:Key="PlayerInputScrollViewer" TargetType="ScrollViewer">
+        <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
+        <Setter Property="MaxHeight" Value="{StaticResource PlayerInputScrollMaxHeight}"/>
+        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
     </Style>
 
     <Style x:Key="PlayerInputActionText"
@@ -108,50 +109,4 @@
         <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
                 Value="True"/>
     </Style>
-
-    <Style x:Key="PopupMenuOverlayBorder"
-           TargetType="Border">
-        <Setter Property="Background" Value="{StaticResource PopupMenuBackground}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource PopupPanelBorderBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="CornerRadius" Value="{StaticResource SpeedPopupCornerRadius}"/>
-        <Setter Property="Padding" Value="{StaticResource PopupMenuPadding}"/>
-        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
-                Value="True"/>
-    </Style>
-
-    <Style x:Key="PopupPanelBorder"
-           TargetType="Border"
-           BasedOn="{StaticResource PopupMenuOverlayBorder}">
-        <Setter Property="Padding" Value="{StaticResource PopupPanelPadding}"/>
-    </Style>
-
-    <Style x:Key="PopupPanelCompactBorder"
-           TargetType="Border"
-           BasedOn="{StaticResource PopupMenuOverlayBorder}">
-        <Setter Property="Padding" Value="{StaticResource PopupPanelCompactPadding}"/>
-    </Style>
-
-    <Style x:Key="OverlaySecondaryText"
-           TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
-        <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
-        <Setter Property="FontSize" Value="{StaticResource AppFontSizeBody}"/>
-    </Style>
-
-    <Style x:Key="OverlaySummaryText"
-           TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
-        <Setter Property="FontSize" Value="{StaticResource AppFontSizeBody}"/>
-        <Setter Property="VerticalAlignment" Value="Center"/>
-        <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
-    </Style>
-
-    <Style x:Key="OverlaySectionTitleText"
-           TargetType="TextBlock"
-           BasedOn="{StaticResource AppTextCaption}">
-        <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-    </Style>
-
 </ResourceDictionary>

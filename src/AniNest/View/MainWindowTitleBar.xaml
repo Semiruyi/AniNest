@@ -137,21 +137,8 @@
                                                Foreground="{StaticResource TextSecondary}"/>
                                 </Grid>
                                 <ProgressBar Value="{Binding ThumbnailGenerationProgressPercent}"
-                                             Margin="{StaticResource TitleBarPopupProgressMargin}">
-                                    <ProgressBar.Style>
-                                        <Style TargetType="ProgressBar"
-                                               BasedOn="{StaticResource AppProgressBarThin}">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding ThumbnailGenerationStatusCode}" Value="waiting">
-                                                    <Setter Property="Foreground" Value="{StaticResource ProgressFillWarning}"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding ThumbnailGenerationStatusCode}" Value="complete">
-                                                    <Setter Property="Foreground" Value="{StaticResource ProgressFillSuccess}"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </ProgressBar.Style>
-                                </ProgressBar>
+                                             Margin="{StaticResource TitleBarPopupProgressMargin}"
+                                             Style="{StaticResource TitleBarBackgroundTaskSummaryProgressBar}"/>
                                 <TextBlock Text="{Binding ThumbnailBackgroundTasksHeaderText}"
                                            Style="{StaticResource AppTextBodyEmphasis}"
                                            Foreground="{StaticResource TextSecondary}"
@@ -170,21 +157,8 @@
                                                            TextWrapping="Wrap"
                                                            TextTrimming="CharacterEllipsis"
                                                            Margin="{StaticResource TitleBarPopupFileNameMargin}"/>
-                                                <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}">
-                                                    <ProgressBar.Style>
-                                                        <Style TargetType="ProgressBar"
-                                                               BasedOn="{StaticResource AppProgressBarThin}">
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding StatusCode}" Value="waiting">
-                                                                    <Setter Property="Foreground" Value="{StaticResource ProgressFillWarning}"/>
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding StatusCode}" Value="complete">
-                                                                    <Setter Property="Foreground" Value="{StaticResource ProgressFillSuccess}"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </ProgressBar.Style>
-                                                </ProgressBar>
+                                                <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}"
+                                                             Style="{StaticResource TitleBarBackgroundTaskItemProgressBar}"/>
                                             </StackPanel>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
@@ -194,15 +168,8 @@
                     </primitives:AnimatedPopup>
                     <Grid x:Name="TitleBarFileNameHost"
                           VerticalAlignment="Center"
+                          Style="{StaticResource TitleBarFileNameHostGrid}"
                           shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                        <Grid.Style>
-                            <Style TargetType="Grid">
-                                <Setter Property="Opacity" Value="0"/>
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Setter Property="animations:FadeVisibilityAnimator.BindVisible" Value="{Binding IsOnPlayerPage}"/>
-                                <Setter Property="animations:FadeVisibilityAnimator.Preset" Value="Emphasis"/>
-                            </Style>
-                        </Grid.Style>
                         <Grid.ToolTip>
                             <ToolTip Style="{StaticResource AppPopupToolTip}">
                                 <Border Style="{StaticResource PopupPanelCompactBorder}"
