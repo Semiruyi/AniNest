@@ -17,6 +17,157 @@
         <ResourceDictionary>
             <BooleanToVisibilityConverter x:Key="BoolToVis"/>
             <conv:InverseBoolConverter x:Key="InverseBool"/>
+
+            <ItemsPanelTemplate x:Key="PlaylistEpisodeItemsPanelTemplate">
+                <primitives:AnimatedWrapPanel Orientation="Horizontal"
+                                              AnimationDuration="0:0:0.2"/>
+            </ItemsPanelTemplate>
+
+            <Style x:Key="OverlayThinScrollBar" TargetType="ScrollBar">
+                <Setter Property="Width" Value="{StaticResource ScrollbarThumbWidth}"/>
+                <Setter Property="Background" Value="{StaticResource TransparentBrush}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ScrollBar">
+                            <Grid>
+                                <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                    <Track.Thumb>
+                                        <Thumb>
+                                            <Thumb.Template>
+                                                <ControlTemplate TargetType="Thumb">
+                                                    <Border Background="{StaticResource OverlayScrollbarThumbBackground}"
+                                                            CornerRadius="{StaticResource ProgressBarThinCornerRadius}"
+                                                            Width="{StaticResource ScrollbarThumbWidth}"/>
+                                                </ControlTemplate>
+                                            </Thumb.Template>
+                                        </Thumb>
+                                    </Track.Thumb>
+                                </Track>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="PlaylistEpisodeListBoxItem" TargetType="ListBoxItem">
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Margin" Value="{StaticResource PlaylistEpisodeItemMargin}"/>
+                <Setter Property="Width" Value="{StaticResource EpisodeButtonSize}"/>
+                <Setter Property="Height" Value="{StaticResource EpisodeButtonSize}"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem">
+                            <ContentPresenter/>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="PlaylistEpisodeListBox" TargetType="ListBox">
+                <Setter Property="Background" Value="{StaticResource TransparentBrush}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Margin" Value="{StaticResource PlaylistItemsMargin}"/>
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+                <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="ItemContainerStyle" Value="{StaticResource PlaylistEpisodeListBoxItem}"/>
+                <Style.Resources>
+                    <Style TargetType="ScrollBar" BasedOn="{StaticResource OverlayThinScrollBar}"/>
+                </Style.Resources>
+            </Style>
+
+            <Style x:Key="PlayerPlaylistPanelStyle" TargetType="Border">
+                <Setter Property="Width" Value="{StaticResource PlaylistPanelWidth}"/>
+                <Setter Property="Background" Value="{StaticResource PlayerPlaylistPanelBackground}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource PlayerPlaylistPanelBorder}"/>
+                <Setter Property="BorderThickness" Value="1,0,0,0"/>
+            </Style>
+
+            <Style x:Key="PlayerPlaylistHeaderText" TargetType="TextBlock" BasedOn="{StaticResource AppTextPanelTitle}">
+                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+
+            <Style x:Key="PlayerPlaylistMetaText" TargetType="TextBlock" BasedOn="{StaticResource AppTextBody}">
+                <Setter Property="Foreground" Value="{StaticResource PlayerPlaylistMetaForeground}"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="HorizontalAlignment" Value="Right"/>
+            </Style>
+
+            <Style x:Key="PlayerPauseBigIconImage" TargetType="Image">
+                <Setter Property="Width" Value="{StaticResource PauseBigIconSize}"/>
+                <Setter Property="Height" Value="{StaticResource PauseBigIconSize}"/>
+                <Setter Property="HorizontalAlignment" Value="Right"/>
+                <Setter Property="VerticalAlignment" Value="Bottom"/>
+                <Setter Property="Margin" Value="{StaticResource PauseBigIconMargin}"/>
+                <Setter Property="Opacity" Value="0"/>
+                <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            </Style>
+
+            <Style x:Key="PlayerControlBarViewStyle" TargetType="{x:Type local:ControlBarView}">
+                <Setter Property="Grid.Row" Value="1"/>
+                <Setter Property="Opacity" Value="1"/>
+                <Setter Property="IsHitTestVisible" Value="True"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
+                        <Setter Property="Grid.Row" Value="0"/>
+                        <Setter Property="VerticalAlignment" Value="Bottom"/>
+                        <Setter Property="Panel.ZIndex" Value="1"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsControlBarVisible}" Value="False">
+                        <Setter Property="IsHitTestVisible" Value="False"/>
+                        <DataTrigger.EnterActions>
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                     To="0"
+                                                     Duration="0:0:0.25"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </DataTrigger.EnterActions>
+                        <DataTrigger.ExitActions>
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                     To="1"
+                                                     Duration="0:0:0.12"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </DataTrigger.ExitActions>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="PlayerEpisodeToolTipText" TargetType="TextBlock" BasedOn="{StaticResource AppTextBody}">
+                <Setter Property="MaxWidth" Value="{StaticResource PlayerEpisodeToolTipMaxWidth}"/>
+                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            </Style>
+
+            <Style x:Key="PlayerEpisodeToolTip" TargetType="ToolTip" BasedOn="{StaticResource AppPanelToolTip}"/>
+
+            <Style x:Key="PlayerEpisodeNumberText" TargetType="TextBlock" BasedOn="{StaticResource AppTextPanelValue}">
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+
+            <DataTemplate x:Key="PlayerEpisodeItemTemplate">
+                <Button Style="{StaticResource PlayerEpisodeButton}"
+                        Command="{Binding DataContext.PlayEpisodeCommand, RelativeSource={RelativeSource AncestorType=Border}}"
+                        CommandParameter="{Binding}">
+                    <TextBlock Text="{Binding Number, StringFormat={}{0:D2}}"
+                               Style="{StaticResource PlayerEpisodeNumberText}"
+                               Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}">
+                        <TextBlock.ToolTip>
+                            <ToolTip Style="{StaticResource PlayerEpisodeToolTip}">
+                                <TextBlock Text="{Binding Title}"
+                                           Style="{StaticResource PlayerEpisodeToolTipText}"/>
+                            </ToolTip>
+                        </TextBlock.ToolTip>
+                    </TextBlock>
+                </Button>
+            </DataTemplate>
         </ResourceDictionary>
     </UserControl.Resources>
     <Grid x:Name="PageRoot" anim:LoadedAnimator.Enabled="True"

@@ -52,7 +52,7 @@ public static class TextSwapAnimator
         SetOpacity(oldBlock, 1);
         SetScale(oldBlock, 1);
         AnimationHelper.AnimateScaleTransform(
-            (ScaleTransform)oldBlock.RenderTransform, 0, duration, AnimationHelper.EaseIn);
+            EnsureScaleTransform(oldBlock), 0, duration, AnimationHelper.EaseIn);
         AnimationHelper.AnimateFromCurrent(
             oldBlock, UIElement.OpacityProperty, 0, duration, AnimationHelper.EaseIn);
 
@@ -60,7 +60,7 @@ public static class TextSwapAnimator
         SetOpacity(newBlock, 0);
         SetScale(newBlock, 0);
         AnimationHelper.AnimateScaleTransform(
-            (ScaleTransform)newBlock.RenderTransform, 1, duration, AnimationHelper.EaseOut);
+            EnsureScaleTransform(newBlock), 1, duration, AnimationHelper.EaseOut);
         AnimationHelper.AnimateFromCurrent(
             newBlock, UIElement.OpacityProperty, 1, duration, AnimationHelper.EaseOut);
     }
@@ -82,13 +82,17 @@ public static class TextSwapAnimator
 
     private static void SetScale(FrameworkElement element, double scale)
     {
-        if (element.RenderTransform is ScaleTransform st)
-        {
-            st.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-            st.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-            st.ScaleX = scale;
-            st.ScaleY = scale;
-        }
+        var st = EnsureScaleTransform(element);
+        st.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        st.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        st.ScaleX = scale;
+        st.ScaleY = scale;
+    }
+
+    private static ScaleTransform EnsureScaleTransform(FrameworkElement element)
+    {
+        AnimationHelper.EnsureScaleTransform(element);
+        return (ScaleTransform)element.RenderTransform;
     }
 }
 

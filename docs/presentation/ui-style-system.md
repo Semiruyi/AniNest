@@ -67,7 +67,6 @@ Current files:
 - `src/AniNest/View/Styles/LibraryCardStyles.xaml`
 - `src/AniNest/View/Styles/LibraryPageStyles.xaml`
 - `src/AniNest/View/Styles/LibraryButtonStyles.xaml`
-- `src/AniNest/View/Styles/PlayerStyles.xaml`
 - `src/AniNest/View/Styles/PlayerButtonStyles.xaml`
 - `src/AniNest/View/Styles/TitleBarButtonStyles.xaml`
 - `src/AniNest/View/Styles/TitleBarStyles.xaml`
@@ -108,17 +107,16 @@ Within a dictionary, group related resources with short section comments so the 
 4. `Spacings.xaml`
 5. `IconGeometries.xaml`
 6. `SharedStyles.xaml`
-7. `LibraryCardStyles.xaml`
-8. `PlayerStyles.xaml`
-9. `Buttons.xaml`
-10. `TitleBarButtonStyles.xaml`
-11. `TitleBarStyles.xaml`
-12. `LibraryButtonStyles.xaml`
-13. `PlayerButtonStyles.xaml`
-14. `OverlayMenuStyles.xaml`
-15. `LibraryPageStyles.xaml`
-16. `MainWindowOverlayStyles.xaml`
-17. `MainWindowTemplates.xaml`
+7. `Buttons.xaml`
+8. `LibraryCardStyles.xaml`
+9. `TitleBarButtonStyles.xaml`
+10. `TitleBarStyles.xaml`
+11. `LibraryButtonStyles.xaml`
+12. `PlayerButtonStyles.xaml`
+13. `OverlayMenuStyles.xaml`
+14. `LibraryPageStyles.xaml`
+15. `MainWindowOverlayStyles.xaml`
+16. `MainWindowTemplates.xaml`
 
 This order matters.
 
@@ -139,7 +137,6 @@ Avoid:
 
 Examples:
 
-- `PlayerSpeedOptionButton` must load after `PopupMenuButton`
 - `PlayerInputBindingValueButton` must load after `PopupMenuButton`
 - `MainWindowBaseOverlay` must load after the default `AnimatedOverlay` style exists
 
@@ -273,8 +270,9 @@ Use:
 
 Use:
 
-- `PlayerStyles.xaml`
 - `PlayerButtonStyles.xaml`
+- page-local resources in `PlayerPage.xaml`
+- component-local resources in `ControlBarView.xaml`
 
 ### Window/title bar/overlays
 

@@ -3,25 +3,221 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:behaviors="clr-namespace:AniNest.Presentation.Behaviors"
              xmlns:animations="clr-namespace:AniNest.Presentation.Animations"
+             xmlns:converters="clr-namespace:AniNest.Presentation.Converters"
              xmlns:overlays="clr-namespace:AniNest.Presentation.Overlays"
              xmlns:primitives="clr-namespace:AniNest.Presentation.Primitives"
              Focusable="True">
     <UserControl.Resources>
-        <DataTemplate x:Key="PlayerSpeedOptionItemTemplate">
-            <Button Style="{StaticResource PlayerSpeedOptionButton}"
-                    Command="{Binding DataContext.ChangeSpeedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                    CommandParameter="{Binding}"
-                    Click="SpeedOption_Click">
-                <TextBlock Text="{Binding StringFormat={}{0:0.0#}x}"
-                           Style="{StaticResource PlayerSpeedOptionText}"/>
-            </Button>
-        </DataTemplate>
+        <converters:RateToOffsetConverter x:Key="RateToOffsetConverter"/>
 
-        <Style x:Key="PlayerFullscreenControlBarButton"
-               TargetType="Button"
-               BasedOn="{StaticResource PlayerFullscreenButton}">
+        <Style x:Key="PlayerControlBarTimeText" TargetType="TextBlock" BasedOn="{StaticResource AppTextCaption}">
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="PlayerControlBarTimeSeparatorText" TargetType="TextBlock" BasedOn="{StaticResource PlayerControlBarTimeText}">
+            <Setter Property="Foreground" Value="{StaticResource ControlBarTimeSeparatorForeground}"/>
+            <Setter Property="Margin" Value="{StaticResource TimeSeparatorMargin}"/>
+        </Style>
+
+        <Style x:Key="PlayerControlBarIconImageSmall" TargetType="Image">
+            <Setter Property="Width" Value="{StaticResource IconSizeSmall}"/>
+            <Setter Property="Height" Value="{StaticResource IconSizeSmall}"/>
+        </Style>
+
+        <Style x:Key="PlayerControlBarIconImageNormal" TargetType="Image">
+            <Setter Property="Width" Value="{StaticResource IconSizeNormal}"/>
+            <Setter Property="Height" Value="{StaticResource IconSizeNormal}"/>
+        </Style>
+
+        <Style x:Key="PlayerControlBarIconImageLarge" TargetType="Image">
+            <Setter Property="Width" Value="{StaticResource IconSizeLarge}"/>
+            <Setter Property="Height" Value="{StaticResource IconSizeLarge}"/>
+        </Style>
+
+        <Style x:Key="PlayerControlBarSpeedOptionButton" TargetType="Button" BasedOn="{StaticResource PopupMenuButton}">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="PlayerControlBarSpeedAnimatedText" TargetType="TextBlock" BasedOn="{StaticResource AppTextBody}">
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+        </Style>
+
+        <Style x:Key="PlayerThumbnailPreviewTimeBorder" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource ThumbnailPreviewTimeBackground}"/>
+            <Setter Property="CornerRadius" Value="{StaticResource ThumbnailPreviewTimeCornerRadius}"/>
+            <Setter Property="Padding" Value="{StaticResource ThumbnailPreviewTimePadding}"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Bottom"/>
+        </Style>
+
+        <Style x:Key="PlayerThumbnailPreviewImageBorder" TargetType="Border">
+            <Setter Property="Width" Value="{StaticResource ThumbnailPopupWidth}"/>
+            <Setter Property="Height" Value="{StaticResource ThumbnailPopupHeight}"/>
+            <Setter Property="Clip">
+                <Setter.Value>
+                    <RectangleGeometry RadiusX="{StaticResource ThumbnailPreviewImageClipRadius}"
+                                       RadiusY="{StaticResource ThumbnailPreviewImageClipRadius}"
+                                       Rect="0,0,160,90"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PlayerThumbnailPreviewImage" TargetType="Image">
+            <Setter Property="Width" Value="{StaticResource ThumbnailPopupWidth}"/>
+            <Setter Property="Height" Value="{StaticResource ThumbnailPopupHeight}"/>
+            <Setter Property="Stretch" Value="UniformToFill"/>
+        </Style>
+
+        <Style x:Key="PlayerThumbnailPreviewTimeText" TargetType="TextBlock" BasedOn="{StaticResource AppTextThumbnailPreview}">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        </Style>
+
+        <Style x:Key="PlayerSpeedOverlay"
+               TargetType="{x:Type overlays:AnimatedOverlay}"
+               BasedOn="{StaticResource {x:Type overlays:AnimatedOverlay}}">
+            <Setter Property="InteractionPreset" Value="ToolPanelLike"/>
+            <Setter Property="Placement" Value="TopCenter"/>
+            <Setter Property="ConstrainToHostBounds" Value="False"/>
+            <Setter Property="VerticalOffset" Value="{StaticResource OverlayVerticalOffsetProminent}"/>
+            <Setter Property="AnimationOrigin" Value="0.5,1"/>
+        </Style>
+
+        <Style x:Key="PlayerSpeedOverlayHighlight" TargetType="Border">
+            <Setter Property="CornerRadius" Value="{StaticResource PopupMenuButtonCornerRadius}"/>
+            <Setter Property="Background" Value="{StaticResource AccentBlue}"/>
+            <Setter Property="Height" Value="{StaticResource SpeedOptionHeight}"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+        </Style>
+
+        <Style x:Key="PlayerSpeedOptionText" TargetType="TextBlock" BasedOn="{StaticResource AppTextBody}">
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="PlayerControlBarPreviousButton" TargetType="Button" BasedOn="{StaticResource PlayerPreviousButton}">
+            <Setter Property="Command" Value="{Binding PreviousCommand}"/>
+            <Setter Property="ToolTip" Value="{Binding PreviousTooltip}"/>
+            <Setter Property="Content" Value=""/>
+            <Setter Property="ContentTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <Image Source="/Resources/Icons/previous.png"
+                               Style="{StaticResource PlayerControlBarIconImageSmall}"/>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PlayerControlBarPlayPauseButton" TargetType="Button" BasedOn="{StaticResource PlayerPlayPauseButton}">
+            <Setter Property="Command" Value="{Binding PlayPauseCommand}"/>
+            <Setter Property="ToolTip" Value="{Binding PlayPauseTooltip}"/>
+            <Setter Property="Content" Value=""/>
+            <Setter Property="ContentTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <Grid animations:IconCrossfader.IsActive="{Binding DataContext.IsPlaying, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              animations:IconCrossfader.ListenButton="{Binding RelativeSource={RelativeSource AncestorType=Button}}">
+                            <Image Source="/Resources/Icons/play.png"
+                                   Style="{StaticResource PlayerControlBarIconImageLarge}"
+                                   Opacity="1"/>
+                            <Image Source="/Resources/Icons/pause.png"
+                                   Style="{StaticResource PlayerControlBarIconImageLarge}"
+                                   Opacity="0"/>
+                        </Grid>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PlayerControlBarNextButton" TargetType="Button" BasedOn="{StaticResource PlayerNextButton}">
+            <Setter Property="Command" Value="{Binding NextCommand}"/>
+            <Setter Property="ToolTip" Value="{Binding NextTooltip}"/>
+            <Setter Property="Content" Value=""/>
+            <Setter Property="ContentTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <Image Source="/Resources/Icons/next.png"
+                               Style="{StaticResource PlayerControlBarIconImageSmall}"/>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PlayerControlBarStopButton" TargetType="Button" BasedOn="{StaticResource PlayerStopButton}">
+            <Setter Property="Command" Value="{Binding StopCommand}"/>
+            <Setter Property="ToolTip"
+                    Value="{Binding DataContext.Localization[Player.Stop], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+            <Setter Property="Content" Value=""/>
+            <Setter Property="ContentTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <Image Source="/Resources/Icons/stop.png"
+                               Style="{StaticResource PlayerControlBarIconImageSmall}"/>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PlayerControlBarSpeedButton" TargetType="Button" BasedOn="{StaticResource PlayerSpeedButton}">
+            <Setter Property="Margin" Value="{StaticResource ButtonGapRight}"/>
+            <Setter Property="Content" Value=""/>
+            <EventSetter Event="Click" Handler="SpeedBtn_Click"/>
+            <Setter Property="ContentTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <Grid animations:TextSwapAnimator.Text="{Binding DataContext.Rate, RelativeSource={RelativeSource AncestorType=UserControl}, StringFormat={}{0:0.0#}x}">
+                            <TextBlock Text=""
+                                       Style="{StaticResource PlayerControlBarSpeedAnimatedText}"
+                                       Opacity="0">
+                                <TextBlock.RenderTransform>
+                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
+                            <TextBlock Text=""
+                                       Style="{StaticResource PlayerControlBarSpeedAnimatedText}"
+                                       Opacity="1">
+                                <TextBlock.RenderTransform>
+                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
+                        </Grid>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PlayerControlBarPlaylistButton" TargetType="Button" BasedOn="{StaticResource PlayerPlaylistButton}">
+            <Setter Property="Command" Value="{Binding TogglePlaylistCommand}"/>
+            <Setter Property="ToolTip"
+                    Value="{Binding DataContext.Localization[Player.Playlist], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+            <Setter Property="Content" Value=""/>
+            <Setter Property="ContentTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <Image Source="/Resources/Icons/playlist.png"
+                               Style="{StaticResource PlayerControlBarIconImageNormal}"/>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PlayerControlBarFullscreenButton" TargetType="Button" BasedOn="{StaticResource PlayerFullscreenButton}">
+            <Setter Property="Margin" Value="{StaticResource ButtonGapLeft}"/>
+            <Setter Property="Command" Value="{Binding ToggleFullscreenCommand}"/>
             <Setter Property="ToolTip"
                     Value="{Binding DataContext.Localization[Player.Fullscreen], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+            <Setter Property="Content" Value=""/>
+            <Setter Property="ContentTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <Image Style="{StaticResource PlayerFullscreenButtonIcon}"/>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
                     <Setter Property="ToolTip"
@@ -29,6 +225,16 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+
+        <DataTemplate x:Key="PlayerSpeedOptionItemTemplate">
+            <Button Style="{StaticResource PlayerControlBarSpeedOptionButton}"
+                    Command="{Binding DataContext.ChangeSpeedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    CommandParameter="{Binding}"
+                    Click="SpeedOption_Click">
+                <TextBlock Text="{Binding StringFormat={}{0:0.0#}x}"
+                           Style="{StaticResource PlayerSpeedOptionText}"/>
+            </Button>
+        </DataTemplate>
     </UserControl.Resources>
 
     <Grid x:Name="RootGrid" Height="{StaticResource ControlBarHeight}"
@@ -47,41 +253,10 @@
 
             <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left"
                         VerticalAlignment="Center">
-                <Button x:Name="PreviousBtn"
-                        Style="{StaticResource PlayerPreviousButton}"
-                        Command="{Binding PreviousCommand}"
-                        ToolTip="{Binding PreviousTooltip}">
-                    <Image Source="/Resources/Icons/previous.png"
-                           Style="{StaticResource PlayerControlBarIconImageSmall}"/>
-                </Button>
-                <Button x:Name="PlayPauseBtn"
-                        Style="{StaticResource PlayerPlayPauseButton}"
-                        Command="{Binding PlayPauseCommand}"
-                        ToolTip="{Binding PlayPauseTooltip}">
-                    <Grid animations:IconCrossfader.IsActive="{Binding IsPlaying}"
-                          animations:IconCrossfader.ListenButton="{Binding ElementName=PlayPauseBtn}">
-                        <Image Source="/Resources/Icons/play.png"
-                               Style="{StaticResource PlayerControlBarIconImageLarge}"
-                               Opacity="1"/>
-                        <Image Source="/Resources/Icons/pause.png"
-                               Style="{StaticResource PlayerControlBarIconImageLarge}"
-                               Opacity="0"/>
-                    </Grid>
-                </Button>
-                <Button x:Name="NextBtn"
-                        Style="{StaticResource PlayerNextButton}"
-                        Command="{Binding NextCommand}"
-                        ToolTip="{Binding NextTooltip}">
-                    <Image Source="/Resources/Icons/next.png"
-                           Style="{StaticResource PlayerControlBarIconImageSmall}"/>
-                </Button>
-                <Button x:Name="StopBtn"
-                        Style="{StaticResource PlayerStopButton}"
-                        Command="{Binding StopCommand}"
-                        ToolTip="{Binding DataContext.Localization[Player.Stop], RelativeSource={RelativeSource AncestorType=UserControl}}">
-                    <Image Source="/Resources/Icons/stop.png"
-                           Style="{StaticResource PlayerControlBarIconImageSmall}"/>
-                </Button>
+                <Button x:Name="PreviousBtn" Style="{StaticResource PlayerControlBarPreviousButton}"/>
+                <Button x:Name="PlayPauseBtn" Style="{StaticResource PlayerControlBarPlayPauseButton}"/>
+                <Button x:Name="NextBtn" Style="{StaticResource PlayerControlBarNextButton}"/>
+                <Button x:Name="StopBtn" Style="{StaticResource PlayerControlBarStopButton}"/>
                 <TextBlock Text="{Binding CurrentTimeText, FallbackValue='00:00'}"
                            Style="{StaticResource PlayerControlBarTimeText}"
                            Margin="{StaticResource TimeTextLeftMargin}"/>
@@ -134,44 +309,11 @@
             <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"
                         VerticalAlignment="Center">
                 <Grid>
-                    <Button x:Name="SpeedBtn"
-                            Style="{StaticResource PlayerSpeedButton}"
-                            Margin="{StaticResource ButtonGapRight}"
-                            Click="SpeedBtn_Click"
-                            animations:ButtonScaleHover.IsEnabled="True">
-                        <Grid animations:TextSwapAnimator.Text="{Binding Rate, StringFormat={}{0:0.0#}x}">
-                            <TextBlock Text=""
-                                       Style="{StaticResource PlayerSpeedAnimatedText}"
-                                       Opacity="0">
-                                <TextBlock.RenderTransform>
-                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
-                            <TextBlock Text=""
-                                       Style="{StaticResource PlayerSpeedAnimatedText}"
-                                       Opacity="1">
-                                <TextBlock.RenderTransform>
-                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
-                        </Grid>
-                    </Button>
+                    <Button x:Name="SpeedBtn" Style="{StaticResource PlayerControlBarSpeedButton}"/>
                 </Grid>
 
-                <Button x:Name="PlaylistToggleBtn"
-                        Style="{StaticResource PlayerPlaylistButton}"
-                        Command="{Binding TogglePlaylistCommand}"
-                        ToolTip="{Binding DataContext.Localization[Player.Playlist], RelativeSource={RelativeSource AncestorType=UserControl}}">
-                    <Image Source="/Resources/Icons/playlist.png"
-                           Style="{StaticResource PlayerControlBarIconImageNormal}"/>
-                </Button>
-                <Button x:Name="FullscreenBtn"
-                        Style="{StaticResource PlayerFullscreenControlBarButton}"
-                        Margin="{StaticResource ButtonGapLeft}" Focusable="False"
-                        Command="{Binding ToggleFullscreenCommand}"
-                        animations:ButtonScaleHover.IsEnabled="True">
-                    <Image Style="{StaticResource PlayerFullscreenButtonIcon}"/>
-                </Button>
+                <Button x:Name="PlaylistToggleBtn" Style="{StaticResource PlayerControlBarPlaylistButton}"/>
+                <Button x:Name="FullscreenBtn" Style="{StaticResource PlayerControlBarFullscreenButton}"/>
             </StackPanel>
         </Grid>
 
