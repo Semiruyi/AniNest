@@ -6,6 +6,7 @@
     <converters:ProgressToPieConverter x:Key="ProgressToPieConverter"/>
     <converters:ProgressToVisibilityConverter x:Key="ProgressToVisibilityConverter"/>
 
+    <!-- Playlist episode buttons -->
     <Style x:Key="PlayerEpisodeButton" TargetType="Button" BasedOn="{StaticResource AnimatedCompactButtonBase}">
         <Setter Property="Width" Value="{StaticResource EpisodeButtonSize}"/>
         <Setter Property="Height" Value="{StaticResource EpisodeButtonSize}"/>
@@ -155,6 +156,24 @@
         </Setter>
     </Style>
 
+    <DataTemplate x:Key="PlayerEpisodeItemTemplate">
+        <Button Style="{StaticResource PlayerEpisodeButton}"
+                Command="{Binding DataContext.PlayEpisodeCommand, RelativeSource={RelativeSource AncestorType=Border}}"
+                CommandParameter="{Binding}">
+            <TextBlock Text="{Binding Number, StringFormat={}{0:D2}}"
+                       Style="{StaticResource PlayerEpisodeNumberText}"
+                       Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}">
+                <TextBlock.ToolTip>
+                    <ToolTip Style="{StaticResource PlayerEpisodeToolTip}">
+                        <TextBlock Text="{Binding Title}"
+                                   Style="{StaticResource PlayerEpisodeToolTipText}"/>
+                    </ToolTip>
+                </TextBlock.ToolTip>
+            </TextBlock>
+        </Button>
+    </DataTemplate>
+
+    <!-- Playback control buttons -->
     <Style x:Key="PlayerSpeedButton" TargetType="Button" BasedOn="{StaticResource AnimatedIconButton}">
         <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
         <Setter Property="Focusable" Value="False"/>
@@ -201,26 +220,10 @@
         <Setter Property="Margin" Value="{StaticResource ButtonGapLeft}"/>
     </Style>
 
+    <!-- Popup option buttons -->
     <Style x:Key="PlayerSpeedOptionButton" TargetType="Button" BasedOn="{StaticResource PopupMenuButton}">
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
     </Style>
-
-    <DataTemplate x:Key="PlayerEpisodeItemTemplate">
-        <Button Style="{StaticResource PlayerEpisodeButton}"
-                Command="{Binding DataContext.PlayEpisodeCommand, RelativeSource={RelativeSource AncestorType=Border}}"
-                CommandParameter="{Binding}">
-            <TextBlock Text="{Binding Number, StringFormat={}{0:D2}}"
-                       Style="{StaticResource PlayerEpisodeNumberText}"
-                       Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}">
-                <TextBlock.ToolTip>
-                    <ToolTip Style="{StaticResource PlayerEpisodeToolTip}">
-                        <TextBlock Text="{Binding Title}"
-                                   Style="{StaticResource PlayerEpisodeToolTipText}"/>
-                    </ToolTip>
-                </TextBlock.ToolTip>
-            </TextBlock>
-        </Button>
-    </DataTemplate>
 
     <Style x:Key="PlayerSpeedAnimatedText" TargetType="TextBlock" BasedOn="{StaticResource AppTextBody}">
         <Setter Property="HorizontalAlignment" Value="Center"/>
@@ -228,6 +231,7 @@
         <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
     </Style>
 
+    <!-- Fullscreen button -->
     <Style x:Key="PlayerFullscreenButton" TargetType="Button" BasedOn="{StaticResource AnimatedIconButton}">
         <Setter Property="Focusable" Value="False"/>
         <Setter Property="ToolTip" Value="{Binding DataContext.Localization[Player.Fullscreen], RelativeSource={RelativeSource AncestorType=UserControl}}"/>

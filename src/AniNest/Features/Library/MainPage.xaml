@@ -5,8 +5,6 @@
              xmlns:behaviors="clr-namespace:AniNest.Presentation.Behaviors"
              xmlns:conv="clr-namespace:AniNest.Presentation.Converters"
              xmlns:models="clr-namespace:AniNest.Features.Library.Models"
-             xmlns:loc="clr-namespace:AniNest.Infrastructure.Localization"
-             xmlns:persistence="clr-namespace:AniNest.Infrastructure.Persistence"
              xmlns:primitives="clr-namespace:AniNest.Presentation.Primitives"
              xmlns:overlays="clr-namespace:AniNest.Presentation.Overlays"
              Background="{StaticResource BackgroundDark}">
@@ -16,16 +14,6 @@
         <conv:NullToVisibilityConverter x:Key="NullToHidden"  NullValue="Visible"    NotNullValue="Collapsed"/>
         <conv:CoverImageSourceConverter x:Key="CoverImageSource" DecodePixelWidth="380"/>
         <conv:PercentToWidthConverter x:Key="PercentToWidthConverter"/>
-        <Style x:Key="LibraryPopupMenuSubmenuButton"
-               TargetType="Button"
-               BasedOn="{StaticResource PopupMenuSubmenuButton}">
-            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-        </Style>
-        <Style x:Key="LibraryPopupMenuStretchButton"
-               TargetType="Button"
-               BasedOn="{StaticResource PopupMenuButton}">
-            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-        </Style>
     </UserControl.Resources>
 
     <Grid x:Name="RootGrid">
@@ -143,27 +131,7 @@
                                         Margin="{StaticResource LibraryCardStatusButtonMargin}"
                                         HorizontalAlignment="Center"
                                         Click="CardStatusButton_Click">
-                                    <TextBlock>
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock" BasedOn="{StaticResource LibraryCardStatusText}">
-                                                <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Unsorted], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Watching}">
-                                                        <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Watching], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Unsorted}">
-                                                        <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Unsorted], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Completed}">
-                                                        <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Completed], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Dropped}">
-                                                        <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Dropped], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
+                                    <TextBlock Style="{StaticResource LibraryCardStatusValueText}"/>
                                 </Button>
                             </StackPanel>
                         </DataTemplate>
@@ -226,7 +194,7 @@
             <Border Style="{StaticResource PopupMenuOverlayBorder}"
                     MinWidth="{StaticResource PopupSubmenuMinWidth}">
                 <StackPanel>
-                    <Button Style="{StaticResource LibraryPopupMenuStretchButton}"
+                    <Button Style="{StaticResource PopupMenuStretchButton}"
                             Command="{Binding DataContext.ToggleFolderFavoriteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             CommandParameter="{Binding DataContext, ElementName=CardContextMenuOverlay}"
                             Click="OnOverlayActionClick">
@@ -244,7 +212,7 @@
                         </TextBlock>
                     </Button>
                     <Button x:Name="CardContextStatusMenuButton"
-                            Style="{StaticResource LibraryPopupMenuSubmenuButton}"
+                            Style="{StaticResource PopupMenuStretchSubmenuButton}"
                             Click="CardStatusMenuButton_Click">
                         <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
                             <TextBlock Text="{Binding DataContext.Localization[Library.Status], RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -281,7 +249,7 @@
                             Margin="{StaticResource PopupMenuDividerMargin}"
                             Background="{StaticResource PopupMenuDividerBrush}"/>
                     <Button x:Name="ThumbnailActionsMenuButton"
-                            Style="{StaticResource LibraryPopupMenuSubmenuButton}"
+                            Style="{StaticResource PopupMenuStretchSubmenuButton}"
                             Click="ThumbnailActionsMenuButton_Click">
                         <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
                             <TextBlock Text="{Binding DataContext.Localization[Library.Thumbnails], RelativeSource={RelativeSource AncestorType=UserControl}}"

@@ -2,6 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:persistence="clr-namespace:AniNest.Infrastructure.Persistence">
 
+    <!-- Card action buttons -->
     <Style x:Key="LibraryCardFavoriteButton" TargetType="Button" BasedOn="{StaticResource AnimatedCompactIconButton}">
         <Setter Property="Width" Value="{StaticResource LibraryCardFavoriteButtonSize}"/>
         <Setter Property="Height" Value="{StaticResource LibraryCardFavoriteButtonSize}"/>
@@ -136,6 +137,7 @@
         </Style.Triggers>
     </Style>
 
+    <!-- Card status buttons -->
     <Style x:Key="LibraryCardStatusButton" TargetType="Button" BasedOn="{StaticResource MenuButtonBase}">
         <Setter Property="Height" Value="{StaticResource LibraryCardStatusButtonHeight}"/>
         <Setter Property="MinWidth" Value="{StaticResource LibraryCardStatusButtonMinWidth}"/>
@@ -205,6 +207,24 @@
             </DataTrigger>
             <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Dropped}">
                 <Setter Property="Background" Value="{StaticResource LibraryStatusDroppedBackground}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="LibraryCardStatusValueText" TargetType="TextBlock" BasedOn="{StaticResource LibraryCardStatusText}">
+        <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Unsorted], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Watching}">
+                <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Watching], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Unsorted}">
+                <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Unsorted], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Completed}">
+                <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Completed], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Dropped}">
+                <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Dropped], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
             </DataTrigger>
         </Style.Triggers>
     </Style>

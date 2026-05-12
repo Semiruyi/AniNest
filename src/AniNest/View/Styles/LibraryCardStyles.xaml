@@ -3,6 +3,7 @@
                     xmlns:animations="clr-namespace:AniNest.Presentation.Animations"
                     xmlns:behaviors="clr-namespace:AniNest.Presentation.Behaviors">
 
+    <!-- Card shell -->
     <Style x:Key="LibraryCardSurfaceBorder" TargetType="Border" BasedOn="{StaticResource AppCardSurfaceBorder}">
         <Setter Property="Width" Value="{StaticResource FolderCardWidth}"/>
         <Setter Property="Height" Value="{StaticResource FolderCardHeight}"/>
@@ -19,6 +20,7 @@
         <Setter Property="behaviors:HoverRevealBehavior.MinVisibleMs" Value="220"/>
     </Style>
 
+    <!-- Card clipping and placeholder -->
     <Style x:Key="LibraryCardClipRootGrid" TargetType="Grid">
         <Setter Property="Clip">
             <Setter.Value>
@@ -35,6 +37,7 @@
         <Setter Property="Text" Value="&#x1F3AC;"/>
     </Style>
 
+    <!-- Card overlays -->
     <Style x:Key="LibraryCardFavoriteHost" TargetType="Grid">
         <Setter Property="HorizontalAlignment" Value="Right"/>
         <Setter Property="VerticalAlignment" Value="Top"/>
@@ -58,6 +61,7 @@
         <Setter Property="Margin" Value="{StaticResource CardInfoMargin}"/>
     </Style>
 
+    <!-- Card summary and progress -->
     <Style x:Key="LibraryCardSummaryRowPanel" TargetType="StackPanel">
         <Setter Property="Orientation" Value="Horizontal"/>
         <Setter Property="Margin" Value="{StaticResource LibraryCardSummaryRowMargin}"/>

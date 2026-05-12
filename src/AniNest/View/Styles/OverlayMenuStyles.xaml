@@ -20,6 +20,15 @@
         <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
     </Style>
 
+    <Style x:Key="PopupMenuStretchButton" TargetType="Button" BasedOn="{StaticResource PopupMenuButton}">
+        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    </Style>
+
+    <Style x:Key="PopupMenuStretchSubmenuButton" TargetType="Button" BasedOn="{StaticResource PopupMenuSubmenuButton}">
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    </Style>
+
     <Style x:Key="SelectableOptionOverlayMenuButton" TargetType="Button" BasedOn="{StaticResource SelectableOptionMenuButton}">
         <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
     </Style>

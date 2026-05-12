@@ -55,7 +55,7 @@
         </Style.Triggers>
     </Style>
 
-    <!-- Player input -->
+    <!-- Player input overlay layout -->
     <Style x:Key="PlayerInputOverlayLayoutGrid"
            TargetType="Grid">
         <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
@@ -93,6 +93,7 @@
            TargetType="TextBlock"
            BasedOn="{StaticResource PopupMenuItemText}"/>
 
+    <!-- Player input overlay text states -->
     <Style x:Key="PlayerInputBindingDisplayText"
            TargetType="TextBlock"
            BasedOn="{StaticResource PlayerInputButtonText}">
@@ -118,6 +119,7 @@
         </Style.Triggers>
     </Style>
 
+    <!-- Player input overlay buttons -->
     <Style x:Key="PlayerInputBindingValueButton"
            TargetType="Button"
            BasedOn="{StaticResource PopupMenuButton}">
@@ -144,7 +146,7 @@
                 Value="True"/>
     </Style>
 
-    <!-- Main window submenu/menu option buttons -->
+    <!-- Settings menu buttons -->
     <Style x:Key="FullscreenAnimationMenuTooltipButton"
            TargetType="Button"
            BasedOn="{StaticResource PopupMenuSubmenuButton}">
@@ -152,6 +154,7 @@
                 Value="{Binding DataContext.Localization[Settings.FullscreenAnimation.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"/>
     </Style>
 
+    <!-- Thumbnail performance option buttons -->
     <Style x:Key="ThumbnailPerformanceOptionButton"
            TargetType="Button"
            BasedOn="{StaticResource SelectableOptionOverlayMenuButton}">
@@ -182,6 +185,7 @@
                 Value="{Binding DataContext.Localization[Settings.ThumbnailPerformance.Fast.Tooltip], RelativeSource={RelativeSource AncestorType=Window}}"/>
     </Style>
 
+    <!-- Thumbnail acceleration option buttons -->
     <Style x:Key="ThumbnailAccelerationOptionButton"
            TargetType="Button"
            BasedOn="{StaticResource SelectableOptionOverlayMenuButton}">

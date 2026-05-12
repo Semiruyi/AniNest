@@ -86,6 +86,17 @@ Rules:
 - split by UI domain once a dictionary starts mixing unrelated responsibilities
 - avoid moving a style here unless it really belongs to that feature family
 
+### Naming convention
+
+Prefer resource keys that start with the owning domain or surface:
+
+- `Player...` for player-specific resources
+- `MainWindow...` for main window resources
+- `Library...` for library resources
+- `Popup...` or `Overlay...` only when the resource is intentionally shared across features
+
+Within a dictionary, group related resources with short section comments so the file can be scanned quickly.
+
 ## Current load order
 
 `App.xaml` currently merges dictionaries in this order:
