@@ -74,7 +74,7 @@
         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
     </Style>
 
-    <Style x:Key="LibraryCardStatusText" TargetType="TextBlock" BasedOn="{StaticResource AppTextCaption}">
+    <Style x:Key="LibraryCardStatusText" TargetType="TextBlock" BasedOn="{StaticResource AppTextBody}">
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
     </Style>
