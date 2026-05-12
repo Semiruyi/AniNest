@@ -26,20 +26,31 @@
                BasedOn="{StaticResource PopupMenuButton}">
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         </Style>
-        <Style x:Key="LibraryPopupMenuCheckIcon"
-               TargetType="Path">
-            <Setter Property="Data" Value="{StaticResource CheckIconGeometry}"/>
-            <Setter Property="Stroke" Value="{StaticResource AccentBlue}"/>
-            <Setter Property="StrokeThickness" Value="1.8"/>
-            <Setter Property="StrokeStartLineCap" Value="Round"/>
-            <Setter Property="StrokeEndLineCap" Value="Round"/>
-            <Setter Property="StrokeLineJoin" Value="Round"/>
-            <Setter Property="Stretch" Value="Uniform"/>
-            <Setter Property="Width" Value="10"/>
-            <Setter Property="Height" Value="10"/>
-            <Setter Property="HorizontalAlignment" Value="Right"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Visibility" Value="Collapsed"/>
+        <Style x:Key="LibraryCardStatusButton"
+               TargetType="Button"
+               BasedOn="{StaticResource MenuButtonBase}">
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="MinWidth" Value="86"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="{StaticResource AppFontSizeCaption}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Tag" Value="11"/>
+            <Setter Property="Background" Value="{StaticResource LibraryStatusUnsortedBackground}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Watching}">
+                    <Setter Property="Background" Value="{StaticResource LibraryStatusWatchingBackground}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Unsorted}">
+                    <Setter Property="Background" Value="{StaticResource LibraryStatusUnsortedBackground}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Completed}">
+                    <Setter Property="Background" Value="{StaticResource LibraryStatusCompletedBackground}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Dropped}">
+                    <Setter Property="Background" Value="{StaticResource LibraryStatusDroppedBackground}"/>
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
 
     </UserControl.Resources>
@@ -161,6 +172,7 @@
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
                                             <TextBlock Text="{Binding Name}"
                                                        Style="{StaticResource AppTextSectionTitle}"
@@ -205,6 +217,36 @@
                                                             CornerRadius="1.5"/>
                                                 </Grid>
                                             </Grid>
+                                            <Grid Grid.Row="3"
+                                                  Margin="0,8,0,0"
+                                                  HorizontalAlignment="Center">
+                                                <Button x:Name="CardStatusButton"
+                                                        Style="{StaticResource LibraryCardStatusButton}"
+                                                Click="CardStatusButton_Click">
+                                                    <TextBlock VerticalAlignment="Center"
+                                                               TextTrimming="CharacterEllipsis">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Unsorted], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Watching}">
+                                                                        <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Watching], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Unsorted}">
+                                                                        <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Unsorted], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Completed}">
+                                                                        <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Completed], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Dropped}">
+                                                                        <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Dropped], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Button>
+                                            </Grid>
                                         </Grid>
                                     </Border>
                                 </Grid>
@@ -214,6 +256,49 @@
                 </ItemsControl>
             </StackPanel>
         </ScrollViewer>
+
+        <overlays:AnimatedOverlay x:Name="CardStatusMenuOverlay"
+                                  DataContext="{x:Null}"
+                                  InteractionPreset="MenuLike"
+                                  Placement="TopLeft"
+                                  HorizontalOffset="0"
+                                  VerticalOffset="-4"
+                                  AnimationOrigin="0,1"
+                                  Panel.ZIndex="1000">
+            <Border Style="{StaticResource PopupMenuOverlayBorder}"
+                    MinWidth="{StaticResource PopupSubmenuMinWidth}">
+                <primitives:SelectableOptionGroup x:Name="CardStatusOptionGroup"
+                                                  Style="{StaticResource SelectableOptionMenuGroup}"
+                                                  SelectedIndex="{Binding StatusMenuSelectedIndex}">
+                    <StackPanel>
+                        <Button Style="{StaticResource SelectableOptionMenuButton}"
+                                animations:SelectableOptionState.IsSelected="{Binding IsStatusWatching}"
+                                Click="MarkWatchingMenuItem_Click">
+                            <TextBlock Text="{Binding DataContext.Localization[Library.MarkAsWatching], RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                       VerticalAlignment="Center"/>
+                        </Button>
+                        <Button Style="{StaticResource SelectableOptionMenuButton}"
+                                animations:SelectableOptionState.IsSelected="{Binding IsStatusUnsorted}"
+                                Click="MarkUnsortedMenuItem_Click">
+                            <TextBlock Text="{Binding DataContext.Localization[Library.MarkAsUnsorted], RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                       VerticalAlignment="Center"/>
+                        </Button>
+                        <Button Style="{StaticResource SelectableOptionMenuButton}"
+                                animations:SelectableOptionState.IsSelected="{Binding IsStatusCompleted}"
+                                Click="MarkCompletedMenuItem_Click">
+                            <TextBlock Text="{Binding DataContext.Localization[Library.MarkAsCompleted], RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                       VerticalAlignment="Center"/>
+                        </Button>
+                        <Button Style="{StaticResource SelectableOptionMenuButton}"
+                                animations:SelectableOptionState.IsSelected="{Binding IsStatusDropped}"
+                                Click="MarkDroppedMenuItem_Click">
+                            <TextBlock Text="{Binding DataContext.Localization[Library.MarkAsDropped], RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                       VerticalAlignment="Center"/>
+                        </Button>
+                    </StackPanel>
+                </primitives:SelectableOptionGroup>
+            </Border>
+        </overlays:AnimatedOverlay>
 
         <overlays:AnimatedOverlay x:Name="CardContextMenuOverlay"
                                   DataContext="{x:Null}"
@@ -243,101 +328,14 @@
                             </TextBlock.Style>
                         </TextBlock>
                     </Button>
-                    <Button Style="{StaticResource LibraryPopupMenuStretchButton}"
-                            Click="MarkWatchingMenuItem_Click">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="{Binding DataContext.Localization[Library.MarkAsWatching], RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    <Button x:Name="CardContextStatusMenuButton"
+                            Style="{StaticResource LibraryPopupMenuSubmenuButton}"
+                            Click="CardStatusMenuButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding DataContext.Localization[Library.Status], RelativeSource={RelativeSource AncestorType=UserControl}}"
                                        VerticalAlignment="Center"/>
-                            <Path Grid.Column="1">
-                                <Path.Style>
-                                    <Style TargetType="Path"
-                                           BasedOn="{StaticResource LibraryPopupMenuCheckIcon}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Status}"
-                                                         Value="{x:Static persistence:WatchStatus.Watching}">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Path.Style>
-                            </Path>
-                        </Grid>
-                    </Button>
-                    <Button Style="{StaticResource LibraryPopupMenuStretchButton}"
-                            Click="MarkUnsortedMenuItem_Click">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="{Binding DataContext.Localization[Library.MarkAsUnsorted], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                       VerticalAlignment="Center"/>
-                            <Path Grid.Column="1">
-                                <Path.Style>
-                                    <Style TargetType="Path"
-                                           BasedOn="{StaticResource LibraryPopupMenuCheckIcon}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Status}"
-                                                         Value="{x:Static persistence:WatchStatus.Unsorted}">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Path.Style>
-                            </Path>
-                        </Grid>
-                    </Button>
-                    <Button Style="{StaticResource LibraryPopupMenuStretchButton}"
-                            Click="MarkCompletedMenuItem_Click">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="{Binding DataContext.Localization[Library.MarkAsCompleted], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                       VerticalAlignment="Center"/>
-                            <Path Grid.Column="1">
-                                <Path.Style>
-                                    <Style TargetType="Path"
-                                           BasedOn="{StaticResource LibraryPopupMenuCheckIcon}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Status}"
-                                                         Value="{x:Static persistence:WatchStatus.Completed}">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Path.Style>
-                            </Path>
-                        </Grid>
-                    </Button>
-                    <Button Style="{StaticResource LibraryPopupMenuStretchButton}"
-                            Click="MarkDroppedMenuItem_Click">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="{Binding DataContext.Localization[Library.MarkAsDropped], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                       VerticalAlignment="Center"/>
-                            <Path Grid.Column="1">
-                                <Path.Style>
-                                    <Style TargetType="Path"
-                                           BasedOn="{StaticResource LibraryPopupMenuCheckIcon}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Status}"
-                                                         Value="{x:Static persistence:WatchStatus.Dropped}">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Path.Style>
-                            </Path>
-                        </Grid>
+                            <Path Style="{StaticResource PopupMenuChevronIcon}"/>
+                        </StackPanel>
                     </Button>
                     <Border Height="1"
                             Margin="8,4"

@@ -233,21 +233,18 @@ The right-click menu should include full classification controls as a secondary 
 Recommended options:
 
 - `Favorite` or `Unfavorite`
-- `Mark as Watching`
-- `Mark as Unsorted`
-- `Mark as Completed`
-- `Mark as Dropped`
+- `Status >`
 
 This should coexist with existing card actions such as thumbnail operations and library management actions.
 
-For v1, these classification actions should be shown directly in the top-level menu rather than hidden behind a `Move to category` submenu.
+If the card already exposes an inline status chip or status button, the right-click menu may collapse the four watch-status values into a single `Status` submenu.
 
 Reasoning:
 
-- there are only four watch-status choices
-- classification is a high-frequency action
-- one fewer hover step makes the menu feel faster and more direct
-- flat actions better communicate that classification is a first-class library behavior
+- the card surface already provides the fast primary path
+- the right-click menu remains complete without becoming too tall
+- desktop users still retain a full secondary path for status editing
+- this avoids duplicating too many top-level actions in one menu
 
 `Favorite` / `Unfavorite` should remain a separate action in the same classification group, because it is an independent flag rather than one of the watch-status values.
 
@@ -264,14 +261,11 @@ Recommended grouping:
 Recommended top-level order:
 
 1. `Favorite` or `Unfavorite`
-2. `Mark as Watching`
-3. `Mark as Unsorted`
-4. `Mark as Completed`
-5. `Mark as Dropped`
-6. separator
-7. library-management actions
-8. separator
-9. thumbnail-generation actions
+2. `Status >`
+3. separator
+4. library-management actions
+5. separator
+6. thumbnail-generation actions
 
 This improves discoverability because classification becomes a first-class library behavior rather than a hidden side capability.
 

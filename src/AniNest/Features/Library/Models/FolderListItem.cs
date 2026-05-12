@@ -35,4 +35,27 @@ public partial class FolderListItem : ObservableObject
 
     [ObservableProperty]
     private bool _isFavorite;
+
+    public int StatusMenuSelectedIndex => Status switch
+    {
+        WatchStatus.Watching => 0,
+        WatchStatus.Unsorted => 1,
+        WatchStatus.Completed => 2,
+        WatchStatus.Dropped => 3,
+        _ => -1,
+    };
+
+    public bool IsStatusWatching => Status == WatchStatus.Watching;
+    public bool IsStatusUnsorted => Status == WatchStatus.Unsorted;
+    public bool IsStatusCompleted => Status == WatchStatus.Completed;
+    public bool IsStatusDropped => Status == WatchStatus.Dropped;
+
+    partial void OnStatusChanged(WatchStatus value)
+    {
+        OnPropertyChanged(nameof(StatusMenuSelectedIndex));
+        OnPropertyChanged(nameof(IsStatusWatching));
+        OnPropertyChanged(nameof(IsStatusUnsorted));
+        OnPropertyChanged(nameof(IsStatusCompleted));
+        OnPropertyChanged(nameof(IsStatusDropped));
+    }
 }

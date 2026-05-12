@@ -9,8 +9,10 @@ using AniNest.Features.Library.Models;
 using AniNest.Infrastructure.Diagnostics;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Persistence;
+using AniNest.Presentation.Animations;
 using AniNest.Presentation.Behaviors;
 using AniNest.Presentation.Overlays;
+using Point = System.Windows.Point;
 namespace AniNest.Features.Library;
 
 public partial class MainPage : System.Windows.Controls.UserControl
@@ -33,8 +35,13 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     private void OnInitialized(object? sender, EventArgs e)
     {
+        CardStatusMenuOverlay.Closed += OnCardStatusMenuClosed;
+        CardStatusMenuOverlay.Opening += OnCardStatusMenuOpening;
+        CardStatusMenuOverlay.Opened += OnCardStatusMenuOpened;
+        CardStatusMenuOverlay.Closing += OnCardStatusMenuClosing;
         CardContextMenuOverlay.Closed += OnCardContextMenuClosed;
         ThumbnailActionsOverlay.Closed += OnThumbnailActionsOverlayClosed;
+        CardStatusOptionGroup.IsSelectionHighlightActive = false;
         RegisterOverlayRegions();
     }
 
@@ -128,6 +135,11 @@ public partial class MainPage : System.Windows.Controls.UserControl
             return;
 
         OverlayCoordinator.Instance.RegisterRegion(border, OverlayOutsideHitKind.ContentInteractive);
+        if (CardStatusMenuOverlay.IsOpen)
+            CardStatusMenuOverlay.Close(OverlayCloseReason.ChainSwitch);
+
+        if (ThumbnailActionsOverlay.IsOpen)
+            ThumbnailActionsOverlay.Close(OverlayCloseReason.ChainSwitch);
 
         Log.Debug(
             $"OnCardPreviewMouseRightButtonUp: name={item.Name} handled={e.Handled} " +
@@ -172,8 +184,43 @@ public partial class MainPage : System.Windows.Controls.UserControl
             $"ThumbnailActionsMenuButton_Click: item={_overlayItem?.Name ?? "null"} " +
             $"submenuOpen={ThumbnailActionsOverlay.IsOpen}");
 
+        if (CardStatusMenuOverlay.IsOpen)
+            CardStatusMenuOverlay.Close(OverlayCloseReason.ChainSwitch);
+
         var opened = ThumbnailActionsOverlay.ToggleForAnchor(ThumbnailActionsMenuButton);
         Log.Debug($"ThumbnailActionsMenuButton_Click.Toggle: opened={opened}");
+    }
+
+    private void CardStatusButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || button.DataContext is not FolderListItem item)
+            return;
+
+        OverlayCoordinator.Instance.RegisterRegion(button, OverlayOutsideHitKind.ContentInteractive);
+        if (CardContextMenuOverlay.IsOpen || ThumbnailActionsOverlay.IsOpen)
+            CloseCardContextMenu(OverlayCloseReason.ChainSwitch);
+
+        Log.Debug(
+            $"CardStatusButton_Click: name={item.Name} status={item.Status} " +
+            $"overlayOpen={CardStatusMenuOverlay.IsOpen} overlayItem={_overlayItem?.Name ?? "null"}");
+
+        Dispatcher.BeginInvoke(new Action(() => OpenCardStatusMenu(button, item, openAsSubmenu: false)), DispatcherPriority.Input);
+    }
+
+    private void CardStatusMenuButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || button.DataContext is not FolderListItem item)
+            return;
+
+        OverlayCoordinator.Instance.RegisterRegion(button, OverlayOutsideHitKind.ContentInteractive);
+        if (ThumbnailActionsOverlay.IsOpen)
+            ThumbnailActionsOverlay.Close(OverlayCloseReason.ChainSwitch);
+
+        Log.Debug(
+            $"CardStatusMenuButton_Click: name={item.Name} status={item.Status} " +
+            $"overlayOpen={CardStatusMenuOverlay.IsOpen} overlayItem={_overlayItem?.Name ?? "null"}");
+
+        Dispatcher.BeginInvoke(new Action(() => OpenCardStatusMenu(button, item, openAsSubmenu: true)), DispatcherPriority.Input);
     }
 
     private async void MarkWatchingMenuItem_Click(object sender, RoutedEventArgs e)
@@ -198,7 +245,7 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     private void OnLibraryScrollChanged(object sender, ScrollChangedEventArgs e)
     {
-        if (CardContextMenuOverlay.IsOpen)
+        if (CardContextMenuOverlay.IsOpen || CardStatusMenuOverlay.IsOpen)
         {
             Log.Debug(
                 $"OnLibraryScrollChanged: h={e.HorizontalOffset:F1} v={e.VerticalOffset:F1} " +
@@ -222,11 +269,44 @@ public partial class MainPage : System.Windows.Controls.UserControl
 
     private void CloseCardContextMenuChildOverlays(OverlayCloseReason reason)
     {
+        if (CardStatusMenuOverlay.IsOpen)
+        {
+            Log.Debug($"CloseCardStatusMenu: reason={reason}");
+            CardStatusMenuOverlay.Close(reason);
+        }
+
         if (!ThumbnailActionsOverlay.IsOpen)
             return;
 
         Log.Debug($"CloseCardContextMenuChildOverlays: reason={reason}");
         ThumbnailActionsOverlay.Close(reason);
+    }
+
+    private void OnCardStatusMenuClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
+    {
+        Log.Debug($"OnCardStatusMenuClosed: reason={e.Reason} overlayItem={_overlayItem?.Name ?? "null"}");
+        CardStatusOptionGroup.IsSelectionHighlightActive = false;
+        CardStatusMenuOverlay.DataContext = null;
+        _overlayItem = null;
+    }
+
+    private void OnCardStatusMenuOpening(object? sender, EventArgs e)
+    {
+        CardStatusOptionGroup.IsSelectionHighlightActive = false;
+    }
+
+    private void OnCardStatusMenuOpened(object? sender, EventArgs e)
+    {
+        CardStatusOptionGroup.IsSelectionHighlightActive = true;
+        SelectionHighlightAnimation.InvalidateDescendants(CardStatusOptionGroup);
+        Dispatcher.BeginInvoke(
+            new Action(() => SelectionHighlightAnimation.InvalidateDescendants(CardStatusOptionGroup)),
+            DispatcherPriority.Loaded);
+    }
+
+    private void OnCardStatusMenuClosing(object? sender, EventArgs e)
+    {
+        CardStatusOptionGroup.IsSelectionHighlightActive = false;
     }
 
     private void OnCardContextMenuClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
@@ -248,8 +328,41 @@ public partial class MainPage : System.Windows.Controls.UserControl
             return;
 
         Log.Debug($"ExecuteFolderStatusChangeAsync: name={item.Name} status={status}");
-        CloseCardContextMenu(OverlayCloseReason.Programmatic);
         await _viewModel.SetFolderWatchStatusAsync(item, status);
+    }
+
+    private void OpenCardStatusMenu(FrameworkElement anchor, FolderListItem item, bool openAsSubmenu)
+    {
+        ConfigureCardStatusMenuOverlay(openAsSubmenu);
+        CardStatusMenuOverlay.DataContext = item;
+        var opened = CardStatusMenuOverlay.ToggleForAnchor(anchor);
+        if (opened)
+        {
+            _overlayItem = item;
+            return;
+        }
+
+        CardStatusMenuOverlay.DataContext = null;
+        _overlayItem = null;
+    }
+
+    private void ConfigureCardStatusMenuOverlay(bool openAsSubmenu)
+    {
+        if (openAsSubmenu)
+        {
+            CardStatusMenuOverlay.Placement = OverlayPlacement.RightTop;
+            CardStatusMenuOverlay.HorizontalOffset = TryFindResource("SubmenuPopupHorizontalOffset") is double horizontal
+                ? horizontal
+                : 2d;
+            CardStatusMenuOverlay.VerticalOffset = 0;
+            CardStatusMenuOverlay.AnimationOrigin = new Point(0, 0);
+            return;
+        }
+
+        CardStatusMenuOverlay.Placement = OverlayPlacement.TopCenter;
+        CardStatusMenuOverlay.HorizontalOffset = 0;
+        CardStatusMenuOverlay.VerticalOffset = 12;
+        CardStatusMenuOverlay.AnimationOrigin = new Point(0.5, 1);
     }
 
     private static string DescribeSource(DependencyObject? source)
@@ -266,7 +379,5 @@ public partial class MainPage : System.Windows.Controls.UserControl
         return source.GetType().Name;
     }
 }
-
-
 
 

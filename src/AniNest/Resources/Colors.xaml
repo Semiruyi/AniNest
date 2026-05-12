@@ -25,6 +25,10 @@
     <SolidColorBrush x:Key="LibraryFilterBarItemHover" Color="#1FFFFFFF"/>
     <SolidColorBrush x:Key="LibraryFilterBarItemSelected" Color="{StaticResource AccentBlueColor}"/>
     <SolidColorBrush x:Key="LibraryFavoriteColor" Color="#FFD7B24C"/>
+    <SolidColorBrush x:Key="LibraryStatusWatchingBackground" Color="#332D7DFF"/>
+    <SolidColorBrush x:Key="LibraryStatusUnsortedBackground" Color="#24FFFFFF"/>
+    <SolidColorBrush x:Key="LibraryStatusCompletedBackground" Color="#332E9E57"/>
+    <SolidColorBrush x:Key="LibraryStatusDroppedBackground" Color="#33D14B4B"/>
 
     <SolidColorBrush x:Key="IconSecondary" Color="#AAAAAA"/>
 

@@ -139,6 +139,23 @@ public class MainPageViewModelTests
         libraryService.Verify(service => service.SetFolderWatchStatusAsync("/folder", WatchStatus.Completed, It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Fact]
+    public async Task SetFolderWatchStatusCommand_DoesNothing_WhenStatusIsUnchanged()
+    {
+        var libraryService = new Mock<ILibraryAppService>();
+        var localization = CreateLocalizationService();
+        var viewModel = new MainPageViewModel(libraryService.Object, localization.Object);
+        viewModel.AddFolderItem("Folder", "/folder", 4, null);
+
+        await viewModel.SetFolderWatchStatusCommand.ExecuteAsync(
+            new FolderStatusChangeRequest(viewModel.FolderItems[0], WatchStatus.Unsorted));
+
+        viewModel.FolderItems[0].Status.Should().Be(WatchStatus.Unsorted);
+        libraryService.Verify(
+            service => service.SetFolderWatchStatusAsync("/folder", It.IsAny<WatchStatus>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
     private static Mock<ILocalizationService> CreateLocalizationService()
     {
         var localization = new Mock<ILocalizationService>();
