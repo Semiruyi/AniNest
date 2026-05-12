@@ -69,6 +69,28 @@
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
+    <Style x:Key="LibraryCardTitleText" TargetType="TextBlock" BasedOn="{StaticResource AppTextSectionTitle}">
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    </Style>
+
+    <Style x:Key="LibraryCardStatusText" TargetType="TextBlock" BasedOn="{StaticResource AppTextCaption}">
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    </Style>
+
+    <Style x:Key="LibraryCardSummaryText" TargetType="TextBlock" BasedOn="{StaticResource AppTextCardSummary}">
+        <Setter Property="Foreground" Value="{StaticResource LibraryCardInfoSecondaryText}"/>
+    </Style>
+
+    <Style x:Key="LibraryCardSummaryAccentText" TargetType="TextBlock" BasedOn="{StaticResource LibraryCardSummaryText}">
+        <Setter Property="Foreground" Value="{StaticResource AccentBlue}"/>
+    </Style>
+
+    <Style x:Key="LibraryCardSummaryMutedText" TargetType="TextBlock" BasedOn="{StaticResource LibraryCardSummaryText}">
+        <Setter Property="Foreground" Value="{StaticResource LibraryCardInfoMutedText}"/>
+    </Style>
+
     <Style x:Key="AppTooltipText" TargetType="ToolTip">
         <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
         <Setter Property="FontSize" Value="{StaticResource AppFontSizeBody}"/>

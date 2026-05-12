@@ -31,7 +31,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Grid x:Name="VideoContainer" Grid.Row="0" Grid.Column="0" Background="Black">
+        <Grid x:Name="VideoContainer" Grid.Row="0" Grid.Column="0" Background="{StaticResource PlayerVideoSurfaceBackground}">
             <Image x:Name="VideoImage" Stretch="Uniform" Source="{Binding VideoSource}"/>
             <Image x:Name="PauseBigIcon"
                    Source="/Resources/Icons/pause-big.png"
@@ -63,7 +63,7 @@
                 <Grid Margin="{StaticResource PlaylistHeaderMargin}">
                     <TextBlock Text="{Binding DataContext.Localization[Player.Playlist], RelativeSource={RelativeSource AncestorType=UserControl}}"
                                Style="{StaticResource AppTextPanelTitle}"
-                               Foreground="White"
+                               Foreground="{StaticResource TextPrimary}"
                                VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding EpisodeCountText, FallbackValue=''}"
                                Style="{StaticResource AppTextBody}"
@@ -97,7 +97,7 @@
                                            VerticalAlignment="Center">
                                     <TextBlock.ToolTip>
                                         <ToolTip Style="{StaticResource AppPanelToolTip}">
-                                            <TextBlock Text="{Binding Title}" MaxWidth="220"
+                                            <TextBlock Text="{Binding Title}" MaxWidth="{StaticResource PlayerEpisodeToolTipMaxWidth}"
                                                        Style="{StaticResource AppTextBody}"
                                                        TextTrimming="CharacterEllipsis"/>
                                         </ToolTip>

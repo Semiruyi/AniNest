@@ -30,7 +30,7 @@
 
     <Grid x:Name="RootGrid">
         <ScrollViewer x:Name="LibraryScrollViewer"
-                      Background="Transparent"
+                      Background="{StaticResource TransparentBrush}"
                       VerticalScrollBarVisibility="Auto"
                       ScrollChanged="OnLibraryScrollChanged">
             <StackPanel Margin="{StaticResource LibraryPageMargin}">
@@ -79,50 +79,21 @@
                             <StackPanel Margin="{StaticResource FolderCardMargin}"
                                         HorizontalAlignment="Center">
                                 <Border x:Name="CardBorder"
-                                        Style="{StaticResource AppCardSurfaceBorder}"
-                                        Width="{StaticResource FolderCardWidth}"
-                                        Height="{StaticResource FolderCardHeight}"
-                                        Cursor="Hand"
+                                        Style="{StaticResource LibraryCardSurfaceBorder}"
                                         behaviors:MouseGestureBehavior.LeftClick="{Binding DataContext.SelectFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         behaviors:MouseGestureBehavior.CommandParameter="{Binding}"
-                                        animations:CardAnimation.Enabled="True"
-                                        animations:CardAnimation.HoverDurationMs="250"
-                                        animations:CardAnimation.PressDipMs="100"
-                                        animations:CardAnimation.PressRecoverMs="350"
-                                        animations:CardAnimation.CoverScale="1.12"
-                                        animations:CardAnimation.CoverShiftY="-8"
-                                        animations:CardAnimation.CoverDurationMs="400"
-                                        behaviors:HoverRevealBehavior.IsEnabled="True"
-                                        behaviors:HoverRevealBehavior.HideDelayMs="120"
-                                        behaviors:HoverRevealBehavior.MinVisibleMs="220"
                                         PreviewMouseRightButtonUp="OnCardPreviewMouseRightButtonUp">
-                                    <Grid>
-                                        <Grid.Clip>
-                                            <RectangleGeometry RadiusX="10" RadiusY="10"
-                                                              Rect="0,0,190,253"/>
-                                        </Grid.Clip>
-
+                                    <Grid Style="{StaticResource LibraryCardClipRootGrid}">
                                         <Image Stretch="UniformToFill"
                                                Source="{Binding CoverPath, Converter={StaticResource CoverImageSource}}"
                                                Visibility="{Binding CoverPath, Converter={StaticResource NullToVis}}"/>
 
                                         <Rectangle Fill="{StaticResource LibraryCardPlaceholderBackground}"
                                                    Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
-                                        <TextBlock Text="&#x1F3AC;"
-                                                   Style="{StaticResource AppTextIconPlaceholder}"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        <TextBlock Style="{StaticResource LibraryCardPlaceholderIconText}"
                                                    Visibility="{Binding CoverPath, Converter={StaticResource NullToHidden}}"/>
 
-                                        <Grid
-                                              HorizontalAlignment="Right"
-                                              VerticalAlignment="Top"
-                                              Margin="{StaticResource LibraryCardFavoriteButtonMargin}"
-                                              Panel.ZIndex="10"
-                                              Width="{StaticResource LibraryCardFavoriteButtonSize}"
-                                              Height="{StaticResource LibraryCardFavoriteButtonSize}"
-                                              animations:ScaleFadeVisibilityAnimator.IsEnabled="True"
-                                              animations:ScaleFadeVisibilityAnimator.Preset="Compact"
-                                              animations:ScaleFadeVisibilityAnimator.CollapseWhenInactive="False"
+                                        <Grid Style="{StaticResource LibraryCardFavoriteHost}"
                                               animations:ScaleFadeVisibilityAnimator.IsActive="{Binding ElementName=CardBorder, Path=(behaviors:HoverRevealBehavior.IsRevealActive)}">
                                             <Button Style="{StaticResource LibraryCardFavoriteButton}"
                                                     Command="{Binding DataContext.ToggleFolderFavoriteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -130,59 +101,37 @@
                                         </Grid>
 
                                         <Border x:Name="CardInfoRoot"
-                                                VerticalAlignment="Bottom"
-                                                Height="{StaticResource FolderCardGradientHeight}"
-                                                Padding="{StaticResource LibraryCardInfoPadding}">
-                                            <Border.Background>
-                                                <StaticResource ResourceKey="SurfaceOverlayDarkGradient"/>
-                                            </Border.Background>
-                                            <Grid Margin="{StaticResource CardInfoMargin}">
+                                                Style="{StaticResource LibraryCardInfoOverlayBorder}">
+                                            <Grid Style="{StaticResource LibraryCardInfoLayoutGrid}">
                                                 <Grid.RowDefinitions>
                                                     <RowDefinition Height="Auto"/>
                                                     <RowDefinition Height="Auto"/>
                                                     <RowDefinition Height="Auto"/>
                                                 </Grid.RowDefinitions>
                                                 <TextBlock Text="{Binding Name}"
-                                                           Style="{StaticResource AppTextSectionTitle}"
-                                                           Foreground="White"
-                                                           TextTrimming="CharacterEllipsis"/>
+                                                           Style="{StaticResource LibraryCardTitleText}"/>
                                                 <StackPanel Grid.Row="1"
-                                                            Orientation="Horizontal"
-                                                            Margin="{StaticResource LibraryCardSummaryRowMargin}">
+                                                            Style="{StaticResource LibraryCardSummaryRowPanel}">
                                                     <TextBlock Text="{Binding DataContext.PlayedSummaryPrefix, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                               Style="{StaticResource AppTextCardSummary}"
-                                                               Foreground="{StaticResource LibraryCardInfoSecondaryText}"/>
+                                                               Style="{StaticResource LibraryCardSummaryText}"/>
                                                     <TextBlock Text="{Binding PlayedCount}"
-                                                               Style="{StaticResource AppTextCardSummary}"
-                                                               Foreground="{StaticResource AccentBlue}"/>
+                                                               Style="{StaticResource LibraryCardSummaryAccentText}"/>
                                                     <TextBlock Text=" / "
-                                                               Style="{StaticResource AppTextCardSummary}"
-                                                               Foreground="{StaticResource LibraryCardInfoSecondaryText}"/>
+                                                               Style="{StaticResource LibraryCardSummaryText}"/>
                                                     <TextBlock Text="{Binding DataContext.PlayedSummaryTotal, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                               Style="{StaticResource AppTextCardSummary}"
-                                                               Foreground="{StaticResource LibraryCardInfoSecondaryText}"/>
+                                                               Style="{StaticResource LibraryCardSummaryText}"/>
                                                     <TextBlock Text="{Binding VideoCount}"
-                                                               Style="{StaticResource AppTextCardSummary}"
-                                                               Foreground="{StaticResource LibraryCardInfoMutedText}"/>
+                                                               Style="{StaticResource LibraryCardSummaryMutedText}"/>
                                                     <TextBlock Text="{Binding DataContext.PlayedSummarySuffix, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                               Style="{StaticResource AppTextCardSummary}"
-                                                               Foreground="{StaticResource LibraryCardInfoSecondaryText}"/>
+                                                               Style="{StaticResource LibraryCardSummaryText}"/>
                                                 </StackPanel>
                                                 <Grid Grid.Row="3"
-                                                      Margin="{StaticResource LibraryCardProgressMargin}"
-                                                      Height="14"
-                                                      Background="Transparent">
-                                                    <Border Height="3"
-                                                            VerticalAlignment="Center"
-                                                            Background="{StaticResource LibraryCardProgressTrack}"
-                                                            CornerRadius="1.5"/>
+                                                      Style="{StaticResource LibraryCardProgressContainer}">
+                                                    <Border Style="{StaticResource LibraryCardProgressTrackBorder}"/>
                                                     <Grid HorizontalAlignment="Left"
                                                           Width="{Binding PlayedPercent, Converter={StaticResource PercentToWidthConverter}, ConverterParameter=166}"
                                                           ClipToBounds="True">
-                                                        <Border Height="3"
-                                                                VerticalAlignment="Center"
-                                                                Background="{StaticResource AccentBlue}"
-                                                                CornerRadius="1.5"/>
+                                                        <Border Style="{StaticResource LibraryCardProgressFillBorder}"/>
                                                     </Grid>
                                                 </Grid>
                                             </Grid>
@@ -194,10 +143,9 @@
                                         Margin="{StaticResource LibraryCardStatusButtonMargin}"
                                         HorizontalAlignment="Center"
                                         Click="CardStatusButton_Click">
-                                    <TextBlock VerticalAlignment="Center"
-                                               TextTrimming="CharacterEllipsis">
+                                    <TextBlock>
                                         <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource LibraryCardStatusText}">
                                                 <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Unsorted], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding Status}" Value="{x:Static persistence:WatchStatus.Watching}">
@@ -242,25 +190,25 @@
                                 animations:SelectableOptionState.IsSelected="{Binding IsStatusWatching}"
                                 Click="MarkWatchingMenuItem_Click">
                             <TextBlock Text="{Binding DataContext.Localization[Library.MarkAsWatching], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                       VerticalAlignment="Center"/>
+                                       Style="{StaticResource PopupMenuItemText}"/>
                         </Button>
                         <Button Style="{StaticResource SelectableOptionMenuButton}"
                                 animations:SelectableOptionState.IsSelected="{Binding IsStatusUnsorted}"
                                 Click="MarkUnsortedMenuItem_Click">
                             <TextBlock Text="{Binding DataContext.Localization[Library.MarkAsUnsorted], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                       VerticalAlignment="Center"/>
+                                       Style="{StaticResource PopupMenuItemText}"/>
                         </Button>
                         <Button Style="{StaticResource SelectableOptionMenuButton}"
                                 animations:SelectableOptionState.IsSelected="{Binding IsStatusCompleted}"
                                 Click="MarkCompletedMenuItem_Click">
                             <TextBlock Text="{Binding DataContext.Localization[Library.MarkAsCompleted], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                       VerticalAlignment="Center"/>
+                                       Style="{StaticResource PopupMenuItemText}"/>
                         </Button>
                         <Button Style="{StaticResource SelectableOptionMenuButton}"
                                 animations:SelectableOptionState.IsSelected="{Binding IsStatusDropped}"
                                 Click="MarkDroppedMenuItem_Click">
                             <TextBlock Text="{Binding DataContext.Localization[Library.MarkAsDropped], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                       VerticalAlignment="Center"/>
+                                       Style="{StaticResource PopupMenuItemText}"/>
                         </Button>
                     </StackPanel>
                 </primitives:SelectableOptionGroup>
@@ -282,9 +230,9 @@
                             Command="{Binding DataContext.ToggleFolderFavoriteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             CommandParameter="{Binding DataContext, ElementName=CardContextMenuOverlay}"
                             Click="OnOverlayActionClick">
-                        <TextBlock VerticalAlignment="Center">
+                        <TextBlock>
                             <TextBlock.Style>
-                                <Style TargetType="TextBlock">
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource PopupMenuItemText}">
                                     <Setter Property="Text" Value="{Binding DataContext.Localization[Library.Favorite], RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsFavorite}" Value="True">
@@ -298,9 +246,9 @@
                     <Button x:Name="CardContextStatusMenuButton"
                             Style="{StaticResource LibraryPopupMenuSubmenuButton}"
                             Click="CardStatusMenuButton_Click">
-                        <StackPanel Orientation="Horizontal">
+                        <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
                             <TextBlock Text="{Binding DataContext.Localization[Library.Status], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                       VerticalAlignment="Center"/>
+                                       Style="{StaticResource PopupMenuItemText}"/>
                             <Path Style="{StaticResource PopupMenuChevronIcon}"/>
                         </StackPanel>
                     </Button>
@@ -313,22 +261,21 @@
                             IsEnabled="{Binding DataContext.CanMoveToFront, ElementName=CardContextMenuOverlay}"
                             Click="OnOverlayActionClick">
                         <TextBlock Text="{Binding DataContext.Localization[Library.MoveToFront], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                   VerticalAlignment="Center"/>
+                                   Style="{StaticResource PopupMenuItemText}"/>
                     </Button>
                     <Button Style="{StaticResource PopupMenuButton}"
                             Command="{Binding DataContext.ClearFolderWatchHistoryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             CommandParameter="{Binding DataContext, ElementName=CardContextMenuOverlay}"
                             Click="OnOverlayActionClick">
                         <TextBlock Text="{Binding DataContext.Localization[Library.ClearWatchHistory], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                   VerticalAlignment="Center"/>
+                                   Style="{StaticResource PopupMenuItemText}"/>
                     </Button>
                     <Button Style="{StaticResource PopupMenuButton}"
                             Command="{Binding DataContext.DeleteFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             CommandParameter="{Binding DataContext, ElementName=CardContextMenuOverlay}"
                             Click="OnOverlayActionClick">
                         <TextBlock Text="{Binding DataContext.Localization[Library.RemoveFromLibrary], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                   Foreground="{StaticResource DangerForeground}"
-                                   VerticalAlignment="Center"/>
+                                   Style="{StaticResource PopupMenuDangerText}"/>
                     </Button>
                     <Border Height="1"
                             Margin="{StaticResource PopupMenuDividerMargin}"
@@ -336,9 +283,9 @@
                     <Button x:Name="ThumbnailActionsMenuButton"
                             Style="{StaticResource LibraryPopupMenuSubmenuButton}"
                             Click="ThumbnailActionsMenuButton_Click">
-                        <StackPanel Orientation="Horizontal">
+                        <StackPanel Style="{StaticResource PopupMenuHorizontalContentPanel}">
                             <TextBlock Text="{Binding DataContext.Localization[Library.Thumbnails], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                       VerticalAlignment="Center"/>
+                                       Style="{StaticResource PopupMenuItemText}"/>
                             <Path Style="{StaticResource PopupMenuChevronIcon}"/>
                         </StackPanel>
                     </Button>
@@ -362,21 +309,21 @@
                             CommandParameter="{Binding DataContext, ElementName=CardContextMenuOverlay}"
                             Click="OnOverlayActionClick">
                         <TextBlock Text="{Binding DataContext.Localization[Library.PrioritizeThumbnails], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                   VerticalAlignment="Center"/>
+                                   Style="{StaticResource PopupMenuItemText}"/>
                     </Button>
                     <Button Style="{StaticResource PopupMenuButton}"
                             Command="{Binding DataContext.RegenerateFolderThumbnailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             CommandParameter="{Binding DataContext, ElementName=CardContextMenuOverlay}"
                             Click="OnOverlayActionClick">
                         <TextBlock Text="{Binding DataContext.Localization[Library.RegenerateThumbnails], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                   VerticalAlignment="Center"/>
+                                   Style="{StaticResource PopupMenuItemText}"/>
                     </Button>
                     <Button Style="{StaticResource PopupMenuButton}"
                             Command="{Binding DataContext.ClearFolderThumbnailCacheCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             CommandParameter="{Binding DataContext, ElementName=CardContextMenuOverlay}"
                             Click="OnOverlayActionClick">
                         <TextBlock Text="{Binding DataContext.Localization[Library.ClearThumbnailCache], RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                   VerticalAlignment="Center"/>
+                                   Style="{StaticResource PopupMenuItemText}"/>
                     </Button>
                 </StackPanel>
             </Border>

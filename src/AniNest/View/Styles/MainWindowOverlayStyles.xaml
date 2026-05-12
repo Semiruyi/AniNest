@@ -19,6 +19,96 @@
                 Value="True"/>
     </Style>
 
+    <Style x:Key="PopupMenuPanel"
+           TargetType="StackPanel">
+        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
+                Value="True"/>
+    </Style>
+
+    <Style x:Key="PopupMenuButtonHost"
+           TargetType="Grid">
+        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
+                Value="True"/>
+    </Style>
+
+    <Style x:Key="PopupMenuOptionGroupHost"
+           TargetType="Grid">
+        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
+                Value="True"/>
+    </Style>
+
+    <Style x:Key="PopupMenuOptionListPanel"
+           TargetType="StackPanel">
+        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
+                Value="True"/>
+    </Style>
+
+    <Style x:Key="PopupMenuHorizontalContentPanel"
+           TargetType="StackPanel">
+        <Setter Property="Orientation" Value="Horizontal"/>
+    </Style>
+
+    <Style x:Key="PopupMenuItemText"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource AppTextBody}">
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="PopupMenuDangerText"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource PopupMenuItemText}">
+        <Setter Property="Foreground" Value="{StaticResource DangerForeground}"/>
+    </Style>
+
+    <Style x:Key="PlayerInputOverlayLayoutGrid"
+           TargetType="Grid">
+        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
+                Value="True"/>
+    </Style>
+
+    <Style x:Key="PlayerInputBindingRowGrid"
+           TargetType="Grid">
+        <Setter Property="Margin" Value="{StaticResource PlayerInputRowMargin}"/>
+    </Style>
+
+    <Style x:Key="PlayerInputActionText"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource PopupMenuItemText}">
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="Margin" Value="{StaticResource PlayerInputActionTextMargin}"/>
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    </Style>
+
+    <Style x:Key="PlayerInputButtonText"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource PopupMenuItemText}"/>
+
+    <Style x:Key="PlayerInputBindingValueButton"
+           TargetType="Button"
+           BasedOn="{StaticResource PopupMenuButton}">
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="MinWidth" Value="{StaticResource PlayerInputBindingButtonMinWidth}"/>
+        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
+                Value="True"/>
+    </Style>
+
+    <Style x:Key="PlayerInputInlineActionButton"
+           TargetType="Button"
+           BasedOn="{StaticResource PopupMenuButton}">
+        <Setter Property="Margin" Value="{StaticResource PlayerInputInlineButtonMargin}"/>
+        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
+                Value="True"/>
+    </Style>
+
+    <Style x:Key="PlayerInputResetButton"
+           TargetType="Button"
+           BasedOn="{StaticResource PopupMenuButton}">
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="Margin" Value="{StaticResource PlayerInputResetButtonMargin}"/>
+        <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome"
+                Value="True"/>
+    </Style>
+
     <Style x:Key="PopupMenuOverlayBorder"
            TargetType="Border">
         <Setter Property="Background" Value="{StaticResource PopupMenuBackground}"/>
@@ -56,4 +146,12 @@
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
     </Style>
+
+    <Style x:Key="OverlaySectionTitleText"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource AppTextCaption}">
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+    </Style>
+
 </ResourceDictionary>

@@ -11,6 +11,8 @@
     <SolidColorBrush x:Key="NeutralGray" Color="{StaticResource NeutralGrayColor}"/>
     <Color x:Key="NeutralBlackColor">#FF000000</Color>
     <SolidColorBrush x:Key="NeutralBlack" Color="{StaticResource NeutralBlackColor}"/>
+    <Color x:Key="TransparentColor">#00000000</Color>
+    <SolidColorBrush x:Key="TransparentBrush" Color="{StaticResource TransparentColor}"/>
 
     <SolidColorBrush x:Key="BackgroundDark" Color="#FF1E1E1E"/>
     <SolidColorBrush x:Key="SurfaceOverlayDark" Color="#B8000000"/>
@@ -22,13 +24,17 @@
 
     <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFFFF"/>
     <SolidColorBrush x:Key="TextSecondary" Color="#AAFFFFFF"/>
+    <SolidColorBrush x:Key="TitleBarIconForeground" Color="#FFFFFFFF"/>
 
     <SolidColorBrush x:Key="PopupMenuBackground" Color="#E6282828"/>
     <SolidColorBrush x:Key="LibraryFilterBarBackground" Color="#B81A1A1A"/>
     <SolidColorBrush x:Key="LibraryFilterBarBorder" Color="#26FFFFFF"/>
     <SolidColorBrush x:Key="LibraryFilterBarItemHover" Color="#1FFFFFFF"/>
     <SolidColorBrush x:Key="LibraryFilterBarItemSelected" Color="{StaticResource AccentBlueColor}"/>
-    <SolidColorBrush x:Key="LibraryFavoriteColor" Color="#FFD7B24C"/>
+    <Color x:Key="LibraryFavoriteColorValue">#FFD7B24C</Color>
+    <SolidColorBrush x:Key="LibraryFavoriteColor" Color="{StaticResource LibraryFavoriteColorValue}"/>
+    <Color x:Key="LibraryFavoriteStrokeColorValue">#AAFFFFFF</Color>
+    <SolidColorBrush x:Key="LibraryFavoriteStrokeColor" Color="{StaticResource LibraryFavoriteStrokeColorValue}"/>
     <SolidColorBrush x:Key="LibraryCardPlaceholderBackground" Color="#FF252525"/>
     <SolidColorBrush x:Key="LibraryCardInfoSecondaryText" Color="#BFC7D5"/>
     <SolidColorBrush x:Key="LibraryCardInfoMutedText" Color="#8A93A3"/>
@@ -60,6 +66,7 @@
     <SolidColorBrush x:Key="PlayerPlaylistPanelBackground" Color="#FF1A1A1C"/>
     <SolidColorBrush x:Key="PlayerPlaylistPanelBorder" Color="#FF222224"/>
     <SolidColorBrush x:Key="PlayerPlaylistMetaForeground" Color="#FF8E8E93"/>
+    <SolidColorBrush x:Key="PlayerVideoSurfaceBackground" Color="{StaticResource NeutralBlackColor}"/>
     <SolidColorBrush x:Key="PlayerEpisodeForeground" Color="#FFEBEBF5"/>
     <Color x:Key="PlayerEpisodeBackgroundColor">#FF2C2C2E</Color>
     <SolidColorBrush x:Key="PlayerEpisodeBackground" Color="{StaticResource PlayerEpisodeBackgroundColor}"/>
@@ -71,7 +78,9 @@
     <SolidColorBrush x:Key="PlayerEpisodePlayedBackground" Color="{StaticResource PlayerEpisodePlayedBackgroundColor}"/>
     <SolidColorBrush x:Key="PlayerEpisodeThumbnailProgressBackground" Color="#FF48484A"/>
 
-    <SolidColorBrush x:Key="CloseButtonHover" Color="#E81123"/>
+    <Color x:Key="CloseButtonHoverColor">#E81123</Color>
+    <SolidColorBrush x:Key="CloseButtonHover" Color="{StaticResource CloseButtonHoverColor}"/>
+    <SolidColorBrush x:Key="TitleBarProgressTrack" Color="#33FFFFFF"/>
 
     <SolidColorBrush x:Key="ThumbnailPreviewTimeBackground" Color="#99000000"/>
 

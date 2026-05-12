@@ -28,7 +28,7 @@
                        Width="{StaticResource TitleBarAppIconSize}"
                        Height="{StaticResource TitleBarAppIconSize}"
                        VerticalAlignment="Center"
-                       Margin="0,0,8,0"
+                       Margin="{StaticResource TitleBarAppIconMargin}"
                        SnapsToDevicePixels="True"/>
                 <Grid x:Name="PrimaryActionHost"
                       Visibility="Visible">
@@ -64,28 +64,28 @@
                 <StackPanel Orientation="Horizontal"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
-                            Margin="0,0,46,0"
+                            Margin="{StaticResource TitleBarDragZoneRightMargin}"
                             shell:WindowChrome.IsHitTestVisibleInChrome="True">
                     <Border x:Name="BackgroundTaskHost"
                             Margin="{StaticResource TitleBarBackgroundTaskHostMargin}"
                             Padding="{StaticResource TitleBarBackgroundTaskHostPadding}"
-                            Background="Transparent"
+                            Background="{StaticResource TransparentBrush}"
                             BorderThickness="0"
                             behaviors:HoverPopupBehavior.Controller="{Binding ElementName=RootControl, Path=BackgroundTaskPopupController}"
                             behaviors:HoverPopupBehavior.Zone="Host"
                             shell:WindowChrome.IsHitTestVisibleInChrome="True">
                         <Grid>
-                            <Viewbox Width="16"
-                                     Height="16"
+                            <Viewbox Width="{StaticResource TitleBarProgressIndicatorSize}"
+                                     Height="{StaticResource TitleBarProgressIndicatorSize}"
                                      Stretch="Uniform"
                                      VerticalAlignment="Center">
-                                <Grid Width="20"
-                                      Height="20">
-                                    <Ellipse Stroke="#33FFFFFF"
-                                             StrokeThickness="3"/>
+                                <Grid Width="{StaticResource TitleBarProgressRingSize}"
+                                      Height="{StaticResource TitleBarProgressRingSize}">
+                                    <Ellipse Stroke="{StaticResource TitleBarProgressTrack}"
+                                             StrokeThickness="{StaticResource TitleBarProgressRingStroke}"/>
                                     <Path Data="{Binding ThumbnailGenerationProgressPercent, Converter={StaticResource ProgressToRingArcConverter}}"
                                           Stroke="{Binding ThumbnailGenerationStatusColor}"
-                                          StrokeThickness="3"
+                                          StrokeThickness="{StaticResource TitleBarProgressRingStroke}"
                                           StrokeStartLineCap="Round"
                                           StrokeEndLineCap="Round"/>
                                 </Grid>
@@ -101,7 +101,7 @@
                                               IsOpenAnimated="{Binding ElementName=RootControl, Path=IsBackgroundTaskPopupOpen}"
                                               OpenAnimationOrigin="0.5,0"
                                               HorizontalOffset="0"
-                                              VerticalOffset="8">
+                                              VerticalOffset="{StaticResource OverlayVerticalOffsetDefault}">
                         <Border x:Name="BackgroundTaskPopupContent"
                                 Style="{StaticResource PopupPanelBorder}"
                                 MinWidth="{StaticResource BackgroundTaskPopupMinWidth}"
@@ -113,31 +113,31 @@
                                            Style="{StaticResource AppTextPanelTitle}"
                                            Foreground="{StaticResource TextPrimary}"
                                            HorizontalAlignment="Center"
-                                           Margin="0,0,0,8"/>
-                                <Grid Margin="0,0,0,6">
+                                           Margin="{StaticResource TitleBarPopupSectionBottomMargin}"/>
+                                <Grid Margin="{StaticResource TitleBarPopupRowMargin}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <Ellipse Width="8"
-                                             Height="8"
+                                    <Ellipse Width="{StaticResource BackgroundTaskStatusDotSize}"
+                                             Height="{StaticResource BackgroundTaskStatusDotSize}"
                                              VerticalAlignment="Center"
                                              Fill="{Binding ThumbnailGenerationStatusColor}"/>
                                     <TextBlock Grid.Column="1"
                                                Style="{StaticResource AppTextBodyEmphasis}"
                                                Text="{Binding ThumbnailGenerationStatusText}"
-                                               Margin="8,0,0,0"
+                                               Margin="{StaticResource TitleBarPopupStatusMargin}"
                                                Foreground="{StaticResource TextPrimary}"/>
                                     <TextBlock Grid.Column="2"
                                                Style="{StaticResource AppTextBody}"
                                                Text="{Binding ThumbnailGenerationSummaryText}"
-                                               Margin="12,0,0,0"
+                                               Margin="{StaticResource TitleBarPopupSummaryMargin}"
                                                HorizontalAlignment="Right"
                                                Foreground="{StaticResource TextSecondary}"/>
                                 </Grid>
                                 <ProgressBar Value="{Binding ThumbnailGenerationProgressPercent}"
-                                             Margin="0,0,0,8">
+                                             Margin="{StaticResource TitleBarPopupProgressMargin}">
                                     <ProgressBar.Style>
                                         <Style TargetType="ProgressBar"
                                                BasedOn="{StaticResource AppProgressBarThin}">
@@ -155,11 +155,11 @@
                                 <TextBlock Text="{Binding ThumbnailBackgroundTasksHeaderText}"
                                            Style="{StaticResource AppTextBodyEmphasis}"
                                            Foreground="{StaticResource TextSecondary}"
-                                           Margin="0,0,0,6"/>
+                                           Margin="{StaticResource TitleBarPopupListHeaderMargin}"/>
                                 <ItemsControl ItemsSource="{Binding ThumbnailBackgroundTasks}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <StackPanel Margin="0,0,0,8">
+                                            <StackPanel Margin="{StaticResource TitleBarPopupListItemMargin}">
                                                 <TextBlock Text="{Binding FileName}"
                                                            Style="{StaticResource AppTextBody}"
                                                            Foreground="{StaticResource TextPrimary}"
@@ -169,7 +169,7 @@
                                                            MaxHeight="100"
                                                            TextWrapping="Wrap"
                                                            TextTrimming="CharacterEllipsis"
-                                                           Margin="0,0,0,4"/>
+                                                           Margin="{StaticResource TitleBarPopupFileNameMargin}"/>
                                                 <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}">
                                                     <ProgressBar.Style>
                                                         <Style TargetType="ProgressBar"
@@ -243,7 +243,7 @@
                     <Viewbox Width="{StaticResource TitleBarIconSize}"
                              Height="{StaticResource TitleBarIconSize}">
                         <Path Data="{StaticResource MinimizeIconGeometry}"
-                              Stroke="White"
+                              Stroke="{StaticResource TitleBarIconForeground}"
                               StrokeThickness="{StaticResource TitleBarIconStroke}"
                               StrokeEndLineCap="Round"/>
                     </Viewbox>
@@ -257,7 +257,7 @@
                     <Viewbox Width="{StaticResource TitleBarIconSize}"
                              Height="{StaticResource TitleBarIconSize}">
                         <Path Style="{StaticResource TitleBarMaximizeIconPath}"
-                              Stroke="White"
+                              Stroke="{StaticResource TitleBarIconForeground}"
                               StrokeThickness="{StaticResource TitleBarIconStroke}"
                               StrokeLineJoin="Round"/>
                     </Viewbox>
@@ -272,7 +272,7 @@
                     <Viewbox Width="{StaticResource TitleBarIconSize}"
                              Height="{StaticResource TitleBarIconSize}">
                         <Path Data="{StaticResource CloseIconGeometry}"
-                              Stroke="White"
+                              Stroke="{StaticResource TitleBarIconForeground}"
                               StrokeThickness="{StaticResource TitleBarIconStroke}"
                               StrokeEndLineCap="Round"
                               StrokeLineJoin="Round"/>

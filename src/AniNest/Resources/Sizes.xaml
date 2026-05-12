@@ -6,6 +6,7 @@
     <system:Double x:Key="WindowDefaultHeight">668</system:Double>
     <system:Double x:Key="WindowMinWidth">800</system:Double>
     <system:Double x:Key="WindowMinHeight">500</system:Double>
+    <Thickness x:Key="WindowResizeBorderThickness">6</Thickness>
 
     <system:Double x:Key="TitleBarHeight">40</system:Double>
     <system:Double x:Key="TitleBarButtonWidth">46</system:Double>
@@ -14,6 +15,9 @@
     <system:Double x:Key="TitleBarIconSize">13</system:Double>
     <system:Double x:Key="TitleBarIconStroke">1</system:Double>
     <system:Double x:Key="TitleBarTextOpacity">0.7</system:Double>
+    <system:Double x:Key="TitleBarProgressIndicatorSize">16</system:Double>
+    <system:Double x:Key="TitleBarProgressRingSize">20</system:Double>
+    <system:Double x:Key="TitleBarProgressRingStroke">3</system:Double>
 
     <system:Double x:Key="IconSizeSmall">14</system:Double>
     <system:Double x:Key="IconSizeNormal">16</system:Double>
@@ -57,12 +61,16 @@
 
     <system:Double x:Key="PauseBigIconSize">80</system:Double>
     <system:Double x:Key="CheckIconSize">20</system:Double>
+    <system:Double x:Key="LibraryCardFavoriteIconSize">14</system:Double>
 
     <system:Double x:Key="ScrollbarThumbWidth">4</system:Double>
 
     <system:Double x:Key="FolderCardWidth">190</system:Double>
     <system:Double x:Key="FolderCardHeight">253</system:Double>
+    <system:Double x:Key="LibraryCardClipRadius">10</system:Double>
+    <Rect x:Key="LibraryCardClipRect">0,0,190,253</Rect>
     <system:Double x:Key="FolderCardGradientHeight">105</system:Double>
+    <system:Double x:Key="LibraryCardProgressContainerHeight">14</system:Double>
     <system:Double x:Key="LibraryCardFavoriteButtonSize">28</system:Double>
     <system:Double x:Key="LibraryCardStatusButtonHeight">25</system:Double>
     <system:Double x:Key="LibraryCardStatusButtonMinWidth">60</system:Double>
@@ -81,8 +89,18 @@
     <system:Double x:Key="BackgroundTaskPopupMinWidth">120</system:Double>
     <system:Double x:Key="BackgroundTaskPopupMaxWidth">320</system:Double>
     <system:Double x:Key="TitleBarToolTipMaxWidth">560</system:Double>
+    <system:Double x:Key="ThumbnailPerformancePopupMinWidth">220</system:Double>
+    <system:Double x:Key="ThumbnailAccelerationPopupMinWidth">320</system:Double>
     <system:Double x:Key="PlayerInputPopupMinWidth">420</system:Double>
+    <system:Double x:Key="PlayerInputScrollMaxHeight">380</system:Double>
+    <GridLength x:Key="PlayerInputActionColumnWidth">150</GridLength>
+    <system:Double x:Key="PlayerInputBindingButtonMinWidth">140</system:Double>
+    <system:Double x:Key="PlayerEpisodeToolTipMaxWidth">220</system:Double>
     <system:Double x:Key="SubmenuChevronWidth">8</system:Double>
     <system:Double x:Key="SubmenuChevronHeight">8</system:Double>
+    <system:Double x:Key="BackgroundTaskStatusDotSize">8</system:Double>
+    <system:Double x:Key="OverlayVerticalOffsetCompact">4</system:Double>
+    <system:Double x:Key="OverlayVerticalOffsetDefault">8</system:Double>
+    <system:Double x:Key="OverlayVerticalOffsetProminent">12</system:Double>
 
 </ResourceDictionary>

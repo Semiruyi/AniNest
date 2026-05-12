@@ -188,7 +188,7 @@
                                   InteractionPreset="ToolPanelLike"
                                   Placement="TopCenter"
                                   ConstrainToHostBounds="False"
-                                  VerticalOffset="12"
+                                  VerticalOffset="{StaticResource OverlayVerticalOffsetProminent}"
                                   AnimationOrigin="0.5,1"
                                   Panel.ZIndex="1000">
             <Border Style="{StaticResource PopupMenuOverlayBorder}"
