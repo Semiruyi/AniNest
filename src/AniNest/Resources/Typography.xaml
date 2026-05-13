@@ -70,8 +70,13 @@
     </Style>
 
     <Style x:Key="LibraryCardTitleText" TargetType="TextBlock" BasedOn="{StaticResource AppTextSectionTitle}">
+        <Setter Property="FontSize" Value="{StaticResource AppFontSizeBodyStrong}"/>
+        <Setter Property="FontWeight" Value="Medium"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        <Setter Property="LineStackingStrategy" Value="BlockLineHeight"/>
+        <Setter Property="LineHeight" Value="18"/>
     </Style>
 
     <Style x:Key="LibraryCardStatusText" TargetType="TextBlock" BasedOn="{StaticResource AppTextBody}">

@@ -252,22 +252,6 @@ public partial class MainPage : System.Windows.Controls.UserControl
         Log.Debug($"ThumbnailActionsMenuButton_Click.Toggle: opened={opened}");
     }
 
-    private void CardStatusButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not Button button || button.DataContext is not FolderListItem item)
-            return;
-
-        OverlayCoordinator.Instance.RegisterRegion(button, OverlayOutsideHitKind.ContentInteractive);
-        if (CardContextMenuOverlay.IsOpen || ThumbnailActionsOverlay.IsOpen)
-            CloseCardContextMenu(OverlayCloseReason.ChainSwitch);
-
-        Log.Debug(
-            $"CardStatusButton_Click: name={item.Name} status={item.Status} " +
-            $"overlayOpen={CardStatusMenuOverlay.IsOpen} overlayItem={_overlayItem?.Name ?? "null"}");
-
-        Dispatcher.BeginInvoke(new Action(() => OpenCardStatusMenu(button, item, openAsSubmenu: false)), DispatcherPriority.Input);
-    }
-
     private void CardStatusMenuButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button button || button.DataContext is not FolderListItem item)
@@ -427,13 +411,6 @@ public partial class MainPage : System.Windows.Controls.UserControl
             CardStatusMenuOverlay.AnimationOrigin = new Point(0, 0);
             return;
         }
-
-        CardStatusMenuOverlay.Placement = OverlayPlacement.TopCenter;
-        CardStatusMenuOverlay.HorizontalOffset = 0;
-        CardStatusMenuOverlay.VerticalOffset = TryFindResource("LibraryCardStatusStandaloneVerticalOffset") is double vertical
-            ? vertical
-            : 0d;
-        CardStatusMenuOverlay.AnimationOrigin = new Point(0.5, 1);
     }
 
     private static T? FindNamedDescendant<T>(DependencyObject root, string name) where T : FrameworkElement

@@ -12,13 +12,6 @@
                 <ContentControl Content="{Binding}"
                                 ContentTemplate="{StaticResource LibraryFolderCardVisualTemplate}"
                                 PreviewMouseRightButtonUp="OnCardPreviewMouseRightButtonUp"/>
-                <Button x:Name="CardStatusButton"
-                        Style="{StaticResource LibraryCardStatusButton}"
-                        Margin="{StaticResource LibraryCardStatusButtonMargin}"
-                        HorizontalAlignment="Center"
-                        Click="CardStatusButton_Click">
-                    <TextBlock Style="{StaticResource LibraryCardStatusLocalizedText}"/>
-                </Button>
             </StackPanel>
         </DataTemplate>
     </UserControl.Resources>

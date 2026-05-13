@@ -202,12 +202,13 @@
                 <Border Style="{StaticResource LibraryCardInfoOverlayBorder}">
                     <Grid Style="{StaticResource LibraryCardInfoLayoutGrid}">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="36"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <TextBlock Text="{Binding Name}"
-                                   Style="{StaticResource LibraryCardTitleText}"/>
+                                   Style="{StaticResource LibraryCardTitleText}"
+                                   VerticalAlignment="Center"/>
                         <StackPanel Grid.Row="1"
                                     Style="{StaticResource LibraryCardSummaryRowPanel}">
                             <TextBlock Text="{Binding DataContext.PlayedSummaryPrefix, RelativeSource={RelativeSource AncestorType=UserControl}}"

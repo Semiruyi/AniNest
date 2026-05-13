@@ -6,7 +6,7 @@
     <Style x:Key="LibraryCardFavoriteButton" TargetType="Button" BasedOn="{StaticResource AnimatedCompactIconButton}">
         <Setter Property="Width" Value="{StaticResource LibraryCardFavoriteButtonSize}"/>
         <Setter Property="Height" Value="{StaticResource LibraryCardFavoriteButtonSize}"/>
-        <Setter Property="Opacity" Value="1"/>
+        <Setter Property="Opacity" Value="0.84"/>
         <Setter Property="Background" Value="{StaticResource SurfaceOverlayDark}"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -18,7 +18,8 @@
                         <Grid.RenderTransform>
                             <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
                         </Grid.RenderTransform>
-                        <Ellipse Fill="{TemplateBinding Background}"/>
+                        <Ellipse Fill="{TemplateBinding Background}"
+                                 Opacity="0.9"/>
                         <Ellipse x:Name="HoverBg"
                                  Fill="{DynamicResource HoverBackground}"
                                  Opacity="0"/>
@@ -74,6 +75,9 @@
                             </Trigger.ExitActions>
                         </Trigger>
                         <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                            <Setter Property="Opacity" Value="0.92"/>
+                            <Setter TargetName="FavoriteFillIcon" Property="Opacity" Value="1"/>
+                            <Setter TargetName="FavoriteStrokeIcon" Property="Stroke" Value="{StaticResource LibraryFavoriteColor}"/>
                             <DataTrigger.EnterActions>
                                 <BeginStoryboard>
                                     <Storyboard>
@@ -122,8 +126,6 @@
                                     </Storyboard>
                                 </BeginStoryboard>
                             </DataTrigger.ExitActions>
-                            <Setter TargetName="FavoriteFillIcon" Property="Opacity" Value="1"/>
-                            <Setter TargetName="FavoriteStrokeIcon" Property="Stroke" Value="{StaticResource LibraryFavoriteColor}"/>
                         </DataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

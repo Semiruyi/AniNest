@@ -34,6 +34,8 @@
     <Style x:Key="LibraryCardPlaceholderIconText" TargetType="TextBlock" BasedOn="{StaticResource AppTextIconPlaceholder}">
         <Setter Property="HorizontalAlignment" Value="Center"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+        <Setter Property="Opacity" Value="0.35"/>
         <Setter Property="Text" Value="&#x1F3AC;"/>
     </Style>
 
@@ -68,9 +70,10 @@
     </Style>
 
     <Style x:Key="LibraryCardProgressBar" TargetType="ProgressBar" BasedOn="{StaticResource AppProgressBarThin}">
+        <Setter Property="Height" Value="3"/>
         <Setter Property="Margin" Value="{StaticResource LibraryCardProgressMargin}"/>
         <Setter Property="Background" Value="{StaticResource LibraryCardProgressTrack}"/>
-        <Setter Property="Foreground" Value="{StaticResource AccentBlue}"/>
+        <Setter Property="Foreground" Value="{StaticResource LibraryCardProgressFill}"/>
     </Style>
 
 </ResourceDictionary>

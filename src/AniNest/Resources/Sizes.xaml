@@ -65,11 +65,11 @@
 
     <system:Double x:Key="ScrollbarThumbWidth">4</system:Double>
 
-    <system:Double x:Key="FolderCardWidth">190</system:Double>
-    <system:Double x:Key="FolderCardHeight">253</system:Double>
+    <system:Double x:Key="FolderCardWidth">198</system:Double>
+    <system:Double x:Key="FolderCardHeight">275</system:Double>
     <system:Double x:Key="LibraryCardClipRadius">10</system:Double>
-    <Rect x:Key="LibraryCardClipRect">0,0,190,253</Rect>
-    <system:Double x:Key="FolderCardGradientHeight">105</system:Double>
+    <Rect x:Key="LibraryCardClipRect">0,0,198,275</Rect>
+    <system:Double x:Key="FolderCardGradientHeight">122</system:Double>
     <system:Double x:Key="LibraryCardFavoriteButtonSize">28</system:Double>
     <system:Double x:Key="LibraryCardStatusButtonHeight">25</system:Double>
     <system:Double x:Key="LibraryCardStatusButtonMinWidth">60</system:Double>

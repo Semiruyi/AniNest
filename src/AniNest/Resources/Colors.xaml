@@ -18,8 +18,8 @@
     <SolidColorBrush x:Key="SurfaceOverlayDark" Color="#B8000000"/>
     <LinearGradientBrush x:Key="SurfaceOverlayDarkGradient" StartPoint="0,0" EndPoint="0,1">
         <GradientStop Color="#00000000" Offset="0"/>
-        <GradientStop Color="#B8000000" Offset="0.55"/>
-        <GradientStop Color="#E6000000" Offset="1"/>
+        <GradientStop Color="#C4000000" Offset="0.48"/>
+        <GradientStop Color="#EE000000" Offset="1"/>
     </LinearGradientBrush>
 
     <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFFFF"/>
@@ -33,12 +33,13 @@
     <SolidColorBrush x:Key="LibraryFilterBarItemSelected" Color="{StaticResource AccentBlueColor}"/>
     <Color x:Key="LibraryFavoriteColorValue">#FFD7B24C</Color>
     <SolidColorBrush x:Key="LibraryFavoriteColor" Color="{StaticResource LibraryFavoriteColorValue}"/>
-    <Color x:Key="LibraryFavoriteStrokeColorValue">#AAFFFFFF</Color>
+    <Color x:Key="LibraryFavoriteStrokeColorValue">#88FFFFFF</Color>
     <SolidColorBrush x:Key="LibraryFavoriteStrokeColor" Color="{StaticResource LibraryFavoriteStrokeColorValue}"/>
-    <SolidColorBrush x:Key="LibraryCardPlaceholderBackground" Color="#FF252525"/>
-    <SolidColorBrush x:Key="LibraryCardInfoSecondaryText" Color="#BFC7D5"/>
-    <SolidColorBrush x:Key="LibraryCardInfoMutedText" Color="#8A93A3"/>
-    <SolidColorBrush x:Key="LibraryCardProgressTrack" Color="#33FFFFFF"/>
+    <SolidColorBrush x:Key="LibraryCardPlaceholderBackground" Color="#FF2B2B2D"/>
+    <SolidColorBrush x:Key="LibraryCardInfoSecondaryText" Color="#AEB8C8"/>
+    <SolidColorBrush x:Key="LibraryCardInfoMutedText" Color="#7C8797"/>
+    <SolidColorBrush x:Key="LibraryCardProgressTrack" Color="#26FFFFFF"/>
+    <SolidColorBrush x:Key="LibraryCardProgressFill" Color="#E63594FF"/>
     <SolidColorBrush x:Key="LibraryStatusWatchingBackground" Color="{StaticResource AccentBlueColor}"/>
     <SolidColorBrush x:Key="LibraryStatusUnsortedBackground" Color="{StaticResource NeutralBlackColor}"/>
     <SolidColorBrush x:Key="LibraryStatusCompletedBackground" Color="{StaticResource AccentGreenColor}"/>
