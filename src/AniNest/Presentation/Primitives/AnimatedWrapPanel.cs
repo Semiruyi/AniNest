@@ -4,12 +4,15 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
+using AniNest.Infrastructure.Logging;
 using AniNest.Presentation.Animations;
 
 namespace AniNest.Presentation.Primitives;
 
 public class AnimatedWrapPanel : WrapPanel
 {
+    private static readonly Logger Log = AppLog.For(nameof(AnimatedWrapPanel));
+
     private sealed record LayoutAnimation(
         UIElement Child,
         Vector Offset,
@@ -134,6 +137,7 @@ public class AnimatedWrapPanel : WrapPanel
 
     private bool _isLoaded;
     private int _layoutVersion;
+    private bool _hasCompletedInitialLayout;
 
     public AnimatedWrapPanel()
     {
@@ -150,12 +154,21 @@ public class AnimatedWrapPanel : WrapPanel
     protected override Size ArrangeOverride(Size finalSize)
     {
         var children = CollectChildren();
+        Log.Debug(
+            $"ArrangeOverride: children={children.Count} size={finalSize.Width:F1}x{finalSize.Height:F1} " +
+            $"loaded={_isLoaded} version={_layoutVersion} initialDone={_hasCompletedInitialLayout}");
+
         if (children.Count == 0)
             return base.ArrangeOverride(finalSize);
 
+        bool forceEntrance = !_hasCompletedInitialLayout;
         var pass = BeginLayoutPass(children);
         var result = base.ArrangeOverride(finalSize);
-        QueueAnimations(pass, CaptureVisualPositions(children));
+        var newPositions = CaptureVisualPositions(children);
+        QueueAnimations(pass, newPositions, forceEntrance);
+
+        if (_isLoaded)
+            _hasCompletedInitialLayout = true;
 
         return result;
     }
@@ -163,12 +176,14 @@ public class AnimatedWrapPanel : WrapPanel
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         _isLoaded = true;
+        Log.Debug($"OnLoaded: version={_layoutVersion}");
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
         _isLoaded = false;
         _layoutVersion++;
+        Log.Debug($"OnUnloaded: version={_layoutVersion}");
     }
 
     private List<UIElement> CollectChildren()
@@ -187,18 +202,28 @@ public class AnimatedWrapPanel : WrapPanel
     {
         int version = ++_layoutVersion;
         var oldPositions = CaptureVisualPositions(children);
+        Log.Debug($"BeginLayoutPass: version={version} children={children.Count} oldCaptured={oldPositions.Count}");
         ResetLayoutTransforms(children);
         return new LayoutPass(version, children, oldPositions);
     }
 
-    private void QueueAnimations(LayoutPass pass, Dictionary<UIElement, Point> newPositions)
+    private void QueueAnimations(LayoutPass pass, Dictionary<UIElement, Point> newPositions, bool forceEntrance)
     {
         if (!_isLoaded)
+        {
+            Log.Debug($"QueueAnimations skipped: version={pass.Version} loaded=false");
             return;
+        }
 
-        var animations = BuildAnimations(pass.Children, pass.OldPositions, newPositions);
+        var animations = BuildAnimations(pass.Children, pass.OldPositions, newPositions, forceEntrance);
+        Log.Debug(
+            $"QueueAnimations: version={pass.Version} children={pass.Children.Count} old={pass.OldPositions.Count} " +
+            $"new={newPositions.Count} animations={animations.Count} forceEntrance={forceEntrance}");
+
         if (animations.Count == 0)
             return;
+
+        PrimeAnimations(animations);
 
         var liveChildren = new HashSet<UIElement>(pass.Children);
         Dispatcher.BeginInvoke(
@@ -214,7 +239,11 @@ public class AnimatedWrapPanel : WrapPanel
         {
             var child = children[i];
             if (TryGetVisualTopLeft(child, out var position))
+            {
                 positions[child] = position;
+                if (i < 6)
+                    Log.Debug($"CaptureVisualPositions: child={DescribeChild(child)} pos={position.X:F1},{position.Y:F1}");
+            }
         }
 
         return positions;
@@ -223,7 +252,8 @@ public class AnimatedWrapPanel : WrapPanel
     private List<LayoutAnimation> BuildAnimations(
         IReadOnlyList<UIElement> children,
         IReadOnlyDictionary<UIElement, Point> oldPositions,
-        IReadOnlyDictionary<UIElement, Point> newPositions)
+        IReadOnlyDictionary<UIElement, Point> newPositions,
+        bool forceEntrance)
     {
         var animations = new List<LayoutAnimation>(children.Count);
 
@@ -233,7 +263,7 @@ public class AnimatedWrapPanel : WrapPanel
             if (!newPositions.TryGetValue(child, out var newPosition))
                 continue;
 
-            if (!oldPositions.TryGetValue(child, out var oldPosition))
+            if (forceEntrance || !oldPositions.TryGetValue(child, out var oldPosition))
             {
                 if (AnimateEntrance)
                 {
@@ -242,6 +272,9 @@ public class AnimatedWrapPanel : WrapPanel
                         new Vector(EntranceOffsetX, EntranceOffsetY),
                         IsEntrance: true,
                         Order: i));
+                    Log.Debug(
+                        $"BuildAnimations entrance: child={DescribeChild(child)} order={i} " +
+                        $"offset={EntranceOffsetX:F1},{EntranceOffsetY:F1} new={newPosition.X:F1},{newPosition.Y:F1}");
                 }
 
                 continue;
@@ -259,15 +292,38 @@ public class AnimatedWrapPanel : WrapPanel
                 offset,
                 IsEntrance: false,
                 Order: i));
+            Log.Debug(
+                $"BuildAnimations move: child={DescribeChild(child)} order={i} " +
+                $"old={oldPosition.X:F1},{oldPosition.Y:F1} new={newPosition.X:F1},{newPosition.Y:F1} " +
+                $"offset={offset.X:F1},{offset.Y:F1}");
         }
 
         return animations;
     }
 
+    private void PrimeAnimations(IReadOnlyList<LayoutAnimation> animations)
+    {
+        for (int i = 0; i < animations.Count; i++)
+        {
+            var animation = animations[i];
+            var translate = EnsureLayoutTranslateTransform(animation.Child);
+
+            translate.BeginAnimation(TranslateTransform.XProperty, null);
+            translate.BeginAnimation(TranslateTransform.YProperty, null);
+            translate.X = animation.Offset.X;
+            translate.Y = animation.Offset.Y;
+        }
+    }
+
     private void ApplyAnimations(int version, IReadOnlyList<LayoutAnimation> animations, ISet<UIElement> liveChildren)
     {
         if (version != _layoutVersion)
+        {
+            Log.Debug($"ApplyAnimations skipped: version={version} currentVersion={_layoutVersion}");
             return;
+        }
+
+        Log.Debug($"ApplyAnimations: version={version} animations={animations.Count}");
 
         for (int i = 0; i < animations.Count; i++)
         {
@@ -277,13 +333,11 @@ public class AnimatedWrapPanel : WrapPanel
 
             var translate = EnsureLayoutTranslateTransform(animation.Child);
             int durationMs = ResolveDurationMs(animation.IsEntrance ? EntranceDuration : AnimationDuration);
-
-            translate.BeginAnimation(TranslateTransform.XProperty, null);
-            translate.BeginAnimation(TranslateTransform.YProperty, null);
-            translate.X = animation.Offset.X;
-            translate.Y = animation.Offset.Y;
-
             int beginTimeMs = animation.IsEntrance ? animation.Order * EntranceStaggerDelayMs : 0;
+
+            Log.Debug(
+                $"ApplyAnimations item: child={DescribeChild(animation.Child)} kind={(animation.IsEntrance ? "entrance" : "move")} " +
+                $"begin={beginTimeMs}ms duration={durationMs}ms offset={animation.Offset.X:F1},{animation.Offset.Y:F1}");
 
             translate.BeginAnimation(
                 TranslateTransform.XProperty,
@@ -302,6 +356,7 @@ public class AnimatedWrapPanel : WrapPanel
             if (child.ReadLocalValue(LayoutTranslateTransformProperty) is not TranslateTransform translate)
                 continue;
 
+            Log.Debug($"ResetLayoutTransforms: child={DescribeChild(child)}");
             translate.BeginAnimation(TranslateTransform.XProperty, null);
             translate.BeginAnimation(TranslateTransform.YProperty, null);
             translate.X = 0;
@@ -312,10 +367,14 @@ public class AnimatedWrapPanel : WrapPanel
     private TranslateTransform EnsureLayoutTranslateTransform(UIElement child)
     {
         if (child.ReadLocalValue(LayoutTranslateTransformProperty) is TranslateTransform existing)
+        {
+            Log.Debug($"EnsureLayoutTranslateTransform: reuse child={DescribeChild(child)}");
             return existing;
+        }
 
         var translate = new TranslateTransform();
         var current = child.RenderTransform;
+        Log.Debug($"EnsureLayoutTranslateTransform: create child={DescribeChild(child)} current={current?.GetType().Name ?? "null"}");
 
         if (current == null || ReferenceEquals(current, Transform.Identity))
         {
@@ -349,8 +408,20 @@ public class AnimatedWrapPanel : WrapPanel
         catch (InvalidOperationException)
         {
             position = default;
+            Log.Debug($"TryGetVisualTopLeft failed: child={DescribeChild(child)}");
             return false;
         }
+    }
+
+    private static string DescribeChild(UIElement child)
+    {
+        if (child is FrameworkElement fe)
+        {
+            var name = string.IsNullOrWhiteSpace(fe.Name) ? "-" : fe.Name;
+            return $"{fe.GetType().Name}({name})";
+        }
+
+        return child.GetType().Name;
     }
 
     private static int ResolveDurationMs(Duration preferred)
