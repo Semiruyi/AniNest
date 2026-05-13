@@ -52,13 +52,15 @@
                 </Border>
 
                 <ItemsControl Margin="{StaticResource LibraryFolderListMargin}"
-                              ItemsSource="{Binding FolderItems}"
-                              animations:StaggeredItemsAnimation.Enabled="True"
-                              animations:StaggeredItemsAnimation.StaggerMs="50"
-                              animations:StaggeredItemsAnimation.DurationMs="500">
+                              ItemsSource="{Binding FolderItems}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel HorizontalAlignment="Center"/>
+                            <primitives:AnimatedWrapPanel HorizontalAlignment="Center"
+                                                          AnimationDuration="0:0:0.55"
+                                                          EntranceDuration="0:0:0.48"
+                                                          EntranceStaggerDelayMs="60"
+                                                          EntranceOffsetY="20"
+                                                          MovementThreshold="0.5"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
