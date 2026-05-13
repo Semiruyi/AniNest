@@ -245,8 +245,7 @@ public static class ScaleFadeVisibilityAnimator
 
     private static ScaleTransform EnsureScaleTransform(FrameworkElement element)
     {
-        AnimationHelper.EnsureScaleTransform(element);
-        return (ScaleTransform)element.RenderTransform;
+        return AnimationHelper.GetScaleTransform(element);
     }
 
     private static void StopCurrentAnimations(FrameworkElement element)
@@ -255,15 +254,13 @@ public static class ScaleFadeVisibilityAnimator
         element.BeginAnimation(UIElement.OpacityProperty, null);
         element.Opacity = currentOpacity;
 
-        if (element.RenderTransform is ScaleTransform scale)
-        {
-            double currentScaleX = scale.ScaleX;
-            double currentScaleY = scale.ScaleY;
-            scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-            scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-            scale.ScaleX = currentScaleX;
-            scale.ScaleY = currentScaleY;
-        }
+        var scale = EnsureScaleTransform(element);
+        double currentScaleX = scale.ScaleX;
+        double currentScaleY = scale.ScaleY;
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        scale.ScaleX = currentScaleX;
+        scale.ScaleY = currentScaleY;
     }
 
     private static void IncrementVersion(DependencyObject element)

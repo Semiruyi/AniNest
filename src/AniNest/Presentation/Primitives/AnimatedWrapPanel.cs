@@ -80,13 +80,6 @@ public class AnimatedWrapPanel : WrapPanel
             typeof(AnimatedWrapPanel),
             new FrameworkPropertyMetadata(true, OnAnimationSettingChanged));
 
-    private static readonly DependencyProperty LayoutTranslateTransformProperty =
-        DependencyProperty.RegisterAttached(
-            "LayoutTranslateTransform",
-            typeof(TranslateTransform),
-            typeof(AnimatedWrapPanel),
-            new PropertyMetadata(null));
-
     public Duration AnimationDuration
     {
         get => (Duration)GetValue(AnimationDurationProperty);
@@ -353,7 +346,7 @@ public class AnimatedWrapPanel : WrapPanel
         for (int i = 0; i < children.Count; i++)
         {
             var child = children[i];
-            if (child.ReadLocalValue(LayoutTranslateTransformProperty) is not TranslateTransform translate)
+            if (!TransformComposer.TryGetLayoutTranslateTransform(child, out var translate))
                 continue;
 
             Log.Debug($"ResetLayoutTransforms: child={DescribeChild(child)}");
@@ -366,35 +359,8 @@ public class AnimatedWrapPanel : WrapPanel
 
     private TranslateTransform EnsureLayoutTranslateTransform(UIElement child)
     {
-        if (child.ReadLocalValue(LayoutTranslateTransformProperty) is TranslateTransform existing)
-        {
-            Log.Debug($"EnsureLayoutTranslateTransform: reuse child={DescribeChild(child)}");
-            return existing;
-        }
-
-        var translate = new TranslateTransform();
-        var current = child.RenderTransform;
-        Log.Debug($"EnsureLayoutTranslateTransform: create child={DescribeChild(child)} current={current?.GetType().Name ?? "null"}");
-
-        if (current == null || ReferenceEquals(current, Transform.Identity))
-        {
-            child.RenderTransform = translate;
-        }
-        else if (current is TransformGroup currentGroup)
-        {
-            var clonedGroup = currentGroup.CloneCurrentValue();
-            clonedGroup.Children.Add(translate);
-            child.RenderTransform = clonedGroup;
-        }
-        else
-        {
-            var group = new TransformGroup();
-            group.Children.Add(current);
-            group.Children.Add(translate);
-            child.RenderTransform = group;
-        }
-
-        child.SetValue(LayoutTranslateTransformProperty, translate);
+        Log.Debug($"EnsureLayoutTranslateTransform: child={DescribeChild(child)} current={child.RenderTransform?.GetType().Name ?? "null"}");
+        var translate = TransformComposer.EnsureLayoutTranslateTransform(child);
         return translate;
     }
 

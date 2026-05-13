@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -94,11 +93,14 @@ public static class AnimationHelper
 
     public static void EnsureScaleTransform(FrameworkElement element)
     {
-        if (TryEnsureMutableScaleTransform(element, out _))
-            return;
-
         element.RenderTransformOrigin = new Point(0.5, 0.5);
-        element.RenderTransform = new ScaleTransform(1, 1);
+        _ = TransformComposer.EnsurePrimaryScaleTransform(element);
+    }
+
+    public static ScaleTransform GetScaleTransform(UIElement element)
+    {
+        element.RenderTransformOrigin = new Point(0.5, 0.5);
+        return TransformComposer.EnsurePrimaryScaleTransform(element);
     }
 
     public static void AnimateScaleTransform(ScaleTransform transform, double to,
@@ -143,11 +145,14 @@ public static class AnimationHelper
     public static void ApplyEntrance(UIElement element, EntranceEffect effect, int beginTimeMs = 0, Action? onCompleted = null)
     {
         element.RenderTransformOrigin = effect.Origin;
-        element.RenderTransform = new ScaleTransform(effect.Scale.From, effect.Scale.From);
+        var scale = GetScaleTransform(element);
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        scale.ScaleX = effect.Scale.From;
+        scale.ScaleY = effect.Scale.From;
         element.Opacity = effect.Opacity.From;
         element.IsHitTestVisible = true;
 
-        var scale = (ScaleTransform)element.RenderTransform;
         scale.BeginAnimation(ScaleTransform.ScaleXProperty, effect.Scale.ToDoubleAnimation(beginTimeMs));
         scale.BeginAnimation(ScaleTransform.ScaleYProperty, effect.Scale.ToDoubleAnimation(beginTimeMs));
 
@@ -165,60 +170,17 @@ public static class AnimationHelper
         element.RenderTransformOrigin = effect.Origin;
         element.IsHitTestVisible = false;
 
-        var scale = TryEnsureMutableScaleTransform(element, out var ensuredScale)
-            ? ensuredScale
-            : null;
-        if (scale != null)
-        {
-            double curX = scale.ScaleX;
-            double curY = scale.ScaleY;
-            scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-            scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-            scale.ScaleX = curX;
-            scale.ScaleY = curY;
-            AnimateScaleTransform(scale, effect.Scale.To, effect.Scale.DurationMs, effect.Scale.Easing);
-        }
+        var scale = GetScaleTransform(element);
+        double curX = scale.ScaleX;
+        double curY = scale.ScaleY;
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        scale.ScaleX = curX;
+        scale.ScaleY = curY;
+        AnimateScaleTransform(scale, effect.Scale.To, effect.Scale.DurationMs, effect.Scale.Easing);
 
         Animate(element, UIElement.OpacityProperty, effect.Opacity.From, effect.Opacity.To,
             effect.Opacity.DurationMs, effect.Opacity.Easing, onCompleted);
-    }
-
-    private static bool TryEnsureMutableScaleTransform(UIElement element, out ScaleTransform? scale)
-    {
-        scale = null;
-
-        switch (element.RenderTransform)
-        {
-            case ScaleTransform directScale when !directScale.IsFrozen:
-                scale = directScale;
-                return true;
-
-            case ScaleTransform directScale:
-                scale = directScale.CloneCurrentValue();
-                element.RenderTransform = scale;
-                return true;
-
-            case TransformGroup group:
-            {
-                var groupScale = group.Children.OfType<ScaleTransform>().FirstOrDefault();
-                if (groupScale == null)
-                    return false;
-
-                if (!group.IsFrozen && !groupScale.IsFrozen)
-                {
-                    scale = groupScale;
-                    return true;
-                }
-
-                var clonedGroup = group.CloneCurrentValue();
-                scale = clonedGroup.Children.OfType<ScaleTransform>().FirstOrDefault();
-                element.RenderTransform = clonedGroup;
-                return scale != null;
-            }
-
-            default:
-                return false;
-        }
     }
 }
 

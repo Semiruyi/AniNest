@@ -51,22 +51,28 @@
                     </primitives:SelectableOptionGroup>
                 </Border>
 
-                <ItemsControl Margin="{StaticResource LibraryFolderListMargin}"
-                              ItemsSource="{Binding FolderItems}">
-                    <ItemsControl.ItemsPanel>
+                <primitives:TransitioningItemsControl Margin="{StaticResource LibraryFolderListMargin}"
+                                                      ItemsSource="{Binding FolderItems}"
+                                                      EnterDuration="0:0:0.24"
+                                                      ExitDuration="0:0:0.18"
+                                                      EnterStaggerDelayMs="60"
+                                                      EnterFromScale="0.92"
+                                                      ExitToScale="0.88">
+                    <primitives:TransitioningItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <primitives:AnimatedWrapPanel HorizontalAlignment="Center"
+                                                          AnimateEntrance="False"
                                                           AnimationDuration="0:0:0.55"
                                                           EntranceDuration="0:0:0.48"
                                                           EntranceStaggerDelayMs="60"
                                                           EntranceOffsetY="20"
                                                           MovementThreshold="0.5"/>
                         </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
+                    </primitives:TransitioningItemsControl.ItemsPanel>
+                    <primitives:TransitioningItemsControl.ItemTemplate>
                         <StaticResource ResourceKey="LibraryFolderCardItemTemplate"/>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                    </primitives:TransitioningItemsControl.ItemTemplate>
+                </primitives:TransitioningItemsControl>
             </StackPanel>
         </ScrollViewer>
 
