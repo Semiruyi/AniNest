@@ -53,6 +53,9 @@
 
                 <primitives:TransitioningItemsControl Margin="{StaticResource LibraryFolderListMargin}"
                                                       ItemsSource="{Binding FolderItems}"
+                                                      EnterDuration="0:0:0.40"
+                                                      EnterStaggerDelayMs="35"
+                                                      EnterFromScale="0"
                                                       Preset="CardGrid">
                     <primitives:TransitioningItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -60,8 +63,8 @@
                                                           AnimateEntrance="False"
                                                           AnimationDuration="0:0:0.55"
                                                           EntranceDuration="0:0:0.48"
-                                                          EntranceStaggerDelayMs="60"
-                                                          EntranceOffsetY="20"
+                                                          EntranceStaggerDelayMs="35"
+                                                          EntranceOffsetY="0"
                                                           MovementThreshold="0.5"/>
                         </ItemsPanelTemplate>
                     </primitives:TransitioningItemsControl.ItemsPanel>

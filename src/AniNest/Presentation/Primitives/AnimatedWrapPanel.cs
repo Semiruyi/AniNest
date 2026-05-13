@@ -17,7 +17,9 @@ public class AnimatedWrapPanel : WrapPanel
         UIElement Child,
         Vector Offset,
         bool IsEntrance,
-        int Order);
+        int Order,
+        double ScaleFrom,
+        double OpacityFrom);
 
     private sealed record LayoutPass(
         int Version,
@@ -58,6 +60,20 @@ public class AnimatedWrapPanel : WrapPanel
             typeof(double),
             typeof(AnimatedWrapPanel),
             new FrameworkPropertyMetadata(14d, OnAnimationSettingChanged));
+
+    public static readonly DependencyProperty EntranceFromScaleProperty =
+        DependencyProperty.Register(
+            nameof(EntranceFromScale),
+            typeof(double),
+            typeof(AnimatedWrapPanel),
+            new FrameworkPropertyMetadata(1d, OnAnimationSettingChanged));
+
+    public static readonly DependencyProperty EntranceFromOpacityProperty =
+        DependencyProperty.Register(
+            nameof(EntranceFromOpacity),
+            typeof(double),
+            typeof(AnimatedWrapPanel),
+            new FrameworkPropertyMetadata(1d, OnAnimationSettingChanged));
 
     public static readonly DependencyProperty MovementThresholdProperty =
         DependencyProperty.Register(
@@ -110,6 +126,18 @@ public class AnimatedWrapPanel : WrapPanel
         set => SetValue(EntranceOffsetYProperty, value);
     }
 
+    public double EntranceFromScale
+    {
+        get => (double)GetValue(EntranceFromScaleProperty);
+        set => SetValue(EntranceFromScaleProperty, value);
+    }
+
+    public double EntranceFromOpacity
+    {
+        get => (double)GetValue(EntranceFromOpacityProperty);
+        set => SetValue(EntranceFromOpacityProperty, value);
+    }
+
     public double MovementThreshold
     {
         get => (double)GetValue(MovementThresholdProperty);
@@ -131,6 +159,8 @@ public class AnimatedWrapPanel : WrapPanel
     private bool _isLoaded;
     private int _layoutVersion;
     private bool _hasCompletedInitialLayout;
+    private HashSet<UIElement> _arrangedChildren = [];
+    private HashSet<UIElement> _entranceOwnedChildren = [];
 
     public AnimatedWrapPanel()
     {
@@ -147,16 +177,22 @@ public class AnimatedWrapPanel : WrapPanel
     protected override Size ArrangeOverride(Size finalSize)
     {
         var children = CollectChildren();
+        var previouslyArrangedChildren = new HashSet<UIElement>(_arrangedChildren);
         Log.Debug($"ArrangeOverride: children={children.Count} size={finalSize.Width:F1}x{finalSize.Height:F1} version={_layoutVersion}");
 
         if (children.Count == 0)
+        {
+            _arrangedChildren.Clear();
+            _entranceOwnedChildren.Clear();
             return base.ArrangeOverride(finalSize);
+        }
 
         bool forceEntrance = !_hasCompletedInitialLayout;
         var pass = BeginLayoutPass(children);
         var result = base.ArrangeOverride(finalSize);
         var newPositions = CaptureVisualPositions(children);
-        QueueAnimations(pass, newPositions, forceEntrance);
+        QueueAnimations(pass, newPositions, previouslyArrangedChildren, forceEntrance);
+        _arrangedChildren = new HashSet<UIElement>(children);
 
         if (_isLoaded)
             _hasCompletedInitialLayout = true;
@@ -173,6 +209,8 @@ public class AnimatedWrapPanel : WrapPanel
     {
         _isLoaded = false;
         _layoutVersion++;
+        _arrangedChildren.Clear();
+        _entranceOwnedChildren.Clear();
     }
 
     private List<UIElement> CollectChildren()
@@ -195,7 +233,11 @@ public class AnimatedWrapPanel : WrapPanel
         return new LayoutPass(version, children, oldPositions);
     }
 
-    private void QueueAnimations(LayoutPass pass, Dictionary<UIElement, Point> newPositions, bool forceEntrance)
+    private void QueueAnimations(
+        LayoutPass pass,
+        Dictionary<UIElement, Point> newPositions,
+        ISet<UIElement> previouslyArrangedChildren,
+        bool forceEntrance)
     {
         if (!_isLoaded)
         {
@@ -203,7 +245,7 @@ public class AnimatedWrapPanel : WrapPanel
             return;
         }
 
-        var animations = BuildAnimations(pass.Children, pass.OldPositions, newPositions, forceEntrance);
+        var animations = BuildAnimations(pass.Children, pass.OldPositions, newPositions, previouslyArrangedChildren, forceEntrance);
         Log.Debug(
             $"QueueAnimations: version={pass.Version} children={pass.Children.Count} old={pass.OldPositions.Count} " +
             $"new={newPositions.Count} animations={animations.Count} forceEntrance={forceEntrance}");
@@ -237,6 +279,7 @@ public class AnimatedWrapPanel : WrapPanel
         IReadOnlyList<UIElement> children,
         IReadOnlyDictionary<UIElement, Point> oldPositions,
         IReadOnlyDictionary<UIElement, Point> newPositions,
+        ISet<UIElement> previouslyArrangedChildren,
         bool forceEntrance)
     {
         var animations = new List<LayoutAnimation>(children.Count);
@@ -247,7 +290,8 @@ public class AnimatedWrapPanel : WrapPanel
             if (!newPositions.TryGetValue(child, out var newPosition))
                 continue;
 
-            if (forceEntrance || !oldPositions.TryGetValue(child, out var oldPosition))
+            bool isNewChild = !previouslyArrangedChildren.Contains(child);
+            if (forceEntrance || isNewChild || !oldPositions.TryGetValue(child, out var oldPosition))
             {
                 if (AnimateEntrance)
                 {
@@ -255,7 +299,9 @@ public class AnimatedWrapPanel : WrapPanel
                         child,
                         new Vector(EntranceOffsetX, EntranceOffsetY),
                         IsEntrance: true,
-                        Order: i));
+                        Order: i,
+                        ScaleFrom: EntranceFromScale,
+                        OpacityFrom: EntranceFromOpacity));
                 }
 
                 continue;
@@ -272,7 +318,9 @@ public class AnimatedWrapPanel : WrapPanel
                 child,
                 offset,
                 IsEntrance: false,
-                Order: i));
+                Order: i,
+                ScaleFrom: 1,
+                OpacityFrom: 1));
         }
 
         return animations;
@@ -289,6 +337,22 @@ public class AnimatedWrapPanel : WrapPanel
             translate.BeginAnimation(TranslateTransform.YProperty, null);
             translate.X = animation.Offset.X;
             translate.Y = animation.Offset.Y;
+
+            if (!animation.IsEntrance)
+                continue;
+
+            if (animation.Child is not FrameworkElement element)
+                continue;
+
+            _entranceOwnedChildren.Add(animation.Child);
+            var scale = TransformComposer.EnsurePrimaryScaleTransform(element);
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            scale.ScaleX = animation.ScaleFrom;
+            scale.ScaleY = animation.ScaleFrom;
+
+            element.BeginAnimation(UIElement.OpacityProperty, null);
+            element.Opacity = animation.OpacityFrom;
         }
     }
 
@@ -318,6 +382,26 @@ public class AnimatedWrapPanel : WrapPanel
             translate.BeginAnimation(
                 TranslateTransform.YProperty,
                 AnimationHelper.CreateAnim(animation.Offset.Y, 0, durationMs, AnimationHelper.EaseOut, beginTimeMs));
+
+            if (!animation.IsEntrance || animation.Child is not FrameworkElement element)
+                continue;
+
+            var scale = TransformComposer.EnsurePrimaryScaleTransform(element);
+            scale.BeginAnimation(
+                ScaleTransform.ScaleXProperty,
+                AnimationHelper.CreateAnim(animation.ScaleFrom, 1, durationMs, AnimationHelper.EaseOut, beginTimeMs));
+            scale.BeginAnimation(
+                ScaleTransform.ScaleYProperty,
+                AnimationHelper.CreateAnim(animation.ScaleFrom, 1, durationMs, AnimationHelper.EaseOut, beginTimeMs));
+
+            var opacityAnimation = AnimationHelper.CreateAnim(animation.OpacityFrom, 1, durationMs, AnimationHelper.EaseOut, beginTimeMs);
+            opacityAnimation.Completed += (_, _) =>
+            {
+                element.BeginAnimation(UIElement.OpacityProperty, null);
+                element.Opacity = 1;
+                _entranceOwnedChildren.Remove(animation.Child);
+            };
+            element.BeginAnimation(UIElement.OpacityProperty, opacityAnimation);
         }
     }
 
@@ -326,6 +410,8 @@ public class AnimatedWrapPanel : WrapPanel
         for (int i = 0; i < children.Count; i++)
         {
             var child = children[i];
+            ResetOwnedEntranceVisuals(child);
+
             if (!TransformComposer.TryGetLayoutTranslateTransform(child, out var translate))
                 continue;
 
@@ -334,6 +420,23 @@ public class AnimatedWrapPanel : WrapPanel
             translate.X = 0;
             translate.Y = 0;
         }
+    }
+
+    private void ResetOwnedEntranceVisuals(UIElement child)
+    {
+        if (!_entranceOwnedChildren.Remove(child) || child is not FrameworkElement element)
+            return;
+
+        element.BeginAnimation(UIElement.OpacityProperty, null);
+        element.Opacity = 1;
+
+        if (!TransformComposer.TryGetPrimaryScaleTransform(element, out var scale))
+            return;
+
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        scale.ScaleX = 1;
+        scale.ScaleY = 1;
     }
 
     private TranslateTransform EnsureLayoutTranslateTransform(UIElement child)

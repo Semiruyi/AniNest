@@ -505,39 +505,42 @@ public class TransitioningItemsControl : ItemsControl
     }
 
     private int ResolveEnterDurationMs(int configuredDurationMs)
-        => Preset switch
+        => HasLocalValue(EnterDurationProperty) ? configuredDurationMs : Preset switch
         {
             TransitioningItemsPreset.CardGrid => 240,
             _ => configuredDurationMs
         };
 
     private int ResolveExitDurationMs(int configuredDurationMs)
-        => Preset switch
+        => HasLocalValue(ExitDurationProperty) ? configuredDurationMs : Preset switch
         {
             TransitioningItemsPreset.CardGrid => 180,
             _ => configuredDurationMs
         };
 
     private int ResolveEnterStaggerDelayMs()
-        => Preset switch
+        => HasLocalValue(EnterStaggerDelayMsProperty) ? EnterStaggerDelayMs : Preset switch
         {
             TransitioningItemsPreset.CardGrid => 60,
             _ => EnterStaggerDelayMs
         };
 
     private double ResolveEnterFromScale()
-        => Preset switch
+        => HasLocalValue(EnterFromScaleProperty) ? EnterFromScale : Preset switch
         {
             TransitioningItemsPreset.CardGrid => 0.92d,
             _ => EnterFromScale
         };
 
     private double ResolveExitToScale()
-        => Preset switch
+        => HasLocalValue(ExitToScaleProperty) ? ExitToScale : Preset switch
         {
             TransitioningItemsPreset.CardGrid => 0.88d,
             _ => ExitToScale
         };
+
+    private bool HasLocalValue(DependencyProperty property)
+        => ReadLocalValue(property) != DependencyProperty.UnsetValue;
 
     private static string DescribeItem(object? item)
     {

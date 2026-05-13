@@ -20,7 +20,12 @@
 
             <ItemsPanelTemplate x:Key="PlaylistEpisodeItemsPanelTemplate">
                 <primitives:AnimatedWrapPanel Orientation="Horizontal"
-                                              AnimationDuration="0:0:0.2"/>
+                                              AnimationDuration="0:0:0.2"
+                                              EntranceDuration="0:0:0.22"
+                                              EntranceStaggerDelayMs="35"
+                                              EntranceOffsetY="0"
+                                              EntranceFromScale="0.0"
+                                              EntranceFromOpacity="0"/>
             </ItemsPanelTemplate>
 
             <Style x:Key="OverlayThinScrollBar" TargetType="ScrollBar">
