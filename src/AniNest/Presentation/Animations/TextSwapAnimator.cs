@@ -91,8 +91,7 @@ public static class TextSwapAnimator
 
     private static ScaleTransform EnsureScaleTransform(FrameworkElement element)
     {
-        AnimationHelper.EnsureScaleTransform(element);
-        return (ScaleTransform)element.RenderTransform;
+        return AnimationHelper.GetScaleTransform(element);
     }
 }
 

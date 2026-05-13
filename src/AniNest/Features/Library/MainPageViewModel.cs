@@ -437,6 +437,22 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
 
     private void OnFolderItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        Log.Debug(
+            $"FolderItems.CollectionChanged: action={e.Action} oldCount={e.OldItems?.Count ?? 0} newCount={e.NewItems?.Count ?? 0} " +
+            $"visibleCountNow={FolderItems.Count}");
+
+        if (e.OldItems != null)
+        {
+            foreach (FolderListItem item in e.OldItems)
+                Log.Debug($"FolderItems.CollectionChanged oldItem: {item.Name} path={item.Path}");
+        }
+
+        if (e.NewItems != null)
+        {
+            foreach (FolderListItem item in e.NewItems)
+                Log.Debug($"FolderItems.CollectionChanged newItem: {item.Name} path={item.Path}");
+        }
+
         if (e.OldItems != null)
         {
             foreach (FolderListItem item in e.OldItems)
@@ -495,13 +511,18 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
 
         Log.Debug(
             $"ApplyCurrentFilter: selectedFilter={SelectedFilter} totalCount={_allFolderItems.Count} " +
-            $"filteredCount={filteredItems.Count}");
+            $"filteredCount={filteredItems.Count} visibleBefore={FolderItems.Count}");
 
         for (int i = FolderItems.Count - 1; i >= 0; i--)
         {
             var existingItem = FolderItems[i];
             if (!filteredItems.Contains(existingItem))
+            {
+                Log.Debug(
+                    $"ApplyCurrentFilter remove: index={i} name={existingItem.Name} path={existingItem.Path} " +
+                    $"status={existingItem.Status} favorite={existingItem.IsFavorite}");
                 FolderItems.RemoveAt(i);
+            }
         }
 
         for (int targetIndex = 0; targetIndex < filteredItems.Count; targetIndex++)
@@ -514,12 +535,22 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
             int existingIndex = FolderItems.IndexOf(targetItem);
             if (existingIndex >= 0)
             {
+                Log.Debug(
+                    $"ApplyCurrentFilter move: from={existingIndex} to={targetIndex} " +
+                    $"name={targetItem.Name} path={targetItem.Path}");
                 FolderItems.Move(existingIndex, targetIndex);
                 continue;
             }
 
+            Log.Debug(
+                $"ApplyCurrentFilter insert: index={targetIndex} name={targetItem.Name} path={targetItem.Path} " +
+                $"status={targetItem.Status} favorite={targetItem.IsFavorite}");
             FolderItems.Insert(targetIndex, targetItem);
         }
+
+        Log.Debug(
+            $"ApplyCurrentFilter complete: selectedFilter={SelectedFilter} visibleAfter={FolderItems.Count} " +
+            $"order=[{string.Join(", ", FolderItems.Select(item => item.Name))}]");
     }
 
     private bool MatchesSelectedFilter(FolderListItem item)

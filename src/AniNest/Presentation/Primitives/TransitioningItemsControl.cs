@@ -7,12 +7,20 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using AniNest.Infrastructure.Logging;
 using AniNest.Presentation.Animations;
 
 namespace AniNest.Presentation.Primitives;
 
+public enum TransitioningItemsPreset
+{
+    Default,
+    CardGrid
+}
+
 public class TransitioningItemsControl : ItemsControl
 {
+    private static readonly Logger Log = AppLog.For(nameof(TransitioningItemsControl));
     private const string RootPartName = "PART_Root";
     private const string GhostLayerPartName = "PART_GhostLayer";
 
@@ -51,6 +59,13 @@ public class TransitioningItemsControl : ItemsControl
             typeof(TransitioningItemsControl),
             new FrameworkPropertyMetadata(0.88d));
 
+    public static readonly DependencyProperty PresetProperty =
+        DependencyProperty.Register(
+            nameof(Preset),
+            typeof(TransitioningItemsPreset),
+            typeof(TransitioningItemsControl),
+            new FrameworkPropertyMetadata(TransitioningItemsPreset.Default));
+
     private readonly HashSet<object> _enteredItems = [];
     private readonly List<object> _pendingEnterItems = [];
     private readonly HashSet<object> _pendingEnterLookup = [];
@@ -60,6 +75,7 @@ public class TransitioningItemsControl : ItemsControl
     private bool _isControlLoaded;
     private bool _enterProcessingScheduled;
     private bool _layoutCaptureScheduled;
+    private int _layoutCaptureRetryCount;
 
     public TransitioningItemsControl()
     {
@@ -97,6 +113,12 @@ public class TransitioningItemsControl : ItemsControl
     {
         get => (double)GetValue(ExitToScaleProperty);
         set => SetValue(ExitToScaleProperty, value);
+    }
+
+    public TransitioningItemsPreset Preset
+    {
+        get => (TransitioningItemsPreset)GetValue(PresetProperty);
+        set => SetValue(PresetProperty, value);
     }
 
     public override void OnApplyTemplate()
@@ -158,6 +180,10 @@ public class TransitioningItemsControl : ItemsControl
 
     protected override void OnItemsChanged(NotifyCollectionChangedEventArgs e)
     {
+        Log.Debug(
+            $"OnItemsChanged: action={e.Action} oldCount={e.OldItems?.Count ?? 0} newCount={e.NewItems?.Count ?? 0} " +
+            $"itemsBeforeBase={Items.Count} entered={_enteredItems.Count} pending={_pendingEnterItems.Count} snapshots={_layoutSnapshots.Count}");
+
         if (e.Action is NotifyCollectionChangedAction.Remove or NotifyCollectionChangedAction.Replace && e.OldItems != null)
         {
             foreach (object item in e.OldItems)
@@ -265,7 +291,8 @@ public class TransitioningItemsControl : ItemsControl
         for (int i = 0; i < _pendingEnterItems.Count; i++)
         {
             object item = _pendingEnterItems[i];
-            if (ItemContainerGenerator.ContainerFromItem(item) is not FrameworkElement container || !container.IsLoaded)
+            var container = ItemContainerGenerator.ContainerFromItem(item) as FrameworkElement;
+            if (container == null || !container.IsLoaded)
             {
                 remainingItems.Add(item);
                 continue;
@@ -273,7 +300,7 @@ public class TransitioningItemsControl : ItemsControl
 
             _pendingEnterLookup.Remove(item);
             _enteredItems.Add(item);
-            BeginEnterAnimation(container, enterOrder * EnterStaggerDelayMs);
+            BeginEnterAnimation(container, enterOrder * ResolveEnterStaggerDelayMs());
             enterOrder++;
         }
 
@@ -286,6 +313,7 @@ public class TransitioningItemsControl : ItemsControl
 
     private void ScheduleLayoutCapture()
     {
+        _layoutCaptureRetryCount = 0;
         _layoutCaptureScheduled = true;
     }
 
@@ -294,20 +322,49 @@ public class TransitioningItemsControl : ItemsControl
         if (_root == null)
             return;
 
+        int captured = 0;
+        int skipped = 0;
+        int deferred = 0;
+
         foreach (object item in Items)
         {
-            if (ItemContainerGenerator.ContainerFromItem(item) is not FrameworkElement container || !container.IsLoaded)
+            if (ItemContainerGenerator.ContainerFromItem(item) is not FrameworkElement container)
+            {
+                skipped++;
                 continue;
+            }
+
+            if (!container.IsLoaded || container.RenderSize.Width <= 0 || container.RenderSize.Height <= 0)
+            {
+                deferred++;
+                continue;
+            }
 
             try
             {
                 Point topLeft = container.TransformToVisual(_root).Transform(new Point(0, 0));
                 _layoutSnapshots[item] = new Rect(topLeft, container.RenderSize);
+                captured++;
             }
             catch (InvalidOperationException)
             {
+                skipped++;
             }
         }
+
+        Log.Debug(
+            $"CaptureLiveLayout: captured={captured} skipped={skipped} deferred={deferred} " +
+            $"snapshotCount={_layoutSnapshots.Count} retry={_layoutCaptureRetryCount}");
+
+        if (captured == 0 && deferred > 0 && _layoutCaptureRetryCount < 5)
+        {
+            _layoutCaptureRetryCount++;
+            _layoutCaptureScheduled = true;
+            Dispatcher.BeginInvoke(new Action(InvalidateArrange), DispatcherPriority.Loaded);
+            return;
+        }
+
+        _layoutCaptureRetryCount = 0;
     }
 
     private void BeginExitGhost(object item)
@@ -317,6 +374,10 @@ public class TransitioningItemsControl : ItemsControl
 
         if (!TryResolveVisualBounds(item, out Rect bounds) || bounds.Width <= 0 || bounds.Height <= 0)
             return;
+
+        Log.Debug(
+            $"BeginExitGhost: item={DescribeItem(item)} left={bounds.Left:F1} top={bounds.Top:F1} " +
+            $"width={bounds.Width:F1} height={bounds.Height:F1}");
 
         var presenter = new ContentPresenter
         {
@@ -338,16 +399,20 @@ public class TransitioningItemsControl : ItemsControl
         _ghostLayer.Children.Add(presenter);
 
         int durationMs = ResolveDurationMs(ExitDuration);
+        durationMs = ResolveExitDurationMs(durationMs);
         var scale = (ScaleTransform)presenter.RenderTransform;
         scale.BeginAnimation(
             ScaleTransform.ScaleXProperty,
-            AnimationHelper.CreateAnim(1, ExitToScale, durationMs, AnimationHelper.EaseIn));
+            AnimationHelper.CreateAnim(1, ResolveExitToScale(), durationMs, AnimationHelper.EaseIn));
         scale.BeginAnimation(
             ScaleTransform.ScaleYProperty,
-            AnimationHelper.CreateAnim(1, ExitToScale, durationMs, AnimationHelper.EaseIn));
+            AnimationHelper.CreateAnim(1, ResolveExitToScale(), durationMs, AnimationHelper.EaseIn));
 
         var opacityAnimation = AnimationHelper.CreateAnim(1, 0, durationMs, AnimationHelper.EaseIn);
-        opacityAnimation.Completed += (_, _) => _ghostLayer.Children.Remove(presenter);
+        opacityAnimation.Completed += (_, _) =>
+        {
+            _ghostLayer.Children.Remove(presenter);
+        };
         presenter.BeginAnimation(UIElement.OpacityProperty, opacityAnimation);
     }
 
@@ -363,6 +428,7 @@ public class TransitioningItemsControl : ItemsControl
             }
             catch (InvalidOperationException)
             {
+                // Ignore and fall back to the last captured snapshot.
             }
         }
 
@@ -373,8 +439,9 @@ public class TransitioningItemsControl : ItemsControl
     {
         var scale = EnsureLifecycleScaleTransform(container);
         StopContainerAnimations(container);
-        scale.ScaleX = EnterFromScale;
-        scale.ScaleY = EnterFromScale;
+        double fromScale = ResolveEnterFromScale();
+        scale.ScaleX = fromScale;
+        scale.ScaleY = fromScale;
         container.Opacity = 0;
     }
 
@@ -382,23 +449,25 @@ public class TransitioningItemsControl : ItemsControl
     {
         var scale = EnsureLifecycleScaleTransform(container);
         StopContainerAnimations(container);
-        scale.ScaleX = EnterFromScale;
-        scale.ScaleY = EnterFromScale;
+        double fromScale = ResolveEnterFromScale();
+        scale.ScaleX = fromScale;
+        scale.ScaleY = fromScale;
         container.Opacity = 0;
 
-        int durationMs = ResolveDurationMs(EnterDuration);
+        int durationMs = ResolveEnterDurationMs(ResolveDurationMs(EnterDuration));
         scale.BeginAnimation(
             ScaleTransform.ScaleXProperty,
-            AnimationHelper.CreateAnim(EnterFromScale, 1, durationMs, AnimationHelper.EaseOut, beginTimeMs));
+            AnimationHelper.CreateAnim(fromScale, 1, durationMs, AnimationHelper.EaseOut, beginTimeMs));
         scale.BeginAnimation(
             ScaleTransform.ScaleYProperty,
-            AnimationHelper.CreateAnim(EnterFromScale, 1, durationMs, AnimationHelper.EaseOut, beginTimeMs));
+            AnimationHelper.CreateAnim(fromScale, 1, durationMs, AnimationHelper.EaseOut, beginTimeMs));
 
         var opacityAnimation = AnimationHelper.CreateAnim(0, 1, durationMs, AnimationHelper.EaseOut, beginTimeMs);
         opacityAnimation.Completed += (_, _) =>
         {
             container.BeginAnimation(UIElement.OpacityProperty, null);
             container.Opacity = 1;
+            ScheduleLayoutCapture();
         };
         container.BeginAnimation(UIElement.OpacityProperty, opacityAnimation);
     }
@@ -434,4 +503,51 @@ public class TransitioningItemsControl : ItemsControl
 
         return (int)Math.Round(duration.TimeSpan.TotalMilliseconds);
     }
+
+    private int ResolveEnterDurationMs(int configuredDurationMs)
+        => Preset switch
+        {
+            TransitioningItemsPreset.CardGrid => 240,
+            _ => configuredDurationMs
+        };
+
+    private int ResolveExitDurationMs(int configuredDurationMs)
+        => Preset switch
+        {
+            TransitioningItemsPreset.CardGrid => 180,
+            _ => configuredDurationMs
+        };
+
+    private int ResolveEnterStaggerDelayMs()
+        => Preset switch
+        {
+            TransitioningItemsPreset.CardGrid => 60,
+            _ => EnterStaggerDelayMs
+        };
+
+    private double ResolveEnterFromScale()
+        => Preset switch
+        {
+            TransitioningItemsPreset.CardGrid => 0.92d,
+            _ => EnterFromScale
+        };
+
+    private double ResolveExitToScale()
+        => Preset switch
+        {
+            TransitioningItemsPreset.CardGrid => 0.88d,
+            _ => ExitToScale
+        };
+
+    private static string DescribeItem(object? item)
+    {
+        if (item == null)
+            return "null";
+
+        if (item is Features.Library.Models.FolderListItem folder)
+            return $"{folder.Name}({folder.Path})";
+
+        return item.ToString() ?? item.GetType().Name;
+    }
+
 }

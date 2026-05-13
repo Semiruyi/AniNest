@@ -412,6 +412,39 @@ The recommended rollout is incremental.
 
 - evaluate reuse for other item-based surfaces
 
+## Implementation Status
+
+The first implementation wave is now in place for the library card grid.
+
+### Completed
+
+- add `TransitioningItemsControl`
+- retain removed items temporarily as ghost visuals for exit animation
+- keep `AnimatedWrapPanel` focused on live-item movement
+- migrate the library page from `ItemsControl` to `TransitioningItemsControl`
+- add `TransformComposer`
+- route shared scale and layout-translate animation paths through transform composition
+
+### Current Shape
+
+The library page now uses:
+
+- `TransitioningItemsControl` for item enter and exit
+- `AnimatedWrapPanel` for live-item reflow
+- `TransformComposer` so lifecycle scale and layout translation can coexist
+
+This means the library grid now has the intended architectural split:
+
+- collection lifecycle
+- layout movement
+- transform composition
+
+### Not Done Yet
+
+- broader reuse on other item-based surfaces
+- richer preset vocabulary if more list surfaces appear
+- focused UI-level verification for rapid repeated changes and interruption behavior
+
 ## Initial Timing Guidance
 
 These defaults should feel aligned with the current app motion language.

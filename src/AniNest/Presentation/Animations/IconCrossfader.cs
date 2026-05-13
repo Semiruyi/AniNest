@@ -110,12 +110,9 @@ public static class IconCrossfader
         var currentElement = isActive ? panel.Children[1] as UIElement : panel.Children[0] as UIElement;
         if (currentElement is null) return;
 
-        var scale = currentElement.RenderTransform as ScaleTransform;
-        if (scale != null)
-        {
-            scale.ScaleX = 1;
-            scale.ScaleY = 1;
-        }
+        var scale = AnimationHelper.GetScaleTransform(currentElement);
+        scale.ScaleX = 1;
+        scale.ScaleY = 1;
         AnimationHelper.AnimateFromCurrent(currentElement, UIElement.OpacityProperty, 0, ResolveDurationMs(GetPreset(panel)));
 
         _clickOutDone.Add(panel);
@@ -172,14 +169,12 @@ public static class IconCrossfader
 
     private static void EnsureScale(FrameworkElement element)
     {
-        element.RenderTransformOrigin = new Point(0.5, 0.5);
-        if (element.RenderTransform is not ScaleTransform)
-            element.RenderTransform = new ScaleTransform(1, 1);
+        _ = AnimationHelper.GetScaleTransform(element);
     }
 
     private static void SnapState(FrameworkElement element, double scale)
     {
-        var st = (ScaleTransform)element.RenderTransform;
+        var st = AnimationHelper.GetScaleTransform(element);
         st.ScaleX = st.ScaleY = scale;
         element.Opacity = scale;
     }
@@ -194,7 +189,7 @@ public static class IconCrossfader
     private static void AnimateIn(FrameworkElement element, int durationMs, bool noScale)
     {
         element.Visibility = Visibility.Visible;
-        var st = (ScaleTransform)element.RenderTransform;
+        var st = AnimationHelper.GetScaleTransform(element);
 
         if (noScale)
         {
@@ -216,7 +211,7 @@ public static class IconCrossfader
     {
         if (!noScale)
         {
-            var scale = (ScaleTransform)element.RenderTransform;
+            var scale = AnimationHelper.GetScaleTransform(element);
             AnimationHelper.AnimateScaleTransform(scale, 0, durationMs);
         }
         AnimationHelper.AnimateFromCurrent(element, UIElement.OpacityProperty, 0, durationMs);

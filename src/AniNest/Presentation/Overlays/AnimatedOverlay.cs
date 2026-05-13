@@ -833,7 +833,7 @@ public class AnimatedOverlay : ContentControl
             return;
 
         _surface.BeginAnimation(UIElement.OpacityProperty, null);
-        if (_surface.RenderTransform is ScaleTransform scale)
+        if (TransformComposer.TryGetPrimaryScaleTransform(_surface, out var scale))
         {
             scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
             scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);

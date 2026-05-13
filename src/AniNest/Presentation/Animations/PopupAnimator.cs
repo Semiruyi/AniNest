@@ -47,13 +47,11 @@ public class PopupAnimator
 
     public void ShowImmediate()
     {
-        if (_element.RenderTransform is ScaleTransform scale)
-        {
-            scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-            scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-            scale.ScaleX = 1;
-            scale.ScaleY = 1;
-        }
+        var scale = AnimationHelper.GetScaleTransform(_element);
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        scale.ScaleX = 1;
+        scale.ScaleY = 1;
         _element.BeginAnimation(UIElement.OpacityProperty, null);
         _element.Opacity = 1;
     }
