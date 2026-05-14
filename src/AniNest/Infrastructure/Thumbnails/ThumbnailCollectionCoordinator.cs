@@ -13,6 +13,7 @@ internal sealed class ThumbnailCollectionCoordinator
     private readonly ThumbnailTaskStore _taskStore;
     private readonly ThumbnailWorkerPool _workerPool;
     private readonly ThumbnailIndexRepository _indexRepository;
+    private readonly ThumbnailWorkerCancellationCoordinator _workerCancellationCoordinator;
     private readonly Action _ensureLoopRunning;
     private readonly Action _notifyStatusChanged;
     private readonly Action _saveIndex;
@@ -24,6 +25,7 @@ internal sealed class ThumbnailCollectionCoordinator
         ThumbnailTaskStore taskStore,
         ThumbnailWorkerPool workerPool,
         ThumbnailIndexRepository indexRepository,
+        ThumbnailWorkerCancellationCoordinator workerCancellationCoordinator,
         Action ensureLoopRunning,
         Action notifyStatusChanged,
         Action saveIndex,
@@ -34,6 +36,7 @@ internal sealed class ThumbnailCollectionCoordinator
         _taskStore = taskStore;
         _workerPool = workerPool;
         _indexRepository = indexRepository;
+        _workerCancellationCoordinator = workerCancellationCoordinator;
         _ensureLoopRunning = ensureLoopRunning;
         _notifyStatusChanged = notifyStatusChanged;
         _saveIndex = saveIndex;
@@ -59,7 +62,32 @@ internal sealed class ThumbnailCollectionCoordinator
 
     public void DeleteCollection(string collectionId, IReadOnlyCollection<string>? videoPaths = null)
     {
-        _taskStore.DeleteForCollection(collectionId, videoPaths);
+        IReadOnlyCollection<string>? members = _taskStore.GetCollectionMembers(collectionId);
+        if (members is null)
+            return;
+
+        var targets = (videoPaths ?? members)
+            .Where(members.Contains)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        var targetSet = new HashSet<string>(targets, StringComparer.OrdinalIgnoreCase);
+        var workersToCancel = _workerPool.MarkForCancellation(
+            workers => workers
+                .Where(worker =>
+                    !worker.Execution.IsCompleted &&
+                    targetSet.Contains(worker.Task.VideoPath))
+                .ToList(),
+            _ => $"collection-deleted:{collectionId}");
+        _workerCancellationCoordinator.CancelWithReason(
+            workersToCancel,
+            $"collection-deleted:{collectionId}",
+            $"Thumbnail collection delete cancel: id={collectionId}");
+
+        IReadOnlyList<ThumbnailTask> removedTasks = _taskStore.DeleteForCollection(collectionId, targets);
+        foreach (ThumbnailTask task in removedTasks)
+            _indexRepository.DeleteTaskDirectory(task.Md5Dir);
+
         RemoveCollection(collectionId);
         _saveIndex();
         _notifyStatusChanged();

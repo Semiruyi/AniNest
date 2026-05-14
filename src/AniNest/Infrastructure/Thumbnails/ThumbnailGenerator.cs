@@ -109,6 +109,7 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
             _taskStore,
             _workerPool,
             components.IndexRepository,
+            _workerCancellationCoordinator,
             EnsureLoopRunning,
             NotifyStatusChanged,
             SaveIndex,
@@ -535,6 +536,11 @@ public class ThumbnailGenerator : IThumbnailGenerator, IDisposable
     internal void SimulateCanceledActiveWorkerForTest(string videoPath)
     {
         _taskStore.TryRequeueTask(videoPath);
+    }
+
+    internal void RegisterVideoForTest(string videoPath)
+    {
+        _taskStore.TryRegisterVideo(videoPath, ComputeMd5, out _);
     }
 
     private void SetTaskState(ThumbnailTask task, ThumbnailState newState)

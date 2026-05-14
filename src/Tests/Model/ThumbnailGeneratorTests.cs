@@ -411,6 +411,52 @@ public class ThumbnailGeneratorTests : IDisposable
     }
 
     [Fact]
+    public void DeleteCollection_RemovesExclusiveTasksAndCancelsActiveWorkers()
+    {
+        string folderPath = CreateUniqueFolderPath("delete-exclusive");
+        var videos = new[]
+        {
+            Path.Combine(folderPath, "ep01.mp4"),
+            Path.Combine(folderPath, "ep02.mp4")
+        };
+        int totalBefore = _generator.GetStatusSnapshot().TotalCount;
+
+        RegisterFolderCollection(folderPath, videos);
+        _generator.AddActiveWorkerForTest(videos[0]);
+
+        _generator.DeleteCollection(folderPath);
+
+        _generator.IsActiveWorkerCancellationRequestedForTest(videos[0]).Should().BeTrue();
+        _generator.GetTaskVideoPathsInOrder().Should().NotContain(videos);
+        _generator.GetStatusSnapshot().TotalCount.Should().Be(totalBefore);
+    }
+
+    [Fact]
+    public void DeleteCollection_KeepsSharedVideoTasksForOtherCollections()
+    {
+        string firstFolderPath = CreateUniqueFolderPath("shared-first");
+        string secondFolderPath = CreateUniqueFolderPath("shared-second");
+        var sharedVideo = Path.Combine(_tempDir, $"shared-{Guid.NewGuid():N}.mp4");
+        var onlyFirst = Path.Combine(firstFolderPath, "first-only.mp4");
+        var onlySecond = Path.Combine(secondFolderPath, "second-only.mp4");
+        int totalBefore = _generator.GetStatusSnapshot().TotalCount;
+
+        _generator.RegisterCollection(
+            new LibraryCollectionRef("folder:first", LibraryCollectionKind.Folder, "First"),
+            [sharedVideo, onlyFirst]);
+        _generator.RegisterCollection(
+            new LibraryCollectionRef("folder:second", LibraryCollectionKind.Folder, "Second"),
+            [sharedVideo, onlySecond]);
+
+        _generator.DeleteCollection("folder:first");
+
+        _generator.GetTaskVideoPathsInOrder().Should().Contain(sharedVideo);
+        _generator.GetTaskVideoPathsInOrder().Should().Contain(onlySecond);
+        _generator.GetTaskVideoPathsInOrder().Should().NotContain(onlyFirst);
+        _generator.GetStatusSnapshot().TotalCount.Should().Be(totalBefore + 2);
+    }
+
+    [Fact]
     public void PreemptLowerPriorityWorkers_WhenManualSingleArrives_RequeuesBackgroundWorker()
     {
         var backgroundVideo = @"C:\videos\ep01.mp4";
@@ -498,13 +544,15 @@ public class ThumbnailGeneratorTests : IDisposable
     [Fact]
     public void RefreshPerformanceMode_FallbackCancelsWorkerWhenProcessIdMissing()
     {
-        var activeVideo = @"C:\videos\ep01.mp4";
+        var activeVideo = Path.Combine(CreateUniqueFolderPath("pause-fallback"), "ep01.mp4");
 
-        RegisterFolderCollection(@"C:\videos", [activeVideo]);
-        _generator.AddActiveWorkerForTest(activeVideo);
         _settingsService.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
-
         _generator.RefreshPerformanceMode();
+        _generator.RegisterVideoForTest(activeVideo);
+        _generator.AddActiveWorkerForTest(activeVideo);
+
+        _generator.TryApplyPerformanceMode(ThumbnailPerformanceMode.Balanced).Should().BeTrue();
+        _generator.TryApplyPerformanceMode(ThumbnailPerformanceMode.Paused).Should().BeTrue();
         _generator.SimulateCanceledActiveWorkerForTest(activeVideo);
 
         _generator.IsActiveWorkerCancellationRequestedForTest(activeVideo).Should().BeTrue();
@@ -595,4 +643,7 @@ public class ThumbnailGeneratorTests : IDisposable
             new LibraryCollectionRef(folderPath, LibraryCollectionKind.Folder, Path.GetFileName(folderPath)),
             videoPaths);
     }
+
+    private string CreateUniqueFolderPath(string name)
+        => Path.Combine(_tempDir, $"{name}-{Guid.NewGuid():N}");
 }

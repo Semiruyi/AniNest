@@ -289,19 +289,36 @@ internal sealed class ThumbnailTaskStore
         }
     }
 
-    public void DeleteForCollection(string collectionId, IReadOnlyCollection<string>? videoPaths = null)
+    public IReadOnlyList<ThumbnailTask> DeleteForCollection(string collectionId, IReadOnlyCollection<string>? videoPaths = null)
     {
         lock (_lock)
         {
             if (!_collectionToVideos.TryGetValue(collectionId, out var members))
-                return;
+                return [];
 
             IReadOnlyCollection<string> targets = videoPaths ?? members.ToArray();
-            foreach (string videoPath in targets)
+            var distinctTargets = new HashSet<string>(targets, StringComparer.OrdinalIgnoreCase);
+            var tasksToRemove = new List<ThumbnailTask>();
+
+            foreach (string videoPath in distinctTargets)
             {
-                if (members.Contains(videoPath))
-                    MarkForDeletionUnsafe(videoPath);
+                if (!members.Contains(videoPath))
+                    continue;
+
+                if (!_videoToTask.TryGetValue(videoPath, out var task))
+                    continue;
+
+                if (!IsExclusiveToCollectionUnsafe(videoPath, collectionId))
+                {
+                    ReassignSourceCollectionIfNeededUnsafe(task, collectionId);
+                    continue;
+                }
+
+                tasksToRemove.Add(task);
             }
+
+            RemoveTasksUnsafe(tasksToRemove);
+            return tasksToRemove;
         }
     }
 
@@ -334,14 +351,23 @@ internal sealed class ThumbnailTaskStore
     public void RemoveTasks(IReadOnlyCollection<ThumbnailTask> tasks)
     {
         lock (_lock)
+            RemoveTasksUnsafe(tasks);
+    }
+
+    private void RemoveTasksUnsafe(IReadOnlyCollection<ThumbnailTask> tasks)
+    {
+        foreach (var task in tasks)
         {
-            foreach (var task in tasks)
+            _tasks.Remove(task);
+            _videoToTask.Remove(task.VideoPath);
+            if (task.State == ThumbnailState.Ready)
+                _readyCount--;
+            _totalCount--;
+
+            if (string.Equals(_currentForegroundTargetVideoPath, task.VideoPath, StringComparison.OrdinalIgnoreCase))
             {
-                _tasks.Remove(task);
-                _videoToTask.Remove(task.VideoPath);
-                if (task.State == ThumbnailState.Ready)
-                    _readyCount--;
-                _totalCount--;
+                _currentForegroundTargetVideoPath = null;
+                _currentForegroundTargetIntent = null;
             }
         }
     }
@@ -467,16 +493,6 @@ internal sealed class ThumbnailTaskStore
             _readyCount++;
     }
 
-    private void MarkForDeletionUnsafe(string videoPath)
-    {
-        if (_videoToTask.TryGetValue(videoPath, out var task) &&
-            task.State == ThumbnailState.Ready &&
-            task.MarkedForDeletionAt == 0)
-        {
-            task.MarkedForDeletionAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        }
-    }
-
     private int CountTasksByStateUnsafe(ThumbnailState state)
         => _tasks.Count(task => task.State == state);
 
@@ -489,4 +505,29 @@ internal sealed class ThumbnailTaskStore
         => string.IsNullOrWhiteSpace(_currentForegroundTargetVideoPath)
             ? null
             : Path.GetFileName(_currentForegroundTargetVideoPath);
+
+    private bool IsExclusiveToCollectionUnsafe(string videoPath, string collectionId)
+    {
+        if (!_videoToCollections.TryGetValue(videoPath, out var collectionIds))
+            return true;
+
+        return collectionIds.Count == 1 && collectionIds.Contains(collectionId);
+    }
+
+    private void ReassignSourceCollectionIfNeededUnsafe(ThumbnailTask task, string deletedCollectionId)
+    {
+        if (!string.Equals(task.SourceCollectionId, deletedCollectionId, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (!_videoToCollections.TryGetValue(task.VideoPath, out var collectionIds))
+        {
+            task.SourceCollectionId = null;
+            return;
+        }
+
+        task.SourceCollectionId = collectionIds
+            .Where(collectionId => !string.Equals(collectionId, deletedCollectionId, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(static collectionId => collectionId, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault();
+    }
 }
