@@ -5,7 +5,7 @@
                     xmlns:conv="clr-namespace:AniNest.Presentation.Converters"
                     xmlns:models="clr-namespace:AniNest.Features.Library.Models"
                     xmlns:overlays="clr-namespace:AniNest.Presentation.Overlays"
-                    xmlns:persistence="clr-namespace:AniNest.Infrastructure.Persistence">
+                    xmlns:persistence="clr-namespace:AniNest.Infrastructure.Persistence;assembly=AniNest.Ports">
 
     <!-- Library page-local text and overlay styles -->
     <conv:NullToVisibilityConverter x:Key="LibraryNullToVisible"

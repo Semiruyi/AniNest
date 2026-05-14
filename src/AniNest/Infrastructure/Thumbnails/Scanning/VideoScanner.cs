@@ -269,10 +269,4 @@ public class VideoScanner : IVideoScanner
     }
 }
 
-public sealed record FolderScanResult(
-    int VideoCount,
-    string? CoverPath,
-    string[] VideoFiles);
-
-
 

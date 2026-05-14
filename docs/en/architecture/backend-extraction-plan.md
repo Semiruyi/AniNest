@@ -15,6 +15,31 @@ The immediate goal is:
 
 If this phase succeeds, a later UI rewrite becomes a frontend replacement project instead of a full application rewrite.
 
+## Current Progress
+
+The extraction is already underway. The current checkpoint includes:
+
+- WPF-only shell actions now go through abstractions such as:
+  - `IApplicationLifecycle`
+  - `IDialogService`
+  - `IFolderPickerService`
+  - `IUiDispatcher`
+- media playback contracts no longer expose WPF image types
+- player input contracts now use toolkit-neutral key, mouse, wheel, and modifier models
+- shared contracts were physically moved into `src/AniNest.Ports/`
+- additional backend-facing infrastructure contracts were moved into `src/AniNest.Ports/`, including:
+  - localization contracts
+  - settings contracts and shared settings models
+  - thumbnail generator and scanner contracts
+  - thumbnail shared enums and event args
+  - taskbar coordination contract
+
+This means the codebase now has a clearer separation between:
+
+- frontend-only WPF adapters
+- shared backend-facing contracts
+- concrete runtime implementations that still live in the current app project
+
 ## Why this is needed
 
 AniNest already has a meaningful amount of reusable application logic:
