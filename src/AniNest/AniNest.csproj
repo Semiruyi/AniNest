@@ -54,6 +54,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\\AniNest.Ports\\AniNest.Ports.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ApplicationDefinition Include="View\App.xaml" />
   </ItemGroup>
 

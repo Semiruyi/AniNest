@@ -425,18 +425,3 @@ public class MediaPlayerController : IMediaPlayerController
         return provider;
     }
 }
-
-public class ProgressUpdatedEventArgs : EventArgs
-{
-    public long CurrentTime { get; }
-    public long TotalTime { get; }
-
-    public ProgressUpdatedEventArgs(long currentTime, long totalTime)
-    {
-        CurrentTime = currentTime;
-        TotalTime = totalTime;
-    }
-}
-
-
-

@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AniNest\AniNest.csproj" />
+    <ProjectReference Include="..\AniNest.Ports\AniNest.Ports.csproj" />
     <ProjectReference Include="..\Launcher\AniNest.Launcher.csproj" />
   </ItemGroup>
 
