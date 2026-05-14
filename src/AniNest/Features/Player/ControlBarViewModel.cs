@@ -1,10 +1,12 @@
 using System;
 using System.ComponentModel;
-using System.Windows.Threading;
+using System.Threading;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using AniNest.Infrastructure.Localization;
 using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Presentation;
 using AniNest.Features.Player.Models;
 using AniNest.Features.Player.Services;
 
@@ -15,6 +17,7 @@ public partial class ControlBarViewModel : ObservableObject
     private readonly IPlayerPlaybackFacade _playbackFacade;
     private readonly ILocalizationService _loc;
     private readonly ISettingsService _settings;
+    private readonly IUiDispatcher _uiDispatcher;
     private readonly PlayerPlaybackStateController _playback;
     private readonly PropertyChangedEventHandler _locPropertyChangedHandler;
     private readonly PropertyChangedEventHandler _playbackPropertyChangedHandler;
@@ -71,11 +74,13 @@ public partial class ControlBarViewModel : ObservableObject
         IPlayerPlaybackFacade playbackFacade,
         ILocalizationService loc,
         ISettingsService settings,
+        IUiDispatcher uiDispatcher,
         PlayerPlaybackStateController playback)
     {
         _playbackFacade = playbackFacade;
         _loc = loc;
         _settings = settings;
+        _uiDispatcher = uiDispatcher;
         _playback = playback;
         _locPropertyChangedHandler = (_, args) =>
         {
@@ -201,7 +206,7 @@ public partial class ControlBarViewModel : ObservableObject
         IsControlBarVisible = !value;
         if (!value)
         {
-            _hideTimer?.Stop();
+            CancelHideTimer();
             _isMouseInShowZone = false;
         }
     }
@@ -209,7 +214,7 @@ public partial class ControlBarViewModel : ObservableObject
     private const double ShowZoneHeight = 100;
     private const int HideDelayMs = 350;
 
-    private DispatcherTimer? _hideTimer;
+    private CancellationTokenSource? _hideTimerCancellation;
     private bool _isMouseInShowZone;
 
     [RelayCommand]
@@ -220,7 +225,7 @@ public partial class ControlBarViewModel : ObservableObject
         if (args.containerHeight - args.mouseY <= ShowZoneHeight)
         {
             _isMouseInShowZone = true;
-            _hideTimer?.Stop();
+            CancelHideTimer();
             IsControlBarVisible = true;
         }
         else if (_isMouseInShowZone)
@@ -240,21 +245,9 @@ public partial class ControlBarViewModel : ObservableObject
 
     private void StartHideTimer()
     {
-        if (_hideTimer == null)
-        {
-            _hideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(HideDelayMs) };
-            _hideTimer.Tick += (_, _) =>
-            {
-                _hideTimer.Stop();
-                if (!_isMouseInShowZone)
-                    IsControlBarVisible = false;
-            };
-        }
-        else
-        {
-            _hideTimer.Stop();
-        }
-        _hideTimer.Start();
+        CancelHideTimer();
+        _hideTimerCancellation = new CancellationTokenSource();
+        _ = HideAfterDelayAsync(_hideTimerCancellation.Token);
     }
 
     [RelayCommand]
@@ -286,8 +279,37 @@ public partial class ControlBarViewModel : ObservableObject
 
     public void Cleanup()
     {
+        CancelHideTimer();
         _loc.PropertyChanged -= _locPropertyChangedHandler;
         _playback.PropertyChanged -= _playbackPropertyChangedHandler;
+    }
+
+    private async Task HideAfterDelayAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(HideDelayMs, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+            return;
+
+        _uiDispatcher.BeginInvoke(() =>
+        {
+            if (!cancellationToken.IsCancellationRequested && !_isMouseInShowZone)
+                IsControlBarVisible = false;
+        });
+    }
+
+    private void CancelHideTimer()
+    {
+        _hideTimerCancellation?.Cancel();
+        _hideTimerCancellation?.Dispose();
+        _hideTimerCancellation = null;
     }
 
     private void InitializeVolumeState()

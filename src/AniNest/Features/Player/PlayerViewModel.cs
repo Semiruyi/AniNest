@@ -65,6 +65,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
         IWpfVideoSurfaceSource videoSurfaceSource,
         ILocalizationService loc,
         ISettingsService settings,
+        IUiDispatcher uiDispatcher,
         IDialogService dialogs,
         IPlayerInputService inputService)
     {
@@ -95,7 +96,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
                 OnPropertyChanged(nameof(VideoSource));
         };
 
-        ControlBar = new ControlBarViewModel(playbackFacade, loc, settings, playback);
+        ControlBar = new ControlBarViewModel(playbackFacade, loc, settings, uiDispatcher, playback);
 
         ControlBar.NextRequested += () => _ = _session.PlayNext();
         ControlBar.PreviousRequested += () => _ = _session.PlayPrevious();

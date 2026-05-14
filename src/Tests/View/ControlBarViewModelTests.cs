@@ -5,6 +5,7 @@ using AniNest.Features.Player;
 using AniNest.Features.Player.Services;
 using AniNest.Infrastructure.Localization;
 using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Presentation;
 
 namespace AniNest.Tests.View;
 
@@ -84,6 +85,11 @@ public class ControlBarViewModelTests
             Mock.Of<Infrastructure.Media.IMediaPlayerController>(),
             Mock.Of<IPlayerPlaybackStateSyncService>());
 
-        return new ControlBarViewModel(playbackFacade, localization.Object, settings, playbackState);
+        return new ControlBarViewModel(
+            playbackFacade,
+            localization.Object,
+            settings,
+            Mock.Of<IUiDispatcher>(),
+            playbackState);
     }
 }

@@ -68,6 +68,7 @@ public class PlayerViewModelTests : IDisposable
             videoSurfaceSource.Object,
             localization.Object,
             settings.Object,
+            Mock.Of<IUiDispatcher>(),
             dialogs.Object,
             inputService.Object);
 
