@@ -88,6 +88,129 @@ public class MainPageViewModelTests
     }
 
     [Fact]
+    public async Task SearchText_FiltersLoadedItemsByFolderName()
+    {
+        var libraryService = new Mock<ILibraryAppService>();
+        var localization = CreateLocalizationService();
+        libraryService
+            .Setup(service => service.LoadLibraryAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[]
+            {
+                new LibraryFolderDto("Bocchi the Rock", "/bocchi", 4, null, 0),
+                new LibraryFolderDto("K-On", "/kon", 4, null, 0),
+            });
+
+        var viewModel = CreateViewModel(libraryService.Object, localization.Object);
+
+        await viewModel.LoadDataCommand.ExecuteAsync(null);
+        viewModel.SearchText = "bocchi";
+
+        viewModel.FolderItems.Should().ContainSingle(item => item.Path == "/bocchi");
+        viewModel.HasSearchQuery.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SearchText_ComposesWithSelectedFilter()
+    {
+        var libraryService = new Mock<ILibraryAppService>();
+        var localization = CreateLocalizationService();
+        libraryService
+            .Setup(service => service.LoadLibraryAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[]
+            {
+                new LibraryFolderDto("Gundam Seed", "/watching", 4, null, 0, WatchStatus.Watching, false),
+                new LibraryFolderDto("Gundam Wing", "/completed", 4, null, 0, WatchStatus.Completed, false),
+            });
+
+        var viewModel = CreateViewModel(libraryService.Object, localization.Object);
+
+        await viewModel.LoadDataCommand.ExecuteAsync(null);
+        viewModel.SetSelectedFilterCommand.Execute(LibraryFilter.Watching);
+        viewModel.SearchText = "gundam";
+
+        viewModel.FolderItems.Should().ContainSingle(item => item.Path == "/watching");
+    }
+
+    [Fact]
+    public void MetadataRefresh_ReappliesSearchAndMatchesMetadataTitle()
+    {
+        var libraryService = new Mock<ILibraryAppService>();
+        var metadataQueryService = new Mock<IMetadataQueryService>();
+        var localization = CreateLocalizationService();
+        EventHandler<FolderMetadataRefreshedEventArgs>? handler = null;
+
+        metadataQueryService.SetupAdd(service => service.FolderMetadataRefreshed += It.IsAny<EventHandler<FolderMetadataRefreshedEventArgs>>())
+            .Callback<EventHandler<FolderMetadataRefreshedEventArgs>>(value => handler += value);
+        metadataQueryService.SetupRemove(service => service.FolderMetadataRefreshed -= It.IsAny<EventHandler<FolderMetadataRefreshedEventArgs>>())
+            .Callback<EventHandler<FolderMetadataRefreshedEventArgs>>(value => handler -= value);
+
+        var viewModel = CreateViewModel(libraryService.Object, localization.Object, metadataQueryService.Object);
+        viewModel.AddFolderItem("Folder", "/folder", 4, null);
+        viewModel.SearchText = "bocchi";
+
+        viewModel.FolderItems.Should().BeEmpty();
+
+        handler.Should().NotBeNull();
+        handler!.Invoke(viewModel, new FolderMetadataRefreshedEventArgs("/folder", new FolderMetadata
+        {
+            FolderPath = "/folder",
+            Title = "Bocchi the Rock"
+        }));
+
+        viewModel.FolderItems.Should().ContainSingle(item => item.Path == "/folder");
+    }
+
+    [Fact]
+    public async Task ClearSearchCommand_RestoresCurrentFilterView()
+    {
+        var libraryService = new Mock<ILibraryAppService>();
+        var localization = CreateLocalizationService();
+        libraryService
+            .Setup(service => service.LoadLibraryAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[]
+            {
+                new LibraryFolderDto("Bocchi", "/bocchi", 4, null, 0, WatchStatus.Watching, false),
+                new LibraryFolderDto("K-On", "/kon", 4, null, 0, WatchStatus.Watching, false),
+                new LibraryFolderDto("Other", "/other", 4, null, 0, WatchStatus.Completed, false),
+            });
+
+        var viewModel = CreateViewModel(libraryService.Object, localization.Object);
+
+        await viewModel.LoadDataCommand.ExecuteAsync(null);
+        viewModel.SetSelectedFilterCommand.Execute(LibraryFilter.Watching);
+        viewModel.SearchText = "bocchi";
+
+        viewModel.FolderItems.Should().ContainSingle(item => item.Path == "/bocchi");
+
+        viewModel.ClearSearchCommand.Execute(null);
+
+        viewModel.SearchText.Should().BeEmpty();
+        viewModel.FolderItems.Should().HaveCount(2);
+        viewModel.FolderItems.Should().OnlyContain(item => item.Status == WatchStatus.Watching);
+    }
+
+    [Fact]
+    public async Task SearchText_WithNoMatches_ShowsSearchEmptyState()
+    {
+        var libraryService = new Mock<ILibraryAppService>();
+        var localization = CreateLocalizationService();
+        libraryService
+            .Setup(service => service.LoadLibraryAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[]
+            {
+                new LibraryFolderDto("Bocchi", "/bocchi", 4, null, 0),
+            });
+
+        var viewModel = CreateViewModel(libraryService.Object, localization.Object);
+
+        await viewModel.LoadDataCommand.ExecuteAsync(null);
+        viewModel.SearchText = "gundam";
+
+        viewModel.FolderItems.Should().BeEmpty();
+        viewModel.IsSearchEmptyStateVisible.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task ToggleFavoriteCommand_UpdatesItemAndCallsLibraryService()
     {
         var libraryService = new Mock<ILibraryAppService>();

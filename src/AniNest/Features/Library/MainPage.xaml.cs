@@ -286,6 +286,12 @@ public partial class MainPage : System.Windows.Controls.UserControl
         }
     }
 
+    private void SearchFocusButton_Click(object sender, RoutedEventArgs e)
+    {
+        LibrarySearchTextBox.Focus();
+        LibrarySearchTextBox.CaretIndex = LibrarySearchTextBox.Text?.Length ?? 0;
+    }
+
     private void CloseCardContextMenu(OverlayCloseReason reason)
     {
         CloseCardContextMenuChildOverlays(reason == OverlayCloseReason.Programmatic

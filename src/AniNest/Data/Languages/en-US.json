@@ -70,6 +70,9 @@
   "Library.ClearWatchHistory": "Clear Watch History",
   "Library.RemoveFromLibrary": "Remove from Library",
   "Library.ThumbnailProgress": "Thumbnails {0}/{1}",
+  "Library.Search.Placeholder": "Search library",
+  "Library.Search.Empty": "No folders match the current search.",
+  "Library.Search.ResultCount": "{0} result(s)",
   "TitleBar.ThumbnailBackgroundTask": "Thumbnail Background Task",
   "TitleBar.ThumbnailBackgroundTasks": "Current Tasks",
 

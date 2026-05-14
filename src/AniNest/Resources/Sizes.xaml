@@ -83,6 +83,10 @@
     <system:Double x:Key="LibraryFilterBarHeight">44</system:Double>
     <system:Double x:Key="LibraryFilterBarItemHeight">32</system:Double>
     <system:Double x:Key="LibraryFilterBarItemMinWidth">68</system:Double>
+    <system:Double x:Key="LibrarySearchBoxMaxWidth">560</system:Double>
+    <system:Double x:Key="LibrarySearchBoxHeight">44</system:Double>
+    <system:Double x:Key="LibrarySearchIconSize">12</system:Double>
+    <system:Double x:Key="LibrarySearchClearButtonSize">24</system:Double>
 
     <GridLength x:Key="TitleBarRowHeight">40</GridLength>
 

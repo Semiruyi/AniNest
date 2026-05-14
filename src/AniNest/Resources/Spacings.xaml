@@ -45,6 +45,10 @@
     <Thickness x:Key="LibraryFilterBarOuterPadding">6,4</Thickness>
     <Thickness x:Key="LibraryFilterBarItemMargin">3,0</Thickness>
     <Thickness x:Key="LibraryFilterBarItemPadding">14,0</Thickness>
+    <Thickness x:Key="LibrarySearchBoxMargin">0,0,0,8</Thickness>
+    <Thickness x:Key="LibrarySearchBoxPadding">14,0,10,0</Thickness>
+    <Thickness x:Key="LibrarySearchIconMargin">0,0,10,0</Thickness>
+    <Thickness x:Key="LibrarySearchClearButtonMargin">8,0,0,0</Thickness>
     <Thickness x:Key="LibraryFolderListMargin">0,8,0,0</Thickness>
     <Thickness x:Key="FolderCardMargin">14,10,14,10</Thickness>
     <Thickness x:Key="ToolbarHorizontalMargin">24,0</Thickness>

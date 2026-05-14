@@ -17,6 +17,196 @@
     <conv:CoverImageSourceConverter x:Key="LibraryCoverImageSource"
                                     DecodePixelWidth="380"/>
 
+    <Style x:Key="LibrarySearchSurfaceBorder"
+           TargetType="Border"
+           BasedOn="{StaticResource AppSegmentedSurfaceBorder}">
+        <Setter Property="Padding"
+                Value="{StaticResource LibrarySearchBoxPadding}"/>
+    </Style>
+
+    <Style x:Key="LibrarySearchIconPath"
+           TargetType="Path">
+        <Setter Property="Data"
+                Value="{StaticResource SearchIconGeometry}"/>
+        <Setter Property="Width"
+                Value="{StaticResource LibrarySearchIconSize}"/>
+        <Setter Property="Height"
+                Value="{StaticResource LibrarySearchIconSize}"/>
+        <Setter Property="Stroke"
+                Value="{StaticResource TextSecondary}"/>
+        <Setter Property="StrokeThickness"
+                Value="1.25"/>
+        <Setter Property="Stretch"
+                Value="Uniform"/>
+        <Setter Property="VerticalAlignment"
+                Value="Center"/>
+        <Setter Property="Margin"
+                Value="{StaticResource LibrarySearchIconMargin}"/>
+    </Style>
+
+    <Style x:Key="LibrarySearchTextBox"
+           TargetType="TextBox">
+        <Setter Property="Background"
+                Value="{StaticResource TransparentBrush}"/>
+        <Setter Property="BorderThickness"
+                Value="0"/>
+        <Setter Property="Foreground"
+                Value="{StaticResource TextPrimary}"/>
+        <Setter Property="CaretBrush"
+                Value="{StaticResource TextPrimary}"/>
+        <Setter Property="VerticalContentAlignment"
+                Value="Center"/>
+        <Setter Property="FontFamily"
+                Value="{StaticResource AppFontFamily}"/>
+        <Setter Property="FontSize"
+                Value="{StaticResource AppFontSizeBody}"/>
+    </Style>
+
+    <Style x:Key="LibrarySearchFocusButton"
+           TargetType="Button"
+           BasedOn="{StaticResource AnimatedCompactIconButton}">
+        <Setter Property="Background"
+                Value="{StaticResource TransparentBrush}"/>
+        <Setter Property="BorderThickness"
+                Value="0"/>
+        <Setter Property="Padding"
+                Value="0"/>
+        <Setter Property="HorizontalContentAlignment"
+                Value="Center"/>
+        <Setter Property="VerticalContentAlignment"
+                Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
+                        </Grid.RenderTransform>
+                        <Border x:Name="HoverBg"
+                                Background="{StaticResource PressedBackground}"
+                                CornerRadius="10"
+                                Opacity="0"/>
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="HoverBg"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="1"
+                                                         Duration="0:0:0.12"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="HoverBg"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0"
+                                                         Duration="0:0:0.18"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="LibrarySearchPlaceholderText"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource AppTextBody}">
+        <Setter Property="Foreground"
+                Value="{StaticResource TextSecondary}"/>
+        <Setter Property="VerticalAlignment"
+                Value="Center"/>
+        <Setter Property="IsHitTestVisible"
+                Value="False"/>
+    </Style>
+
+    <Style x:Key="LibrarySearchClearButton"
+           TargetType="Button"
+           BasedOn="{StaticResource AnimatedCompactIconButton}">
+        <Setter Property="Width"
+                Value="{StaticResource LibrarySearchClearButtonSize}"/>
+        <Setter Property="Height"
+                Value="{StaticResource LibrarySearchClearButtonSize}"/>
+        <Setter Property="Background"
+                Value="{StaticResource TransparentBrush}"/>
+        <Setter Property="BorderThickness"
+                Value="0"/>
+        <Setter Property="Foreground"
+                Value="{StaticResource TextSecondary}"/>
+        <Setter Property="Margin"
+                Value="{StaticResource LibrarySearchClearButtonMargin}"/>
+        <Setter Property="Content"
+                Value="×"/>
+        <Setter Property="FontFamily"
+                Value="{StaticResource AppFontFamily}"/>
+        <Setter Property="FontSize"
+                Value="{StaticResource AppFontSizeBodyStrong}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid Width="{TemplateBinding Width}"
+                          Height="{TemplateBinding Height}"
+                          RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <ScaleTransform x:Name="AnimScale" ScaleX="1" ScaleY="1"/>
+                        </Grid.RenderTransform>
+                        <Border x:Name="HoverBg"
+                                CornerRadius="12"
+                                Background="{StaticResource PressedBackground}"
+                                Opacity="0"/>
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="HoverBg"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="1"
+                                                         Duration="0:0:0.12"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="HoverBg"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0"
+                                                         Duration="0:0:0.18"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="LibrarySearchEmptyStateText"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource AppTextBody}">
+        <Setter Property="Foreground"
+                Value="{StaticResource TextSecondary}"/>
+        <Setter Property="TextAlignment"
+                Value="Center"/>
+        <Setter Property="Margin"
+                Value="0,24,0,0"/>
+    </Style>
+
     <Style x:Key="LibraryCardFavoriteToggleButton"
            TargetType="Button"
            BasedOn="{StaticResource LibraryCardFavoriteButton}">

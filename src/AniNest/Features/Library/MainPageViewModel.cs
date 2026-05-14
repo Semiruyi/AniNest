@@ -3,6 +3,8 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -22,6 +24,7 @@ namespace AniNest.Features.Library;
 public partial class MainPageViewModel : ObservableObject, ITransitioningContentLifecycle
 {
     private static readonly Infrastructure.Logging.Logger Log = Infrastructure.Logging.AppLog.For<MainPageViewModel>();
+    private static readonly Regex SearchWhitespaceRegex = new(@"\s+", RegexOptions.Compiled);
     private readonly ILibraryAppService _libraryService;
     private readonly IMetadataQueryService _metadataQueryService;
     private readonly ILocalizationService _loc;
@@ -45,6 +48,8 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     public string PlayedSummaryPrefix => _loc["Library.PlayedSummary.Prefix"];
     public string PlayedSummaryTotal => _loc["Library.PlayedSummary.Total"];
     public string PlayedSummarySuffix => _loc["Library.PlayedSummary.Suffix"];
+    public string SearchPlaceholderText => _loc["Library.Search.Placeholder"];
+    public string SearchEmptyStateText => _loc["Library.Search.Empty"];
     public ObservableCollection<LibraryFilterOption> FilterOptions { get; } = new();
     public ObservableCollection<FolderListItem> FolderItems { get; } = new();
     public int SelectedFilterIndex => FilterOptions
@@ -66,6 +71,14 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedFilterIndex))]
     private LibraryFilter _selectedFilter = LibraryFilter.All;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSearchQuery))]
+    [NotifyPropertyChangedFor(nameof(IsSearchEmptyStateVisible))]
+    private string _searchText = string.Empty;
+
+    public bool HasSearchQuery => !string.IsNullOrWhiteSpace(SearchText);
+    public bool IsSearchEmptyStateVisible => HasSearchQuery && FolderItems.Count == 0 && _allFolderItems.Count > 0;
 
     public MainPageViewModel(
         ILibraryAppService libraryService,
@@ -287,6 +300,15 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     }
 
     [RelayCommand]
+    private void ClearSearch()
+    {
+        if (string.IsNullOrEmpty(SearchText))
+            return;
+
+        SearchText = string.Empty;
+    }
+
+    [RelayCommand]
     private Task SetFolderWatchStatus(FolderStatusChangeRequest? request)
         => request == null
             ? Task.CompletedTask
@@ -399,8 +421,11 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     private void UpdateToolbarState()
     {
         int count = FolderItems.Count;
-        FolderCountText = string.Format(_loc["Library.FolderCount"], count);
+        FolderCountText = HasSearchQuery
+            ? string.Format(_loc["Library.Search.ResultCount"], count)
+            : string.Format(_loc["Library.FolderCount"], count);
         IsEmpty = count == 0;
+        OnPropertyChanged(nameof(IsSearchEmptyStateVisible));
     }
 
     private void UpdateThumbnailProgress(int ready, int total)
@@ -445,11 +470,17 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
             return;
 
         item.Metadata = metadata;
+        ApplyCurrentFilter();
     }
 
     partial void OnSelectedFilterChanged(LibraryFilter value)
     {
         RefreshFilterOptionSelectionState();
+        ApplyCurrentFilter();
+    }
+
+    partial void OnSearchTextChanged(string value)
+    {
         ApplyCurrentFilter();
     }
 
@@ -462,7 +493,10 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
         OnPropertyChanged(nameof(PlayedSummaryPrefix));
         OnPropertyChanged(nameof(PlayedSummaryTotal));
         OnPropertyChanged(nameof(PlayedSummarySuffix));
+        OnPropertyChanged(nameof(SearchPlaceholderText));
+        OnPropertyChanged(nameof(SearchEmptyStateText));
         RefreshFilterOptionLabels();
+        UpdateToolbarState();
     }
 
     private void OnFolderItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -537,7 +571,10 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
 
     private void ApplyCurrentFilter()
     {
-        var filteredItems = _allFolderItems.Where(MatchesSelectedFilter).ToList();
+        var filteredItems = _allFolderItems
+            .Where(MatchesSelectedFilter)
+            .Where(MatchesSearchQuery)
+            .ToList();
 
         Log.Debug(
             $"ApplyCurrentFilter: selectedFilter={SelectedFilter} totalCount={_allFolderItems.Count} " +
@@ -595,6 +632,28 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
             LibraryFilter.Dropped => item.Status == Infrastructure.Persistence.WatchStatus.Dropped,
             _ => true
         };
+    }
+
+    private bool MatchesSearchQuery(FolderListItem item)
+    {
+        string normalizedQuery = NormalizeSearchText(SearchText);
+        if (string.IsNullOrEmpty(normalizedQuery))
+            return true;
+
+        if (ContainsNormalized(item.Name, normalizedQuery))
+            return true;
+
+        var metadata = item.Metadata;
+        if (metadata == null)
+            return false;
+
+        if (ContainsNormalized(metadata.Title, normalizedQuery) ||
+            ContainsNormalized(metadata.OriginalTitle, normalizedQuery))
+        {
+            return true;
+        }
+
+        return metadata.Tags.Any(tag => ContainsNormalized(tag, normalizedQuery));
     }
 
     private void MoveFolderItemToFront(string path)
@@ -694,5 +753,38 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     {
         foreach (var option in FilterOptions)
             option.IsSelected = option.Filter == SelectedFilter;
+    }
+
+    private static bool ContainsNormalized(string? source, string normalizedQuery)
+    {
+        if (string.IsNullOrWhiteSpace(source))
+            return false;
+
+        return NormalizeSearchText(source).Contains(normalizedQuery, StringComparison.Ordinal);
+    }
+
+    private static string NormalizeSearchText(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        string normalized = SearchWhitespaceRegex.Replace(
+            value.Normalize(NormalizationForm.FormKC).Trim(),
+            " ");
+
+        var builder = new StringBuilder(normalized.Length);
+        foreach (char ch in normalized.ToLowerInvariant())
+        {
+            if (char.IsLetterOrDigit(ch))
+            {
+                builder.Append(ch);
+                continue;
+            }
+
+            if (char.IsWhiteSpace(ch))
+                builder.Append(' ');
+        }
+
+        return SearchWhitespaceRegex.Replace(builder.ToString().Trim(), " ");
     }
 }
