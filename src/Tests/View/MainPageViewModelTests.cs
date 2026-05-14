@@ -2,6 +2,7 @@ using System.ComponentModel;
 using AniNest.Features.Library;
 using AniNest.Features.Library.Models;
 using AniNest.Features.Library.Services;
+using AniNest.Features.Metadata;
 using AniNest.Infrastructure.Localization;
 using AniNest.Infrastructure.Persistence;
 using AniNest.Infrastructure.Presentation;
@@ -157,6 +158,35 @@ public class MainPageViewModelTests
             Times.Never);
     }
 
+    [Fact]
+    public void MetadataRefresh_UpdatesExistingFolderItem()
+    {
+        var libraryService = new Mock<ILibraryAppService>();
+        var metadataQueryService = new Mock<IMetadataQueryService>();
+        var localization = CreateLocalizationService();
+        EventHandler<FolderMetadataRefreshedEventArgs>? handler = null;
+
+        metadataQueryService.SetupAdd(service => service.FolderMetadataRefreshed += It.IsAny<EventHandler<FolderMetadataRefreshedEventArgs>>())
+            .Callback<EventHandler<FolderMetadataRefreshedEventArgs>>(value => handler += value);
+        metadataQueryService.SetupRemove(service => service.FolderMetadataRefreshed -= It.IsAny<EventHandler<FolderMetadataRefreshedEventArgs>>())
+            .Callback<EventHandler<FolderMetadataRefreshedEventArgs>>(value => handler -= value);
+
+        var viewModel = CreateViewModel(libraryService.Object, localization.Object, metadataQueryService.Object);
+        viewModel.AddFolderItem("Folder", "/folder", 4, null);
+
+        handler.Should().NotBeNull();
+        handler!.Invoke(viewModel, new FolderMetadataRefreshedEventArgs("/folder", new FolderMetadata
+        {
+            FolderPath = "/folder",
+            Title = "Title",
+            LocalPosterPath = "/cache/poster.jpg"
+        }));
+
+        viewModel.FolderItems[0].Metadata.Should().NotBeNull();
+        viewModel.FolderItems[0].Metadata!.Title.Should().Be("Title");
+        viewModel.FolderItems[0].EffectiveCoverPath.Should().Be("/cache/poster.jpg");
+    }
+
     private static Mock<ILocalizationService> CreateLocalizationService()
     {
         var localization = new Mock<ILocalizationService>();
@@ -172,11 +202,14 @@ public class MainPageViewModelTests
 
     private static MainPageViewModel CreateViewModel(
         ILibraryAppService libraryService,
-        ILocalizationService localization)
+        ILocalizationService localization,
+        IMetadataQueryService? metadataQueryService = null)
     {
         var dialogs = new Mock<IDialogService>();
         dialogs.Setup(service => service.ShowInput(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .Returns(string.Empty);
+
+        metadataQueryService ??= Mock.Of<IMetadataQueryService>();
 
         var dispatcher = new Mock<IUiDispatcher>();
         dispatcher.Setup(service => service.CheckAccess()).Returns(true);
@@ -185,6 +218,6 @@ public class MainPageViewModelTests
         dispatcher.Setup(service => service.BeginInvoke(It.IsAny<Action>()))
             .Callback<Action>(action => action());
 
-        return new MainPageViewModel(libraryService, localization, dialogs.Object, dispatcher.Object);
+        return new MainPageViewModel(libraryService, metadataQueryService, localization, dialogs.Object, dispatcher.Object);
     }
 }

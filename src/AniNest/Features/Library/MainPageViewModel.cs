@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using AniNest.Features.Library.Models;
 using AniNest.Features.Library.Services;
+using AniNest.Features.Metadata;
 using AniNest.Infrastructure.Diagnostics;
 using AniNest.Infrastructure.Localization;
 using AniNest.Infrastructure.Presentation;
@@ -22,11 +23,13 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
 {
     private static readonly Infrastructure.Logging.Logger Log = Infrastructure.Logging.AppLog.For<MainPageViewModel>();
     private readonly ILibraryAppService _libraryService;
+    private readonly IMetadataQueryService _metadataQueryService;
     private readonly ILocalizationService _loc;
     private readonly IDialogService _dialogs;
     private readonly IUiDispatcher _uiDispatcher;
     private readonly List<FolderListItem> _allFolderItems = new();
     private readonly EventHandler<ThumbnailProgressEventArgs> _thumbnailProgressChangedHandler;
+    private readonly EventHandler<FolderMetadataRefreshedEventArgs> _folderMetadataRefreshedHandler;
     private readonly PropertyChangedEventHandler _localizationChangedHandler;
     private CancellationTokenSource? _loadDataCts;
     private CancellationTokenSource? _selectFolderCts;
@@ -66,20 +69,24 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
 
     public MainPageViewModel(
         ILibraryAppService libraryService,
+        IMetadataQueryService metadataQueryService,
         ILocalizationService loc,
         IDialogService dialogs,
         IUiDispatcher uiDispatcher)
     {
         _libraryService = libraryService;
+        _metadataQueryService = metadataQueryService;
         _loc = loc;
         _dialogs = dialogs;
         _uiDispatcher = uiDispatcher;
         _thumbnailProgressChangedHandler = OnThumbnailProgressChanged;
+        _folderMetadataRefreshedHandler = OnFolderMetadataRefreshed;
         _localizationChangedHandler = OnLocalizationChanged;
 
         FolderItems.CollectionChanged += OnFolderItemsCollectionChanged;
 
         _libraryService.ThumbnailProgressChanged += _thumbnailProgressChangedHandler;
+        _metadataQueryService.FolderMetadataRefreshed += _folderMetadataRefreshedHandler;
         _loc.PropertyChanged += _localizationChangedHandler;
         InitializeFilterOptions();
         RefreshFilterOptionSelectionState();
@@ -385,6 +392,7 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
         CancelAndDispose(ref _loadDataCts);
         CancelAndDispose(ref _selectFolderCts);
         _libraryService.ThumbnailProgressChanged -= _thumbnailProgressChangedHandler;
+        _metadataQueryService.FolderMetadataRefreshed -= _folderMetadataRefreshedHandler;
         _loc.PropertyChanged -= _localizationChangedHandler;
     }
 
@@ -413,15 +421,30 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
         _uiDispatcher.BeginInvoke(() => UpdateThumbnailProgress(args.Ready, args.Total));
     }
 
+    private void OnFolderMetadataRefreshed(object? sender, FolderMetadataRefreshedEventArgs args)
+    {
+        _uiDispatcher.BeginInvoke(() => ApplyMetadataRefresh(args.FolderPath, args.Metadata));
+    }
+
     private FolderListItem CreateFolderItem(LibraryFolderDto item)
     {
-        return new FolderListItem(item.Name, item.Path, item.VideoCount, item.CoverPath)
+        return new FolderListItem(item.Name, item.Path, item.VideoCount, item.CoverPath, item.Metadata)
         {
             PlayedPercent = item.VideoCount > 0 ? (double)item.PlayedCount / item.VideoCount * 100 : 0,
             PlayedCount = item.PlayedCount,
             Status = item.Status,
             IsFavorite = item.IsFavorite
         };
+    }
+
+    private void ApplyMetadataRefresh(string folderPath, FolderMetadata metadata)
+    {
+        var item = _allFolderItems.FirstOrDefault(folder =>
+            string.Equals(folder.Path, folderPath, StringComparison.OrdinalIgnoreCase));
+        if (item == null)
+            return;
+
+        item.Metadata = metadata;
     }
 
     partial void OnSelectedFilterChanged(LibraryFilter value)
@@ -643,7 +666,7 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
         int count = 0;
         foreach (var item in FolderItems)
         {
-            if (!string.IsNullOrWhiteSpace(item.CoverPath))
+            if (!string.IsNullOrWhiteSpace(item.EffectiveCoverPath))
                 count++;
         }
 

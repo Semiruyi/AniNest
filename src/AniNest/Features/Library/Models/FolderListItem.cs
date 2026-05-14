@@ -1,22 +1,32 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using AniNest.Features.Metadata;
 using AniNest.Infrastructure.Persistence;
 
 namespace AniNest.Features.Library.Models;
 
 public partial class FolderListItem : ObservableObject
 {
-    public FolderListItem(string name, string path, int videoCount, string? coverPath)
+    public FolderListItem(string name, string path, int videoCount, string? coverPath, FolderMetadata? metadata = null)
     {
         Name = name;
         Path = path;
         VideoCount = videoCount;
         CoverPath = coverPath;
+        Metadata = metadata;
     }
 
     public string Name { get; }
     public string Path { get; }
     public int VideoCount { get; }
     public string? CoverPath { get; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EffectiveCoverPath))]
+    private FolderMetadata? _metadata;
+
+    public string? EffectiveCoverPath => !string.IsNullOrWhiteSpace(CoverPath)
+        ? CoverPath
+        : Metadata?.LocalPosterPath;
 
     [ObservableProperty]
     private double _playedPercent;

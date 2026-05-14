@@ -18,6 +18,8 @@ public static class AppPaths
     public static string LogsDirectory { get; } = Path.Combine(UserDataDirectory, "logs");
     public static string CacheDirectory { get; } = Path.Combine(UserDataDirectory, "cache");
     public static string ThumbnailDirectory { get; } = Path.Combine(CacheDirectory, "thumbnails");
+    public static string MetadataDirectory { get; } = Path.Combine(CacheDirectory, "metadata");
+    public static string MetadataPosterDirectory { get; } = Path.Combine(MetadataDirectory, "posters");
     public static string UpdateDirectory { get; } = Path.Combine(UserDataDirectory, "updates");
     public static string BackupDirectory { get; } = Path.Combine(UserDataDirectory, "backup");
 
@@ -35,6 +37,8 @@ public static class AppPaths
         Directory.CreateDirectory(LogsDirectory);
         Directory.CreateDirectory(CacheDirectory);
         Directory.CreateDirectory(ThumbnailDirectory);
+        Directory.CreateDirectory(MetadataDirectory);
+        Directory.CreateDirectory(MetadataPosterDirectory);
         Directory.CreateDirectory(UpdateDirectory);
         Directory.CreateDirectory(BackupDirectory);
     }

@@ -3,6 +3,7 @@ using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using AniNest.CompositionRoot;
 using AniNest.Features.Library;
+using AniNest.Features.Metadata;
 using AniNest.Features.Player;
 using AniNest.Features.Shell;
 using AniNest.Infrastructure.Localization;
@@ -33,6 +34,7 @@ public partial class App : Application
         provider.GetRequiredService<ILocalizationService>().SetLanguage(settings.Language);
         Log.Info($"Localization applied. language={settings.Language}");
         _ = WarmupMediaAsync(provider.GetRequiredService<IMediaPlayerController>());
+        provider.GetRequiredService<MetadataWorker>().Start();
 
         ApplicationExceptionHandler.Configure(this);
         Log.Info("Application exception handlers configured");

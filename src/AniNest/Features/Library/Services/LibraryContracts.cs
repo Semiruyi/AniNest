@@ -1,3 +1,4 @@
+using AniNest.Features.Metadata;
 using AniNest.Infrastructure.Persistence;
 
 namespace AniNest.Features.Library.Services;
@@ -9,7 +10,8 @@ public sealed record LibraryFolderDto(
     string? CoverPath,
     int PlayedCount = 0,
     WatchStatus Status = WatchStatus.Unsorted,
-    bool IsFavorite = false);
+    bool IsFavorite = false,
+    FolderMetadata? Metadata = null);
 
 public sealed record LibraryFolderTrackingSnapshot(
     int PlayedCount,

@@ -1,4 +1,5 @@
 using System.IO;
+using AniNest.Features.Metadata;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Persistence;
 using AniNest.Infrastructure.Thumbnails;
@@ -11,17 +12,23 @@ public sealed class LibraryAppService : ILibraryAppService
     private readonly ISettingsService _settings;
     private readonly ILibraryThumbnailService _thumbnailService;
     private readonly ILibraryTrackingService _trackingService;
+    private readonly IMetadataQueryService _metadataQueryService;
+    private readonly IMetadataSyncService _metadataSyncService;
     private readonly IVideoScanner _videoScanner;
 
     public LibraryAppService(
         ISettingsService settings,
         ILibraryThumbnailService thumbnailService,
         ILibraryTrackingService trackingService,
+        IMetadataQueryService metadataQueryService,
+        IMetadataSyncService metadataSyncService,
         IVideoScanner videoScanner)
     {
         _settings = settings;
         _thumbnailService = thumbnailService;
         _trackingService = trackingService;
+        _metadataQueryService = metadataQueryService;
+        _metadataSyncService = metadataSyncService;
         _videoScanner = videoScanner;
     }
 
@@ -59,6 +66,8 @@ public sealed class LibraryAppService : ILibraryAppService
             EnqueueFolderForThumbnails(folder.Path, videoFiles);
         }
 
+        await TrySyncMetadataSnapshotAsync(loadedItems, cancellationToken);
+
         return loadedItems.Select(static item => item.Folder).ToArray();
     }
 
@@ -94,6 +103,7 @@ public sealed class LibraryAppService : ILibraryAppService
 
         var folder = CreateFolderDto(name, path, scanResult.VideoCount, scanResult.CoverPath, scanResult.VideoFiles);
         EnqueueFolderForThumbnails(path, scanResult.VideoFiles);
+        await TryRegisterMetadataFolderAsync(name, path, scanResult.VideoFiles, cancellationToken);
         return new AddFolderResult(true, folder);
     }
 
@@ -125,6 +135,7 @@ public sealed class LibraryAppService : ILibraryAppService
                 scanResult.VideoFiles));
 
             EnqueueFolderForThumbnails(path, scanResult.VideoFiles);
+            await TryRegisterMetadataFolderAsync(Path.GetFileName(path), path, scanResult.VideoFiles, cancellationToken);
         }
 
         return new BatchAddFoldersResult(addedFolders, skipped);
@@ -165,12 +176,12 @@ public sealed class LibraryAppService : ILibraryAppService
     public Task SetFolderFavoriteAsync(string path, bool isFavorite, CancellationToken cancellationToken = default)
         => _trackingService.SetFolderFavoriteAsync(path, isFavorite, cancellationToken);
 
-    public Task DeleteFolderAsync(string path, CancellationToken cancellationToken = default)
+    public async Task DeleteFolderAsync(string path, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         _settings.RemoveFolder(path);
         _thumbnailService.DeleteFolder(path);
-        return Task.CompletedTask;
+        await TryDeleteMetadataFolderAsync(path, cancellationToken);
     }
 
     public int GetThumbnailExpiryDays()
@@ -192,6 +203,67 @@ public sealed class LibraryAppService : ILibraryAppService
         _thumbnailService.RegisterFolder(folderPath, videoFiles);
     }
 
+    private async Task TrySyncMetadataSnapshotAsync(
+        IReadOnlyList<(LibraryFolderDto Folder, string[] VideoFiles)> loadedItems,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var folders = loadedItems
+                .Select(item => new MetadataFolderRef(item.Folder.Path, item.Folder.Name, item.VideoFiles))
+                .ToArray();
+            Log.Info($"Metadata snapshot sync start: folders={folders.Length}");
+            await _metadataSyncService.SyncLibrarySnapshotAsync(folders, cancellationToken);
+            Log.Info($"Metadata snapshot sync complete: folders={folders.Length}");
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Metadata library snapshot sync failed", ex);
+        }
+    }
+
+    private async Task TryRegisterMetadataFolderAsync(
+        string folderName,
+        string folderPath,
+        string[] videoFiles,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _metadataSyncService.RegisterFolderAsync(
+                new MetadataFolderRef(folderPath, folderName, videoFiles),
+                cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Metadata folder register failed: path={folderPath}", ex);
+        }
+    }
+
+    private async Task TryDeleteMetadataFolderAsync(string folderPath, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _metadataSyncService.DeleteFolderAsync(folderPath, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Metadata folder delete failed: path={folderPath}", ex);
+        }
+    }
+
     private LibraryFolderDto CreateFolderDto(
         string name,
         string path,
@@ -200,6 +272,10 @@ public sealed class LibraryAppService : ILibraryAppService
         string[] videoFiles)
     {
         var snapshot = _trackingService.GetFolderTrackingSnapshot(path, videoFiles);
-        return new LibraryFolderDto(name, path, videoCount, coverPath, snapshot.PlayedCount, snapshot.Status, snapshot.IsFavorite);
+        var metadata = _metadataQueryService.GetMetadata(path);
+        var effectiveCoverPath = !string.IsNullOrWhiteSpace(coverPath)
+            ? coverPath
+            : metadata?.LocalPosterPath;
+        return new LibraryFolderDto(name, path, videoCount, effectiveCoverPath, snapshot.PlayedCount, snapshot.Status, snapshot.IsFavorite, metadata);
     }
 }

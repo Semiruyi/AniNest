@@ -12,6 +12,8 @@ public class AppSettings
     public int ThumbnailExpiryDays { get; set; } = 30;
     public ThumbnailPerformanceMode ThumbnailPerformanceMode { get; set; } = ThumbnailPerformanceMode.Balanced;
     public ThumbnailAccelerationMode ThumbnailAccelerationMode { get; set; } = ThumbnailAccelerationMode.Auto;
+    public bool AutoScrapeMetadata { get; set; } = true;
+    public string BangumiAccessToken { get; set; } = "";
     public string ThumbnailDecoderMachineId { get; set; } = "";
     public string ThumbnailPreferredDecoder { get; set; } = "";
     public string Language { get; set; } = "zh-CN";

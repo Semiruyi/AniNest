@@ -184,13 +184,13 @@
                 behaviors:MouseGestureBehavior.CommandParameter="{Binding}">
             <Grid Style="{StaticResource LibraryCardClipRootGrid}">
                 <Image Stretch="UniformToFill"
-                       Source="{Binding CoverPath, Converter={StaticResource LibraryCoverImageSource}}"
-                       Visibility="{Binding CoverPath, Converter={StaticResource LibraryNullToVisible}}"/>
+                       Source="{Binding EffectiveCoverPath, Converter={StaticResource LibraryCoverImageSource}}"
+                       Visibility="{Binding EffectiveCoverPath, Converter={StaticResource LibraryNullToVisible}}"/>
 
                 <Rectangle Fill="{StaticResource LibraryCardPlaceholderBackground}"
-                           Visibility="{Binding CoverPath, Converter={StaticResource LibraryNullToHidden}}"/>
+                           Visibility="{Binding EffectiveCoverPath, Converter={StaticResource LibraryNullToHidden}}"/>
                 <TextBlock Style="{StaticResource LibraryCardPlaceholderIconText}"
-                           Visibility="{Binding CoverPath, Converter={StaticResource LibraryNullToHidden}}"/>
+                           Visibility="{Binding EffectiveCoverPath, Converter={StaticResource LibraryNullToHidden}}"/>
 
                 <Grid Style="{StaticResource LibraryCardFavoriteHost}"
                       animations:ScaleFadeVisibilityAnimator.IsActive="{Binding ElementName=CardBorder, Path=(behaviors:HoverRevealBehavior.IsRevealActive)}">
