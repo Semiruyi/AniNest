@@ -11,6 +11,11 @@ public sealed record LibraryFolderDto(
     WatchStatus Status = WatchStatus.Unsorted,
     bool IsFavorite = false);
 
+public sealed record LibraryFolderTrackingSnapshot(
+    int PlayedCount,
+    WatchStatus Status,
+    bool IsFavorite);
+
 public enum OpenFolderFailure
 {
     None,

@@ -32,6 +32,7 @@ public static class ServiceRegistration
         services.AddSingleton<IThumbnailDecodeStrategyService, ThumbnailDecodeStrategyService>();
         services.AddSingleton<IThumbnailGenerator, ThumbnailGenerator>();
         services.AddSingleton<ILibraryThumbnailService, LibraryThumbnailService>();
+        services.AddSingleton<ILibraryTrackingService, LibraryTrackingService>();
         services.AddSingleton<ILibraryAppService, LibraryAppService>();
         services.AddSingleton<IShellPreferencesService, ShellPreferencesService>();
         services.AddSingleton<IShellSettingsAppService, ShellSettingsAppService>();

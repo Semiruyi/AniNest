@@ -10,15 +10,18 @@ public sealed class LibraryAppService : ILibraryAppService
     private static readonly Logger Log = AppLog.For<LibraryAppService>();
     private readonly ISettingsService _settings;
     private readonly ILibraryThumbnailService _thumbnailService;
+    private readonly ILibraryTrackingService _trackingService;
     private readonly IVideoScanner _videoScanner;
 
     public LibraryAppService(
         ISettingsService settings,
         ILibraryThumbnailService thumbnailService,
+        ILibraryTrackingService trackingService,
         IVideoScanner videoScanner)
     {
         _settings = settings;
         _thumbnailService = thumbnailService;
+        _trackingService = trackingService;
         _videoScanner = videoScanner;
     }
 
@@ -154,35 +157,13 @@ public sealed class LibraryAppService : ILibraryAppService
         => await _thumbnailService.ClearFolderThumbnailCacheAsync(path, cancellationToken);
 
     public async Task<LibraryFolderDto?> ClearFolderWatchHistoryAsync(string path, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (!Directory.Exists(path))
-            return null;
-
-        var scanResult = await _videoScanner.ScanFolderAsync(path, cancellationToken);
-        _settings.ClearFolderWatchHistory(path);
-        return CreateFolderDto(
-            Path.GetFileName(path),
-            path,
-            scanResult.VideoCount,
-            scanResult.CoverPath,
-            scanResult.VideoFiles);
-    }
+        => await _trackingService.ClearFolderWatchHistoryAsync(path, cancellationToken);
 
     public Task SetFolderWatchStatusAsync(string path, WatchStatus status, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        _settings.SetFolderWatchStatus(path, status);
-        return Task.CompletedTask;
-    }
+        => _trackingService.SetFolderWatchStatusAsync(path, status, cancellationToken);
 
     public Task SetFolderFavoriteAsync(string path, bool isFavorite, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        _settings.SetFolderFavorite(path, isFavorite);
-        return Task.CompletedTask;
-    }
+        => _trackingService.SetFolderFavoriteAsync(path, isFavorite, cancellationToken);
 
     public Task DeleteFolderAsync(string path, CancellationToken cancellationToken = default)
     {
@@ -218,8 +199,7 @@ public sealed class LibraryAppService : ILibraryAppService
         string? coverPath,
         string[] videoFiles)
     {
-        int playedCount = _settings.GetFolderPlayedCount(path, videoFiles);
-        var classification = _settings.GetFolderClassification(path);
-        return new LibraryFolderDto(name, path, videoCount, coverPath, playedCount, classification.Status, classification.IsFavorite);
+        var snapshot = _trackingService.GetFolderTrackingSnapshot(path, videoFiles);
+        return new LibraryFolderDto(name, path, videoCount, coverPath, snapshot.PlayedCount, snapshot.Status, snapshot.IsFavorite);
     }
 }
