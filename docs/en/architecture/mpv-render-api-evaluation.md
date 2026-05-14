@@ -412,6 +412,98 @@ Create a dedicated proof-of-concept branch with a narrow goal:
 
 The purpose of that branch is not to finish the migration. It is to determine whether the graphics bridge is solid enough to deserve the rest of the work.
 
+## New Approach: Concrete GPU Bridge Options
+
+> **Note**: This section was added after the initial evaluation. It refines the original "OpenGL → Direct3D interop" direction into concrete, verifiable implementation paths. The goal remains: **mpv + no airspace + high performance**.
+
+### Goal restatement
+
+The project requires three constraints to be satisfied simultaneously:
+
+1. `mpv` as the playback engine
+2. No WPF airspace issues (video must live inside the WPF visual tree, not a child window)
+3. Rendering performance must be meaningfully better than the current CPU-side `WriteableBitmap` upload
+
+### Option D: OpenGL GPU Pass-through (Primary)
+
+Rendering chain:
+`mpv` → OpenGL FBO → `WGL_NV_DX_interop` → D3D9Ex texture → `D3DImage` → WPF
+
+**Why no airspace**: `D3DImage` is a native WPF element, not an `HwndHost`. Overlays compose naturally above it.
+
+**Why high performance**: Frame data never leaves GPU memory. There is no CPU readback and no Dispatcher-bound frame copy.
+
+**Concrete implementation steps**:
+
+1. **WPF `D3DImage` infrastructure**: Create an `IDirect3DDevice9Ex` (via Vortice.DirectX or raw COM interop) and bind it to a `D3DImage`.
+2. **Off-screen OpenGL context**: Create a hidden HWND (`WS_POPUP`) solely to host a WGL context.
+3. **mpv render context**: `mpv_create()` → `mpv_initialize()` → `mpv_render_context_create()` with `MPV_RENDER_API_TYPE_OPENGL`. Target the FBO created in step 2.
+4. **Per-frame loop**:
+   - `mpv_render_context_render()` → frame lands in OpenGL texture.
+   - `wglDXRegisterObjectNV` / `wglDXLockObjectsNV` lock the OpenGL texture and the D3D9Ex texture as the same GPU memory.
+   - `D3DImage.Lock()` / `AddDirtyRect()` / `Unlock()` triggers WPF composition.
+   - `wglDXUnlockObjectsNV` releases the lock for mpv's next frame.
+5. **WPF integration**: Display the `D3DImage` in a standard WPF `Image` control. Overlay UI layers above it normally.
+
+**Risk**: `WGL_NV_DX_interop` is an NVIDIA-private extension. It may be absent or behave differently on AMD/Intel GPUs.
+
+**Validation shortcut**: Do not build the bridge from scratch. First run the [OpenTK.GLWpfControl](https://github.com/opentk/GLWpfControl) sample on target hardware. It uses the exact same D3D9Ex ↔ OpenGL interop mechanism. If it runs, the hardware supports the extension and you only need to replace its rendering callback with `mpv_render_context_render()`.
+
+### Option E: OpenGL Off-screen + PBO Asynchronous Readback (Fallback)
+
+Rendering chain:
+`mpv` → OpenGL FBO → `glReadPixels` (PBO) → `byte[]` → `WriteableBitmap` (background Lock) → WPF
+
+**Why no airspace**: Same as Option D—the final display surface is a WPF `Image`, not a child window.
+
+**Performance characteristics**: This is still a CPU path, but it improves on the current LibVLC stack in two specific ways:
+
+1. **PBO asynchronous readback**: `glReadPixels` into a Pixel Buffer Object is non-blocking. The GPU renders the next frame while the previous frame is DMA'd to system memory.
+2. **`WriteableBitmap` background write**: Use `Lock()` to obtain the `BackBuffer` pointer, copy data from a background thread with `Buffer.MemoryCopy`, then `Unlock()` + `AddDirtyRect()`. This completely bypasses the Dispatcher, eliminating the `InvokeAsync(() => WritePixels(...))` overhead that exists in the current `VideoFrameProvider`.
+
+**Implementation steps**:
+
+1. Create a hidden HWND + OpenGL context.
+2. Create an FBO + color attachment texture sized to the video.
+3. Initialize `mpv_render_context` with OpenGL backend, binding to the FBO.
+4. Create two PBOs for double buffering.
+5. Per-frame:
+   - Frame N: `glReadPixels` into `PBO[N % 2]`.
+   - Frame N+1: `glMapBuffer` to read frame N data into `byte[]` while `glReadPixels` for frame N+1 runs in parallel.
+   - `writeableBitmap.Lock()` → copy to `BackBuffer` → `AddDirtyRect()` → `Unlock()`.
+
+**Expected performance**: 1080p should be smooth. 4K depends on PCIe bandwidth and memory-copy throughput. It will not match Option D, but it is a stable fallback when GPU passthrough is unavailable.
+
+### Option F: Vendor-Adaptive Hybrid (Product Recommendation)
+
+Do not choose between D and E at compile time. Decide at runtime:
+
+```csharp
+if (IsWglDxInteropAvailable())  // Check OpenGL extension string
+    UseOptionD();  // NVIDIA / GPUs with the extension
+else
+    UseOptionE();  // AMD / Intel / unknown GPUs
+```
+
+- The playback control layer remains identical; only the render surface implementation switches.
+- This maximizes performance on capable hardware while guaranteeing functionality on all GPUs.
+
+### Comparison with the original evaluation
+
+The original document listed "OpenGL → Direct3D interop" and "ANGLE-backed translation" as possible implementation families. This section refines those ideas into concrete paths:
+
+- **Specificity**: The original text did not name the actual interop mechanism (`WGL_NV_DX_interop`) or the D3D version (D3D9Ex, which is what WPF `D3DImage` natively requires). Without this specificity, cost estimates are unreliable.
+- **ANGLE assessment**: ANGLE was listed as a candidate, but ANGLE is an OpenGL ES-to-D3D11 translation layer internal to the renderer. Extracting a shareable D3D11 texture from ANGLE for external WPF consumption is far more complex than the original document implies. It is not a practical shortcut for this project.
+- **Fallback gap**: The original evaluation had no fallback. If the GPU bridge failed on a target machine, the migration had no retreat. Options E and F close that gap.
+- **Validation cost**: The original spike estimate (3–7 days) assumed building the bridge from scratch. Option D's validation shortcut (`OpenTK.GLWpfControl`) can confirm hardware compatibility in hours, not days.
+
+### Suggested next step (revised)
+
+1. Run `OpenTK.GLWpfControl` sample on development and test machines.
+2. If it works: proceed with Option D spike (replace its render callback with mpv).
+3. If it fails: immediately pivot to Option E spike (PBO off-screen readback).
+4. Set a hard deadline of **1 week** for the combined spike. If neither D nor E yields stable video in WPF within that window, abandon the mpv migration.
+
 ## References
 
 - `mpv` render API header:

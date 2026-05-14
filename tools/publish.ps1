@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$Runtime = "win-x64",
     [string]$Configuration = "Release",
     [string]$Version = "",
@@ -58,17 +58,30 @@ function Write-AppManifest([string]$appDir, [string]$version) {
     $manifest | ConvertTo-Json -Depth 5 | Set-Content -Path $manifestPath -Encoding UTF8
 }
 
+function Write-Step([string]$message) {
+    $timestamp = Get-Date -Format "HH:mm:ss"
+    Write-Host "[$timestamp] $message" -ForegroundColor Cyan
+}
+
+Write-Step "开始清理输出目录..."
 Remove-PathIfExists $publishRoot
 Remove-PathIfExists $launcherTempRoot
 Remove-PathIfExists $appTempRoot
 New-Item -ItemType Directory -Force -Path $publishRoot | Out-Null
 New-Item -ItemType Directory -Force -Path $appTempRoot | Out-Null
 
+Write-Step "正在发布 AniNest (主程序)，这可能需要一些时间..."
 dotnet publish (Join-Path $root "src\AniNest\AniNest.csproj") -c $Configuration -r $Runtime -o $appTempRoot
-dotnet publish (Join-Path $root "src\Launcher\AniNest.Launcher.csproj") -c $Configuration -r $Runtime -o $launcherTempRoot
+Write-Step "AniNest 发布完成"
 
+Write-Step "正在发布 Launcher (启动器)，这可能需要一些时间..."
+dotnet publish (Join-Path $root "src\Launcher\AniNest.Launcher.csproj") -c $Configuration -r $Runtime -o $launcherTempRoot
+Write-Step "Launcher 发布完成"
+
+Write-Step "正在复制文件..."
 Copy-Folder $appTempRoot $appOut
 Copy-Folder (Join-Path $root "data") $dataOut
+Write-Step "正在写入版本清单..."
 Write-AppManifest $appOut $Version
 
 $launcherExe = Join-Path $launcherTempRoot "AniNest.Launcher.exe"
@@ -80,9 +93,10 @@ Remove-PathIfExists $launcherTempRoot
 Remove-PathIfExists $appTempRoot
 
 if ($Zip) {
+    Write-Step "正在打包..."
     Remove-PathIfExists $zipOut
     Compress-Archive -Path (Join-Path $publishRoot '*') -DestinationPath $zipOut -Force
-    Write-Host "Created: $zipOut"
+    Write-Step "打包完成: $zipOut"
 } else {
-    Write-Host "Created: $publishRoot"
+    Write-Step "发布完成: $publishRoot"
 }
