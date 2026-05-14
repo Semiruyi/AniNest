@@ -1,5 +1,3 @@
-using System.Windows.Input;
-
 namespace AniNest.Features.Player.Input;
 
 public static class PlayerInputDefaults
@@ -12,82 +10,82 @@ public static class PlayerInputDefaults
         bindings.Add(new PlayerInputBinding
         {
             Action = PlayerInputAction.PlayPause,
-            KeyTrigger = new PlayerKeyTrigger { Key = Key.Space, AllowRepeat = false }
+            KeyTrigger = new PlayerKeyTrigger { Key = PlayerInputKey.Space, AllowRepeat = false }
         });
         bindings.Add(new PlayerInputBinding
         {
             Action = PlayerInputAction.PlayPause,
-            MouseTrigger = new PlayerMouseTrigger { Button = MouseButton.Left, Kind = PlayerInputTriggerKind.MouseClick }
+            MouseTrigger = new PlayerMouseTrigger { Button = PlayerInputMouseButton.Left, Kind = PlayerInputTriggerKind.MouseClick }
         });
         bindings.Add(new PlayerInputBinding
         {
             Action = PlayerInputAction.Stop,
-            KeyTrigger = new PlayerKeyTrigger { Key = Key.S, AllowRepeat = false }
+            KeyTrigger = new PlayerKeyTrigger { Key = PlayerInputKey.S, AllowRepeat = false }
         });
         bindings.Add(new PlayerInputBinding
         {
             Action = PlayerInputAction.SeekBackwardSmall,
-            KeyTrigger = new PlayerKeyTrigger { Key = Key.Left }
+            KeyTrigger = new PlayerKeyTrigger { Key = PlayerInputKey.Left }
         });
         bindings.Add(new PlayerInputBinding
         {
             Action = PlayerInputAction.SeekForwardSmall,
-            KeyTrigger = new PlayerKeyTrigger { Key = Key.Right }
+            KeyTrigger = new PlayerKeyTrigger { Key = PlayerInputKey.Right }
         });
         bindings.Add(new PlayerInputBinding
         {
             Action = PlayerInputAction.SeekBackwardLarge,
-            KeyTrigger = new PlayerKeyTrigger { Key = Key.Left, Modifiers = ModifierKeys.Control }
+            KeyTrigger = new PlayerKeyTrigger { Key = PlayerInputKey.Left, Modifiers = PlayerInputModifiers.Control }
         });
         bindings.Add(new PlayerInputBinding
         {
             Action = PlayerInputAction.SeekForwardLarge,
-            KeyTrigger = new PlayerKeyTrigger { Key = Key.Right, Modifiers = ModifierKeys.Control }
+            KeyTrigger = new PlayerKeyTrigger { Key = PlayerInputKey.Right, Modifiers = PlayerInputModifiers.Control }
         });
         bindings.Add(new PlayerInputBinding
         {
             Action = PlayerInputAction.Previous,
-            KeyTrigger = new PlayerKeyTrigger { Key = Key.PageUp, AllowRepeat = false }
+            KeyTrigger = new PlayerKeyTrigger { Key = PlayerInputKey.PageUp, AllowRepeat = false }
         });
         bindings.Add(new PlayerInputBinding
         {
             Action = PlayerInputAction.Next,
-            KeyTrigger = new PlayerKeyTrigger { Key = Key.PageDown, AllowRepeat = false }
+            KeyTrigger = new PlayerKeyTrigger { Key = PlayerInputKey.PageDown, AllowRepeat = false }
         });
         bindings.Add(new PlayerInputBinding
         {
             Action = PlayerInputAction.ToggleFullscreen,
-            KeyTrigger = new PlayerKeyTrigger { Key = Key.Enter, AllowRepeat = false }
+            KeyTrigger = new PlayerKeyTrigger { Key = PlayerInputKey.Enter, AllowRepeat = false }
         });
         bindings.Add(new PlayerInputBinding
         {
             Action = PlayerInputAction.ExitFullscreenOrBack,
-            KeyTrigger = new PlayerKeyTrigger { Key = Key.Escape, AllowRepeat = false }
+            KeyTrigger = new PlayerKeyTrigger { Key = PlayerInputKey.Escape, AllowRepeat = false }
         });
         bindings.Add(new PlayerInputBinding
         {
             Action = PlayerInputAction.TogglePlaylist,
-            KeyTrigger = new PlayerKeyTrigger { Key = Key.L, AllowRepeat = false }
+            KeyTrigger = new PlayerKeyTrigger { Key = PlayerInputKey.L, AllowRepeat = false }
         });
         bindings.Add(new PlayerInputBinding
         {
             Action = PlayerInputAction.ToggleFullscreen,
-            MouseTrigger = new PlayerMouseTrigger { Button = MouseButton.Left, Kind = PlayerInputTriggerKind.MouseDoubleClick }
+            MouseTrigger = new PlayerMouseTrigger { Button = PlayerInputMouseButton.Left, Kind = PlayerInputTriggerKind.MouseDoubleClick }
         });
         bindings.Add(new PlayerInputBinding
         {
             Action = PlayerInputAction.BoostSpeedHold,
-            MouseTrigger = new PlayerMouseTrigger { Button = MouseButton.Right, Kind = PlayerInputTriggerKind.MouseHold }
+            MouseTrigger = new PlayerMouseTrigger { Button = PlayerInputMouseButton.Right, Kind = PlayerInputTriggerKind.MouseHold }
         });
         bindings.Add(new PlayerInputBinding
         {
             Action = PlayerInputAction.BoostSpeedRelease,
-            MouseTrigger = new PlayerMouseTrigger { Button = MouseButton.Right, Kind = PlayerInputTriggerKind.MouseRelease }
+            MouseTrigger = new PlayerMouseTrigger { Button = PlayerInputMouseButton.Right, Kind = PlayerInputTriggerKind.MouseRelease }
         });
         bindings.Add(new PlayerInputBinding
         {
             Action = PlayerInputAction.ExitFullscreenOrBack,
-            MouseTrigger = new PlayerMouseTrigger { Button = MouseButton.XButton1, Kind = PlayerInputTriggerKind.MouseClick }
+            MouseTrigger = new PlayerMouseTrigger { Button = PlayerInputMouseButton.XButton1, Kind = PlayerInputTriggerKind.MouseClick }
         });
 
         return profile;

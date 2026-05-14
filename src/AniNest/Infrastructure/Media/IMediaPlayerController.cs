@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using System.Windows.Media.Imaging;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Paths;
 using AniNest.Infrastructure.Persistence;
@@ -16,7 +15,6 @@ public interface IMediaPlayerController : IDisposable
     long Time { get; }
     long Length { get; }
     string? CurrentFilePath { get; }
-    WriteableBitmap? VideoBitmap { get; }
     float Rate { get; set; }
     int Volume { get; set; }
     bool IsMuted { get; set; }

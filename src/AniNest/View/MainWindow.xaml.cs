@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
+using AniNest.Features.Player.Input;
 using AniNest.Features.Shell;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Persistence;
@@ -617,25 +618,26 @@ public partial class MainWindow : Window
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         MainWindowLog.Debug($"PreviewKeyDown: Key={e.Key} SystemKey={e.SystemKey} IsRepeat={e.IsRepeat} Handled={e.Handled}");
-        if (Shell.TryCaptureSettingsKey(e))
+        var inputEvent = WpfPlayerInputEventAdapter.CreateKeyEvent(e);
+        if (Shell.TryCaptureSettingsKey(inputEvent))
         {
             MainWindowLog.Info($"PreviewKeyDown captured by settings: Key={e.Key}");
             e.Handled = true;
             return;
         }
 
-        Shell.TryHandlePlayerKeyDown(e);
+        e.Handled = Shell.TryHandlePlayerKeyDown(inputEvent);
     }
 
     private void OnPreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
-        if (Shell.TryCaptureSettingsMouseDown(e))
+        if (Shell.TryCaptureSettingsMouseDown(WpfPlayerInputEventAdapter.CreateMouseButtonEvent(e)))
             e.Handled = true;
     }
 
     private void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
-        if (Shell.TryCaptureSettingsMouseWheel(e))
+        if (Shell.TryCaptureSettingsMouseWheel(WpfPlayerInputEventAdapter.CreateMouseWheelEvent(e)))
             e.Handled = true;
     }
 

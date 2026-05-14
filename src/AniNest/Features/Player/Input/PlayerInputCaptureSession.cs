@@ -1,5 +1,3 @@
-using System.Windows.Input;
-
 namespace AniNest.Features.Player.Input;
 
 public sealed class PlayerInputCaptureSession
@@ -16,14 +14,13 @@ public sealed class PlayerInputCaptureSession
         IsCapturing = false;
     }
 
-    public bool TryCaptureKey(KeyEventArgs args, out PlayerInputBinding? binding)
+    public bool TryCaptureKey(PlayerInputKeyEvent inputEvent, out PlayerInputBinding? binding)
     {
         binding = null;
         if (!IsCapturing)
             return false;
 
-        var key = args.Key == Key.System ? args.SystemKey : args.Key;
-        if (IsModifierOnlyKey(key))
+        if (IsModifierOnlyKey(inputEvent.Key) || inputEvent.Key == PlayerInputKey.Unknown)
             return false;
 
         binding = new PlayerInputBinding
@@ -31,8 +28,8 @@ public sealed class PlayerInputCaptureSession
             Action = PlayerInputAction.PlayPause,
             KeyTrigger = new PlayerKeyTrigger
             {
-                Key = key,
-                Modifiers = Keyboard.Modifiers,
+                Key = inputEvent.Key,
+                Modifiers = inputEvent.Modifiers,
                 AllowRepeat = false
             }
         };
@@ -40,7 +37,7 @@ public sealed class PlayerInputCaptureSession
         return true;
     }
 
-    public bool TryCaptureMouseDown(MouseButtonEventArgs args, out PlayerInputBinding? binding)
+    public bool TryCaptureMouseDown(PlayerInputMouseButtonEvent inputEvent, out PlayerInputBinding? binding)
     {
         binding = null;
         if (!IsCapturing)
@@ -51,16 +48,16 @@ public sealed class PlayerInputCaptureSession
             Action = PlayerInputAction.PlayPause,
             MouseTrigger = new PlayerMouseTrigger
             {
-                Button = args.ChangedButton,
-                Modifiers = Keyboard.Modifiers,
-                Kind = args.ClickCount > 1 ? PlayerInputTriggerKind.MouseDoubleClick : PlayerInputTriggerKind.MouseClick
+                Button = inputEvent.Button,
+                Modifiers = inputEvent.Modifiers,
+                Kind = inputEvent.ClickCount > 1 ? PlayerInputTriggerKind.MouseDoubleClick : PlayerInputTriggerKind.MouseClick
             }
         };
         IsCapturing = false;
         return true;
     }
 
-    public bool TryCaptureMouseWheel(MouseWheelEventArgs args, out PlayerInputBinding? binding)
+    public bool TryCaptureMouseWheel(PlayerInputMouseWheelEvent inputEvent, out PlayerInputBinding? binding)
     {
         binding = null;
         if (!IsCapturing)
@@ -71,8 +68,8 @@ public sealed class PlayerInputCaptureSession
             Action = PlayerInputAction.PlayPause,
             MouseTrigger = new PlayerMouseTrigger
             {
-                Modifiers = Keyboard.Modifiers,
-                Kind = args.Delta >= 0 ? PlayerInputTriggerKind.MouseWheelUp : PlayerInputTriggerKind.MouseWheelDown
+                Modifiers = inputEvent.Modifiers,
+                Kind = inputEvent.Delta >= 0 ? PlayerInputTriggerKind.MouseWheelUp : PlayerInputTriggerKind.MouseWheelDown
             }
         };
         IsCapturing = false;
@@ -87,9 +84,9 @@ public sealed class PlayerInputCaptureSession
         IsEnabled = template.IsEnabled
     };
 
-    private static bool IsModifierOnlyKey(Key key)
-        => key is Key.LeftCtrl or Key.RightCtrl
-            or Key.LeftAlt or Key.RightAlt
-            or Key.LeftShift or Key.RightShift
-            or Key.LWin or Key.RWin;
+    private static bool IsModifierOnlyKey(PlayerInputKey key)
+        => key is PlayerInputKey.LeftCtrl or PlayerInputKey.RightCtrl
+            or PlayerInputKey.LeftAlt or PlayerInputKey.RightAlt
+            or PlayerInputKey.LeftShift or PlayerInputKey.RightShift
+            or PlayerInputKey.LWin or PlayerInputKey.RWin;
 }

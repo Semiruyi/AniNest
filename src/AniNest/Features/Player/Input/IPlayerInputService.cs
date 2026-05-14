@@ -1,5 +1,3 @@
-using System.Windows.Input;
-
 namespace AniNest.Features.Player.Input;
 
 public interface IPlayerInputService
@@ -8,8 +6,8 @@ public interface IPlayerInputService
     void ReloadProfile();
     void SaveProfile(PlayerInputProfile profile);
 
-    bool TryHandlePreviewKeyDown(IPlayerInputHost host, KeyEventArgs args);
-    bool TryHandlePreviewMouseDown(IPlayerInputHost host, MouseButtonEventArgs args);
-    bool TryHandlePreviewMouseUp(IPlayerInputHost host, MouseButtonEventArgs args);
-    bool TryHandlePreviewMouseWheel(IPlayerInputHost host, MouseWheelEventArgs args);
+    bool TryHandleKeyDown(IPlayerInputHost host, PlayerInputKeyEvent inputEvent);
+    bool TryHandleMouseDown(IPlayerInputHost host, PlayerInputMouseButtonEvent inputEvent);
+    bool TryHandleMouseUp(IPlayerInputHost host, PlayerInputMouseButtonEvent inputEvent);
+    bool TryHandleMouseWheel(IPlayerInputHost host, PlayerInputMouseWheelEvent inputEvent);
 }

@@ -28,11 +28,7 @@ public sealed class PlayerPlaybackStateSyncService : IPlayerPlaybackStateSyncSer
         _videoPathChangedHandler = OnSessionCurrentVideoPathChanged;
         _playingHandler = (_, _) => Dispatch("Playing", controller => controller.SetPlayingState(true));
         _pausedHandler = (_, _) => Dispatch("Paused", controller => controller.SetPlayingState(false));
-        _stoppedHandler = (_, _) => Dispatch("Stopped", controller =>
-        {
-            controller.SetPlayingState(false);
-            controller.RefreshVideoSource();
-        });
+        _stoppedHandler = (_, _) => Dispatch("Stopped", controller => controller.SetPlayingState(false));
         _progressUpdatedHandler = (_, args) => Dispatch("ProgressUpdated", controller => controller.UpdateProgress(args), instrument: false);
     }
 

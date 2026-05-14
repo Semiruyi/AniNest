@@ -47,19 +47,19 @@ public static class PlayerInputBehavior
     private static void OnPreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
         if (sender is FrameworkElement element && element.DataContext is IPlayerInputHost host)
-            host.InputService.TryHandlePreviewMouseDown(host, e);
+            e.Handled = host.InputService.TryHandleMouseDown(host, WpfPlayerInputEventAdapter.CreateMouseButtonEvent(e));
     }
 
     private static void OnPreviewMouseUp(object sender, MouseButtonEventArgs e)
     {
         if (sender is FrameworkElement element && element.DataContext is IPlayerInputHost host)
-            host.InputService.TryHandlePreviewMouseUp(host, e);
+            e.Handled = host.InputService.TryHandleMouseUp(host, WpfPlayerInputEventAdapter.CreateMouseButtonEvent(e));
     }
 
     private static void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
         if (sender is FrameworkElement element && element.DataContext is IPlayerInputHost host)
-            host.InputService.TryHandlePreviewMouseWheel(host, e);
+            e.Handled = host.InputService.TryHandleMouseWheel(host, WpfPlayerInputEventAdapter.CreateMouseWheelEvent(e));
     }
 
     private static void Unsubscribe(UIElement element)

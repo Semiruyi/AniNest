@@ -1,13 +1,7 @@
 using System;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Threading;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Persistence;
-using AniNest.Presentation.Primitives;
 
 namespace AniNest.Features.Player.Input;
 
@@ -68,86 +62,77 @@ public sealed class PlayerInputService : IPlayerInputService
         Log.Info("SaveProfile completed, _profile updated");
     }
 
-    public bool TryHandlePreviewKeyDown(IPlayerInputHost host, KeyEventArgs args)
+    public bool TryHandleKeyDown(IPlayerInputHost host, PlayerInputKeyEvent inputEvent)
     {
-        if (args.Handled)
-            return false;
-
-        if (ShouldSkipKeyboard(args.OriginalSource as DependencyObject))
+        if (inputEvent.ShouldSkip)
         {
-            Log.Debug($"KeyDown skipped (editable focus): Key={args.Key} Source={args.OriginalSource?.GetType().Name}");
+            Log.Debug($"KeyDown skipped (editable focus): Key={inputEvent.Key}");
             return false;
         }
 
-        Log.Debug($"KeyDown: Key={args.Key} SystemKey={args.SystemKey} IsRepeat={args.IsRepeat} Modifiers={Keyboard.Modifiers} Source={args.OriginalSource?.GetType().Name}");
+        Log.Debug($"KeyDown: Key={inputEvent.Key} IsRepeat={inputEvent.IsRepeat} Modifiers={inputEvent.Modifiers}");
 
         foreach (var binding in _profile.Bindings)
         {
             if (!binding.IsEnabled || binding.KeyTrigger is null)
                 continue;
 
-            if (!binding.KeyTrigger.AllowRepeat && args.IsRepeat)
+            if (!binding.KeyTrigger.AllowRepeat && inputEvent.IsRepeat)
                 continue;
 
-            if (binding.KeyTrigger.Key != args.Key)
+            if (binding.KeyTrigger.Key != inputEvent.Key)
                 continue;
 
-            if (binding.KeyTrigger.Modifiers != Keyboard.Modifiers)
+            if (binding.KeyTrigger.Modifiers != inputEvent.Modifiers)
             {
-                Log.Debug($"  Modifier mismatch for {binding.Action}: binding={binding.KeyTrigger.Modifiers} actual={Keyboard.Modifiers}");
+                Log.Debug($"  Modifier mismatch for {binding.Action}: binding={binding.KeyTrigger.Modifiers} actual={inputEvent.Modifiers}");
                 continue;
             }
 
-            Log.Info($"  Key matched: Action={binding.Action} Key={args.Key}");
+            Log.Info($"  Key matched: Action={binding.Action} Key={inputEvent.Key}");
             if (host.TryHandleInput(binding.Action))
-            {
-                args.Handled = true;
                 return true;
-            }
         }
 
         Log.Debug("  No binding matched");
         return false;
     }
 
-    public bool TryHandlePreviewMouseDown(IPlayerInputHost host, MouseButtonEventArgs args)
+    public bool TryHandleMouseDown(IPlayerInputHost host, PlayerInputMouseButtonEvent inputEvent)
     {
-        if (args.Handled || ShouldSkipMouse(args.OriginalSource as DependencyObject))
+        if (inputEvent.ShouldSkip)
             return false;
 
-        var isVideoSurface = args.OriginalSource is DependencyObject source &&
-            IsInsideVideoSurface(source);
-
-        if (args.ChangedButton == MouseButton.Left)
+        if (inputEvent.Button == PlayerInputMouseButton.Left)
         {
-            if (!isVideoSurface)
+            if (!inputEvent.IsInVideoSurface)
                 return false;
 
-            if (args.ClickCount > 1 || _leftClickTimer != null)
+            if (inputEvent.ClickCount > 1 || _leftClickTimer != null)
             {
                 CancelPendingLeftClick();
                 _skipNextLeftUp = true;
-                return TryExecuteMouseBinding(host, MouseButton.Left, PlayerInputTriggerKind.MouseDoubleClick, args);
+                return TryExecuteMouseBinding(host, inputEvent.Button, PlayerInputTriggerKind.MouseDoubleClick, inputEvent.Modifiers);
             }
 
             return false;
         }
 
-        if (args.ChangedButton == MouseButton.Right)
+        if (inputEvent.Button == PlayerInputMouseButton.Right)
         {
             _rightDown = true;
             _rightHoldTriggered = false;
             _rightHoldHost = host;
             _rightHoldTimer?.Stop();
 
-            if (HasMouseBinding(MouseButton.Right, PlayerInputTriggerKind.MouseHold))
+            if (HasMouseBinding(inputEvent.Button, PlayerInputTriggerKind.MouseHold))
             {
                 _rightHoldTimer = NewTimer(HoldDurationMs, () =>
                 {
                     if (!_rightDown || _rightHoldHost is null)
                         return;
 
-                    _rightHoldTriggered = TryExecuteMouseBinding(_rightHoldHost, MouseButton.Right, PlayerInputTriggerKind.MouseHold);
+                    _rightHoldTriggered = TryExecuteMouseBinding(_rightHoldHost, inputEvent.Button, PlayerInputTriggerKind.MouseHold, inputEvent.Modifiers);
                 });
                 _rightHoldTimer.Start();
             }
@@ -155,20 +140,17 @@ public sealed class PlayerInputService : IPlayerInputService
             return false;
         }
 
-        return TryExecuteMouseBinding(host, args.ChangedButton, PlayerInputTriggerKind.MouseClick, args);
+        return TryExecuteMouseBinding(host, inputEvent.Button, PlayerInputTriggerKind.MouseClick, inputEvent.Modifiers);
     }
 
-    public bool TryHandlePreviewMouseUp(IPlayerInputHost host, MouseButtonEventArgs args)
+    public bool TryHandleMouseUp(IPlayerInputHost host, PlayerInputMouseButtonEvent inputEvent)
     {
-        if (args.Handled || ShouldSkipMouse(args.OriginalSource as DependencyObject))
+        if (inputEvent.ShouldSkip)
             return false;
 
-        var isVideoSurface = args.OriginalSource is DependencyObject source &&
-            IsInsideVideoSurface(source);
-
-        if (args.ChangedButton == MouseButton.Left)
+        if (inputEvent.Button == PlayerInputMouseButton.Left)
         {
-            if (!isVideoSurface)
+            if (!inputEvent.IsInVideoSurface)
                 return false;
 
             if (_skipNextLeftUp)
@@ -177,7 +159,7 @@ public sealed class PlayerInputService : IPlayerInputService
                 return false;
             }
 
-            if (HasMouseBinding(MouseButton.Left, PlayerInputTriggerKind.MouseClick))
+            if (HasMouseBinding(inputEvent.Button, PlayerInputTriggerKind.MouseClick))
             {
                 CancelPendingLeftClick();
                 _pendingLeftClickHost = host;
@@ -186,7 +168,7 @@ public sealed class PlayerInputService : IPlayerInputService
                     if (_pendingLeftClickHost is null)
                         return;
 
-                    TryExecuteMouseBinding(_pendingLeftClickHost, MouseButton.Left, PlayerInputTriggerKind.MouseClick);
+                    TryExecuteMouseBinding(_pendingLeftClickHost, inputEvent.Button, PlayerInputTriggerKind.MouseClick, inputEvent.Modifiers);
                     CancelPendingLeftClick();
                 });
                 _leftClickTimer.Start();
@@ -195,15 +177,15 @@ public sealed class PlayerInputService : IPlayerInputService
             return false;
         }
 
-        if (args.ChangedButton == MouseButton.Right && _rightHoldTriggered)
+        if (inputEvent.Button == PlayerInputMouseButton.Right && _rightHoldTriggered)
         {
             _rightDown = false;
             _rightHoldTimer?.Stop();
             _rightHoldTriggered = false;
-            return TryExecuteMouseBinding(host, MouseButton.Right, PlayerInputTriggerKind.MouseRelease, args);
+            return TryExecuteMouseBinding(host, inputEvent.Button, PlayerInputTriggerKind.MouseRelease, inputEvent.Modifiers);
         }
 
-        if (args.ChangedButton == MouseButton.Right)
+        if (inputEvent.Button == PlayerInputMouseButton.Right)
         {
             _rightDown = false;
             _rightHoldTimer?.Stop();
@@ -213,12 +195,12 @@ public sealed class PlayerInputService : IPlayerInputService
         return false;
     }
 
-    public bool TryHandlePreviewMouseWheel(IPlayerInputHost host, MouseWheelEventArgs args)
+    public bool TryHandleMouseWheel(IPlayerInputHost host, PlayerInputMouseWheelEvent inputEvent)
     {
-        if (args.Handled || ShouldSkipMouse(args.OriginalSource as DependencyObject))
+        if (inputEvent.ShouldSkip)
             return false;
 
-        var kind = args.Delta > 0 ? PlayerInputTriggerKind.MouseWheelUp : PlayerInputTriggerKind.MouseWheelDown;
+        var kind = inputEvent.Delta > 0 ? PlayerInputTriggerKind.MouseWheelUp : PlayerInputTriggerKind.MouseWheelDown;
         foreach (var binding in _profile.Bindings)
         {
             if (!binding.IsEnabled || binding.MouseTrigger is null)
@@ -227,20 +209,21 @@ public sealed class PlayerInputService : IPlayerInputService
             if (binding.MouseTrigger.Kind != kind)
                 continue;
 
-            if (binding.MouseTrigger.Modifiers != Keyboard.Modifiers)
+            if (binding.MouseTrigger.Modifiers != inputEvent.Modifiers)
                 continue;
 
             if (host.TryHandleInput(binding.Action))
-            {
-                args.Handled = true;
                 return true;
-            }
         }
 
         return false;
     }
 
-    private bool TryExecuteMouseBinding(IPlayerInputHost host, MouseButton button, PlayerInputTriggerKind kind)
+    private bool TryExecuteMouseBinding(
+        IPlayerInputHost host,
+        PlayerInputMouseButton button,
+        PlayerInputTriggerKind kind,
+        PlayerInputModifiers modifiers)
     {
         foreach (var binding in _profile.Bindings)
         {
@@ -250,7 +233,7 @@ public sealed class PlayerInputService : IPlayerInputService
             if (binding.MouseTrigger.Button != button || binding.MouseTrigger.Kind != kind)
                 continue;
 
-            if (binding.MouseTrigger.Modifiers != Keyboard.Modifiers)
+            if (binding.MouseTrigger.Modifiers != modifiers)
                 continue;
 
             if (host.TryHandleInput(binding.Action))
@@ -260,33 +243,7 @@ public sealed class PlayerInputService : IPlayerInputService
         return false;
     }
 
-    private bool TryExecuteMouseBinding(IPlayerInputHost host, MouseButton button, PlayerInputTriggerKind kind, MouseButtonEventArgs args)
-    {
-        var handled = TryExecuteMouseBinding(host, button, kind);
-        if (handled)
-            args.Handled = true;
-        return handled;
-    }
-
-    private static bool ShouldSkipKeyboard(DependencyObject? source)
-        => HasAncestor<TextBoxBase>(source)
-            || HasAncestor<PasswordBox>(source)
-            || HasAncestor<ComboBox>(source)
-            || HasAncestor<ButtonBase>(source);
-
-    private static bool ShouldSkipMouse(DependencyObject? source)
-        => HasAncestor<ButtonBase>(source)
-            || HasAncestor<Thumb>(source)
-            || HasAncestor<SeekBar>(source)
-            || HasAncestor<TextBoxBase>(source)
-            || HasAncestor<PasswordBox>(source)
-            || HasAncestor<ComboBox>(source)
-            || HasAncestor<ListBoxItem>(source);
-
-    private static bool IsInsideVideoSurface(DependencyObject source)
-        => HasAncestorNamed(source, "VideoContainer");
-
-    private bool HasMouseBinding(MouseButton button, PlayerInputTriggerKind kind)
+    private bool HasMouseBinding(PlayerInputMouseButton button, PlayerInputTriggerKind kind)
     {
         foreach (var binding in _profile.Bindings)
         {
@@ -352,43 +309,5 @@ public sealed class PlayerInputService : IPlayerInputService
             action();
         };
         return timer;
-    }
-
-    private static bool HasAncestor<T>(DependencyObject? source) where T : DependencyObject
-    {
-        var current = source;
-        while (current != null)
-        {
-            if (current is T)
-                return true;
-
-            current = current switch
-            {
-                Visual visual => System.Windows.Media.VisualTreeHelper.GetParent(visual),
-                System.Windows.Media.Media3D.Visual3D visual3D => System.Windows.Media.VisualTreeHelper.GetParent(visual3D),
-                _ => LogicalTreeHelper.GetParent(current)
-            };
-        }
-
-        return false;
-    }
-
-    private static bool HasAncestorNamed(DependencyObject? source, string name)
-    {
-        var current = source;
-        while (current != null)
-        {
-            if (current is FrameworkElement fe && fe.Name == name)
-                return true;
-
-            current = current switch
-            {
-                Visual visual => System.Windows.Media.VisualTreeHelper.GetParent(visual),
-                System.Windows.Media.Media3D.Visual3D visual3D => System.Windows.Media.VisualTreeHelper.GetParent(visual3D),
-                _ => LogicalTreeHelper.GetParent(current)
-            };
-        }
-
-        return false;
     }
 }

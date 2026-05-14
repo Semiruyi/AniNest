@@ -2,12 +2,11 @@ using AniNest.Infrastructure.Interop;
 using AniNest.Infrastructure.Diagnostics;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Media;
+using AniNest.Infrastructure.Presentation;
 using AniNest.Infrastructure.Thumbnails;
 using System.IO;
 using System.Diagnostics;
 using System.Linq;
-using System.Windows;
-using System.Windows.Threading;
 
 namespace AniNest.Features.Player.Services;
 
@@ -20,6 +19,7 @@ public sealed class PlayerAppService : IPlayerAppService
     private readonly PlayerPlaybackStateController _playback;
     private readonly IMediaPlayerController _media;
     private readonly IThumbnailGenerator _thumbnailGenerator;
+    private readonly IUiDispatcher _uiDispatcher;
     private CancellationTokenSource? _loadCts;
     private long _loadGeneration;
     private long _loadedGeneration;
@@ -34,13 +34,15 @@ public sealed class PlayerAppService : IPlayerAppService
         PlayerSessionController session,
         PlayerPlaybackStateController playback,
         IMediaPlayerController media,
-        IThumbnailGenerator thumbnailGenerator)
+        IThumbnailGenerator thumbnailGenerator,
+        IUiDispatcher uiDispatcher)
     {
         _taskbarAutoHide = taskbarAutoHide;
         _session = session;
         _playback = playback;
         _media = media;
         _thumbnailGenerator = thumbnailGenerator;
+        _uiDispatcher = uiDispatcher;
         _session.CurrentIndexChanged += OnSessionCurrentIndexChanged;
     }
 
@@ -223,17 +225,16 @@ public sealed class PlayerAppService : IPlayerAppService
             return;
         }
 
-        var dispatcher = Application.Current?.Dispatcher;
-        if (dispatcher == null)
+        if (_uiDispatcher.CheckAccess())
         {
             ActivatePendingVideo(generation, reason);
             return;
         }
 
-        dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+        _uiDispatcher.BeginInvoke(() =>
         {
             ActivatePendingVideo(generation, $"{reason}-dispatch");
-        }));
+        });
     }
 
     private void ActivatePendingVideo(long generation, string reason)

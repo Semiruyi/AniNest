@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Windows.Input;
 using AniNest.Infrastructure.Localization;
 
 namespace AniNest.Features.Player.Input;
@@ -27,13 +26,13 @@ public static class PlayerInputFormatter
     {
         var parts = new List<string>(4);
 
-        if (trigger.Modifiers.HasFlag(ModifierKeys.Control))
+        if (trigger.Modifiers.HasFlag(PlayerInputModifiers.Control))
             parts.Add("Ctrl");
-        if (trigger.Modifiers.HasFlag(ModifierKeys.Shift))
+        if (trigger.Modifiers.HasFlag(PlayerInputModifiers.Shift))
             parts.Add("Shift");
-        if (trigger.Modifiers.HasFlag(ModifierKeys.Alt))
+        if (trigger.Modifiers.HasFlag(PlayerInputModifiers.Alt))
             parts.Add("Alt");
-        if (trigger.Modifiers.HasFlag(ModifierKeys.Windows))
+        if (trigger.Modifiers.HasFlag(PlayerInputModifiers.Windows))
             parts.Add("Win");
 
         parts.Add(FormatKey(trigger.Key));
@@ -44,13 +43,13 @@ public static class PlayerInputFormatter
     {
         var parts = new List<string>(4);
 
-        if (trigger.Modifiers.HasFlag(ModifierKeys.Control))
+        if (trigger.Modifiers.HasFlag(PlayerInputModifiers.Control))
             parts.Add("Ctrl");
-        if (trigger.Modifiers.HasFlag(ModifierKeys.Shift))
+        if (trigger.Modifiers.HasFlag(PlayerInputModifiers.Shift))
             parts.Add("Shift");
-        if (trigger.Modifiers.HasFlag(ModifierKeys.Alt))
+        if (trigger.Modifiers.HasFlag(PlayerInputModifiers.Alt))
             parts.Add("Alt");
-        if (trigger.Modifiers.HasFlag(ModifierKeys.Windows))
+        if (trigger.Modifiers.HasFlag(PlayerInputModifiers.Windows))
             parts.Add("Win");
 
         parts.Add(FormatMouseKind(localization, trigger));
@@ -70,29 +69,29 @@ public static class PlayerInputFormatter
         };
     }
 
-    private static string FormatMouseButton(ILocalizationService localization, MouseButton? button) => button switch
+    private static string FormatMouseButton(ILocalizationService localization, PlayerInputMouseButton? button) => button switch
     {
-        MouseButton.Left => localization["Player.Input.MouseLeft"],
-        MouseButton.Right => localization["Player.Input.MouseRight"],
-        MouseButton.Middle => localization["Player.Input.MouseMiddle"],
-        MouseButton.XButton1 => localization["Player.Input.MouseX1"],
-        MouseButton.XButton2 => localization["Player.Input.MouseX2"],
+        PlayerInputMouseButton.Left => localization["Player.Input.MouseLeft"],
+        PlayerInputMouseButton.Right => localization["Player.Input.MouseRight"],
+        PlayerInputMouseButton.Middle => localization["Player.Input.MouseMiddle"],
+        PlayerInputMouseButton.XButton1 => localization["Player.Input.MouseX1"],
+        PlayerInputMouseButton.XButton2 => localization["Player.Input.MouseX2"],
         _ => localization["Player.Input.Mouse"]
     };
 
-    private static string FormatKey(Key key) => key switch
+    private static string FormatKey(PlayerInputKey key) => key switch
     {
-        Key.Space => "Space",
-        Key.Return => "Enter",
-        Key.Prior => "PageUp",
-        Key.Next => "PageDown",
-        Key.Escape => "Esc",
-        Key.Left => "Left",
-        Key.Right => "Right",
-        Key.Up => "Up",
-        Key.Down => "Down",
-        Key.OemPlus => "+",
-        Key.OemMinus => "-",
+        PlayerInputKey.Space => "Space",
+        PlayerInputKey.Enter => "Enter",
+        PlayerInputKey.PageUp => "PageUp",
+        PlayerInputKey.PageDown => "PageDown",
+        PlayerInputKey.Escape => "Esc",
+        PlayerInputKey.Left => "Left",
+        PlayerInputKey.Right => "Right",
+        PlayerInputKey.Up => "Up",
+        PlayerInputKey.Down => "Down",
+        PlayerInputKey.OemPlus => "+",
+        PlayerInputKey.OemMinus => "-",
         _ => key.ToString()
     };
 }

@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
-using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using AniNest.Features.Player.Input;
@@ -48,10 +47,10 @@ public partial class PlayerInputSettingsViewModel : ObservableObject
     public string HintText => _localization["Settings.PlayerInput.Hint"];
     public bool IsCapturing => _capturingIndex >= 0;
 
-    public bool TryCaptureKey(KeyEventArgs args)
+    public bool TryCaptureKey(PlayerInputKeyEvent inputEvent)
     {
-        Log.Debug($"TryCaptureKey: Key={args.Key} SystemKey={args.SystemKey} CapturingIndex={_capturingIndex} IsCapturing={_captureSession.IsCapturing}");
-        if (_capturingIndex < 0 || !_captureSession.TryCaptureKey(args, out var template) || template is null)
+        Log.Debug($"TryCaptureKey: Key={inputEvent.Key} CapturingIndex={_capturingIndex} IsCapturing={_captureSession.IsCapturing}");
+        if (_capturingIndex < 0 || !_captureSession.TryCaptureKey(inputEvent, out var template) || template is null)
             return false;
 
         Log.Info($"Key captured: Key={template.KeyTrigger?.Key} Modifiers={template.KeyTrigger?.Modifiers}");
@@ -59,18 +58,18 @@ public partial class PlayerInputSettingsViewModel : ObservableObject
         return true;
     }
 
-    public bool TryCaptureMouseDown(MouseButtonEventArgs args)
+    public bool TryCaptureMouseDown(PlayerInputMouseButtonEvent inputEvent)
     {
-        if (_capturingIndex < 0 || !_captureSession.TryCaptureMouseDown(args, out var template) || template is null)
+        if (_capturingIndex < 0 || !_captureSession.TryCaptureMouseDown(inputEvent, out var template) || template is null)
             return false;
 
         ApplyCapturedBinding(template);
         return true;
     }
 
-    public bool TryCaptureMouseWheel(MouseWheelEventArgs args)
+    public bool TryCaptureMouseWheel(PlayerInputMouseWheelEvent inputEvent)
     {
-        if (_capturingIndex < 0 || !_captureSession.TryCaptureMouseWheel(args, out var template) || template is null)
+        if (_capturingIndex < 0 || !_captureSession.TryCaptureMouseWheel(inputEvent, out var template) || template is null)
             return false;
 
         ApplyCapturedBinding(template);

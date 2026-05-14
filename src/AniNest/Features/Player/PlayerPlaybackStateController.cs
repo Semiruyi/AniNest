@@ -1,5 +1,4 @@
 using System;
-using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using AniNest.Features.Player.Models;
 using AniNest.Features.Player.Services;
@@ -37,7 +36,6 @@ public partial class PlayerPlaybackStateController : ObservableObject
     [ObservableProperty]
     private string? _currentVideoPath;
 
-    public ImageSource? VideoSource => _media.VideoBitmap;
     public long MediaLength => _media.Length;
 
     public PlayerPlaybackStateController(
@@ -47,8 +45,6 @@ public partial class PlayerPlaybackStateController : ObservableObject
         _media = media;
         _syncService = syncService;
         _syncService.Attach(this);
-
-        RefreshVideoSource();
     }
 
     public void SetSeeking(bool value)
@@ -58,9 +54,6 @@ public partial class PlayerPlaybackStateController : ObservableObject
 
         IsSeeking = value;
     }
-
-    public void RefreshVideoSource()
-        => OnPropertyChanged(nameof(VideoSource));
 
     public void NotifyStateChanged(string propertyName)
         => OnPropertyChanged(propertyName);
@@ -77,13 +70,11 @@ public partial class PlayerPlaybackStateController : ObservableObject
     public void SetCurrentVideoPath(string path)
     {
         CurrentVideoPath = path;
-        RefreshVideoSource();
     }
 
     public void SetPlayingState(bool value)
     {
         IsPlaying = value;
-        RefreshVideoSource();
     }
 
     public void ResetSession()
@@ -96,7 +87,6 @@ public partial class PlayerPlaybackStateController : ObservableObject
         BufferedPosition = 0;
         IsSeeking = false;
         CurrentVideoPath = null;
-        RefreshVideoSource();
     }
 
     public void UpdateProgress(ProgressUpdatedEventArgs args)

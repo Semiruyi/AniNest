@@ -26,7 +26,9 @@ public static class ServiceRegistration
     {
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
+        services.AddSingleton<IApplicationLifecycle, WpfApplicationLifecycle>();
         services.AddSingleton<IDialogService, WpfDialogService>();
+        services.AddSingleton<IFolderPickerService, WpfFolderPickerService>();
         services.AddSingleton<IUiDispatcher, WpfUiDispatcher>();
         services.AddSingleton<ITaskbarAutoHideCoordinator, TaskbarAutoHideCoordinator>();
         services.AddSingleton<IMetadataRepository, MetadataRepository>();
@@ -57,7 +59,9 @@ public static class ServiceRegistration
         services.AddSingleton<PlayerSessionController>();
         services.AddSingleton<PlayerPlaybackStateController>();
         services.AddSingleton<IPlayerInputService, PlayerInputService>();
-        services.AddSingleton<IMediaPlayerController, MediaPlayerController>();
+        services.AddSingleton<MediaPlayerController>();
+        services.AddSingleton<IMediaPlayerController>(sp => sp.GetRequiredService<MediaPlayerController>());
+        services.AddSingleton<IWpfVideoSurfaceSource, WpfVideoSurfaceSource>();
 
         services.AddSingleton<MainPageViewModel>();
         services.AddSingleton<PlayerViewModel>();

@@ -1,4 +1,3 @@
-using System.Windows;
 using System.Windows.Input;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -10,12 +9,14 @@ using CommunityToolkit.Mvvm.Input;
 using AniNest.Features.Library;
 using AniNest.Features.Library.Services;
 using AniNest.Features.Player;
+using AniNest.Features.Player.Input;
 using AniNest.Features.Player.Services;
 using AniNest.Features.Player.Settings;
 using AniNest.Features.Shell.Services;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Localization;
 using AniNest.Infrastructure.Interop;
+using AniNest.Infrastructure.Presentation;
 using AniNest.Infrastructure.Thumbnails;
 
 namespace AniNest.Features.Shell;
@@ -32,6 +33,9 @@ public partial class ShellViewModel : ObservableObject
     private readonly IShellSettingsAppService _shellSettingsAppService;
     private readonly IShellThumbnailPerformanceAppService _thumbnailPerformanceAppService;
     private readonly IThumbnailGenerator _thumbnailGenerator;
+    private readonly IDialogService _dialogs;
+    private readonly IFolderPickerService _folderPicker;
+    private readonly IUiDispatcher _uiDispatcher;
     private readonly MainPageViewModel _mainPage;
     private readonly PlayerViewModel _playerPage;
     private string? _lastThumbnailGenerationStatusLog;
@@ -168,6 +172,10 @@ public partial class ShellViewModel : ObservableObject
         IShellSettingsAppService shellSettingsAppService,
         IShellThumbnailPerformanceAppService thumbnailPerformanceAppService,
         IThumbnailGenerator thumbnailGenerator,
+        IDialogService dialogs,
+        IFolderPickerService folderPicker,
+        IUiDispatcher uiDispatcher,
+        IApplicationLifecycle applicationLifecycle,
         MainPageViewModel mainPage,
         PlayerViewModel playerPage,
         PlayerInputSettingsViewModel playerInputSettings)
@@ -180,6 +188,9 @@ public partial class ShellViewModel : ObservableObject
         _shellSettingsAppService = shellSettingsAppService;
         _thumbnailPerformanceAppService = thumbnailPerformanceAppService;
         _thumbnailGenerator = thumbnailGenerator;
+        _dialogs = dialogs;
+        _folderPicker = folderPicker;
+        _uiDispatcher = uiDispatcher;
         _mainPage = mainPage;
         _playerPage = playerPage;
         PlayerInputSettings = playerInputSettings;
@@ -190,7 +201,7 @@ public partial class ShellViewModel : ObservableObject
         _thumbnailGenerator.StatusChanged += OnThumbnailGeneratorStatusChanged;
 
         InitializeSelectableOptions();
-        Application.Current.Exit += (_, _) => _taskbarAutoHide.RestoreIfNeeded();
+        applicationLifecycle.ExitRequested += (_, _) => _taskbarAutoHide.RestoreIfNeeded();
         RefreshThumbnailSettingsStatus();
         RefreshSelectableOptionContent();
         RefreshSelectableOptionSelectionState();
@@ -435,7 +446,7 @@ public partial class ShellViewModel : ObservableObject
 
     private void OnThumbnailGeneratorStatusChanged()
     {
-        Application.Current.Dispatcher.BeginInvoke((Action)RefreshThumbnailSettingsStatus);
+        _uiDispatcher.BeginInvoke(RefreshThumbnailSettingsStatus);
     }
 
     private void NotifyLanguageSettingsChanged()
@@ -564,27 +575,23 @@ public partial class ShellViewModel : ObservableObject
     private async Task AddFolder()
     {
         IsFilePopupOpen = false;
-        var dialog = new Microsoft.Win32.OpenFolderDialog
-        {
-            Title = _loc["Dialog.AddFolder"]
-        };
+        string? path = _folderPicker.PickFolder(_loc["Dialog.AddFolder"]);
+        if (string.IsNullOrWhiteSpace(path))
+            return;
 
-        if (dialog.ShowDialog() != true) return;
-
-        string path = dialog.FolderName;
         var result = await _libraryService.AddFolderAsync(path);
         if (!result.Success)
         {
             switch (result.Failure)
             {
                 case AddFolderFailure.Duplicate:
-                    MessageBox.Show(_loc["Dialog.FolderAlreadyAdded"], _loc["Dialog.Info"]);
+                    _dialogs.ShowInfo(_loc["Dialog.FolderAlreadyAdded"], _loc["Dialog.Info"]);
                     break;
                 case AddFolderFailure.NoVideos:
-                    MessageBox.Show(_loc["Dialog.NoVideosInFolder"], _loc["Dialog.Info"]);
+                    _dialogs.ShowInfo(_loc["Dialog.NoVideosInFolder"], _loc["Dialog.Info"]);
                     break;
                 default:
-                    MessageBox.Show(result.ErrorMessage ?? _loc["Dialog.UnknownError"], _loc["Dialog.Error"]);
+                    _dialogs.ShowError(result.ErrorMessage ?? _loc["Dialog.UnknownError"], _loc["Dialog.Error"]);
                     break;
             }
             return;
@@ -598,21 +605,17 @@ public partial class ShellViewModel : ObservableObject
     private async Task AddFolderBatch()
     {
         IsFilePopupOpen = false;
-        var dialog = new Microsoft.Win32.OpenFolderDialog
-        {
-            Title = _loc["Dialog.AddFolderBatch"]
-        };
+        string? rootPath = _folderPicker.PickFolder(_loc["Dialog.AddFolderBatch"]);
+        if (string.IsNullOrWhiteSpace(rootPath))
+            return;
 
-        if (dialog.ShowDialog() != true) return;
-
-        string rootPath = dialog.FolderName;
         Log.Info($"AddFolderBatch: user selected {rootPath}");
 
         var result = await _libraryService.AddFolderBatchAsync(rootPath);
         if (result.AddedFolders.Count == 0 && result.SkippedCount == 0)
         {
             Log.Info("AddFolderBatch: no video folders found");
-            MessageBox.Show(_loc["Dialog.NoVideoFoldersFound"], _loc["Dialog.Info"]);
+            _dialogs.ShowInfo(_loc["Dialog.NoVideoFoldersFound"], _loc["Dialog.Info"]);
             return;
         }
 
@@ -621,17 +624,19 @@ public partial class ShellViewModel : ObservableObject
 
         Log.Info($"AddFolderBatch: done, added {result.AddedFolders.Count} items, skipped {result.SkippedCount}");
         string msg = string.Format(_loc["Dialog.BatchResult"], result.AddedFolders.Count, result.SkippedCount);
-        MessageBox.Show(msg, _loc["Dialog.Info"]);
+        _dialogs.ShowInfo(msg, _loc["Dialog.Info"]);
     }
 
-    public bool TryCaptureSettingsKey(KeyEventArgs args) => PlayerInputSettings.TryCaptureKey(args);
-    public bool TryCaptureSettingsMouseDown(MouseButtonEventArgs args) => PlayerInputSettings.TryCaptureMouseDown(args);
-    public bool TryCaptureSettingsMouseWheel(MouseWheelEventArgs args) => PlayerInputSettings.TryCaptureMouseWheel(args);
+    public bool TryCaptureSettingsKey(PlayerInputKeyEvent inputEvent) => PlayerInputSettings.TryCaptureKey(inputEvent);
+    public bool TryCaptureSettingsMouseDown(PlayerInputMouseButtonEvent inputEvent) => PlayerInputSettings.TryCaptureMouseDown(inputEvent);
+    public bool TryCaptureSettingsMouseWheel(PlayerInputMouseWheelEvent inputEvent) => PlayerInputSettings.TryCaptureMouseWheel(inputEvent);
 
-    public void TryHandlePlayerKeyDown(KeyEventArgs args)
+    public bool TryHandlePlayerKeyDown(PlayerInputKeyEvent inputEvent)
     {
         if (CurrentPage is PlayerViewModel player)
-            player.InputService.TryHandlePreviewKeyDown(player, args);
+            return player.InputService.TryHandleKeyDown(player, inputEvent);
+
+        return false;
     }
 
     private async Task EnterPlayerPageAsync(string path, string name)

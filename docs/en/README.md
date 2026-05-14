@@ -2,6 +2,7 @@
 
 ## Architecture
 - [Architecture Overview](architecture/overview.md)
+- [Backend Extraction Plan](architecture/backend-extraction-plan.md)
 - [MPV Render API Evaluation](architecture/mpv-render-api-evaluation.md)
 - [UI Animation Architecture](presentation/ui-animation-architecture.md)
 - [Items Transition Architecture](presentation/items-transition-architecture.md)
