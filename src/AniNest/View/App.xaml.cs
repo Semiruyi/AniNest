@@ -3,14 +3,11 @@ using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using AniNest.CompositionRoot;
 using AniNest.Features.Library;
-using AniNest.Features.Metadata;
 using AniNest.Features.Player;
 using AniNest.Features.Shell;
-using AniNest.Infrastructure.Localization;
 using AniNest.Infrastructure.Diagnostics;
 using AniNest.Infrastructure.Logging;
-using AniNest.Infrastructure.Media;
-using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Presentation;
 using AniNest.View;
 
 namespace AniNest;
@@ -29,12 +26,7 @@ public partial class App : Application
         var provider = services.BuildServiceProvider();
         Log.Info("Service provider built");
 
-        var settings = provider.GetRequiredService<ISettingsService>().Load();
-        Log.Info($"Settings loaded. language={settings.Language}");
-        provider.GetRequiredService<ILocalizationService>().SetLanguage(settings.Language);
-        Log.Info($"Localization applied. language={settings.Language}");
-        _ = WarmupMediaAsync(provider.GetRequiredService<IMediaPlayerController>());
-        provider.GetRequiredService<MetadataWorker>().Start();
+        provider.GetRequiredService<IApplicationRuntime>().Start();
 
         ApplicationExceptionHandler.Configure(this);
         Log.Info("Application exception handlers configured");
@@ -67,12 +59,11 @@ public partial class App : Application
 
             try
             {
-                provider.GetRequiredService<ISettingsService>().Save();
-                Log.Info("Settings save complete");
+                provider.GetRequiredService<IApplicationRuntime>().Stop();
             }
             catch (Exception ex)
             {
-                Log.Error("Settings save failed during exit", ex);
+                Log.Error("Application runtime stop failed during exit", ex);
             }
 
             try
@@ -100,21 +91,6 @@ public partial class App : Application
 
         provider.GetRequiredService<MainWindow>().Show();
         Log.Info("Main window shown");
-    }
-
-    private static async Task WarmupMediaAsync(IMediaPlayerController mediaPlayerController)
-    {
-        Log.Info("Media warmup queued");
-
-        try
-        {
-            await mediaPlayerController.WarmupAsync();
-            Log.Info("Media warmup complete");
-        }
-        catch (Exception ex)
-        {
-            Log.Error("Media warmup failed", ex);
-        }
     }
 }
 

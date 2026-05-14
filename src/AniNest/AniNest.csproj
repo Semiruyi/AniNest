@@ -46,6 +46,16 @@
           SkipUnchangedFiles="true" />
   </Target>
 
+  <Target Name="RestoreMissingIntermediateAssembly"
+          AfterTargets="CleanupTemporaryTargetAssembly"
+          BeforeTargets="CopyFilesToOutputDirectory"
+          Condition="!Exists('$(IntermediateAssembly)') and Exists('$(TargetPath)')">
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(IntermediateAssembly)'))" />
+    <Copy SourceFiles="$(TargetPath)"
+          DestinationFiles="$(IntermediateAssembly)"
+          SkipUnchangedFiles="true" />
+  </Target>
+
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="LibVLCSharp.WPF" Version="3.9.7.1" />
