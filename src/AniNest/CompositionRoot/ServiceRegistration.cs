@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using AniNest.Features.Library;
+using AniNest.Features.Player.Playback;
 using AniNest.Features.Player;
 using AniNest.Features.Player.Input;
 using AniNest.Features.Player.Settings;
@@ -27,7 +28,7 @@ public static class ServiceRegistration
         services.AddSingleton<IThumbnailDecodeStrategyService, ThumbnailDecodeStrategyService>();
         services.AddSingleton<IThumbnailGenerator, ThumbnailGenerator>();
         services.AddSingleton<MediaPlayerController>();
-        services.AddSingleton<IMediaPlayerController>(sp => sp.GetRequiredService<MediaPlayerController>());
+        services.AddSingleton<IPlaybackEngine>(sp => sp.GetRequiredService<MediaPlayerController>());
         services.AddSingleton<IWpfVideoSurfaceSource, WpfVideoSurfaceSource>();
 
         services.AddSingleton<MainPageViewModel>();

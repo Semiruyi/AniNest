@@ -1,14 +1,14 @@
 using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using AniNest.Features.Player.Models;
+using AniNest.Features.Player.Playback;
 using AniNest.Features.Player.Services;
-using AniNest.Infrastructure.Media;
 
 namespace AniNest.Features.Player;
 
 public partial class PlayerPlaybackStateController : ObservableObject
 {
-    private readonly IMediaPlayerController _media;
+    private readonly IPlaybackEngine _playbackEngine;
     private readonly IPlayerPlaybackStateSyncService _syncService;
     private bool _isCleanedUp;
 
@@ -36,13 +36,13 @@ public partial class PlayerPlaybackStateController : ObservableObject
     [ObservableProperty]
     private string? _currentVideoPath;
 
-    public long MediaLength => _media.Length;
+    public long MediaLength => _playbackEngine.State.TotalTime;
 
     public PlayerPlaybackStateController(
-        IMediaPlayerController media,
+        IPlaybackEngine playbackEngine,
         IPlayerPlaybackStateSyncService syncService)
     {
-        _media = media;
+        _playbackEngine = playbackEngine;
         _syncService = syncService;
         _syncService.Attach(this);
     }
@@ -89,7 +89,7 @@ public partial class PlayerPlaybackStateController : ObservableObject
         CurrentVideoPath = null;
     }
 
-    public void UpdateProgress(ProgressUpdatedEventArgs args)
+    public void UpdateProgress(PlaybackProgressChangedEventArgs args)
     {
         if (IsSeeking)
             return;

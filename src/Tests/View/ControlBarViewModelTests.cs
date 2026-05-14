@@ -2,6 +2,7 @@ using System.ComponentModel;
 using FluentAssertions;
 using Moq;
 using AniNest.Features.Player;
+using AniNest.Features.Player.Playback;
 using AniNest.Features.Player.Services;
 using AniNest.Infrastructure.Localization;
 using AniNest.Infrastructure.Persistence;
@@ -82,7 +83,7 @@ public class ControlBarViewModelTests
             .Callback<PropertyChangedEventHandler>(_ => { });
 
         var playbackState = new PlayerPlaybackStateController(
-            Mock.Of<Infrastructure.Media.IMediaPlayerController>(),
+            Mock.Of<IPlaybackEngine>(),
             Mock.Of<IPlayerPlaybackStateSyncService>());
 
         return new ControlBarViewModel(

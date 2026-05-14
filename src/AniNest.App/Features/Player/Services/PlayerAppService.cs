@@ -1,7 +1,7 @@
+using AniNest.Features.Player.Playback;
 using AniNest.Infrastructure.Interop;
 using AniNest.Infrastructure.Diagnostics;
 using AniNest.Infrastructure.Logging;
-using AniNest.Infrastructure.Media;
 using AniNest.Infrastructure.Presentation;
 using AniNest.Infrastructure.Thumbnails;
 using System.IO;
@@ -17,7 +17,7 @@ public sealed class PlayerAppService : IPlayerAppService
     private readonly ITaskbarAutoHideCoordinator _taskbarAutoHide;
     private readonly PlayerSessionController _session;
     private readonly PlayerPlaybackStateController _playback;
-    private readonly IMediaPlayerController _media;
+    private readonly IPlaybackEngine _playbackEngine;
     private readonly IThumbnailGenerator _thumbnailGenerator;
     private readonly IUiDispatcher _uiDispatcher;
     private CancellationTokenSource? _loadCts;
@@ -33,14 +33,14 @@ public sealed class PlayerAppService : IPlayerAppService
         ITaskbarAutoHideCoordinator taskbarAutoHide,
         PlayerSessionController session,
         PlayerPlaybackStateController playback,
-        IMediaPlayerController media,
+        IPlaybackEngine playbackEngine,
         IThumbnailGenerator thumbnailGenerator,
         IUiDispatcher uiDispatcher)
     {
         _taskbarAutoHide = taskbarAutoHide;
         _session = session;
         _playback = playback;
-        _media = media;
+        _playbackEngine = playbackEngine;
         _thumbnailGenerator = thumbnailGenerator;
         _uiDispatcher = uiDispatcher;
         _session.CurrentIndexChanged += OnSessionCurrentIndexChanged;

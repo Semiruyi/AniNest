@@ -3,6 +3,7 @@ using FluentAssertions;
 using Moq;
 using AniNest.Features.Player;
 using AniNest.Features.Player.Input;
+using AniNest.Features.Player.Playback;
 using AniNest.Features.Player.Services;
 using AniNest.Infrastructure.Localization;
 using AniNest.Infrastructure.Media;
@@ -32,8 +33,8 @@ public class PlayerViewModelTests : IDisposable
     {
         File.WriteAllText(Path.Combine(_tempDir, "ep01.mp4"), string.Empty);
 
-        var media = new Mock<IMediaPlayerController>();
-        media.Setup(controller => controller.TryPlay(It.IsAny<string>(), It.IsAny<long>(), out It.Ref<string?>.IsAny))
+        var playbackEngine = new Mock<IPlaybackEngine>();
+        playbackEngine.Setup(controller => controller.TryLoad(It.IsAny<string>(), It.IsAny<long>(), out It.Ref<string?>.IsAny))
             .Returns((string _, long _, out string? errorMessage) =>
             {
                 errorMessage = "decoder failed";
@@ -55,12 +56,12 @@ public class PlayerViewModelTests : IDisposable
 
         var playlistService = new PlayerPlaylistService(
             settings.Object,
-            media.Object,
+            playbackEngine.Object,
             new VideoScanner(),
             localization.Object,
             playbackFacade.Object);
         var session = new PlayerSessionController(Mock.Of<IPlayerThumbnailSyncService>(), playlistService);
-        var playback = new PlayerPlaybackStateController(media.Object, syncService.Object);
+        var playback = new PlayerPlaybackStateController(playbackEngine.Object, syncService.Object);
         var viewModel = new PlayerViewModel(
             session,
             playback,

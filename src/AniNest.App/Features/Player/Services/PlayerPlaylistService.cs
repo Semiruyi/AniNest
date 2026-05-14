@@ -1,7 +1,8 @@
 using System.Collections.ObjectModel;
 using AniNest.Features.Player.Models;
-using AniNest.Infrastructure.Localization;
+using AniNest.Features.Player.Playback;
 using AniNest.Infrastructure.Media;
+using AniNest.Infrastructure.Localization;
 using AniNest.Infrastructure.Persistence;
 using AniNest.Infrastructure.Thumbnails;
 
@@ -13,12 +14,12 @@ public sealed class PlayerPlaylistService : IPlayerPlaylistService
 
     public PlayerPlaylistService(
         ISettingsService settings,
-        IMediaPlayerController media,
+        IPlaybackEngine playbackEngine,
         IVideoScanner videoScanner,
         ILocalizationService localization,
         IPlayerPlaybackFacade playbackFacade)
     {
-        _playlistManager = new PlaylistManager(settings, media, videoScanner, playbackFacade.GetThumbnailState);
+        _playlistManager = new PlaylistManager(settings, playbackEngine, videoScanner, playbackFacade.GetThumbnailState);
         Playlist = new PlaylistViewModel(localization);
         Playlist.SetPlaylistManager(_playlistManager);
     }

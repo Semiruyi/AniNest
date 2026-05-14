@@ -4,18 +4,18 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using AniNest.Features.Player.Playback;
 using LibVLCSharp.Shared;
 using AniNest.Infrastructure.Diagnostics;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Paths;
 using AniNest.Infrastructure.Persistence;
-using AniNest.Infrastructure.Media;
 using AniNest.Infrastructure.Thumbnails;
 using AniNest.Infrastructure.Interop;
 using LibVlcMedia = LibVLCSharp.Shared.Media;
 namespace AniNest.Infrastructure.Media;
 
-public class MediaPlayerController : IMediaPlayerController
+public class MediaPlayerController : IPlaybackEngine
 {
     private static readonly Logger Log = AppLog.For<MediaPlayerController>();
 
@@ -39,44 +39,21 @@ public class MediaPlayerController : IMediaPlayerController
     private int _volume = 100;
     private bool _isMuted;
 
-    public bool IsPlaying => mediaPlayer?.IsPlaying ?? false;
-    public long Time => mediaPlayer?.Time ?? 0;
-    public long Length => mediaPlayer?.Length ?? 0;
-    public string? CurrentFilePath { get; private set; }
     public WriteableBitmap? VideoBitmap => frameProvider?.Bitmap;
-
-    public float Rate
-    {
-        get => mediaPlayer?.Rate ?? 1.0f;
-        set => mediaPlayer?.SetRate(value);
-    }
-
-    public int Volume
-    {
-        get => mediaPlayer?.Volume ?? _volume;
-        set
-        {
-            _volume = Math.Clamp(value, 0, 100);
-            if (mediaPlayer != null)
-                mediaPlayer.Volume = _volume;
-        }
-    }
-
-    public bool IsMuted
-    {
-        get => mediaPlayer?.Mute ?? _isMuted;
-        set
-        {
-            _isMuted = value;
-            if (mediaPlayer != null)
-                mediaPlayer.Mute = value;
-        }
-    }
+    public string? CurrentFilePath { get; private set; }
+    public PlaybackStateSnapshot State => new(
+        mediaPlayer?.IsPlaying ?? false,
+        mediaPlayer?.Time ?? 0,
+        mediaPlayer?.Length ?? 0,
+        CurrentFilePath,
+        mediaPlayer?.Rate ?? 1.0f,
+        mediaPlayer?.Volume ?? _volume,
+        mediaPlayer?.Mute ?? _isMuted);
 
     public event EventHandler? Playing;
     public event EventHandler? Paused;
     public event EventHandler? Stopped;
-    public event EventHandler<ProgressUpdatedEventArgs>? ProgressUpdated;
+    public event EventHandler<PlaybackProgressChangedEventArgs>? ProgressChanged;
 
     public MediaPlayerController()
     {
@@ -144,14 +121,14 @@ public class MediaPlayerController : IMediaPlayerController
     {
         if (mediaPlayer != null && mediaPlayer.Length > 0)
         {
-            ProgressUpdated?.Invoke(this, new ProgressUpdatedEventArgs(
+            ProgressChanged?.Invoke(this, new PlaybackProgressChangedEventArgs(
                 mediaPlayer.Time,
                 mediaPlayer.Length
             ));
         }
     }
 
-    public bool TryPlay(string filePath, long startTimeMs, out string? errorMessage)
+    public bool TryLoad(string filePath, long startTimeMs, out string? errorMessage)
     {
         errorMessage = null;
 
@@ -224,6 +201,23 @@ public class MediaPlayerController : IMediaPlayerController
     public void Stop()
     {
         mediaPlayer?.Stop();
+    }
+
+    public void SetRate(float rate)
+        => mediaPlayer?.SetRate(rate);
+
+    public void SetVolume(int volume)
+    {
+        _volume = Math.Clamp(volume, 0, 100);
+        if (mediaPlayer != null)
+            mediaPlayer.Volume = _volume;
+    }
+
+    public void SetMute(bool isMuted)
+    {
+        _isMuted = isMuted;
+        if (mediaPlayer != null)
+            mediaPlayer.Mute = isMuted;
     }
 
     public void ResetSession()

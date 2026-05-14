@@ -1,9 +1,10 @@
 using System.IO;
 using FluentAssertions;
 using AniNest.Features.Player.Models;
+using AniNest.Features.Player.Playback;
+using AniNest.Infrastructure.Media;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Persistence;
-using AniNest.Infrastructure.Media;
 using AniNest.Infrastructure.Thumbnails;
 using Moq;
 using Xunit;
@@ -13,7 +14,7 @@ namespace AniNest.Tests.Model;
 public class PlaylistManagerTests : IDisposable
 {
     private readonly Mock<ISettingsService> _settingsMock = new();
-    private readonly Mock<IMediaPlayerController> _mediaMock = new();
+    private readonly Mock<IPlaybackEngine> _playbackEngineMock = new();
     private readonly IVideoScanner _videoScanner = new VideoScanner();
     private readonly PlaylistManager _manager;
     private readonly string _tempDir;
@@ -22,8 +23,8 @@ public class PlaylistManagerTests : IDisposable
     {
         _tempDir = Path.Combine(Path.GetTempPath(), $"PlaylistManagerTests_{Guid.NewGuid():N}");
         Directory.CreateDirectory(_tempDir);
-        _mediaMock
-            .Setup(media => media.TryPlay(It.IsAny<string>(), It.IsAny<long>(), out It.Ref<string?>.IsAny))
+        _playbackEngineMock
+            .Setup(media => media.TryLoad(It.IsAny<string>(), It.IsAny<long>(), out It.Ref<string?>.IsAny))
             .Returns((string _, long _, out string? errorMessage) =>
             {
                 errorMessage = null;
@@ -32,7 +33,7 @@ public class PlaylistManagerTests : IDisposable
 
         _manager = new PlaylistManager(
             _settingsMock.Object,
-            _mediaMock.Object,
+            _playbackEngineMock.Object,
             _videoScanner,
             _ => ThumbnailState.Pending);
     }
@@ -137,9 +138,8 @@ public class PlaylistManagerTests : IDisposable
     [Fact]
     public void SaveProgress_CallsSetVideoProgress()
     {
-        _mediaMock.Setup(m => m.CurrentFilePath).Returns("/videos/test.mp4");
-        _mediaMock.Setup(m => m.Time).Returns(5000);
-        _mediaMock.Setup(m => m.Length).Returns(60000);
+        _playbackEngineMock.Setup(m => m.State).Returns(new PlaybackStateSnapshot(
+            false, 5000, 60000, "/videos/test.mp4", 1.0f, 100, false));
 
         _manager.SaveProgress();
 
@@ -149,7 +149,8 @@ public class PlaylistManagerTests : IDisposable
     [Fact]
     public void SaveProgress_EmptyPath_Skips()
     {
-        _mediaMock.Setup(m => m.CurrentFilePath).Returns((string?)null);
+        _playbackEngineMock.Setup(m => m.State).Returns(new PlaybackStateSnapshot(
+            false, 0, 0, null, 1.0f, 100, false));
 
         _manager.SaveProgress();
 
@@ -282,8 +283,8 @@ public class PlaylistManagerTests : IDisposable
         CreateVideoFiles(2);
         PlaybackFailureInfo? failure = null;
         _manager.PlaybackFailed += info => failure = info;
-        _mediaMock
-            .Setup(media => media.TryPlay(It.IsAny<string>(), It.IsAny<long>(), out It.Ref<string?>.IsAny))
+        _playbackEngineMock
+            .Setup(media => media.TryLoad(It.IsAny<string>(), It.IsAny<long>(), out It.Ref<string?>.IsAny))
             .Returns((string path, long _, out string? errorMessage) =>
             {
                 errorMessage = "decoder failed";

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using AniNest.Infrastructure.Diagnostics;
-using AniNest.Infrastructure.Media;
+using AniNest.Features.Player.Playback;
 using AniNest.Infrastructure.Presentation;
 
 namespace AniNest.Features.Player.Services;
@@ -8,28 +8,28 @@ namespace AniNest.Features.Player.Services;
 public sealed class PlayerPlaybackStateSyncService : IPlayerPlaybackStateSyncService
 {
     private readonly PlayerSessionController _session;
-    private readonly IMediaPlayerController _media;
+    private readonly IPlaybackEngine _playbackEngine;
     private readonly IUiDispatcher _uiDispatcher;
     private readonly Action<string> _videoPathChangedHandler;
     private readonly EventHandler _playingHandler;
     private readonly EventHandler _pausedHandler;
     private readonly EventHandler _stoppedHandler;
-    private readonly EventHandler<ProgressUpdatedEventArgs> _progressUpdatedHandler;
+    private readonly EventHandler<PlaybackProgressChangedEventArgs> _progressChangedHandler;
     private PlayerPlaybackStateController? _controller;
 
     public PlayerPlaybackStateSyncService(
         PlayerSessionController session,
-        IMediaPlayerController media,
+        IPlaybackEngine playbackEngine,
         IUiDispatcher uiDispatcher)
     {
         _session = session;
-        _media = media;
+        _playbackEngine = playbackEngine;
         _uiDispatcher = uiDispatcher;
         _videoPathChangedHandler = OnSessionCurrentVideoPathChanged;
         _playingHandler = (_, _) => Dispatch("Playing", controller => controller.SetPlayingState(true));
         _pausedHandler = (_, _) => Dispatch("Paused", controller => controller.SetPlayingState(false));
         _stoppedHandler = (_, _) => Dispatch("Stopped", controller => controller.SetPlayingState(false));
-        _progressUpdatedHandler = (_, args) => Dispatch("ProgressUpdated", controller => controller.UpdateProgress(args), instrument: false);
+        _progressChangedHandler = (_, args) => Dispatch("ProgressChanged", controller => controller.UpdateProgress(args), instrument: false);
     }
 
     public void Attach(PlayerPlaybackStateController controller)
@@ -42,10 +42,10 @@ public sealed class PlayerPlaybackStateSyncService : IPlayerPlaybackStateSyncSer
 
         _controller = controller;
         _session.CurrentVideoPathChanged += _videoPathChangedHandler;
-        _media.Playing += _playingHandler;
-        _media.Paused += _pausedHandler;
-        _media.Stopped += _stoppedHandler;
-        _media.ProgressUpdated += _progressUpdatedHandler;
+        _playbackEngine.Playing += _playingHandler;
+        _playbackEngine.Paused += _pausedHandler;
+        _playbackEngine.Stopped += _stoppedHandler;
+        _playbackEngine.ProgressChanged += _progressChangedHandler;
     }
 
     public void Detach(PlayerPlaybackStateController controller)
@@ -54,10 +54,10 @@ public sealed class PlayerPlaybackStateSyncService : IPlayerPlaybackStateSyncSer
             return;
 
         _session.CurrentVideoPathChanged -= _videoPathChangedHandler;
-        _media.Playing -= _playingHandler;
-        _media.Paused -= _pausedHandler;
-        _media.Stopped -= _stoppedHandler;
-        _media.ProgressUpdated -= _progressUpdatedHandler;
+        _playbackEngine.Playing -= _playingHandler;
+        _playbackEngine.Paused -= _pausedHandler;
+        _playbackEngine.Stopped -= _stoppedHandler;
+        _playbackEngine.ProgressChanged -= _progressChangedHandler;
         _controller = null;
     }
 

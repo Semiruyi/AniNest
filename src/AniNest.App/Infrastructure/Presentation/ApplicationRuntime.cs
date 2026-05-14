@@ -1,7 +1,7 @@
 using AniNest.Features.Metadata;
+using AniNest.Features.Player.Playback;
 using AniNest.Infrastructure.Localization;
 using AniNest.Infrastructure.Logging;
-using AniNest.Infrastructure.Media;
 using AniNest.Infrastructure.Persistence;
 
 namespace AniNest.Infrastructure.Presentation;
@@ -11,18 +11,18 @@ public sealed class ApplicationRuntime : IApplicationRuntime
     private static readonly Logger Log = AppLog.For<ApplicationRuntime>();
     private readonly ISettingsService _settingsService;
     private readonly ILocalizationService _localizationService;
-    private readonly IMediaPlayerController _mediaPlayerController;
+    private readonly IPlaybackEngine _playbackEngine;
     private readonly MetadataWorker _metadataWorker;
 
     public ApplicationRuntime(
         ISettingsService settingsService,
         ILocalizationService localizationService,
-        IMediaPlayerController mediaPlayerController,
+        IPlaybackEngine playbackEngine,
         MetadataWorker metadataWorker)
     {
         _settingsService = settingsService;
         _localizationService = localizationService;
-        _mediaPlayerController = mediaPlayerController;
+        _playbackEngine = playbackEngine;
         _metadataWorker = metadataWorker;
     }
 
@@ -55,7 +55,7 @@ public sealed class ApplicationRuntime : IApplicationRuntime
 
         try
         {
-            await _mediaPlayerController.WarmupAsync();
+            await _playbackEngine.WarmupAsync();
             Log.Info("Media warmup complete");
         }
         catch (Exception ex)

@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using AniNest.Features.Player.Models;
+using AniNest.Features.Player.Playback;
 using AniNest.Infrastructure.Diagnostics;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Persistence;
@@ -17,7 +18,7 @@ public class PlaylistManager
     private static readonly Logger Log = AppLog.For<PlaylistManager>();
 
     private readonly ISettingsService _settings;
-    private readonly IMediaPlayerController _media;
+    private readonly IPlaybackEngine _playbackEngine;
     private readonly IVideoScanner _videoScanner;
     private readonly Func<string, ThumbnailState> _getThumbnailState;
     private Task<(bool[] Played, bool[] Thumb)>? _preloadTask;
@@ -36,12 +37,12 @@ public class PlaylistManager
     public event Action<string>? VideoPlayed;
     public event Action<PlaybackFailureInfo>? PlaybackFailed;
 
-    public PlaylistManager(ISettingsService settings, IMediaPlayerController media,
+    public PlaylistManager(ISettingsService settings, IPlaybackEngine playbackEngine,
                            IVideoScanner videoScanner,
                            Func<string, ThumbnailState> getThumbnailState)
     {
         _settings = settings;
-        _media = media;
+        _playbackEngine = playbackEngine;
         _videoScanner = videoScanner;
         _getThumbnailState = getThumbnailState;
     }
@@ -207,7 +208,7 @@ public class PlaylistManager
                 startTime = 0;
         }
 
-        if (!_media.TryPlay(filePath, startTime, out string? errorMessage))
+        if (!_playbackEngine.TryLoad(filePath, startTime, out string? errorMessage))
         {
             Log.Error($"Playlist play failed: file={filePath}, error={errorMessage ?? "unknown"}");
             PlaybackFailed?.Invoke(new PlaybackFailureInfo(filePath, errorMessage));
@@ -252,11 +253,12 @@ public class PlaylistManager
 
     public void SaveProgress()
     {
-        string? filePath = _media.CurrentFilePath;
+        var state = _playbackEngine.State;
+        string? filePath = state.CurrentFilePath;
         if (string.IsNullOrEmpty(filePath)) return;
 
-        long time = _media.Time;
-        long length = _media.Length;
+        long time = state.CurrentTime;
+        long length = state.TotalTime;
         if (length > 0)
             _settings.SetVideoProgress(filePath, time, length);
     }
