@@ -9,6 +9,7 @@ using AniNest.Features.Player.Input;
 using AniNest.Features.Player.Services;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Localization;
+using AniNest.Infrastructure.Presentation;
 using AniNest.Presentation.Primitives;
 
 namespace AniNest.Features.Player;
@@ -19,6 +20,8 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     private readonly PlayerSessionController _session;
     private readonly PlayerPlaybackStateController _playback;
     private readonly IPlayerPlaybackFacade _playbackFacade;
+    private readonly ILocalizationService _loc;
+    private readonly IDialogService _dialogs;
     private readonly System.ComponentModel.PropertyChangedEventHandler _playbackPropertyChangedHandler;
     private bool _isMediaInitialized;
     private Task? _initializeTask;
@@ -56,11 +59,14 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
         PlayerPlaybackStateController playback,
         IPlayerPlaybackFacade playbackFacade,
         ILocalizationService loc,
+        IDialogService dialogs,
         IPlayerInputService inputService)
     {
         _session = session;
         _playback = playback;
         _playbackFacade = playbackFacade;
+        _loc = loc;
+        _dialogs = dialogs;
         InputService = inputService;
         _playbackPropertyChangedHandler = (_, args) =>
         {
@@ -84,6 +90,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
         ControlBar.GoBackRequested += GoBackInternal;
         ControlBar.TogglePlaylistRequested += () => Playlist.IsVisible = !Playlist.IsVisible;
         ControlBar.ToggleFullscreenRequested += () => ToggleFullscreenRequested?.Invoke();
+        Playlist.PlaybackFailed += OnPlaybackFailed;
 
         _session.CurrentIndexChanged += value => CurrentIndex = value;
         _playback.PropertyChanged += _playbackPropertyChangedHandler;
@@ -216,6 +223,16 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     {
         _session.SaveProgress();
         GoBackRequested?.Invoke();
+    }
+
+    private void OnPlaybackFailed(PlaybackFailureInfo failure)
+    {
+        string fileName = Path.GetFileName(failure.FilePath);
+        string message = string.Format(
+            _loc["Player.PlaybackFailed.Message"],
+            fileName,
+            failure.ErrorMessage ?? _loc["Dialog.UnknownError"]);
+        _dialogs.ShowError(message, _loc["Player.PlaybackFailed.Title"]);
     }
 
     private async Task InitializeMediaAsync()

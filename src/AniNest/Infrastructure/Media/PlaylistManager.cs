@@ -36,6 +36,7 @@ public class PlaylistManager
     public int ItemCount => Items.Count;
 
     public event Action<string>? VideoPlayed;
+    public event Action<PlaybackFailureInfo>? PlaybackFailed;
 
     public PlaylistManager(ISettingsService settings, IMediaPlayerController media,
                            IVideoScanner videoScanner,
@@ -208,7 +209,13 @@ public class PlaylistManager
                 startTime = 0;
         }
 
-        _media.Play(filePath, startTime);
+        if (!_media.TryPlay(filePath, startTime, out string? errorMessage))
+        {
+            Log.Error($"Playlist play failed: file={filePath}, error={errorMessage ?? "unknown"}");
+            PlaybackFailed?.Invoke(new PlaybackFailureInfo(filePath, errorMessage));
+            return;
+        }
+
         _settings.SetFolderProgress(CurrentFolderPath, filePath);
         _settings.MarkVideoPlayed(filePath);
 

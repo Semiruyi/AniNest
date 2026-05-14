@@ -147,7 +147,7 @@
 
             <Style x:Key="PlayerEpisodeToolTipText" TargetType="TextBlock" BasedOn="{StaticResource AppTextBody}">
                 <Setter Property="MaxWidth" Value="{StaticResource PlayerEpisodeToolTipMaxWidth}"/>
-                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                <Setter Property="TextWrapping" Value="WrapWithOverflow"/>
             </Style>
 
             <Style x:Key="PlayerEpisodeToolTip" TargetType="ToolTip" BasedOn="{StaticResource AppPanelToolTip}"/>

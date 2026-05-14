@@ -21,7 +21,7 @@ public interface IMediaPlayerController : IDisposable
 
     Task InitializeAsync();
     Task WarmupAsync();
-    void Play(string filePath, long startTimeMs = 0);
+    bool TryPlay(string filePath, long startTimeMs, out string? errorMessage);
     void TogglePlayPause();
     void Stop();
     void ResetSession();

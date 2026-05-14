@@ -1,5 +1,6 @@
 using System.IO;
 using FluentAssertions;
+using AniNest.Features.Player.Models;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Paths;
 using AniNest.Infrastructure.Persistence;
@@ -22,6 +23,13 @@ public class PlaylistManagerTests : IDisposable
     {
         _tempDir = Path.Combine(Path.GetTempPath(), $"PlaylistManagerTests_{Guid.NewGuid():N}");
         Directory.CreateDirectory(_tempDir);
+        _mediaMock
+            .Setup(media => media.TryPlay(It.IsAny<string>(), It.IsAny<long>(), out It.Ref<string?>.IsAny))
+            .Returns((string _, long _, out string? errorMessage) =>
+            {
+                errorMessage = null;
+                return true;
+            });
 
         _manager = new PlaylistManager(
             _settingsMock.Object,
@@ -267,6 +275,31 @@ public class PlaylistManagerTests : IDisposable
         _manager.PlayEpisode(1);
 
         playedPath.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task PlayEpisode_WhenPlaybackFails_RaisesPlaybackFailedAndSkipsProgressWrites()
+    {
+        CreateVideoFiles(2);
+        PlaybackFailureInfo? failure = null;
+        _manager.PlaybackFailed += info => failure = info;
+        _mediaMock
+            .Setup(media => media.TryPlay(It.IsAny<string>(), It.IsAny<long>(), out It.Ref<string?>.IsAny))
+            .Returns((string path, long _, out string? errorMessage) =>
+            {
+                errorMessage = "decoder failed";
+                return false;
+            });
+
+        await _manager.LoadFolderAsync(_tempDir, "Test");
+
+        _manager.PlayEpisode(1);
+
+        failure.Should().NotBeNull();
+        failure!.FilePath.Should().EndWith("ep02.mp4");
+        failure.ErrorMessage.Should().Be("decoder failed");
+        _settingsMock.Verify(settings => settings.SetFolderProgress(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _settingsMock.Verify(settings => settings.MarkVideoPlayed(It.IsAny<string>()), Times.Never);
     }
 
     private void CreateVideoFiles(int count)

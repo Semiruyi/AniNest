@@ -16,6 +16,7 @@ public partial class PlaylistViewModel : ObservableObject
     private PlaylistManager _playlistManager = null!;
     private readonly ILocalizationService _loc;
     private Action<string>? _videoPlayedHandler;
+    private Action<PlaybackFailureInfo>? _playbackFailedHandler;
 
     public PlaylistViewModel(ILocalizationService loc)
     {
@@ -24,6 +25,7 @@ public partial class PlaylistViewModel : ObservableObject
 
     public event Action<int>? CurrentIndexChanged;
     public event Action<string>? VideoPlayed;
+    public event Action<PlaybackFailureInfo>? PlaybackFailed;
 
     [ObservableProperty]
     private string _episodeCountText = "";
@@ -50,7 +52,9 @@ public partial class PlaylistViewModel : ObservableObject
     {
         _playlistManager = playlistManager;
         _videoPlayedHandler = filePath => VideoPlayed?.Invoke(filePath);
+        _playbackFailedHandler = failure => PlaybackFailed?.Invoke(failure);
         _playlistManager.VideoPlayed += _videoPlayedHandler;
+        _playlistManager.PlaybackFailed += _playbackFailedHandler;
     }
 
     public async System.Threading.Tasks.Task LoadFolderAsync(string folderPath, string folderName, CancellationToken cancellationToken = default)
@@ -154,6 +158,12 @@ public partial class PlaylistViewModel : ObservableObject
         {
             _playlistManager.VideoPlayed -= _videoPlayedHandler;
             _videoPlayedHandler = null;
+        }
+
+        if (_playbackFailedHandler != null)
+        {
+            _playlistManager.PlaybackFailed -= _playbackFailedHandler;
+            _playbackFailedHandler = null;
         }
     }
 

@@ -1,16 +1,13 @@
-{
+﻿{
   "_languageName": "中文",
-
   "App.File": "文件",
   "App.Settings": "设置",
   "App.AddFolder": "添加文件夹",
   "App.AddFolderBatch": "扫描文件夹",
-
   "Window.Minimize": "最小化",
   "Window.Maximize": "最大化",
   "Window.Restore": "还原",
   "Window.Close": "关闭",
-
   "Player.Stop": "停止",
   "Player.Playlist": "选集",
   "Player.Fullscreen": "全屏",
@@ -38,7 +35,6 @@
   "Player.Input.MouseWheelUp": "滚轮上",
   "Player.Input.MouseWheelDown": "滚轮下",
   "Player.EpisodeCount": "{0} 集",
-
   "Library.NoCover": "暂无封面",
   "Library.All": "全部",
   "Library.Watching": "正在看",
@@ -68,7 +64,6 @@
   "Library.ThumbnailProgress": "缩略图 {0}/{1}",
   "TitleBar.ThumbnailBackgroundTask": "缩略图后台任务",
   "TitleBar.ThumbnailBackgroundTasks": "当前任务",
-
   "Dialog.AddFolder": "选择包含视频的文件夹",
   "Dialog.AddFolderBatch": "选择要扫描的文件夹",
   "Dialog.FolderAlreadyAdded": "该文件夹已添加",
@@ -78,7 +73,6 @@
   "Dialog.UnknownError": "未知错误",
   "Dialog.Info": "提示",
   "Dialog.Error": "错误",
-
   "Settings.ThumbnailExpiryPrompt": "缩略图过期天数（0=永不过期）：",
   "Settings.ThumbnailSettings": "缩略图设置",
   "Settings.ThumbnailSetNever": "已设置：缩略图永不过期",
@@ -136,13 +130,13 @@
   "Settings.PlayerInput.Reset": "恢复默认",
   "Settings.PlayerInput.ConflictTitle": "覆盖绑定",
   "Settings.PlayerInput.ConflictMessage": "该输入已绑定到：{0}。是否覆盖原绑定？",
-
   "Key.Unbound": "(未绑定)",
   "Key.Space": "空格",
-
   "KeyBinding.SeekBackward": "快退 5 秒",
   "KeyBinding.SeekForward": "快进 5 秒",
   "KeyBinding.SeekBackwardAlt": "快退 5 秒 (备用)",
   "KeyBinding.SeekForwardAlt": "快进 5 秒 (备用)",
-  "KeyBinding.Back": "返回"
+  "KeyBinding.Back": "返回",
+  "Player.PlaybackFailed.Title": "播放失败",
+  "Player.PlaybackFailed.Message": "无法播放 {0}\n{1}"
 }

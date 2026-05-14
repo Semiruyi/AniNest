@@ -127,39 +127,60 @@ public class MediaPlayerController : IMediaPlayerController
         }
     }
 
-    public void Play(string filePath, long startTimeMs = 0)
+    public bool TryPlay(string filePath, long startTimeMs, out string? errorMessage)
     {
+        errorMessage = null;
+
         EnsurePlaybackSession();
         if (mediaPlayer == null || libVLC == null)
         {
-            return;
+            errorMessage = "Media player is not initialized.";
+            return false;
         }
 
-        CurrentFilePath = filePath;
-        frameProvider?.BeginFrameObservation(filePath);
-        _playToPlayingSpan?.Dispose();
-        _playToFirstFrameSpan?.Dispose();
-        _playToFirstLockSpan?.Dispose();
-        _playToFirstUnlockSpan?.Dispose();
-        _playToFirstDisplayQueuedSpan?.Dispose();
-        var tags = new Dictionary<string, string>
+        if (!File.Exists(filePath))
         {
-            ["file"] = Path.GetFileName(filePath),
-            ["startTimeMs"] = startTimeMs.ToString()
-        };
-        _playToPlayingSpan = PerfSpan.Begin("Media.PlayToPlaying", tags);
-        _playToFirstFrameSpan = PerfSpan.Begin("Media.PlayToFirstFrame", tags);
-        _playToFirstLockSpan = PerfSpan.Begin("Media.PlayToFirstFrameLock", tags);
-        _playToFirstUnlockSpan = PerfSpan.Begin("Media.PlayToFirstFrameUnlock", tags);
-        _playToFirstDisplayQueuedSpan = PerfSpan.Begin("Media.PlayToFirstFrameDisplayQueued", tags);
-        ReleaseCurrentMedia();
-
-        currentMedia = new LibVlcMedia(libVLC, filePath);
-        if (startTimeMs > 0)
-        {
-            currentMedia.AddOption($":start-time={startTimeMs / 1000.0:F1}");
+            errorMessage = $"Media file not found: {filePath}";
+            return false;
         }
-        mediaPlayer.Play(currentMedia);
+
+        try
+        {
+            CurrentFilePath = filePath;
+            frameProvider?.BeginFrameObservation(filePath);
+            _playToPlayingSpan?.Dispose();
+            _playToFirstFrameSpan?.Dispose();
+            _playToFirstLockSpan?.Dispose();
+            _playToFirstUnlockSpan?.Dispose();
+            _playToFirstDisplayQueuedSpan?.Dispose();
+            var tags = new Dictionary<string, string>
+            {
+                ["file"] = Path.GetFileName(filePath),
+                ["startTimeMs"] = startTimeMs.ToString()
+            };
+            _playToPlayingSpan = PerfSpan.Begin("Media.PlayToPlaying", tags);
+            _playToFirstFrameSpan = PerfSpan.Begin("Media.PlayToFirstFrame", tags);
+            _playToFirstLockSpan = PerfSpan.Begin("Media.PlayToFirstFrameLock", tags);
+            _playToFirstUnlockSpan = PerfSpan.Begin("Media.PlayToFirstFrameUnlock", tags);
+            _playToFirstDisplayQueuedSpan = PerfSpan.Begin("Media.PlayToFirstFrameDisplayQueued", tags);
+            ReleaseCurrentMedia();
+
+            currentMedia = new LibVlcMedia(libVLC, filePath);
+            if (startTimeMs > 0)
+            {
+                currentMedia.AddOption($":start-time={startTimeMs / 1000.0:F1}");
+            }
+
+            mediaPlayer.Play(currentMedia);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Play failed: file={filePath}", ex);
+            errorMessage = ex.Message;
+            ReleaseCurrentMedia();
+            return false;
+        }
     }
 
     public void TogglePlayPause()

@@ -38,6 +38,8 @@
   "Player.Input.MouseWheelUp": "Mouse Wheel Up",
   "Player.Input.MouseWheelDown": "Mouse Wheel Down",
   "Player.EpisodeCount": "{0} episode(s)",
+  "Player.PlaybackFailed.Title": "Playback Failed",
+  "Player.PlaybackFailed.Message": "Could not play \"{0}\".\n{1}",
 
   "Library.NoCover": "No Cover",
   "Library.All": "All",

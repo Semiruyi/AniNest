@@ -1,0 +1,94 @@
+using System.ComponentModel;
+using FluentAssertions;
+using Moq;
+using AniNest.Features.Player;
+using AniNest.Features.Player.Input;
+using AniNest.Features.Player.Services;
+using AniNest.Infrastructure.Localization;
+using AniNest.Infrastructure.Media;
+using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Presentation;
+using AniNest.Infrastructure.Thumbnails;
+
+namespace AniNest.Tests.View;
+
+public class PlayerViewModelTests : IDisposable
+{
+    private readonly string _tempDir;
+
+    public PlayerViewModelTests()
+    {
+        _tempDir = Path.Combine(Path.GetTempPath(), $"PlayerViewModelTests_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(_tempDir);
+    }
+
+    public void Dispose()
+    {
+        try { Directory.Delete(_tempDir, true); } catch { }
+    }
+
+    [Fact]
+    public async Task PlayEpisode_WhenPlaybackFails_ShowsErrorDialog()
+    {
+        File.WriteAllText(Path.Combine(_tempDir, "ep01.mp4"), string.Empty);
+
+        var media = new Mock<IMediaPlayerController>();
+        media.Setup(controller => controller.TryPlay(It.IsAny<string>(), It.IsAny<long>(), out It.Ref<string?>.IsAny))
+            .Returns((string _, long _, out string? errorMessage) =>
+            {
+                errorMessage = "decoder failed";
+                return false;
+            });
+
+        var syncService = new Mock<IPlayerPlaybackStateSyncService>();
+        var playbackFacade = new Mock<IPlayerPlaybackFacade>();
+        var inputService = new Mock<IPlayerInputService>();
+        var dialogs = new Mock<IDialogService>();
+        var localization = CreateLocalizationService();
+
+        var playlistService = new PlayerPlaylistService(
+            Mock.Of<ISettingsService>(),
+            media.Object,
+            new VideoScanner(),
+            localization.Object,
+            playbackFacade.Object);
+        var session = new PlayerSessionController(Mock.Of<IPlayerThumbnailSyncService>(), playlistService);
+        var playback = new PlayerPlaybackStateController(media.Object, syncService.Object);
+        var viewModel = new PlayerViewModel(
+            session,
+            playback,
+            playbackFacade.Object,
+            localization.Object,
+            dialogs.Object,
+            inputService.Object);
+
+        await playlistService.LoadFolderSkeletonAsync(_tempDir, "Test", CancellationToken.None);
+        await playlistService.LoadFolderDataAsync(CancellationToken.None);
+
+        playlistService.Playlist.Items.Should().ContainSingle();
+        playlistService.ActivateCurrentVideo();
+
+        dialogs.Verify(service => service.ShowError(
+            "Could not play \"ep01.mp4\".\ndecoder failed",
+            "Playback Failed"), Times.Once);
+    }
+
+    private static Mock<ILocalizationService> CreateLocalizationService()
+    {
+        var localization = new Mock<ILocalizationService>();
+        localization.Setup(service => service.CurrentLanguage).Returns("en-US");
+        localization.Setup(service => service.AvailableLanguages).Returns(Array.Empty<LanguageInfo>());
+        localization.Setup(service => service[It.IsAny<string>()]).Returns((string key) => key switch
+        {
+            "Player.PlaybackFailed.Title" => "Playback Failed",
+            "Player.PlaybackFailed.Message" => "Could not play \"{0}\".\n{1}",
+            "Dialog.UnknownError" => "Unknown error",
+            _ => key
+        });
+        localization.SetupAdd(service => service.PropertyChanged += It.IsAny<PropertyChangedEventHandler>())
+            .Callback<PropertyChangedEventHandler>(_ => { });
+        localization.SetupRemove(service => service.PropertyChanged -= It.IsAny<PropertyChangedEventHandler>())
+            .Callback<PropertyChangedEventHandler>(_ => { });
+        return localization;
+    }
+}
