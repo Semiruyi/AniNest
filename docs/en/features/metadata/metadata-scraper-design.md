@@ -361,6 +361,7 @@ Phase 1 uses a single-thread background worker. That is enough because:
 MetadataWorker
   -> Dequeue next folder
   -> State = Scraping
+  -> Rehydrate current video file list from IVideoScanner
   -> Build keyword plan from MetadataMatcher
   -> Try search attempts in order:
      - season-aware keyword if available
@@ -389,6 +390,12 @@ Strict matching remains conservative:
 - similarity threshold `>= 0.5`
 - short ambiguous keywords rejected
 - year hint helps but does not hard reject
+
+Important runtime note:
+
+- file-name fallback is not optional decoration
+- the worker must pass real `VideoFiles` into `MetadataFolderRef`
+- if the worker uses an empty file list, movie and sequel matching quality regresses in real usage even when isolated matcher/provider tests still pass
 
 The notable difference in this redesign is that matching should use a **keyword plan**, not a single keyword string:
 
