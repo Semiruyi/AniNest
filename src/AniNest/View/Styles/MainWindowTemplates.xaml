@@ -5,7 +5,7 @@
                     xmlns:featuresPlayer="clr-namespace:AniNest.Features.Player"
                     xmlns:pagesLibrary="clr-namespace:AniNest.Features.Library"
                     xmlns:pagesPlayer="clr-namespace:AniNest.Features.Player"
-                    xmlns:playerSettings="clr-namespace:AniNest.Features.Player.Settings"
+                    xmlns:playerSettings="clr-namespace:AniNest.Features.Player.Settings;assembly=AniNest.App"
                     xmlns:primitives="clr-namespace:AniNest.Presentation.Primitives"
                     xmlns:shellFeatures="clr-namespace:AniNest.Features.Shell">
 

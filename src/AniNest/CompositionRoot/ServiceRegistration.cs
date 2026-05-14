@@ -33,7 +33,6 @@ public static class ServiceRegistration
 
         services.AddSingleton<MainPageViewModel>();
         services.AddSingleton<PlayerViewModel>();
-        services.AddSingleton<PlayerInputSettingsViewModel>();
         services.AddSingleton<ShellViewModel>();
         services.AddSingleton<MainWindow>();
     }

@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using AniNest.Features.Library.Services;
 using AniNest.Features.Metadata;
 using AniNest.Features.Player;
+using AniNest.Features.Player.Settings;
 using AniNest.Features.Player.Services;
 using AniNest.Features.Shell.Services;
 using AniNest.Infrastructure.Media;
@@ -42,5 +43,6 @@ public static class AniNestAppServiceRegistration
         services.AddSingleton<IPlayerThumbnailSyncService, PlayerThumbnailSyncService>();
         services.AddSingleton<PlayerSessionController>();
         services.AddSingleton<PlayerPlaybackStateController>();
+        services.AddSingleton<PlayerInputSettingsViewModel>();
     }
 }

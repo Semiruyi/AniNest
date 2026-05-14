@@ -1,12 +1,12 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using AniNest.Features.Player.Input;
 using AniNest.Infrastructure.Localization;
 using AniNest.Infrastructure.Logging;
+using AniNest.Infrastructure.Presentation;
 
 namespace AniNest.Features.Player.Settings;
 
@@ -16,6 +16,7 @@ public partial class PlayerInputSettingsViewModel : ObservableObject
 
     private readonly IPlayerInputService _inputService;
     private readonly ILocalizationService _localization;
+    private readonly IDialogService _dialogs;
     private readonly PlayerInputCaptureSession _captureSession = new();
     private readonly PropertyChangedEventHandler _localizationChangedHandler;
     private PlayerInputProfile _profile;
@@ -25,10 +26,12 @@ public partial class PlayerInputSettingsViewModel : ObservableObject
 
     public PlayerInputSettingsViewModel(
         IPlayerInputService inputService,
-        ILocalizationService localization)
+        ILocalizationService localization,
+        IDialogService dialogs)
     {
         _inputService = inputService;
         _localization = localization;
+        _dialogs = dialogs;
         _profile = _inputService.CurrentProfile;
         _localizationChangedHandler = (_, args) =>
         {
@@ -152,13 +155,11 @@ public partial class PlayerInputSettingsViewModel : ObservableObject
                 " / ",
                 conflicts.Select(c => PlayerInputFormatter.FormatAction(_localization, c.ExistingBinding.Action)));
 
-            var result = MessageBox.Show(
+            var confirmed = _dialogs.ShowConfirmation(
                 string.Format(_localization["Settings.PlayerInput.ConflictMessage"], conflictNames),
-                _localization["Settings.PlayerInput.ConflictTitle"],
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+                _localization["Settings.PlayerInput.ConflictTitle"]);
 
-            if (result != MessageBoxResult.Yes)
+            if (!confirmed)
             {
                 Log.Info("  User declined conflict resolution, canceling");
                 CancelCapture();
