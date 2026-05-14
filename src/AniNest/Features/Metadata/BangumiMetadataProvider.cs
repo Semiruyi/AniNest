@@ -11,44 +11,69 @@ public sealed class BangumiMetadataProvider : IMetadataProvider
     private static readonly Uri SearchUri = new("https://api.bgm.tv/v0/search/subjects?limit=5");
     private static readonly Uri BaseUri = new("https://api.bgm.tv/v0/");
     private readonly HttpClient _httpClient;
+    private readonly MetadataMatcher _matcher;
     private readonly ISettingsService _settings;
 
-    public BangumiMetadataProvider(ISettingsService settings, HttpClient? httpClient = null)
+    public BangumiMetadataProvider(
+        ISettingsService settings,
+        MetadataMatcher matcher,
+        HttpClient? httpClient = null)
     {
         _settings = settings;
+        _matcher = matcher;
         _httpClient = httpClient ?? CreateHttpClient();
     }
 
     public async Task<MetadataFetchResult> FetchAsync(MetadataFolderRef folder, CancellationToken ct = default)
     {
-        string keyword = BuildKeyword(folder);
-        if (string.IsNullOrWhiteSpace(keyword) || keyword.Length < 3)
+        var plans = _matcher.BuildKeywordPlans(folder)
+            .Where(plan => !string.IsNullOrWhiteSpace(plan.PrimaryKeyword))
+            .ToArray();
+        if (plans.Length == 0)
             return MetadataFetchResult.NoMatch();
 
         try
         {
             ApplyAuthentication();
 
-            using var searchResponse = await _httpClient.PostAsJsonAsync(
-                SearchUri,
-                new BangumiSearchRequest(
-                    keyword,
-                    "match",
-                    new BangumiSearchFilter([2])),
-                ct);
+            BangumiSubjectItem? bestCandidate = null;
+            double bestScore = double.MinValue;
 
-            if ((int)searchResponse.StatusCode >= 500)
-                return MetadataFetchResult.NetworkError();
+            foreach (var plan in plans)
+            {
+                if (plan.IsAmbiguousShortKeyword)
+                    continue;
 
-            if (!searchResponse.IsSuccessStatusCode)
-                return MetadataFetchResult.ProviderError();
+                foreach (var keyword in _matcher.BuildSearchKeywords(plan))
+                {
+                    using var searchResponse = await _httpClient.PostAsJsonAsync(
+                        SearchUri,
+                        new BangumiSearchRequest(
+                            keyword,
+                            "match",
+                            new BangumiSearchFilter([2])),
+                        ct);
 
-            var searchResult = await searchResponse.Content.ReadFromJsonAsync<BangumiSearchResponse>(cancellationToken: ct);
-            var candidate = PickBestCandidate(searchResult?.Data, keyword);
-            if (candidate == null)
+                    if ((int)searchResponse.StatusCode >= 500)
+                        return MetadataFetchResult.NetworkError();
+
+                    if (!searchResponse.IsSuccessStatusCode)
+                        return MetadataFetchResult.ProviderError();
+
+                    var searchResult = await searchResponse.Content.ReadFromJsonAsync<BangumiSearchResponse>(cancellationToken: ct);
+                    var match = EvaluateBestCandidate(searchResult?.Data, plan);
+                    if (match.Candidate != null && match.Score > bestScore)
+                    {
+                        bestCandidate = match.Candidate;
+                        bestScore = match.Score;
+                    }
+                }
+            }
+
+            if (bestCandidate == null)
                 return MetadataFetchResult.NoMatch();
 
-            using var detailResponse = await _httpClient.GetAsync($"subjects/{candidate.Id}", ct);
+            using var detailResponse = await _httpClient.GetAsync($"subjects/{bestCandidate.Id}", ct);
             if ((int)detailResponse.StatusCode >= 500)
                 return MetadataFetchResult.NetworkError();
 
@@ -106,24 +131,101 @@ public sealed class BangumiMetadataProvider : IMetadataProvider
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
     }
 
-    private static BangumiSubjectItem? PickBestCandidate(
+    internal static BangumiSubjectItem? PickBestCandidate(
         IReadOnlyList<BangumiSubjectItem>? candidates,
-        string keyword)
+        MetadataKeywordPlan plan)
+        => EvaluateBestCandidate(candidates, plan).Candidate;
+
+    private static (BangumiSubjectItem? Candidate, double Score) EvaluateBestCandidate(
+        IReadOnlyList<BangumiSubjectItem>? candidates,
+        MetadataKeywordPlan plan)
     {
-        if (candidates == null || candidates.Count == 0)
-            return null;
+        if (candidates == null || candidates.Count == 0 || plan.IsAmbiguousShortKeyword)
+            return (null, double.MinValue);
 
-        string normalizedKeyword = Normalize(keyword);
+        string normalizedPrimary = MetadataMatcher.NormalizeForComparison(plan.PrimaryKeyword);
+        string normalizedBase = MetadataMatcher.NormalizeForComparison(plan.BaseTitle);
+        bool romanizedQuery = MetadataMatcher.IsRomanizedKeyword(plan.BaseTitle);
+        var seriesCandidates = GetSeriesCandidates(candidates, normalizedBase, plan);
         BangumiSubjectItem? best = null;
-        double bestScore = 0;
+        double bestScore = double.MinValue;
 
-        foreach (var candidate in candidates)
+        for (int index = 0; index < candidates.Count; index++)
         {
-            string title = FirstNonEmpty(candidate.NameCn, candidate.Name);
-            if (string.IsNullOrWhiteSpace(title))
+            var candidate = candidates[index];
+            string rawNameCn = candidate.NameCn ?? string.Empty;
+            string rawName = candidate.Name ?? string.Empty;
+            string normalizedNameCn = MetadataMatcher.NormalizeForComparison(rawNameCn);
+            string normalizedName = MetadataMatcher.NormalizeForComparison(rawName);
+            if (string.IsNullOrWhiteSpace(normalizedNameCn) && string.IsNullOrWhiteSpace(normalizedName))
                 continue;
 
-            double score = CalculateSimilarity(normalizedKeyword, Normalize(title));
+            double textScore = Math.Max(
+                Math.Max(
+                    MetadataMatcher.CalculateSimilarity(normalizedPrimary, normalizedNameCn),
+                    MetadataMatcher.CalculateSimilarity(normalizedPrimary, normalizedName)),
+                Math.Max(
+                    MetadataMatcher.CalculateSimilarity(normalizedBase, normalizedNameCn),
+                    MetadataMatcher.CalculateSimilarity(normalizedBase, normalizedName)));
+
+            double score = textScore + Math.Max(0, 0.35 - (index * 0.08));
+
+            int? candidateSeason = GetCandidateSeasonNumber(candidate);
+            bool candidateLooksMovie = CandidateLooksMovie(candidate);
+            int? inferredSeriesOrder = GetSeriesOrder(seriesCandidates, candidate);
+            int? effectiveSeason = candidateSeason ?? inferredSeriesOrder;
+
+            if (plan.SeasonNumber.HasValue)
+            {
+                if (candidateSeason == plan.SeasonNumber.Value)
+                {
+                    score += 0.28;
+                }
+                else if (inferredSeriesOrder == plan.SeasonNumber.Value)
+                {
+                    score += 0.34;
+                }
+                else if (plan.SeasonNumber.Value > 1)
+                {
+                    if (effectiveSeason.HasValue)
+                    {
+                        int diff = Math.Abs(effectiveSeason.Value - plan.SeasonNumber.Value);
+                        score -= 0.4 + Math.Min(0.2, diff * 0.15);
+                    }
+                    else
+                    {
+                        score -= 0.45;
+                    }
+                }
+            }
+            else if (candidateSeason.HasValue && candidateSeason.Value > 1)
+            {
+                score -= 0.18;
+            }
+
+            if (plan.IsMovieLike)
+            {
+                score += candidateLooksMovie ? 0.35 : -0.45;
+                if (candidateLooksMovie && CandidateLooksMovieZero(candidate))
+                    score += 0.18;
+            }
+            else if (candidateLooksMovie)
+            {
+                score -= 0.22;
+            }
+
+            if (plan.YearHint.HasValue && candidate.DateYear.HasValue)
+            {
+                int diff = Math.Abs(plan.YearHint.Value - candidate.DateYear.Value);
+                if (diff == 0)
+                    score += 0.04;
+                else if (diff > 1)
+                    score -= Math.Min(0.2, diff * 0.04);
+            }
+
+            if (romanizedQuery && textScore < 0.12)
+                score += 0.06;
+
             if (score > bestScore)
             {
                 best = candidate;
@@ -131,69 +233,89 @@ public sealed class BangumiMetadataProvider : IMetadataProvider
             }
         }
 
-        return bestScore >= 0.6 ? best : null;
+        double acceptanceThreshold = romanizedQuery ? 0.3 : 0.45;
+        return bestScore >= acceptanceThreshold ? (best, bestScore) : (null, bestScore);
     }
 
-    private static string BuildKeyword(MetadataFolderRef folder)
+    private static int? GetCandidateSeasonNumber(BangumiSubjectItem candidate)
     {
-        string keyword = folder.FolderName
-            .Replace('_', ' ')
-            .Replace('.', ' ')
-            .Trim();
+        int? season = MetadataMatcher.ExtractSeasonHint(candidate.NameCn ?? string.Empty);
+        if (season.HasValue)
+            return season;
 
-        return keyword;
+        return MetadataMatcher.ExtractSeasonHint(candidate.Name ?? string.Empty);
     }
 
-    private static string Normalize(string value)
+    private static bool CandidateLooksMovie(BangumiSubjectItem candidate)
+        => MetadataMatcher.ContainsMovieMarker(candidate.NameCn ?? string.Empty)
+            || MetadataMatcher.ContainsMovieMarker(candidate.Name ?? string.Empty);
+
+    private static bool CandidateLooksMovieZero(BangumiSubjectItem candidate)
+        => (candidate.NameCn?.Contains('0') ?? false)
+            || (candidate.Name?.Contains('0') ?? false);
+
+    private static List<BangumiSubjectItem> GetSeriesCandidates(
+        IReadOnlyList<BangumiSubjectItem> candidates,
+        string normalizedBase,
+        MetadataKeywordPlan plan)
     {
-        var buffer = new char[value.Length];
-        int index = 0;
-
-        foreach (char ch in value.ToLowerInvariant())
-        {
-            if (char.IsLetterOrDigit(ch))
-                buffer[index++] = ch;
-        }
-
-        return new string(buffer, 0, index);
-    }
-
-    private static double CalculateSimilarity(string left, string right)
-    {
-        if (string.IsNullOrEmpty(left) || string.IsNullOrEmpty(right))
-            return 0;
-
-        if (string.Equals(left, right, StringComparison.Ordinal))
-            return 1;
-
-        int distance = LevenshteinDistance(left, right);
-        int maxLength = Math.Max(left.Length, right.Length);
-        return maxLength == 0 ? 1 : 1d - (double)distance / maxLength;
-    }
-
-    private static int LevenshteinDistance(string left, string right)
-    {
-        var costs = new int[right.Length + 1];
-        for (int j = 0; j <= right.Length; j++)
-            costs[j] = j;
-
-        for (int i = 1; i <= left.Length; i++)
-        {
-            int previous = costs[0];
-            costs[0] = i;
-
-            for (int j = 1; j <= right.Length; j++)
+        var matchingCandidates = candidates
+            .Where(candidate =>
             {
-                int current = costs[j];
-                int substitutionCost = left[i - 1] == right[j - 1] ? 0 : 1;
-                costs[j] = Math.Min(
-                    Math.Min(costs[j] + 1, costs[j - 1] + 1),
-                    previous + substitutionCost);
-                previous = current;
-            }
+                string nameCn = MetadataMatcher.NormalizeForComparison(candidate.NameCn ?? string.Empty);
+                string name = MetadataMatcher.NormalizeForComparison(candidate.Name ?? string.Empty);
+                return (!string.IsNullOrWhiteSpace(nameCn) && nameCn.Contains(normalizedBase, StringComparison.Ordinal))
+                    || (!string.IsNullOrWhiteSpace(name) && name.Contains(normalizedBase, StringComparison.Ordinal));
+            })
+            .ToList();
+
+        if (matchingCandidates.Count >= 2)
+        {
+            return matchingCandidates
+                .Where(candidate => !IsNonSeriesEntry(candidate))
+                .OrderBy(candidate => candidate.DateYear ?? int.MaxValue)
+                .ThenBy(candidate => candidate.Id)
+                .ToList();
         }
 
-        return costs[right.Length];
+        if (plan.SeasonNumber.HasValue && plan.SeasonNumber.Value > 1)
+        {
+            return candidates
+                .Where(candidate => !IsNonSeriesEntry(candidate))
+                .OrderBy(candidate => candidate.DateYear ?? int.MaxValue)
+                .ThenBy(candidate => candidate.Id)
+                .ToList();
+        }
+
+        return matchingCandidates
+            .OrderBy(candidate => candidate.DateYear ?? int.MaxValue)
+            .ThenBy(candidate => candidate.Id)
+            .ToList();
+    }
+
+    private static int? GetSeriesOrder(List<BangumiSubjectItem> seriesCandidates, BangumiSubjectItem candidate)
+    {
+        int index = seriesCandidates.FindIndex(item => item.Id == candidate.Id);
+        return index >= 0 ? index + 1 : null;
+    }
+
+    private static bool IsNonSeriesEntry(BangumiSubjectItem candidate)
+    {
+        string platform = candidate.Platform ?? string.Empty;
+        string nameCn = candidate.NameCn ?? string.Empty;
+        string name = candidate.Name ?? string.Empty;
+
+        if (platform.Contains("剧场", StringComparison.OrdinalIgnoreCase)
+            || platform.Contains("劇場", StringComparison.OrdinalIgnoreCase)
+            || platform.Contains("movie", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return nameCn.Contains("总集", StringComparison.Ordinal)
+            || nameCn.Contains("総集", StringComparison.Ordinal)
+            || name.Contains("総集", StringComparison.Ordinal)
+            || name.Contains("compilation", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FirstNonEmpty(params string?[] values)
@@ -224,7 +346,7 @@ public sealed class BangumiMetadataProvider : IMetadataProvider
         public List<BangumiSubjectItem> Data { get; set; } = [];
     }
 
-    private sealed class BangumiSubjectItem
+    internal sealed class BangumiSubjectItem
     {
         [JsonPropertyName("id")]
         public int Id { get; set; }
@@ -234,6 +356,15 @@ public sealed class BangumiMetadataProvider : IMetadataProvider
 
         [JsonPropertyName("name_cn")]
         public string? NameCn { get; set; }
+
+        [JsonPropertyName("date")]
+        public string? Date { get; set; }
+
+        [JsonPropertyName("platform")]
+        public string? Platform { get; set; }
+
+        public int? DateYear
+            => DateTime.TryParse(Date, out var parsed) ? parsed.Year : null;
     }
 
     private sealed class BangumiSubjectDetail

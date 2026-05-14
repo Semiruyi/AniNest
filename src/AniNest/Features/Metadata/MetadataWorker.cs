@@ -1,4 +1,5 @@
 using AniNest.Infrastructure.Logging;
+using AniNest.Infrastructure.Thumbnails;
 
 namespace AniNest.Features.Metadata;
 
@@ -10,6 +11,7 @@ public sealed class MetadataWorker : IDisposable
     private readonly IMetadataRepository _metadataRepository;
     private readonly IMetadataImageCache _imageCache;
     private readonly IMetadataProvider _metadataProvider;
+    private readonly IVideoScanner _videoScanner;
     private readonly MetadataEventHub _events;
     private readonly CancellationTokenSource _shutdownCts = new();
     private readonly object _stateSync = new();
@@ -22,6 +24,7 @@ public sealed class MetadataWorker : IDisposable
         IMetadataRepository metadataRepository,
         IMetadataImageCache imageCache,
         IMetadataProvider metadataProvider,
+        IVideoScanner videoScanner,
         MetadataEventHub events)
     {
         _taskStore = taskStore;
@@ -29,6 +32,7 @@ public sealed class MetadataWorker : IDisposable
         _metadataRepository = metadataRepository;
         _imageCache = imageCache;
         _metadataProvider = metadataProvider;
+        _videoScanner = videoScanner;
         _events = events;
     }
 
@@ -100,7 +104,8 @@ public sealed class MetadataWorker : IDisposable
         _indexStore.Save(records);
         PublishSummary(records);
 
-        var folder = new MetadataFolderRef(record.FolderPath, record.FolderName, Array.Empty<string>());
+        string[] videoFiles = await _videoScanner.GetVideoFilesAsync(record.FolderPath, ct);
+        var folder = new MetadataFolderRef(record.FolderPath, record.FolderName, videoFiles);
         MetadataFetchResult result = await _metadataProvider.FetchAsync(folder, ct);
 
         records = _indexStore.Load();

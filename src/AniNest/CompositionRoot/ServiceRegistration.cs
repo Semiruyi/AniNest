@@ -32,6 +32,7 @@ public static class ServiceRegistration
         services.AddSingleton<IMetadataRepository, MetadataRepository>();
         services.AddSingleton<MetadataIndexStore>();
         services.AddSingleton<MetadataTaskStore>();
+        services.AddSingleton<MetadataMatcher>();
         services.AddSingleton<IMetadataImageCache, MetadataImageCache>();
         services.AddSingleton<MetadataEventHub>();
         services.AddSingleton<IMetadataEvents>(sp => sp.GetRequiredService<MetadataEventHub>());

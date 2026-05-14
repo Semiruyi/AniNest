@@ -1,5 +1,6 @@
 using AniNest.Features.Metadata;
 using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Thumbnails;
 using FluentAssertions;
 using Moq;
 
@@ -23,6 +24,9 @@ public class MetadataRuntimeFlowTests
         var sync = new MetadataSyncCoordinator(indexStore, repository.Object, settings, taskStore, events);
 
         var imageCache = new Mock<IMetadataImageCache>();
+        var videoScanner = new Mock<IVideoScanner>();
+        videoScanner.Setup(service => service.GetVideoFilesAsync("/folder", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(["/folder/a.mp4"]);
         var provider = new Mock<IMetadataProvider>();
         provider.Setup(service => service.FetchAsync(It.IsAny<MetadataFolderRef>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(MetadataFetchResult.NetworkError());
@@ -34,7 +38,7 @@ public class MetadataRuntimeFlowTests
                 summaryChanged.Set();
         };
 
-        using var worker = new MetadataWorker(taskStore, indexStore, repository.Object, imageCache.Object, provider.Object, events);
+        using var worker = new MetadataWorker(taskStore, indexStore, repository.Object, imageCache.Object, provider.Object, videoScanner.Object, events);
         worker.Start();
 
         await sync.SyncLibrarySnapshotAsync(
