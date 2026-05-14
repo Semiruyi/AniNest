@@ -1,6 +1,4 @@
-using System.IO;
 using System.Linq;
-using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Presentation;
 using AniNest.Infrastructure.Thumbnails;
 
@@ -8,8 +6,6 @@ namespace AniNest.Features.Player.Services;
 
 public sealed class PlayerThumbnailSyncService : IPlayerThumbnailSyncService
 {
-    private static readonly Logger Log = AppLog.For<PlayerThumbnailSyncService>();
-
     private readonly IThumbnailGenerator _thumbnailGenerator;
     private readonly IUiDispatcher _uiDispatcher;
     private readonly Action _statusChangedHandler;
