@@ -9,6 +9,7 @@
 
 ## Features
 - [Library Classification Design](library/classification-design.md)
+- [Library Search Design](library/search-design.md)
 - [Overlay Guidelines](overlays/guidelines.md)
 - [Overlay Selection Highlight](overlays/selection-highlight.md)
 - [Settings State Guidelines](settings/state-guidelines.md)
