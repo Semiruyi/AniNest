@@ -24,6 +24,7 @@ The extraction is already underway. The current checkpoint includes:
   - `IDialogService`
   - `IFolderPickerService`
   - `IUiDispatcher`
+- application startup/runtime orchestration now goes through `IApplicationRuntime`
 - media playback contracts no longer expose WPF image types
 - player input contracts now use toolkit-neutral key, mouse, wheel, and modifier models
 - shared contracts were physically moved into `src/AniNest.Ports/`
@@ -33,6 +34,17 @@ The extraction is already underway. The current checkpoint includes:
   - thumbnail generator and scanner contracts
   - thumbnail shared enums and event args
   - taskbar coordination contract
+- backend service registration now has a shared composition root in `src/AniNest.App/CompositionRoot/AniNestAppServiceRegistration.cs`
+- application/runtime implementations now live in `src/AniNest.App/`, including:
+  - metadata storage and workers
+  - settings persistence
+  - library and shell app services
+  - player session and playback state orchestration
+- player input settings logic was moved into `src/AniNest.App/`, including:
+  - `PlayerInputSettingsViewModel`
+  - `PlayerInputBindingItemViewModel`
+  - input defaults and formatting helpers
+- `IDialogService` now includes confirmation prompts, so shared view-model logic no longer needs direct `MessageBox` calls
 
 This means the codebase now has a clearer separation between:
 
@@ -52,11 +64,10 @@ AniNest already has a meaningful amount of reusable application logic:
 
 However, that logic is still mixed with WPF-specific concepts in several critical places:
 
-- playback contracts expose `WriteableBitmap`
-- playback state exposes `ImageSource`
-- app services and view models touch `Application.Current` and `Dispatcher`
-- shell logic directly opens dialogs and folder pickers
-- some runtime behavior assumes Windows-specific UI services
+- some player runtime services still rely on WPF timers and rendering components
+- the playback stack still depends on a WPF-oriented media controller implementation
+- some shell and player presentation models still live in the WPF project
+- some runtime behavior still assumes Windows-specific UI services
 
 As long as those dependencies remain in shared services, the backend cannot move cleanly to another UI framework.
 
@@ -77,16 +88,14 @@ In practice, that means:
 
 The main coupling points in the current codebase are:
 
-- `src/AniNest/Infrastructure/Media/IMediaPlayerController.cs`
-  - exposes `WriteableBitmap`
-- `src/AniNest/Features/Player/PlayerPlaybackStateController.cs`
-  - exposes `ImageSource`
-- `src/AniNest/Features/Player/Services/PlayerAppService.cs`
-  - uses `Application.Current.Dispatcher`
+- `src/AniNest/Infrastructure/Media/MediaPlayerController.cs`
+  - still uses `DispatcherTimer` and owns the current WPF-centric playback runtime integration
 - `src/AniNest/Features/Shell/ShellViewModel.cs`
-  - uses `MessageBox`, `OpenFolderDialog`, and `Application.Current`
+  - is still the large WPF shell orchestrator and directly owns page/view-model switching
+- `src/AniNest/Features/Player/PlayerViewModel.cs`
+  - still lives in the WPF project and directly bridges presentation state with shared playback services
 - `src/AniNest/Infrastructure/Presentation/*`
-  - already contains useful UI abstractions, but they are still WPF-oriented in naming and placement
+  - already contains useful UI abstractions, but WPF implementations are still colocated with the shell
 - `src/AniNest/Infrastructure/Interop/*`
   - includes Windows-specific behavior such as taskbar coordination
 - `src/AniNest/Infrastructure/Thumbnails/Execution/WindowsThumbnailProcessController.cs`
@@ -327,7 +336,7 @@ Goal:
 
 Work items:
 
-- replace direct `Application.Current` and `Dispatcher` access with dispatcher abstraction
+- replace remaining direct `DispatcherTimer` usage in shared services with toolkit-neutral scheduling
 - replace direct `MessageBox` and folder picker usage with service abstractions
 - stop exposing `WriteableBitmap` and `ImageSource` in shared service contracts
 - isolate Windows-only helpers behind interfaces
@@ -461,10 +470,10 @@ The backend extraction phase can be considered complete when all of the followin
 
 If the work starts immediately, the first slice should be:
 
-1. introduce a folder picker abstraction
-2. route shell dialog usage through services only
-3. replace direct dispatcher usage in app services
-4. design the new playback engine contract
-5. adapt current WPF playback rendering behind a temporary frontend adapter
+1. finish moving remaining shared player input runtime logic into `AniNest.App`
+2. replace shared-service `DispatcherTimer` usage with toolkit-neutral scheduling
+3. design the new playback engine contract
+4. adapt current WPF playback rendering behind a temporary frontend adapter
+5. continue shrinking `ShellViewModel` and `PlayerViewModel` into thinner frontend shells
 
 This slice is small enough to land incrementally, but important enough to unlock the rest of the migration.

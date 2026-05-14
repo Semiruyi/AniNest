@@ -26,7 +26,6 @@ public static class ServiceRegistration
         services.AddSingleton<ITaskbarAutoHideCoordinator, TaskbarAutoHideCoordinator>();
         services.AddSingleton<IThumbnailDecodeStrategyService, ThumbnailDecodeStrategyService>();
         services.AddSingleton<IThumbnailGenerator, ThumbnailGenerator>();
-        services.AddSingleton<IPlayerInputService, PlayerInputService>();
         services.AddSingleton<MediaPlayerController>();
         services.AddSingleton<IMediaPlayerController>(sp => sp.GetRequiredService<MediaPlayerController>());
         services.AddSingleton<IWpfVideoSurfaceSource, WpfVideoSurfaceSource>();

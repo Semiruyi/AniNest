@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using AniNest.Features.Library.Services;
 using AniNest.Features.Metadata;
 using AniNest.Features.Player;
+using AniNest.Features.Player.Input;
 using AniNest.Features.Player.Settings;
 using AniNest.Features.Player.Services;
 using AniNest.Features.Shell.Services;
@@ -36,6 +37,7 @@ public static class AniNestAppServiceRegistration
         services.AddSingleton<IShellPreferencesService, ShellPreferencesService>();
         services.AddSingleton<IShellSettingsAppService, ShellSettingsAppService>();
         services.AddSingleton<IShellThumbnailPerformanceAppService, ShellThumbnailPerformanceAppService>();
+        services.AddSingleton<IPlayerInputService, PlayerInputService>();
         services.AddSingleton<IPlayerAppService, PlayerAppService>();
         services.AddSingleton<IPlayerPlaybackFacade, PlayerPlaybackFacade>();
         services.AddSingleton<IPlayerPlaybackStateSyncService, PlayerPlaybackStateSyncService>();

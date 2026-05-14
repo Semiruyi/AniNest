@@ -1,7 +1,9 @@
 using System;
-using System.Windows.Threading;
+using System.Threading;
+using System.Threading.Tasks;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Presentation;
 
 namespace AniNest.Features.Player.Input;
 
@@ -13,18 +15,20 @@ public sealed class PlayerInputService : IPlayerInputService
     private const int HoldDurationMs = 500;
 
     private readonly ISettingsService _settings;
+    private readonly IUiDispatcher _uiDispatcher;
     private PlayerInputProfile _profile;
-    private DispatcherTimer? _leftClickTimer;
+    private CancellationTokenSource? _leftClickDelay;
     private IPlayerInputHost? _pendingLeftClickHost;
     private bool _skipNextLeftUp;
-    private DispatcherTimer? _rightHoldTimer;
+    private CancellationTokenSource? _rightHoldDelay;
     private IPlayerInputHost? _rightHoldHost;
     private bool _rightDown;
     private bool _rightHoldTriggered;
 
-    public PlayerInputService(ISettingsService settings)
+    public PlayerInputService(ISettingsService settings, IUiDispatcher uiDispatcher)
     {
         _settings = settings;
+        _uiDispatcher = uiDispatcher;
         _profile = LoadProfile(settings.Load());
         Log.Info($"Initialized with {_profile.Bindings.Count} bindings");
         foreach (var b in _profile.Bindings)
@@ -108,7 +112,7 @@ public sealed class PlayerInputService : IPlayerInputService
             if (!inputEvent.IsInVideoSurface)
                 return false;
 
-            if (inputEvent.ClickCount > 1 || _leftClickTimer != null)
+            if (inputEvent.ClickCount > 1 || _leftClickDelay is not null)
             {
                 CancelPendingLeftClick();
                 _skipNextLeftUp = true;
@@ -123,18 +127,17 @@ public sealed class PlayerInputService : IPlayerInputService
             _rightDown = true;
             _rightHoldTriggered = false;
             _rightHoldHost = host;
-            _rightHoldTimer?.Stop();
+            CancelScheduledAction(ref _rightHoldDelay);
 
             if (HasMouseBinding(inputEvent.Button, PlayerInputTriggerKind.MouseHold))
             {
-                _rightHoldTimer = NewTimer(HoldDurationMs, () =>
+                _rightHoldDelay = ScheduleDelayedUiAction(HoldDurationMs, () =>
                 {
                     if (!_rightDown || _rightHoldHost is null)
                         return;
 
                     _rightHoldTriggered = TryExecuteMouseBinding(_rightHoldHost, inputEvent.Button, PlayerInputTriggerKind.MouseHold, inputEvent.Modifiers);
                 });
-                _rightHoldTimer.Start();
             }
 
             return false;
@@ -163,7 +166,7 @@ public sealed class PlayerInputService : IPlayerInputService
             {
                 CancelPendingLeftClick();
                 _pendingLeftClickHost = host;
-                _leftClickTimer = NewTimer(ClickDelayMs, () =>
+                _leftClickDelay = ScheduleDelayedUiAction(ClickDelayMs, () =>
                 {
                     if (_pendingLeftClickHost is null)
                         return;
@@ -171,7 +174,6 @@ public sealed class PlayerInputService : IPlayerInputService
                     TryExecuteMouseBinding(_pendingLeftClickHost, inputEvent.Button, PlayerInputTriggerKind.MouseClick, inputEvent.Modifiers);
                     CancelPendingLeftClick();
                 });
-                _leftClickTimer.Start();
             }
 
             return false;
@@ -180,7 +182,7 @@ public sealed class PlayerInputService : IPlayerInputService
         if (inputEvent.Button == PlayerInputMouseButton.Right && _rightHoldTriggered)
         {
             _rightDown = false;
-            _rightHoldTimer?.Stop();
+            CancelScheduledAction(ref _rightHoldDelay);
             _rightHoldTriggered = false;
             return TryExecuteMouseBinding(host, inputEvent.Button, PlayerInputTriggerKind.MouseRelease, inputEvent.Modifiers);
         }
@@ -188,7 +190,7 @@ public sealed class PlayerInputService : IPlayerInputService
         if (inputEvent.Button == PlayerInputMouseButton.Right)
         {
             _rightDown = false;
-            _rightHoldTimer?.Stop();
+            CancelScheduledAction(ref _rightHoldDelay);
             _rightHoldHost = null;
         }
 
@@ -259,8 +261,7 @@ public sealed class PlayerInputService : IPlayerInputService
 
     private void CancelPendingLeftClick()
     {
-        _leftClickTimer?.Stop();
-        _leftClickTimer = null;
+        CancelScheduledAction(ref _leftClickDelay);
         _pendingLeftClickHost = null;
     }
 
@@ -268,11 +269,45 @@ public sealed class PlayerInputService : IPlayerInputService
     {
         CancelPendingLeftClick();
         _skipNextLeftUp = false;
-        _rightHoldTimer?.Stop();
-        _rightHoldTimer = null;
+        CancelScheduledAction(ref _rightHoldDelay);
         _rightHoldHost = null;
         _rightDown = false;
         _rightHoldTriggered = false;
+    }
+
+    private CancellationTokenSource ScheduleDelayedUiAction(int ms, Action action)
+    {
+        var cts = new CancellationTokenSource();
+        _ = RunDelayedUiActionAsync(TimeSpan.FromMilliseconds(ms), action, cts.Token);
+        return cts;
+    }
+
+    private async Task RunDelayedUiActionAsync(TimeSpan delay, Action action, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+            return;
+
+        _uiDispatcher.BeginInvoke(() =>
+        {
+            if (!cancellationToken.IsCancellationRequested)
+                action();
+        });
+    }
+
+    private static void CancelScheduledAction(ref CancellationTokenSource? cancellationTokenSource)
+    {
+        cancellationTokenSource?.Cancel();
+        cancellationTokenSource?.Dispose();
+        cancellationTokenSource = null;
     }
 
     private static PlayerInputProfile LoadProfile(AppSettings settings)
@@ -298,16 +333,5 @@ public sealed class PlayerInputService : IPlayerInputService
         }
 
         return normalized.HasBindings ? normalized : PlayerInputDefaults.Create();
-    }
-
-    private static DispatcherTimer NewTimer(int ms, Action action)
-    {
-        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(ms) };
-        timer.Tick += (_, _) =>
-        {
-            timer.Stop();
-            action();
-        };
-        return timer;
     }
 }
