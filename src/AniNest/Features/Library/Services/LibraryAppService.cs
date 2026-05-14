@@ -9,23 +9,23 @@ public sealed class LibraryAppService : ILibraryAppService
 {
     private static readonly Logger Log = AppLog.For<LibraryAppService>();
     private readonly ISettingsService _settings;
-    private readonly IThumbnailGenerator _thumbnailGenerator;
+    private readonly ILibraryThumbnailService _thumbnailService;
     private readonly IVideoScanner _videoScanner;
 
     public LibraryAppService(
         ISettingsService settings,
-        IThumbnailGenerator thumbnailGenerator,
+        ILibraryThumbnailService thumbnailService,
         IVideoScanner videoScanner)
     {
         _settings = settings;
-        _thumbnailGenerator = thumbnailGenerator;
+        _thumbnailService = thumbnailService;
         _videoScanner = videoScanner;
     }
 
     public event EventHandler<ThumbnailProgressEventArgs>? ThumbnailProgressChanged
     {
-        add => _thumbnailGenerator.ProgressChanged += value;
-        remove => _thumbnailGenerator.ProgressChanged -= value;
+        add => _thumbnailService.ThumbnailProgressChanged += value;
+        remove => _thumbnailService.ThumbnailProgressChanged -= value;
     }
 
     public async Task<IReadOnlyList<LibraryFolderDto>> LoadLibraryAsync(CancellationToken cancellationToken = default)
@@ -47,7 +47,7 @@ public sealed class LibraryAppService : ILibraryAppService
             }
 
             _settings.RemoveFolder(folder.Path);
-            _thumbnailGenerator.DeleteCollection(folder.Path);
+            _thumbnailService.DeleteFolder(folder.Path);
         }
 
         foreach (var (folder, videoFiles) in loadedItems)
@@ -142,52 +142,16 @@ public sealed class LibraryAppService : ILibraryAppService
     }
 
     public async Task FocusFolderThumbnailsAsync(string path, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var videos = await _videoScanner.GetVideoFilesAsync(path, cancellationToken);
-        if (videos.Length == 0)
-            return;
-
-        RegisterFolderCollection(path, videos);
-        _thumbnailGenerator.FocusCollection(path);
-    }
+        => await _thumbnailService.FocusFolderThumbnailsAsync(path, cancellationToken);
 
     public async Task PrioritizeFolderThumbnailsAsync(string path, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var videos = await _videoScanner.GetVideoFilesAsync(path, cancellationToken);
-        if (videos.Length == 0)
-            return;
-
-        RegisterFolderCollection(path, videos);
-        _thumbnailGenerator.BoostCollection(path);
-    }
+        => await _thumbnailService.PrioritizeFolderThumbnailsAsync(path, cancellationToken);
 
     public async Task RegenerateFolderThumbnailsAsync(string path, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var videos = await _videoScanner.GetVideoFilesAsync(path, cancellationToken);
-        if (videos.Length == 0)
-            return;
-
-        RegisterFolderCollection(path, videos);
-        _thumbnailGenerator.ResetCollection(path, boostAfterReset: true);
-    }
+        => await _thumbnailService.RegenerateFolderThumbnailsAsync(path, cancellationToken);
 
     public async Task ClearFolderThumbnailCacheAsync(string path, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var videos = await _videoScanner.GetVideoFilesAsync(path, cancellationToken);
-        if (videos.Length == 0)
-            return;
-
-        RegisterFolderCollection(path, videos);
-        _thumbnailGenerator.ResetCollection(path, boostAfterReset: false);
-    }
+        => await _thumbnailService.ClearFolderThumbnailCacheAsync(path, cancellationToken);
 
     public async Task<LibraryFolderDto?> ClearFolderWatchHistoryAsync(string path, CancellationToken cancellationToken = default)
     {
@@ -224,7 +188,7 @@ public sealed class LibraryAppService : ILibraryAppService
     {
         cancellationToken.ThrowIfCancellationRequested();
         _settings.RemoveFolder(path);
-        _thumbnailGenerator.DeleteCollection(path);
+        _thumbnailService.DeleteFolder(path);
         return Task.CompletedTask;
     }
 
@@ -244,14 +208,7 @@ public sealed class LibraryAppService : ILibraryAppService
 
     private void EnqueueFolderForThumbnails(string folderPath, string[] videoFiles)
     {
-        RegisterFolderCollection(folderPath, videoFiles);
-    }
-
-    private void RegisterFolderCollection(string folderPath, IReadOnlyCollection<string> videoFiles)
-    {
-        _thumbnailGenerator.RegisterCollection(
-            new LibraryCollectionRef(folderPath, LibraryCollectionKind.Folder, Path.GetFileName(folderPath)),
-            videoFiles);
+        _thumbnailService.RegisterFolder(folderPath, videoFiles);
     }
 
     private LibraryFolderDto CreateFolderDto(
