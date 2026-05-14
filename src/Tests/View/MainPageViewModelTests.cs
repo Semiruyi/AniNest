@@ -2,8 +2,9 @@ using System.ComponentModel;
 using AniNest.Features.Library;
 using AniNest.Features.Library.Models;
 using AniNest.Features.Library.Services;
-using AniNest.Infrastructure.Persistence;
 using AniNest.Infrastructure.Localization;
+using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Presentation;
 
 namespace AniNest.Tests.View;
 
@@ -29,7 +30,7 @@ public class MainPageViewModelTests
             .ReturnsAsync(firstLoad)
             .ReturnsAsync(refreshedLoad);
 
-        var viewModel = new MainPageViewModel(libraryService.Object, localization.Object);
+        var viewModel = CreateViewModel(libraryService.Object, localization.Object);
 
         await viewModel.LoadDataCommand.ExecuteAsync(null);
         viewModel.FolderItems.Should().ContainSingle();
@@ -51,7 +52,7 @@ public class MainPageViewModelTests
         libraryService
             .Setup(service => service.PrioritizeFolderThumbnailsAsync("/folder", It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var viewModel = new MainPageViewModel(libraryService.Object, localization.Object);
+        var viewModel = CreateViewModel(libraryService.Object, localization.Object);
         viewModel.AddFolderItem("Folder", "/folder", 4, null);
 
         await viewModel.PrioritizeFolderThumbnailsCommand.ExecuteAsync(viewModel.FolderItems[0]);
@@ -73,7 +74,7 @@ public class MainPageViewModelTests
                 new LibraryFolderDto("Other", "/other", 4, null, 0, WatchStatus.Completed, false),
             });
 
-        var viewModel = new MainPageViewModel(libraryService.Object, localization.Object);
+        var viewModel = CreateViewModel(libraryService.Object, localization.Object);
 
         await viewModel.LoadDataCommand.ExecuteAsync(null);
         viewModel.FolderItems.Should().HaveCount(3);
@@ -93,7 +94,7 @@ public class MainPageViewModelTests
         libraryService
             .Setup(service => service.SetFolderFavoriteAsync("/folder", true, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var viewModel = new MainPageViewModel(libraryService.Object, localization.Object);
+        var viewModel = CreateViewModel(libraryService.Object, localization.Object);
         viewModel.AddFolderItem("Folder", "/folder", 4, null);
 
         await viewModel.ToggleFolderFavoriteCommand.ExecuteAsync(viewModel.FolderItems[0]);
@@ -110,7 +111,7 @@ public class MainPageViewModelTests
         libraryService
             .Setup(service => service.SetFolderWatchStatusAsync("/folder", WatchStatus.Completed, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var viewModel = new MainPageViewModel(libraryService.Object, localization.Object);
+        var viewModel = CreateViewModel(libraryService.Object, localization.Object);
         viewModel.AddFolderItem("Folder", "/folder", 4, null);
 
         await viewModel.SetFolderWatchStatusCommand.ExecuteAsync(new FolderStatusChangeRequest(viewModel.FolderItems[0], WatchStatus.Completed));
@@ -127,7 +128,7 @@ public class MainPageViewModelTests
         libraryService
             .Setup(service => service.SetFolderWatchStatusAsync("/folder", WatchStatus.Completed, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var viewModel = new MainPageViewModel(libraryService.Object, localization.Object);
+        var viewModel = CreateViewModel(libraryService.Object, localization.Object);
         viewModel.AddFolderItem("Folder", "/folder", 4, null);
         viewModel.SetSelectedFilterCommand.Execute(LibraryFilter.Unsorted);
 
@@ -144,7 +145,7 @@ public class MainPageViewModelTests
     {
         var libraryService = new Mock<ILibraryAppService>();
         var localization = CreateLocalizationService();
-        var viewModel = new MainPageViewModel(libraryService.Object, localization.Object);
+        var viewModel = CreateViewModel(libraryService.Object, localization.Object);
         viewModel.AddFolderItem("Folder", "/folder", 4, null);
 
         await viewModel.SetFolderWatchStatusCommand.ExecuteAsync(
@@ -167,5 +168,23 @@ public class MainPageViewModelTests
         localization.SetupRemove(service => service.PropertyChanged -= It.IsAny<PropertyChangedEventHandler>())
             .Callback<PropertyChangedEventHandler>(_ => { });
         return localization;
+    }
+
+    private static MainPageViewModel CreateViewModel(
+        ILibraryAppService libraryService,
+        ILocalizationService localization)
+    {
+        var dialogs = new Mock<IDialogService>();
+        dialogs.Setup(service => service.ShowInput(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(string.Empty);
+
+        var dispatcher = new Mock<IUiDispatcher>();
+        dispatcher.Setup(service => service.CheckAccess()).Returns(true);
+        dispatcher.Setup(service => service.Invoke(It.IsAny<Action>()))
+            .Callback<Action>(action => action());
+        dispatcher.Setup(service => service.BeginInvoke(It.IsAny<Action>()))
+            .Callback<Action>(action => action());
+
+        return new MainPageViewModel(libraryService, localization, dialogs.Object, dispatcher.Object);
     }
 }

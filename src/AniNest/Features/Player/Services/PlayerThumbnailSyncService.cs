@@ -1,7 +1,7 @@
 using System.IO;
 using System.Linq;
-using System.Windows;
 using AniNest.Infrastructure.Logging;
+using AniNest.Infrastructure.Presentation;
 using AniNest.Infrastructure.Thumbnails;
 
 namespace AniNest.Features.Player.Services;
@@ -11,12 +11,16 @@ public sealed class PlayerThumbnailSyncService : IPlayerThumbnailSyncService
     private static readonly Logger Log = AppLog.For<PlayerThumbnailSyncService>();
 
     private readonly IThumbnailGenerator _thumbnailGenerator;
+    private readonly IUiDispatcher _uiDispatcher;
     private readonly Action _statusChangedHandler;
     private PlaylistViewModel? _playlist;
 
-    public PlayerThumbnailSyncService(IThumbnailGenerator thumbnailGenerator)
+    public PlayerThumbnailSyncService(
+        IThumbnailGenerator thumbnailGenerator,
+        IUiDispatcher uiDispatcher)
     {
         _thumbnailGenerator = thumbnailGenerator;
+        _uiDispatcher = uiDispatcher;
         _statusChangedHandler = OnStatusChanged;
     }
 
@@ -43,7 +47,7 @@ public sealed class PlayerThumbnailSyncService : IPlayerThumbnailSyncService
     }
 
     private void OnStatusChanged()
-        => Application.Current.Dispatcher.Invoke(SyncPlaylistThumbnailStates);
+        => _uiDispatcher.Invoke(SyncPlaylistThumbnailStates);
 
     private void SyncPlaylistThumbnailStates()
     {

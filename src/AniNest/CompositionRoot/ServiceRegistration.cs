@@ -11,6 +11,7 @@ using AniNest.Infrastructure.Localization;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Paths;
 using AniNest.Infrastructure.Persistence;
+using AniNest.Infrastructure.Presentation;
 using AniNest.Infrastructure.Media;
 using AniNest.Infrastructure.Thumbnails;
 using AniNest.Infrastructure.Interop;
@@ -24,6 +25,8 @@ public static class ServiceRegistration
     {
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
+        services.AddSingleton<IDialogService, WpfDialogService>();
+        services.AddSingleton<IUiDispatcher, WpfUiDispatcher>();
         services.AddSingleton<ITaskbarAutoHideCoordinator, TaskbarAutoHideCoordinator>();
         services.AddSingleton<IVideoScanner, VideoScanner>();
         services.AddSingleton<IThumbnailDecodeStrategyService, ThumbnailDecodeStrategyService>();

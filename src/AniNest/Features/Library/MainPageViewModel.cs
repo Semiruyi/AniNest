@@ -12,6 +12,7 @@ using AniNest.Features.Library.Models;
 using AniNest.Features.Library.Services;
 using AniNest.Infrastructure.Diagnostics;
 using AniNest.Infrastructure.Localization;
+using AniNest.Infrastructure.Presentation;
 using AniNest.Infrastructure.Thumbnails;
 using AniNest.Presentation.Primitives;
 
@@ -22,6 +23,8 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     private static readonly Infrastructure.Logging.Logger Log = Infrastructure.Logging.AppLog.For<MainPageViewModel>();
     private readonly ILibraryAppService _libraryService;
     private readonly ILocalizationService _loc;
+    private readonly IDialogService _dialogs;
+    private readonly IUiDispatcher _uiDispatcher;
     private readonly List<FolderListItem> _allFolderItems = new();
     private readonly EventHandler<ThumbnailProgressEventArgs> _thumbnailProgressChangedHandler;
     private readonly PropertyChangedEventHandler _localizationChangedHandler;
@@ -63,10 +66,14 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
 
     public MainPageViewModel(
         ILibraryAppService libraryService,
-        ILocalizationService loc)
+        ILocalizationService loc,
+        IDialogService dialogs,
+        IUiDispatcher uiDispatcher)
     {
         _libraryService = libraryService;
         _loc = loc;
+        _dialogs = dialogs;
+        _uiDispatcher = uiDispatcher;
         _thumbnailProgressChangedHandler = OnThumbnailProgressChanged;
         _localizationChangedHandler = OnLocalizationChanged;
 
@@ -326,7 +333,7 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
     private void Settings()
     {
         int currentDays = _libraryService.GetThumbnailExpiryDays();
-        string input = Microsoft.VisualBasic.Interaction.InputBox(
+        string input = _dialogs.ShowInput(
             _loc["Settings.ThumbnailExpiryPrompt"],
             _loc["Settings.ThumbnailSettings"],
             currentDays.ToString());
@@ -337,11 +344,11 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
 
         if (result.Outcome == ThumbnailExpirySaveOutcome.SavedNever)
         {
-            MessageBox.Show(_loc["Settings.ThumbnailSetNever"], _loc["Dialog.Info"]);
+            _dialogs.ShowInfo(_loc["Settings.ThumbnailSetNever"], _loc["Dialog.Info"]);
         }
         else if (result.Days.HasValue)
         {
-            MessageBox.Show(string.Format(_loc["Settings.ThumbnailSetDays"], result.Days.Value), _loc["Dialog.Info"]);
+            _dialogs.ShowInfo(string.Format(_loc["Settings.ThumbnailSetDays"], result.Days.Value), _loc["Dialog.Info"]);
         }
     }
 
@@ -355,7 +362,7 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
             var result = await _libraryService.OpenFolderAsync(path, _selectFolderCts.Token);
             if (!result.Success)
             {
-                MessageBox.Show(_loc["Dialog.NoVideosInFolder"], _loc["Dialog.Info"]);
+                _dialogs.ShowInfo(_loc["Dialog.NoVideosInFolder"], _loc["Dialog.Info"]);
                 return false;
             }
 
@@ -403,7 +410,7 @@ public partial class MainPageViewModel : ObservableObject, ITransitioningContent
 
     private void OnThumbnailProgressChanged(object? sender, ThumbnailProgressEventArgs args)
     {
-        Application.Current.Dispatcher.BeginInvoke(() => UpdateThumbnailProgress(args.Ready, args.Total));
+        _uiDispatcher.BeginInvoke(() => UpdateThumbnailProgress(args.Ready, args.Total));
     }
 
     private FolderListItem CreateFolderItem(LibraryFolderDto item)

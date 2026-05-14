@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using System.Windows;
 using AniNest.Infrastructure.Diagnostics;
 using AniNest.Infrastructure.Media;
+using AniNest.Infrastructure.Presentation;
 
 namespace AniNest.Features.Player.Services;
 
@@ -9,6 +9,7 @@ public sealed class PlayerPlaybackStateSyncService : IPlayerPlaybackStateSyncSer
 {
     private readonly PlayerSessionController _session;
     private readonly IMediaPlayerController _media;
+    private readonly IUiDispatcher _uiDispatcher;
     private readonly Action<string> _videoPathChangedHandler;
     private readonly EventHandler _playingHandler;
     private readonly EventHandler _pausedHandler;
@@ -18,10 +19,12 @@ public sealed class PlayerPlaybackStateSyncService : IPlayerPlaybackStateSyncSer
 
     public PlayerPlaybackStateSyncService(
         PlayerSessionController session,
-        IMediaPlayerController media)
+        IMediaPlayerController media,
+        IUiDispatcher uiDispatcher)
     {
         _session = session;
         _media = media;
+        _uiDispatcher = uiDispatcher;
         _videoPathChangedHandler = OnSessionCurrentVideoPathChanged;
         _playingHandler = (_, _) => Dispatch("Playing", controller => controller.SetPlayingState(true));
         _pausedHandler = (_, _) => Dispatch("Paused", controller => controller.SetPlayingState(false));
@@ -71,7 +74,6 @@ public sealed class PlayerPlaybackStateSyncService : IPlayerPlaybackStateSyncSer
             return;
 
         var controller = _controller;
-        var dispatcher = Application.Current.Dispatcher;
         var tags = instrument
             ? new Dictionary<string, string>
             {
@@ -79,7 +81,7 @@ public sealed class PlayerPlaybackStateSyncService : IPlayerPlaybackStateSyncSer
             }
             : null;
 
-        if (dispatcher.CheckAccess())
+        if (_uiDispatcher.CheckAccess())
         {
             if (instrument)
             {
@@ -97,7 +99,7 @@ public sealed class PlayerPlaybackStateSyncService : IPlayerPlaybackStateSyncSer
         if (instrument)
         {
             using var waitSpan = PerfSpan.Begin("PlayerPlaybackStateSync.DispatchWait", tags);
-            dispatcher.Invoke(() =>
+            _uiDispatcher.Invoke(() =>
             {
                 using var executeSpan = PerfSpan.Begin("PlayerPlaybackStateSync.Execute", tags);
                 action(controller);
@@ -105,7 +107,7 @@ public sealed class PlayerPlaybackStateSyncService : IPlayerPlaybackStateSyncSer
         }
         else
         {
-            dispatcher.Invoke(() => action(controller));
+            _uiDispatcher.Invoke(() => action(controller));
         }
     }
 }
