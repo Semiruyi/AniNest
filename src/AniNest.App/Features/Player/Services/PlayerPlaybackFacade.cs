@@ -1,3 +1,4 @@
+using System;
 using AniNest.Infrastructure.Media;
 using AniNest.Infrastructure.Thumbnails;
 
@@ -55,7 +56,12 @@ public sealed class PlayerPlaybackFacade : IPlayerPlaybackFacade
         => _media.SeekTo(time);
 
     public string FormatTime(long ms)
-        => MediaPlayerController.FormatTime(ms);
+    {
+        TimeSpan time = TimeSpan.FromMilliseconds(ms);
+        return time.TotalHours >= 1
+            ? time.ToString(@"hh\:mm\:ss")
+            : time.ToString(@"mm\:ss");
+    }
 
     public ThumbnailState GetThumbnailState(string videoPath)
         => _thumbnailGenerator.GetThumbnailState(videoPath);

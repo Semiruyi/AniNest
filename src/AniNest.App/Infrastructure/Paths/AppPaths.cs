@@ -1,10 +1,5 @@
 using System.IO;
-using AniNest.Infrastructure.Logging;
-using AniNest.Infrastructure.Paths;
-using AniNest.Infrastructure.Persistence;
-using AniNest.Infrastructure.Media;
-using AniNest.Infrastructure.Thumbnails;
-using AniNest.Infrastructure.Interop;
+
 namespace AniNest.Infrastructure.Paths;
 
 public static class AppPaths

@@ -2,11 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using AniNest.Infrastructure.Logging;
-using AniNest.Infrastructure.Paths;
-using AniNest.Infrastructure.Persistence;
-using AniNest.Infrastructure.Media;
-using AniNest.Infrastructure.Thumbnails;
-using AniNest.Infrastructure.Interop;
+
 namespace AniNest.Infrastructure.Thumbnails;
 
 public class VideoScanner : IVideoScanner

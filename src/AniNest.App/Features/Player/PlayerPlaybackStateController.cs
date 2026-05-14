@@ -105,7 +105,15 @@ public partial class PlayerPlaybackStateController : ObservableObject
         CurrentTime = args.CurrentTime;
         TotalTime = args.TotalTime;
         BufferedPosition = args.TotalTime;
-        CurrentTimeText = MediaPlayerController.FormatTime(args.CurrentTime);
-        TotalTimeText = MediaPlayerController.FormatTime(args.TotalTime);
+        CurrentTimeText = FormatTime(args.CurrentTime);
+        TotalTimeText = FormatTime(args.TotalTime);
+    }
+
+    private static string FormatTime(long milliseconds)
+    {
+        TimeSpan time = TimeSpan.FromMilliseconds(milliseconds);
+        return time.TotalHours >= 1
+            ? time.ToString(@"hh\:mm\:ss")
+            : time.ToString(@"mm\:ss");
     }
 }

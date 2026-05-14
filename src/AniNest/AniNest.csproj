@@ -54,6 +54,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\\AniNest.App\\AniNest.App.csproj" />
     <ProjectReference Include="..\\AniNest.Ports\\AniNest.Ports.csproj" />
   </ItemGroup>
 
