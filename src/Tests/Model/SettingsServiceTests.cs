@@ -37,6 +37,8 @@ public class SettingsServiceTests : IDisposable
         _service.SetThumbnailExpiryDays(7);
         _service.SetThumbnailPerformanceMode(ThumbnailPerformanceMode.Paused);
         _service.SetThumbnailAccelerationMode(ThumbnailAccelerationMode.Compatible);
+        _service.SetPlayerVolume(35);
+        _service.SetPlayerMuted(true);
 
         _service.Reload();
         var folders = _service.GetFolders();
@@ -46,6 +48,8 @@ public class SettingsServiceTests : IDisposable
         _service.GetThumbnailExpiryDays().Should().Be(7);
         _service.GetThumbnailPerformanceMode().Should().Be(ThumbnailPerformanceMode.Paused);
         _service.GetThumbnailAccelerationMode().Should().Be(ThumbnailAccelerationMode.Compatible);
+        _service.GetPlayerVolume().Should().Be(35);
+        _service.GetPlayerMuted().Should().BeTrue();
     }
 
     [Fact]
@@ -171,6 +175,13 @@ public class SettingsServiceTests : IDisposable
     public void GetThumbnailAccelerationMode_DefaultsToAuto()
     {
         _service.GetThumbnailAccelerationMode().Should().Be(ThumbnailAccelerationMode.Auto);
+    }
+
+    [Fact]
+    public void PlayerVolumeAndMuted_DefaultsToExpectedValues()
+    {
+        _service.GetPlayerVolume().Should().Be(70);
+        _service.GetPlayerMuted().Should().BeFalse();
     }
 
     [Fact]

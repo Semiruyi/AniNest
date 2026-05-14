@@ -18,6 +18,8 @@ public interface IMediaPlayerController : IDisposable
     string? CurrentFilePath { get; }
     WriteableBitmap? VideoBitmap { get; }
     float Rate { get; set; }
+    int Volume { get; set; }
+    bool IsMuted { get; set; }
 
     Task InitializeAsync();
     Task WarmupAsync();

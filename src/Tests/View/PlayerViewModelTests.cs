@@ -45,9 +45,15 @@ public class PlayerViewModelTests : IDisposable
         var inputService = new Mock<IPlayerInputService>();
         var dialogs = new Mock<IDialogService>();
         var localization = CreateLocalizationService();
+        var settings = new Mock<ISettingsService>();
+        settings.Setup(service => service.GetPlayerVolume()).Returns(70);
+        settings.Setup(service => service.GetPlayerMuted()).Returns(false);
+        playbackFacade.SetupGet(service => service.Rate).Returns(1.0f);
+        playbackFacade.SetupProperty(service => service.Volume, 70);
+        playbackFacade.SetupProperty(service => service.IsMuted, false);
 
         var playlistService = new PlayerPlaylistService(
-            Mock.Of<ISettingsService>(),
+            settings.Object,
             media.Object,
             new VideoScanner(),
             localization.Object,
@@ -59,6 +65,7 @@ public class PlayerViewModelTests : IDisposable
             playback,
             playbackFacade.Object,
             localization.Object,
+            settings.Object,
             dialogs.Object,
             inputService.Object);
 

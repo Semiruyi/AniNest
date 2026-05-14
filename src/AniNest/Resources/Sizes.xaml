@@ -38,6 +38,10 @@
     <system:Double x:Key="ThumbnailPopupHeight">90</system:Double>
     <system:Double x:Key="SpeedOptionHeight">34</system:Double>
     <system:Double x:Key="SpeedPopupMinWidth">70</system:Double>
+    <system:Double x:Key="VolumeSliderWidth">76</system:Double>
+    <system:Double x:Key="VolumeSliderHeight">20</system:Double>
+    <system:Double x:Key="VolumeTrackHeight">4</system:Double>
+    <system:Double x:Key="VolumeThumbSize">12</system:Double>
 
     <system:Double x:Key="ProgressBarThinHeight">4</system:Double>
     <system:Double x:Key="ProgressBarThinRadius">2</system:Double>

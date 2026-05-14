@@ -33,6 +33,8 @@ public partial class ControlBarView : System.Windows.Controls.UserControl
         overlayCoordinator.RegisterRegion(NextBtn, OverlayOutsideHitKind.ContentInteractive);
         overlayCoordinator.RegisterRegion(StopBtn, OverlayOutsideHitKind.ContentInteractive);
         overlayCoordinator.RegisterRegion(SpeedBtn, OverlayOutsideHitKind.ContentInteractive);
+        overlayCoordinator.RegisterRegion(VolumeBtn, OverlayOutsideHitKind.ContentInteractive);
+        overlayCoordinator.RegisterRegion(VolumeSlider, OverlayOutsideHitKind.ContentInteractive);
         overlayCoordinator.RegisterRegion(PlaylistToggleBtn, OverlayOutsideHitKind.ContentInteractive);
         overlayCoordinator.RegisterRegion(FullscreenBtn, OverlayOutsideHitKind.ContentInteractive);
         overlayCoordinator.RegisterRegion(SeekBar, OverlayOutsideHitKind.ContentInteractive);
@@ -78,6 +80,18 @@ public partial class ControlBarView : System.Windows.Controls.UserControl
             ViewModel.IsSpeedPopupOpen = false;
 
         Log.Debug($"OnSpeedOverlayClosed: reason={e.Reason}");
+    }
+
+    private void VolumeSlider_ValueChanged(object sender, System.Windows.RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (ViewModel == null || !IsLoaded)
+            return;
+
+        if (Math.Abs(e.NewValue - e.OldValue) < double.Epsilon)
+            return;
+
+        if (ViewModel.ChangeVolumeCommand.CanExecute(e.NewValue))
+            ViewModel.ChangeVolumeCommand.Execute(e.NewValue);
     }
 }
 

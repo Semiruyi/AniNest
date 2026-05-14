@@ -4,6 +4,7 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using AniNest.Infrastructure.Localization;
+using AniNest.Infrastructure.Persistence;
 using AniNest.Features.Player.Models;
 using AniNest.Features.Player.Services;
 
@@ -13,11 +14,13 @@ public partial class ControlBarViewModel : ObservableObject
 {
     private readonly IPlayerPlaybackFacade _playbackFacade;
     private readonly ILocalizationService _loc;
+    private readonly ISettingsService _settings;
     private readonly PlayerPlaybackStateController _playback;
     private readonly PropertyChangedEventHandler _locPropertyChangedHandler;
     private readonly PropertyChangedEventHandler _playbackPropertyChangedHandler;
 
     private float _savedRate = 1.0f;
+    private int _lastNonZeroVolume = 70;
 
     public ThumbnailPreviewController ThumbnailPreview { get; }
 
@@ -35,6 +38,8 @@ public partial class ControlBarViewModel : ObservableObject
     public string CurrentTimeText => _playback.CurrentTimeText;
     public string TotalTimeText => _playback.TotalTimeText;
     public float Rate { get; private set; } = 1.0f;
+    public int Volume { get; private set; }
+    public bool IsMuted { get; private set; }
     public long BufferedPosition => _playback.BufferedPosition;
     public bool IsSeeking
     {
@@ -54,6 +59,7 @@ public partial class ControlBarViewModel : ObservableObject
     public string PlayPauseTooltip => _loc["Player.PlayPause"];
     public string PreviousTooltip => _loc["Player.Previous"];
     public string NextTooltip => _loc["Player.Next"];
+    public string VolumeTooltip => IsMuted ? _loc["Player.Unmute"] : _loc["Player.Mute"];
 
     public event Action? NextRequested;
     public event Action? PreviousRequested;
@@ -64,10 +70,12 @@ public partial class ControlBarViewModel : ObservableObject
     public ControlBarViewModel(
         IPlayerPlaybackFacade playbackFacade,
         ILocalizationService loc,
+        ISettingsService settings,
         PlayerPlaybackStateController playback)
     {
         _playbackFacade = playbackFacade;
         _loc = loc;
+        _settings = settings;
         _playback = playback;
         _locPropertyChangedHandler = (_, args) =>
         {
@@ -76,6 +84,7 @@ public partial class ControlBarViewModel : ObservableObject
                 OnPropertyChanged(nameof(PlayPauseTooltip));
                 OnPropertyChanged(nameof(PreviousTooltip));
                 OnPropertyChanged(nameof(NextTooltip));
+                OnPropertyChanged(nameof(VolumeTooltip));
             }
         };
         _playbackPropertyChangedHandler = (_, args) =>
@@ -124,6 +133,7 @@ public partial class ControlBarViewModel : ObservableObject
             if (args.PropertyName == nameof(PlayerPlaybackStateController.CurrentVideoPath))
                 ThumbnailPreview.OnCurrentVideoPathChanged();
         };
+        InitializeVolumeState();
         SetRate(_playbackFacade.Rate);
     }
 
@@ -156,6 +166,28 @@ public partial class ControlBarViewModel : ObservableObject
     {
         _playbackFacade.Rate = speed;
         SetRate(speed);
+    }
+
+    [RelayCommand]
+    private void ChangeVolume(double volume)
+    {
+        ApplyVolume((int)Math.Round(volume));
+    }
+
+    [RelayCommand]
+    private void ToggleMute()
+    {
+        if (IsMuted || Volume == 0)
+        {
+            int restoredVolume = _lastNonZeroVolume > 0 ? _lastNonZeroVolume : 70;
+            ApplyVolume(restoredVolume, forceUnmute: true);
+            return;
+        }
+
+        if (Volume > 0)
+            _lastNonZeroVolume = Volume;
+
+        SetMutedState(true);
     }
 
     [ObservableProperty]
@@ -256,5 +288,57 @@ public partial class ControlBarViewModel : ObservableObject
     {
         _loc.PropertyChanged -= _locPropertyChangedHandler;
         _playback.PropertyChanged -= _playbackPropertyChangedHandler;
+    }
+
+    private void InitializeVolumeState()
+    {
+        int configuredVolume = _settings.GetPlayerVolume();
+        bool configuredMuted = _settings.GetPlayerMuted();
+        _lastNonZeroVolume = configuredVolume > 0 ? configuredVolume : 70;
+        Volume = configuredVolume;
+        IsMuted = configuredMuted;
+        _playbackFacade.Volume = configuredVolume;
+        _playbackFacade.IsMuted = configuredMuted;
+        OnPropertyChanged(nameof(Volume));
+        OnPropertyChanged(nameof(IsMuted));
+        OnPropertyChanged(nameof(VolumeTooltip));
+    }
+
+    private void ApplyVolume(int volume, bool forceUnmute = false)
+    {
+        volume = Math.Clamp(volume, 0, 100);
+        if (volume > 0)
+            _lastNonZeroVolume = volume;
+
+        bool muted = forceUnmute ? false : volume == 0;
+        _playbackFacade.Volume = volume;
+        _playbackFacade.IsMuted = muted;
+
+        if (Volume != volume)
+        {
+            Volume = volume;
+            OnPropertyChanged(nameof(Volume));
+        }
+
+        PersistVolumeState(volume, muted);
+    }
+
+    private void SetMutedState(bool muted)
+    {
+        _playbackFacade.IsMuted = muted;
+        PersistVolumeState(Volume, muted);
+    }
+
+    private void PersistVolumeState(int volume, bool muted)
+    {
+        _settings.SetPlayerVolume(volume);
+        _settings.SetPlayerMuted(muted);
+
+        bool muteChanged = IsMuted != muted;
+        IsMuted = muted;
+        if (muteChanged)
+            OnPropertyChanged(nameof(IsMuted));
+
+        OnPropertyChanged(nameof(VolumeTooltip));
     }
 }

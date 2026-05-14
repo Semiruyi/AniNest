@@ -9,6 +9,7 @@ using AniNest.Features.Player.Input;
 using AniNest.Features.Player.Services;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Localization;
+using AniNest.Infrastructure.Persistence;
 using AniNest.Infrastructure.Presentation;
 using AniNest.Presentation.Primitives;
 
@@ -59,6 +60,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
         PlayerPlaybackStateController playback,
         IPlayerPlaybackFacade playbackFacade,
         ILocalizationService loc,
+        ISettingsService settings,
         IDialogService dialogs,
         IPlayerInputService inputService)
     {
@@ -83,7 +85,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
             }
         };
 
-        ControlBar = new ControlBarViewModel(playbackFacade, loc, playback);
+        ControlBar = new ControlBarViewModel(playbackFacade, loc, settings, playback);
 
         ControlBar.NextRequested += () => _ = _session.PlayNext();
         ControlBar.PreviousRequested += () => _ = _session.PlayPrevious();

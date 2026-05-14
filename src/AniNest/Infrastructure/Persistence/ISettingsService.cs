@@ -38,6 +38,10 @@ public interface ISettingsService
     void SetThumbnailPerformanceMode(ThumbnailPerformanceMode mode);
     ThumbnailAccelerationMode GetThumbnailAccelerationMode();
     void SetThumbnailAccelerationMode(ThumbnailAccelerationMode mode);
+    int GetPlayerVolume();
+    void SetPlayerVolume(int volume);
+    bool GetPlayerMuted();
+    void SetPlayerMuted(bool muted);
 
 }
 

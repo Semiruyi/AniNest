@@ -29,6 +29,8 @@
     <Thickness x:Key="ButtonGapRight">0,0,4,0</Thickness>
     <Thickness x:Key="ButtonGapLeft">4,0,0,0</Thickness>
     <Thickness x:Key="ButtonGapBoth">4,0</Thickness>
+    <Thickness x:Key="VolumeButtonMargin">8,0,4,0</Thickness>
+    <Thickness x:Key="VolumeSliderMargin">0,0,4,0</Thickness>
     <Thickness x:Key="TimeTextLeftMargin">10,0,0,0</Thickness>
     <Thickness x:Key="TimeSeparatorMargin">2,0</Thickness>
     <Thickness x:Key="PlaylistHeaderMargin">20,18,20,10</Thickness>

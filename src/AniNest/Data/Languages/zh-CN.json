@@ -138,5 +138,7 @@
   "KeyBinding.SeekForwardAlt": "快进 5 秒 (备用)",
   "KeyBinding.Back": "返回",
   "Player.PlaybackFailed.Title": "播放失败",
-  "Player.PlaybackFailed.Message": "无法播放 {0}\n{1}"
+  "Player.PlaybackFailed.Message": "无法播放 {0}\n{1}",
+  "Player.Mute": "静音",
+  "Player.Unmute": "取消静音"
 }

@@ -489,6 +489,33 @@ public class SettingsService : ISettingsService, IDisposable
         Save();
     }
 
+    public int GetPlayerVolume()
+        => Math.Clamp(Load().PlayerVolume, 0, 100);
+
+    public void SetPlayerVolume(int volume)
+    {
+        var current = Load();
+        volume = Math.Clamp(volume, 0, 100);
+        if (current.PlayerVolume == volume)
+            return;
+
+        current.PlayerVolume = volume;
+        Save();
+    }
+
+    public bool GetPlayerMuted()
+        => Load().PlayerMuted;
+
+    public void SetPlayerMuted(bool muted)
+    {
+        var current = Load();
+        if (current.PlayerMuted == muted)
+            return;
+
+        current.PlayerMuted = muted;
+        Save();
+    }
+
     private void ScheduleDeferredSave()
     {
         if (_isDisposed)

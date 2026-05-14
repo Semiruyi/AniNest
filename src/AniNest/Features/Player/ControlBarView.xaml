@@ -35,6 +35,72 @@
             <Setter Property="Height" Value="{StaticResource IconSizeLarge}"/>
         </Style>
 
+        <Style x:Key="PlayerControlBarVolumeSlider" TargetType="Slider">
+            <Setter Property="Width" Value="{StaticResource VolumeSliderWidth}"/>
+            <Setter Property="Height" Value="{StaticResource VolumeSliderHeight}"/>
+            <Setter Property="Minimum" Value="0"/>
+            <Setter Property="Maximum" Value="100"/>
+            <Setter Property="SmallChange" Value="1"/>
+            <Setter Property="LargeChange" Value="10"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid Height="{TemplateBinding Height}">
+                            <Border Height="{StaticResource VolumeTrackHeight}"
+                                    VerticalAlignment="Center"
+                                    Background="{StaticResource ProgressTrackBackground}"
+                                    CornerRadius="{StaticResource ProgressBarThinCornerRadius}"/>
+                            <Track x:Name="PART_Track"
+                                   VerticalAlignment="Center">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="Slider.DecreaseLarge"
+                                                  Background="{StaticResource ProgressFillPrimary}"
+                                                  BorderThickness="0"
+                                                  Height="{StaticResource VolumeTrackHeight}"
+                                                  VerticalAlignment="Center">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Background="{TemplateBinding Background}"
+                                                        CornerRadius="{StaticResource ProgressBarThinCornerRadius}"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Width="{StaticResource VolumeThumbSize}"
+                                           Height="{StaticResource VolumeThumbSize}"
+                                           Background="{StaticResource TextPrimary}"
+                                           BorderThickness="0">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border Background="{TemplateBinding Background}"
+                                                        CornerRadius="6"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="Slider.IncreaseLarge"
+                                                  Background="{StaticResource TransparentBrush}"
+                                                  BorderThickness="0"
+                                                  Height="{StaticResource VolumeTrackHeight}"
+                                                  VerticalAlignment="Center">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Background="{TemplateBinding Background}"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="PlayerControlBarSpeedOptionButton" TargetType="Button" BasedOn="{StaticResource PopupMenuButton}">
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
         </Style>
@@ -205,6 +271,35 @@
             </Setter>
         </Style>
 
+        <Style x:Key="PlayerControlBarVolumeButton" TargetType="Button" BasedOn="{StaticResource AnimatedIconButton}">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Margin" Value="{StaticResource VolumeButtonMargin}"/>
+            <Setter Property="Command" Value="{Binding ToggleMuteCommand}"/>
+            <Setter Property="ToolTip" Value="{Binding VolumeTooltip}"/>
+            <Setter Property="Content" Value=""/>
+            <Setter Property="ContentTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <Image>
+                            <Image.Style>
+                                <Style TargetType="Image" BasedOn="{StaticResource PlayerControlBarIconImageNormal}">
+                                    <Setter Property="Source" Value="/Resources/Icons/volume.png"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DataContext.IsMuted, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                            <Setter Property="Source" Value="/Resources/Icons/volume_mute.png"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding DataContext.Volume, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="0">
+                                            <Setter Property="Source" Value="/Resources/Icons/volume_mute.png"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="PlayerControlBarFullscreenButton" TargetType="Button" BasedOn="{StaticResource PlayerFullscreenButton}">
             <Setter Property="Margin" Value="{StaticResource ButtonGapLeft}"/>
             <Setter Property="Command" Value="{Binding ToggleFullscreenCommand}"/>
@@ -312,6 +407,12 @@
                     <Button x:Name="SpeedBtn" Style="{StaticResource PlayerControlBarSpeedButton}"/>
                 </Grid>
 
+                <Button x:Name="VolumeBtn" Style="{StaticResource PlayerControlBarVolumeButton}"/>
+                <Slider x:Name="VolumeSlider"
+                        Style="{StaticResource PlayerControlBarVolumeSlider}"
+                        Margin="{StaticResource VolumeSliderMargin}"
+                        Value="{Binding Volume, Mode=OneWay}"
+                        ValueChanged="VolumeSlider_ValueChanged"/>
                 <Button x:Name="PlaylistToggleBtn" Style="{StaticResource PlayerControlBarPlaylistButton}"/>
                 <Button x:Name="FullscreenBtn" Style="{StaticResource PlayerControlBarFullscreenButton}"/>
             </StackPanel>

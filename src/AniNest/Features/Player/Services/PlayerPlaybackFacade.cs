@@ -24,6 +24,18 @@ public sealed class PlayerPlaybackFacade : IPlayerPlaybackFacade
         set => _media.Rate = value;
     }
 
+    public int Volume
+    {
+        get => _media.Volume;
+        set => _media.Volume = value;
+    }
+
+    public bool IsMuted
+    {
+        get => _media.IsMuted;
+        set => _media.IsMuted = value;
+    }
+
     public Task InitializeAsync()
         => _media.InitializeAsync();
 

@@ -36,6 +36,8 @@ public class MediaPlayerController : IMediaPlayerController
     private PerfSpan? _playToFirstLockSpan;
     private PerfSpan? _playToFirstUnlockSpan;
     private PerfSpan? _playToFirstDisplayQueuedSpan;
+    private int _volume = 100;
+    private bool _isMuted;
 
     public bool IsPlaying => mediaPlayer?.IsPlaying ?? false;
     public long Time => mediaPlayer?.Time ?? 0;
@@ -47,6 +49,28 @@ public class MediaPlayerController : IMediaPlayerController
     {
         get => mediaPlayer?.Rate ?? 1.0f;
         set => mediaPlayer?.SetRate(value);
+    }
+
+    public int Volume
+    {
+        get => mediaPlayer?.Volume ?? _volume;
+        set
+        {
+            _volume = Math.Clamp(value, 0, 100);
+            if (mediaPlayer != null)
+                mediaPlayer.Volume = _volume;
+        }
+    }
+
+    public bool IsMuted
+    {
+        get => mediaPlayer?.Mute ?? _isMuted;
+        set
+        {
+            _isMuted = value;
+            if (mediaPlayer != null)
+                mediaPlayer.Mute = value;
+        }
     }
 
     public event EventHandler? Playing;
@@ -332,6 +356,8 @@ public class MediaPlayerController : IMediaPlayerController
         mediaPlayer.Playing += _playingHandler;
         mediaPlayer.Paused += _pausedHandler;
         mediaPlayer.Stopped += _stoppedHandler;
+        mediaPlayer.Volume = _volume;
+        mediaPlayer.Mute = _isMuted;
 
         frameProvider ??= CreateFrameProvider();
         frameProvider.AttachToPlayer(mediaPlayer);

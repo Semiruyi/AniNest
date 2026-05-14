@@ -7,6 +7,8 @@ public interface IPlayerPlaybackFacade
     bool IsPlaying { get; }
     long MediaLength { get; }
     float Rate { get; set; }
+    int Volume { get; set; }
+    bool IsMuted { get; set; }
 
     Task InitializeAsync();
     void TogglePlayPause();

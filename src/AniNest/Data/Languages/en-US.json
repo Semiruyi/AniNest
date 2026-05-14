@@ -18,6 +18,8 @@
   "Player.PlayPause": "Play / Pause",
   "Player.Previous": "Previous",
   "Player.Next": "Next",
+  "Player.Mute": "Mute",
+  "Player.Unmute": "Unmute",
   "Player.Input.ExitFullscreenOrBack": "Exit Fullscreen / Back",
   "Player.Input.SeekForwardSmall": "Seek Forward 5s",
   "Player.Input.SeekBackwardSmall": "Seek Backward 5s",
