@@ -1,5 +1,4 @@
 using System.Windows.Input;
-using System.Diagnostics;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -24,11 +23,10 @@ namespace AniNest.Features.Shell;
 public partial class ShellViewModel : ObservableObject
 {
     private static readonly Logger Log = AppLog.For<ShellViewModel>();
-    private const double FrameBudgetMs160Hz = 1000.0 / 160.0;
     private readonly ILocalizationService _loc;
     private readonly ILibraryAppService _libraryService;
     private readonly ITaskbarAutoHideCoordinator _taskbarAutoHide;
-    private readonly IPlayerAppService _playerAppService;
+    private readonly IShellNavigationAppService _shellNavigationAppService;
     private readonly IShellPreferencesService _preferencesService;
     private readonly IShellSettingsAppService _shellSettingsAppService;
     private readonly IShellThumbnailPerformanceAppService _thumbnailPerformanceAppService;
@@ -167,7 +165,7 @@ public partial class ShellViewModel : ObservableObject
         ILocalizationService loc,
         ILibraryAppService libraryService,
         ITaskbarAutoHideCoordinator taskbarAutoHide,
-        IPlayerAppService playerAppService,
+        IShellNavigationAppService shellNavigationAppService,
         IShellPreferencesService preferencesService,
         IShellSettingsAppService shellSettingsAppService,
         IShellThumbnailPerformanceAppService thumbnailPerformanceAppService,
@@ -183,7 +181,7 @@ public partial class ShellViewModel : ObservableObject
         _loc = loc;
         _libraryService = libraryService;
         _taskbarAutoHide = taskbarAutoHide;
-        _playerAppService = playerAppService;
+        _shellNavigationAppService = shellNavigationAppService;
         _preferencesService = preferencesService;
         _shellSettingsAppService = shellSettingsAppService;
         _thumbnailPerformanceAppService = thumbnailPerformanceAppService;
@@ -212,25 +210,11 @@ public partial class ShellViewModel : ObservableObject
 
     public void OnPageTransitionCompleted()
     {
-        var sw = Stopwatch.StartNew();
         Log.Info($"OnPageTransitionCompleted. CurrentPage={CurrentPage?.GetType().Name ?? "null"}");
         _isPageTransitionPending = false;
         _pendingTransitionTarget = null;
-
-        if (CurrentPage is PlayerViewModel)
-        {
-            _playerAppService.OnPlayerPageTransitionCompleted();
-        }
-        else if (CurrentPage is MainPageViewModel)
-        {
-            _playerAppService.CompleteLeavePlayerTransition();
-        }
-
-        sw.Stop();
-        var overBudget = sw.Elapsed.TotalMilliseconds > FrameBudgetMs160Hz;
-        Log.Info(
-            $"OnPageTransitionCompleted finished in {sw.Elapsed.TotalMilliseconds:F3}ms " +
-            $"(budget {FrameBudgetMs160Hz:F2}ms @160Hz, overBudget={overBudget})");
+        _shellNavigationAppService.CompletePlayerPageTransition(CurrentPage is PlayerViewModel);
+        Log.Info("OnPageTransitionCompleted finished");
     }
 
     public void SetPlayerFullscreen(bool value)
@@ -238,7 +222,7 @@ public partial class ShellViewModel : ObservableObject
 
     private void OnMainPageFolderSelected(string path, string name)
     {
-        if (_isPageTransitionPending || !ReferenceEquals(CurrentPage, _mainPage))
+        if (!_shellNavigationAppService.CanEnterPlayerPage(_isPageTransitionPending, ReferenceEquals(CurrentPage, _mainPage)))
         {
             Log.Warning(
                 $"Ignore folder selection during pending transition: name={name}, path={path}, " +
@@ -250,7 +234,7 @@ public partial class ShellViewModel : ObservableObject
         _isPageTransitionPending = true;
         _pendingTransitionTarget = nameof(PlayerViewModel);
         CurrentPage = _playerPage;
-        _ = EnterPlayerPageAsync(path, name);
+        _ = _shellNavigationAppService.BeginEnterPlayerPageAsync(CurrentAnimationCode, path, name);
     }
 
     private void OnPlayerToggleFullscreenRequested()
@@ -268,7 +252,7 @@ public partial class ShellViewModel : ObservableObject
 
     private void OnPlayerGoBackRequested()
     {
-        if (_isPageTransitionPending || !ReferenceEquals(CurrentPage, _playerPage))
+        if (!_shellNavigationAppService.CanLeavePlayerPage(_isPageTransitionPending, ReferenceEquals(CurrentPage, _playerPage)))
         {
             Log.Warning(
                 $"Ignore player go-back during pending transition: currentPage={CurrentPage?.GetType().Name ?? "null"}, " +
@@ -279,7 +263,7 @@ public partial class ShellViewModel : ObservableObject
         Log.Info("Player go-back requested");
         _isPageTransitionPending = true;
         _pendingTransitionTarget = nameof(MainPageViewModel);
-        _ = LeavePlayerPageAsync();
+        _ = _shellNavigationAppService.BeginLeavePlayerPageAsync();
         CurrentPage = _mainPage;
     }
 
@@ -637,32 +621,6 @@ public partial class ShellViewModel : ObservableObject
             return player.InputService.TryHandleKeyDown(player, inputEvent);
 
         return false;
-    }
-
-    private async Task EnterPlayerPageAsync(string path, string name)
-    {
-        try
-        {
-            await _playerAppService.EnterPlayerAsync(CurrentAnimationCode, path, name);
-            Log.Info($"EnterPlayerAsync finished: name={name}, path={path}");
-        }
-        catch (Exception ex)
-        {
-            Log.Error($"EnterPlayerAsync failed: name={name}, path={path}", ex);
-        }
-    }
-
-    private async Task LeavePlayerPageAsync()
-    {
-        try
-        {
-            await _playerAppService.BeginLeavePlayerAsync();
-            Log.Info("BeginLeavePlayerAsync finished");
-        }
-        catch (Exception ex)
-        {
-            Log.Error("BeginLeavePlayerAsync failed", ex);
-        }
     }
 
 }
