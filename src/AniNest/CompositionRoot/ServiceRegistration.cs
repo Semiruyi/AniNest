@@ -33,6 +33,8 @@ public static class ServiceRegistration
 
         services.AddSingleton<MainPageViewModel>();
         services.AddSingleton<PlayerViewModel>();
+        services.AddSingleton<ShellSettingsPanelViewModel>();
+        services.AddSingleton<ShellThumbnailStatusPanelViewModel>();
         services.AddSingleton<ShellViewModel>();
         services.AddSingleton<MainWindow>();
     }

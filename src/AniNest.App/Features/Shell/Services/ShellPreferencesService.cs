@@ -20,9 +20,11 @@ public sealed class ShellPreferencesService : IShellPreferencesService
         _thumbnailDecodeStrategyService = thumbnailDecodeStrategyService;
     }
 
-    public string CurrentLanguageCode => _localization.CurrentLanguage;
-    public string CurrentFullscreenAnimationCode => _settings.Load().FullscreenAnimation;
-    public string CurrentThumbnailPerformanceModeCode => _settings.GetThumbnailPerformanceMode().ToString().ToLowerInvariant();
-    public string CurrentThumbnailAccelerationModeCode => _settings.GetThumbnailAccelerationMode().ToString().ToLowerInvariant();
-    public ThumbnailDecodeStatusSnapshot CurrentThumbnailDecodeStatus => _thumbnailDecodeStrategyService.GetStatusSnapshot();
+    public ShellPreferencesSnapshot GetSnapshot()
+        => new(
+            _localization.CurrentLanguage,
+            _settings.Load().FullscreenAnimation,
+            _settings.GetThumbnailPerformanceMode().ToString().ToLowerInvariant(),
+            _settings.GetThumbnailAccelerationMode().ToString().ToLowerInvariant(),
+            _thumbnailDecodeStrategyService.GetStatusSnapshot());
 }

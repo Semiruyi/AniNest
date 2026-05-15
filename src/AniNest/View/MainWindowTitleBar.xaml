@@ -83,8 +83,8 @@
                                       Height="{StaticResource TitleBarProgressRingSize}">
                                     <Ellipse Stroke="{StaticResource TitleBarProgressTrack}"
                                              StrokeThickness="{StaticResource TitleBarProgressRingStroke}"/>
-                                    <Path Data="{Binding ThumbnailGenerationProgressPercent, Converter={StaticResource ProgressToRingArcConverter}}"
-                                          Stroke="{Binding ThumbnailGenerationStatusColor}"
+                                    <Path Data="{Binding DataContext.ThumbnailStatusPanel.ThumbnailGenerationProgressPercent, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay, Converter={StaticResource ProgressToRingArcConverter}}"
+                                          Stroke="{Binding DataContext.ThumbnailStatusPanel.ThumbnailGenerationStatusColor, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"
                                           StrokeThickness="{StaticResource TitleBarProgressRingStroke}"
                                           StrokeStartLineCap="Round"
                                           StrokeEndLineCap="Round"/>
@@ -123,27 +123,27 @@
                                     <Ellipse Width="{StaticResource BackgroundTaskStatusDotSize}"
                                              Height="{StaticResource BackgroundTaskStatusDotSize}"
                                              VerticalAlignment="Center"
-                                             Fill="{Binding ThumbnailGenerationStatusColor}"/>
+                                             Fill="{Binding DataContext.ThumbnailStatusPanel.ThumbnailGenerationStatusColor, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"/>
                                     <TextBlock Grid.Column="1"
                                                Style="{StaticResource AppTextBodyEmphasis}"
-                                               Text="{Binding ThumbnailGenerationStatusText}"
+                                               Text="{Binding DataContext.ThumbnailStatusPanel.ThumbnailGenerationStatusText, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"
                                                Margin="{StaticResource TitleBarPopupStatusMargin}"
                                                Foreground="{StaticResource TextPrimary}"/>
                                     <TextBlock Grid.Column="2"
                                                Style="{StaticResource AppTextBody}"
-                                               Text="{Binding ThumbnailGenerationSummaryText}"
+                                               Text="{Binding DataContext.ThumbnailStatusPanel.ThumbnailGenerationSummaryText, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"
                                                Margin="{StaticResource TitleBarPopupSummaryMargin}"
                                                HorizontalAlignment="Right"
                                                Foreground="{StaticResource TextSecondary}"/>
                                 </Grid>
-                                <ProgressBar Value="{Binding ThumbnailGenerationProgressPercent}"
+                                <ProgressBar Value="{Binding DataContext.ThumbnailStatusPanel.ThumbnailGenerationProgressPercent, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"
                                              Margin="{StaticResource TitleBarPopupProgressMargin}"
                                              Style="{StaticResource TitleBarBackgroundTaskSummaryProgressBar}"/>
-                                <TextBlock Text="{Binding ThumbnailBackgroundTasksHeaderText}"
+                                <TextBlock Text="{Binding DataContext.ThumbnailStatusPanel.ThumbnailBackgroundTasksHeaderText, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"
                                            Style="{StaticResource AppTextBodyEmphasis}"
                                            Foreground="{StaticResource TextSecondary}"
                                            Margin="{StaticResource TitleBarPopupListHeaderMargin}"/>
-                                <ItemsControl ItemsSource="{Binding ThumbnailBackgroundTasks}">
+                                <ItemsControl ItemsSource="{Binding DataContext.ThumbnailStatusPanel.ThumbnailBackgroundTasks, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <StackPanel Margin="{StaticResource TitleBarPopupListItemMargin}">

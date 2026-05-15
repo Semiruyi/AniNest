@@ -26,6 +26,7 @@ The extraction is already underway. The current checkpoint includes:
   - `IUiDispatcher`
 - application startup/runtime orchestration now goes through `IApplicationRuntime`
 - media playback contracts no longer expose WPF image types
+- playback orchestration now goes through a backend-facing `IPlaybackEngine` contract in `src/AniNest.Ports/`
 - player input contracts now use toolkit-neutral key, mouse, wheel, and modifier models
 - shared contracts were physically moved into `src/AniNest.Ports/`
 - additional backend-facing infrastructure contracts were moved into `src/AniNest.Ports/`, including:
@@ -40,10 +41,20 @@ The extraction is already underway. The current checkpoint includes:
   - settings persistence
   - library and shell app services
   - player session and playback state orchestration
+- shell workflow/state slices were extracted into app-layer services, including:
+  - `IShellNavigationAppService` / `ShellNavigationAppService`
+  - `IShellSettingsStateService` / `ShellSettingsStateService`
+  - `IShellThumbnailStatusService` / `ShellThumbnailStatusService`
 - player input settings logic was moved into `src/AniNest.App/`, including:
   - `PlayerInputSettingsViewModel`
   - `PlayerInputBindingItemViewModel`
   - input defaults and formatting helpers
+- shell settings presentation was split into a child frontend view-model:
+  - `ShellSettingsPanelViewModel`
+  - `ShellViewModel` now delegates language/fullscreen/thumbnail settings UI state to that child instead of owning all of it directly
+- thumbnail status/title-bar background task presentation was split again into a narrower child frontend view-model:
+  - `ShellThumbnailStatusPanelViewModel`
+  - shell settings selection state and thumbnail runtime status no longer live in the same frontend object
 - `IDialogService` now includes confirmation prompts, so shared view-model logic no longer needs direct `MessageBox` calls
 
 This means the codebase now has a clearer separation between:
@@ -91,7 +102,7 @@ The main coupling points in the current codebase are:
 - `src/AniNest/Infrastructure/Media/MediaPlayerController.cs`
   - still uses `DispatcherTimer` and owns the current WPF-centric playback runtime integration
 - `src/AniNest/Features/Shell/ShellViewModel.cs`
-  - is still the large WPF shell orchestrator and directly owns page/view-model switching
+  - is much thinner than before, but still owns page/view-model switching, shell popup state, and some title-bar-facing presentation state
 - `src/AniNest/Features/Player/PlayerViewModel.cs`
   - still lives in the WPF project and directly bridges presentation state with shared playback services
 - `src/AniNest/Infrastructure/Presentation/*`
@@ -466,14 +477,25 @@ The backend extraction phase can be considered complete when all of the followin
 - WPF remains a frontend shell rather than the owner of backend logic
 - a new frontend can be started without first undoing old WPF coupling
 
-## Suggested first implementation slice
+## Recommended next implementation slice
 
-If the work starts immediately, the first slice should be:
+The next slice should continue shrinking the WPF shell without trying to replace it.
 
-1. finish moving remaining shared player input runtime logic into `AniNest.App`
-2. replace shared-service `DispatcherTimer` usage with toolkit-neutral scheduling
-3. design the new playback engine contract
-4. adapt current WPF playback rendering behind a temporary frontend adapter
-5. continue shrinking `ShellViewModel` and `PlayerViewModel` into thinner frontend shells
+Recommended order:
 
-This slice is small enough to land incrementally, but important enough to unlock the rest of the migration.
+1. remove any remaining unnecessary forwarding properties from `ShellViewModel`
+2. keep `ShellViewModel` focused on page switching, top-level popup state, and shell-wide coordination
+3. apply the same frontend-thinning pattern to `PlayerViewModel` by separating presentation state from playback/session orchestration
+4. only after that, revisit lower-level runtime coupling such as timer ownership and platform-specific playback integration
+
+Why this is the right next step:
+
+- the playback contract and shell app services already give the backend a cleaner center of gravity
+- `ShellSettingsPanelViewModel` and `ShellThumbnailStatusPanelViewModel` proved that frontend child view-model extraction can reduce coupling without destabilizing the WPF app
+- `ShellViewModel` is still a visible coupling hotspot, but now it can be reduced incrementally instead of through a rewrite
+
+Exit criteria for this slice:
+
+- title-bar thumbnail/task presentation no longer depends on settings-panel-owned state
+- `ShellViewModel` has fewer direct UI-facing settings/status properties than it did before this slice
+- existing shell behavior and focused tests still pass

@@ -21,7 +21,7 @@
                   DataType="{x:Type shellFeatures:SelectableOptionItem}">
         <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
                 animations:SelectableOptionState.IsSelected="{Binding IsSelected}"
-                Command="{Binding DataContext.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                Command="{Binding DataContext.SettingsPanel.SwitchLanguageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                 CommandParameter="{Binding Code}">
             <TextBlock Text="{Binding DisplayName}" Style="{StaticResource PopupMenuItemText}"/>
         </Button>
@@ -31,7 +31,7 @@
                   DataType="{x:Type shellFeatures:SelectableOptionItem}">
         <Button Style="{StaticResource SelectableOptionOverlayMenuButton}"
                 animations:SelectableOptionState.IsSelected="{Binding IsSelected}"
-                Command="{Binding DataContext.SelectFullscreenAnimationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                Command="{Binding DataContext.SettingsPanel.SelectFullscreenAnimationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                 CommandParameter="{Binding Code}">
             <TextBlock Text="{Binding DisplayName}" Style="{StaticResource PopupMenuItemText}"/>
         </Button>
