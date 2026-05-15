@@ -1,7 +1,5 @@
 using System;
 using System.IO;
-using System.Windows;
-using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using AniNest.Features.Player.Models;
@@ -9,7 +7,6 @@ using AniNest.Features.Player.Input;
 using AniNest.Features.Player.Services;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Localization;
-using AniNest.Infrastructure.Media;
 using AniNest.Infrastructure.Persistence;
 using AniNest.Infrastructure.Presentation;
 using AniNest.Presentation.Primitives;
@@ -22,11 +19,9 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     private readonly PlayerSessionController _session;
     private readonly PlayerPlaybackStateController _playback;
     private readonly IPlayerPlaybackFacade _playbackFacade;
-    private readonly IWpfVideoSurfaceSource _videoSurfaceSource;
     private readonly ILocalizationService _loc;
     private readonly IDialogService _dialogs;
     private readonly System.ComponentModel.PropertyChangedEventHandler _playbackPropertyChangedHandler;
-    private readonly System.ComponentModel.PropertyChangedEventHandler _videoSurfacePropertyChangedHandler;
     private bool _isMediaInitialized;
     private Task? _initializeTask;
 
@@ -37,10 +32,10 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
 
     public event Action? ToggleFullscreenRequested;
     public event Action? GoBackRequested;
+    public event Action? MediaReady;
     public IPlayerInputService InputService { get; }
 
     public bool IsPlaying => _playback.IsPlaying;
-    public ImageSource? VideoSource => _videoSurfaceSource.CurrentFrame;
     public PlaylistItem? CurrentItem => _session.CurrentItem;
     public System.Collections.ObjectModel.ObservableCollection<PlaylistItem> PlaylistItems => _session.PlaylistItems;
     public string? CurrentVideoPath => _playback.CurrentVideoPath;
@@ -62,7 +57,6 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
         PlayerSessionController session,
         PlayerPlaybackStateController playback,
         IPlayerPlaybackFacade playbackFacade,
-        IWpfVideoSurfaceSource videoSurfaceSource,
         ILocalizationService loc,
         ISettingsService settings,
         IUiDispatcher uiDispatcher,
@@ -72,7 +66,6 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
         _session = session;
         _playback = playback;
         _playbackFacade = playbackFacade;
-        _videoSurfaceSource = videoSurfaceSource;
         _loc = loc;
         _dialogs = dialogs;
         InputService = inputService;
@@ -90,11 +83,6 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
                 OnPropertyChanged(nameof(CurrentVideoFileName));
             }
         };
-        _videoSurfacePropertyChangedHandler = (_, args) =>
-        {
-            if (args.PropertyName == nameof(IWpfVideoSurfaceSource.CurrentFrame))
-                OnPropertyChanged(nameof(VideoSource));
-        };
 
         ControlBar = new ControlBarViewModel(playbackFacade, loc, settings, uiDispatcher, playback);
 
@@ -107,7 +95,6 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
 
         _session.CurrentIndexChanged += value => CurrentIndex = value;
         _playback.PropertyChanged += _playbackPropertyChangedHandler;
-        _videoSurfaceSource.PropertyChanged += _videoSurfacePropertyChangedHandler;
     }
 
     partial void OnCurrentIndexChanged(int value)
@@ -228,7 +215,6 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     private void Cleanup()
     {
         _playback.PropertyChanged -= _playbackPropertyChangedHandler;
-        _videoSurfaceSource.PropertyChanged -= _videoSurfacePropertyChangedHandler;
         ControlBar.Cleanup();
         _playback.Cleanup();
         _session.Cleanup();
@@ -256,7 +242,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
         {
             await _playbackFacade.InitializeAsync();
             _isMediaInitialized = true;
-            _videoSurfaceSource.Refresh();
+            MediaReady?.Invoke();
         }
         catch (Exception ex)
         {

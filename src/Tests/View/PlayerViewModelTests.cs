@@ -43,7 +43,6 @@ public class PlayerViewModelTests : IDisposable
 
         var syncService = new Mock<IPlayerPlaybackStateSyncService>();
         var playbackFacade = new Mock<IPlayerPlaybackFacade>();
-        var videoSurfaceSource = new Mock<IWpfVideoSurfaceSource>();
         var inputService = new Mock<IPlayerInputService>();
         var dialogs = new Mock<IDialogService>();
         var localization = CreateLocalizationService();
@@ -66,7 +65,6 @@ public class PlayerViewModelTests : IDisposable
             session,
             playback,
             playbackFacade.Object,
-            videoSurfaceSource.Object,
             localization.Object,
             settings.Object,
             Mock.Of<IUiDispatcher>(),

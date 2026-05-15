@@ -1,7 +1,9 @@
 using System.Windows.Media;
 using System.Collections.Generic;
 using System.ComponentModel;
+using Microsoft.Extensions.DependencyInjection;
 using AniNest.Infrastructure.Diagnostics;
+using AniNest.Infrastructure.Media;
 using AniNest.Presentation.Primitives;
 using AniNest.Features.Player.Models;
 using System.Windows.Input;
@@ -15,11 +17,14 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
     private bool _renderedOnce;
     private readonly HashSet<string> _loggedLayoutProbes = new();
     private readonly DispatcherTimer _videoCursorHideTimer;
+    private readonly IWpfVideoSurfaceSource _videoSurfaceSource;
     private PlayerViewModel? _playerViewModel;
     private PropertyChangedEventHandler? _playerViewModelPropertyChangedHandler;
+    private PropertyChangedEventHandler? _videoSurfacePropertyChangedHandler;
 
     public PlayerPage()
     {
+        _videoSurfaceSource = App.Services.GetRequiredService<IWpfVideoSurfaceSource>();
         InitializeComponent();
         _videoCursorHideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(VideoCursorHideDelayMs) };
         _videoCursorHideTimer.Tick += OnVideoCursorHideTimerTick;
@@ -54,12 +59,14 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
             }
         }, System.Windows.Threading.DispatcherPriority.Loaded);
 
+        HookVideoSurface();
         CompositionTarget.Rendering += OnRendering;
     }
 
     private void OnUnloaded(object sender, System.Windows.RoutedEventArgs e)
     {
         CompositionTarget.Rendering -= OnRendering;
+        UnhookVideoSurface();
         UnhookVideoCursorAutoHide();
         var coordinator = PopupInputCoordinator.Instance;
         coordinator.UnregisterRegion(VideoContainer, PopupHitKind.VideoSurface);
@@ -116,6 +123,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
             UnhookPlayerViewModel();
             _playerViewModel = viewModel;
             _playerViewModel.PropertyChanged += _playerViewModelPropertyChangedHandler;
+            _playerViewModel.MediaReady += OnPlayerMediaReady;
         }
 
         UpdateVideoCursorState();
@@ -136,8 +144,36 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
             return;
 
         _playerViewModel.PropertyChanged -= _playerViewModelPropertyChangedHandler;
+        _playerViewModel.MediaReady -= OnPlayerMediaReady;
         _playerViewModel = null;
     }
+
+    private void HookVideoSurface()
+    {
+        _videoSurfacePropertyChangedHandler ??= OnVideoSurfacePropertyChanged;
+        _videoSurfaceSource.PropertyChanged += _videoSurfacePropertyChangedHandler;
+        RefreshVideoSurface();
+    }
+
+    private void UnhookVideoSurface()
+    {
+        if (_videoSurfacePropertyChangedHandler is null)
+            return;
+
+        _videoSurfaceSource.PropertyChanged -= _videoSurfacePropertyChangedHandler;
+    }
+
+    private void OnVideoSurfacePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(IWpfVideoSurfaceSource.CurrentFrame))
+            RefreshVideoSurface();
+    }
+
+    private void OnPlayerMediaReady()
+        => Dispatcher.BeginInvoke(RefreshVideoSurface, DispatcherPriority.Background);
+
+    private void RefreshVideoSurface()
+        => VideoImage.Source = _videoSurfaceSource.CurrentFrame;
 
     private void OnPlayerViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

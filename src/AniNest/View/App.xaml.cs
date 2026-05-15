@@ -16,6 +16,8 @@ public partial class App : Application
 {
     private static readonly Logger Log = AppLog.For<App>();
     private int _exitHandled;
+    internal static IServiceProvider Services { get; private set; } = null!;
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -24,6 +26,7 @@ public partial class App : Application
         var services = new ServiceCollection();
         ServiceRegistration.AddAniNestServices(services);
         var provider = services.BuildServiceProvider();
+        Services = provider;
         Log.Info("Service provider built");
 
         provider.GetRequiredService<IApplicationRuntime>().Start();

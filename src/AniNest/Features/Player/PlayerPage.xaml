@@ -188,7 +188,7 @@
         </Grid.RowDefinitions>
 
         <Grid x:Name="VideoContainer" Grid.Row="0" Grid.Column="0" Background="{StaticResource PlayerVideoSurfaceBackground}">
-            <Image x:Name="VideoImage" Stretch="Uniform" Source="{Binding VideoSource}"/>
+            <Image x:Name="VideoImage" Stretch="Uniform"/>
             <Image x:Name="PauseBigIcon"
                    Source="/Resources/Icons/pause-big.png"
                    Style="{StaticResource PlayerPauseBigIconImage}"
