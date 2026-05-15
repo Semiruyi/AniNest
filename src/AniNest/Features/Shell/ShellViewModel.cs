@@ -29,6 +29,7 @@ public partial class ShellViewModel : ObservableObject
     private readonly IShellNavigationAppService _shellNavigationAppService;
     private readonly IShellPreferencesService _preferencesService;
     private readonly IShellSettingsAppService _shellSettingsAppService;
+    private readonly IShellThumbnailStatusService _shellThumbnailStatusService;
     private readonly IShellThumbnailPerformanceAppService _thumbnailPerformanceAppService;
     private readonly IThumbnailGenerator _thumbnailGenerator;
     private readonly IDialogService _dialogs;
@@ -168,6 +169,7 @@ public partial class ShellViewModel : ObservableObject
         IShellNavigationAppService shellNavigationAppService,
         IShellPreferencesService preferencesService,
         IShellSettingsAppService shellSettingsAppService,
+        IShellThumbnailStatusService shellThumbnailStatusService,
         IShellThumbnailPerformanceAppService thumbnailPerformanceAppService,
         IThumbnailGenerator thumbnailGenerator,
         IDialogService dialogs,
@@ -184,6 +186,7 @@ public partial class ShellViewModel : ObservableObject
         _shellNavigationAppService = shellNavigationAppService;
         _preferencesService = preferencesService;
         _shellSettingsAppService = shellSettingsAppService;
+        _shellThumbnailStatusService = shellThumbnailStatusService;
         _thumbnailPerformanceAppService = thumbnailPerformanceAppService;
         _thumbnailGenerator = thumbnailGenerator;
         _dialogs = dialogs;
@@ -350,11 +353,11 @@ public partial class ShellViewModel : ObservableObject
 
     private void RefreshThumbnailSettingsStatus()
     {
-        var status = _preferencesService.CurrentThumbnailDecodeStatus;
-        ThumbnailDetectedHardwareSummary = BuildHardwareSummary(status);
-        ThumbnailCurrentDecoderSummary = BuildCurrentDecoderSummary(status);
-        ThumbnailFallbackChainSummary = string.Join(" -> ", status.StrategyChain.Select(FormatStrategyName));
-        RefreshThumbnailGenerationStatus();
+        var snapshot = _shellThumbnailStatusService.GetStatusSnapshot();
+        ThumbnailDetectedHardwareSummary = BuildHardwareSummary(snapshot.DecodeStatus);
+        ThumbnailCurrentDecoderSummary = BuildCurrentDecoderSummary(snapshot.DecodeStatus);
+        ThumbnailFallbackChainSummary = string.Join(" -> ", snapshot.DecodeStatus.StrategyChain.Select(FormatStrategyName));
+        RefreshThumbnailGenerationStatus(snapshot);
     }
 
     private void InitializeSelectableOptions()
@@ -383,19 +386,11 @@ public partial class ShellViewModel : ObservableObject
             option.IsSelected = string.Equals(option.Code, CurrentAnimationCode, StringComparison.OrdinalIgnoreCase);
     }
 
-    private void RefreshThumbnailGenerationStatus()
+    private void RefreshThumbnailGenerationStatus(ShellThumbnailStatusSnapshot statusSnapshot)
     {
-        var snapshot = _thumbnailGenerator.GetStatusSnapshot();
+        var snapshot = statusSnapshot.GenerationStatus;
 
-        ThumbnailGenerationStatusCode = snapshot.IsPaused
-            ? "paused"
-            : snapshot.ActiveWorkers > 0
-                ? "generating"
-                : snapshot.PendingCount > 0
-                    ? "waiting"
-                : snapshot.ReadyCount >= snapshot.TotalCount && snapshot.TotalCount > 0
-                    ? "complete"
-                    : "idle";
+        ThumbnailGenerationStatusCode = statusSnapshot.GenerationStatusCode;
 
         ThumbnailGenerationStatusText = _loc[$"Settings.ThumbnailGeneration.Status.{CapitalizeCode(ThumbnailGenerationStatusCode)}"];
         ThumbnailGenerationStatusColor = ThumbnailGenerationStatusCode switch

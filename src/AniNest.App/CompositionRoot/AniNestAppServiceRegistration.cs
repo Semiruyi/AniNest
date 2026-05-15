@@ -37,6 +37,7 @@ public static class AniNestAppServiceRegistration
         services.AddSingleton<IShellPreferencesService, ShellPreferencesService>();
         services.AddSingleton<IShellNavigationAppService, ShellNavigationAppService>();
         services.AddSingleton<IShellSettingsAppService, ShellSettingsAppService>();
+        services.AddSingleton<IShellThumbnailStatusService, ShellThumbnailStatusService>();
         services.AddSingleton<IShellThumbnailPerformanceAppService, ShellThumbnailPerformanceAppService>();
         services.AddSingleton<IPlayerInputService, PlayerInputService>();
         services.AddSingleton<IPlayerAppService, PlayerAppService>();
