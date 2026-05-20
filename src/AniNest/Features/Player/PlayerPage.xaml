@@ -116,7 +116,7 @@
                 <Setter Property="Opacity" Value="1"/>
                 <Setter Property="IsHitTestVisible" Value="True"/>
                 <Style.Triggers>
-                    <DataTrigger Binding="{Binding IsFullscreen}" Value="True">
+                    <DataTrigger Binding="{Binding DisplayState.IsFullscreen}" Value="True">
                         <Setter Property="Grid.Row" Value="0"/>
                         <Setter Property="VerticalAlignment" Value="Bottom"/>
                         <Setter Property="Panel.ZIndex" Value="1"/>
@@ -192,7 +192,7 @@
             <Image x:Name="PauseBigIcon"
                    Source="/Resources/Icons/pause-big.png"
                    Style="{StaticResource PlayerPauseBigIconImage}"
-                   anim:PopupAnimator.BindVisible="{Binding IsPlaying, Converter={StaticResource InverseBool}}">
+                   anim:PopupAnimator.BindVisible="{Binding DisplayState.IsPlaying, Converter={StaticResource InverseBool}}">
                 <Image.RenderTransform>
                     <ScaleTransform x:Name="PauseBigIconScale" ScaleX="0" ScaleY="0"/>
                 </Image.RenderTransform>
@@ -221,7 +221,7 @@
                 <ListBox Grid.Row="1"
                          Style="{StaticResource PlaylistEpisodeListBox}"
                          ItemsSource="{Binding Items}"
-                         SelectedIndex="{Binding CurrentIndex, Mode=OneWay}">
+                         SelectedIndex="{Binding DataContext.DisplayState.CurrentIndex, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=OneWay}">
                     <ListBox.ItemsPanel>
                         <StaticResource ResourceKey="PlaylistEpisodeItemsPanelTemplate"/>
                     </ListBox.ItemsPanel>

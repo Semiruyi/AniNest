@@ -2,8 +2,8 @@ using System;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using AniNest.Features.Player.Models;
 using AniNest.Features.Player.Input;
+using AniNest.Features.Player.Models;
 using AniNest.Features.Player.Services;
 using AniNest.Infrastructure.Logging;
 using AniNest.Infrastructure.Localization;
@@ -21,7 +21,6 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     private readonly IPlayerPlaybackFacade _playbackFacade;
     private readonly ILocalizationService _loc;
     private readonly IDialogService _dialogs;
-    private readonly System.ComponentModel.PropertyChangedEventHandler _playbackPropertyChangedHandler;
     private bool _isMediaInitialized;
     private Task? _initializeTask;
 
@@ -29,27 +28,12 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
 
     public ControlBarViewModel ControlBar { get; }
     public PlaylistViewModel Playlist => _session.Playlist;
+    public PlayerDisplayStateViewModel DisplayState { get; }
 
     public event Action? ToggleFullscreenRequested;
     public event Action? GoBackRequested;
     public event Action? MediaReady;
     public IPlayerInputService InputService { get; }
-
-    public bool IsPlaying => _playback.IsPlaying;
-    public PlaylistItem? CurrentItem => _session.CurrentItem;
-    public System.Collections.ObjectModel.ObservableCollection<PlaylistItem> PlaylistItems => _session.PlaylistItems;
-    public string? CurrentVideoPath => _playback.CurrentVideoPath;
-    public string CurrentVideoFileName => string.IsNullOrWhiteSpace(CurrentVideoPath)
-        ? string.Empty
-        : Path.GetFileName(CurrentVideoPath);
-
-    [ObservableProperty]
-    private bool _isFullscreen;
-
-    [ObservableProperty]
-    private int _currentIndex = -1;
-
-    private bool _savedPlaylistVisible;
 
     public string FormatTime(long ms) => _playbackFacade.FormatTime(ms);
 
@@ -69,36 +53,17 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
         _loc = loc;
         _dialogs = dialogs;
         InputService = inputService;
-        _playbackPropertyChangedHandler = (_, args) =>
-        {
-            if (args.PropertyName is null)
-                return;
-
-            if (args.PropertyName == nameof(PlayerPlaybackStateController.IsPlaying))
-                OnPropertyChanged(nameof(IsPlaying));
-
-            if (args.PropertyName == nameof(PlayerPlaybackStateController.CurrentVideoPath))
-            {
-                OnPropertyChanged(nameof(CurrentVideoPath));
-                OnPropertyChanged(nameof(CurrentVideoFileName));
-            }
-        };
 
         ControlBar = new ControlBarViewModel(playbackFacade, loc, settings, uiDispatcher, playback);
+        DisplayState = new PlayerDisplayStateViewModel(session, playback, ControlBar, Playlist);
 
         ControlBar.NextRequested += () => _ = _session.PlayNext();
         ControlBar.PreviousRequested += () => _ = _session.PlayPrevious();
         ControlBar.GoBackRequested += GoBackInternal;
-        ControlBar.TogglePlaylistRequested += () => Playlist.IsVisible = !Playlist.IsVisible;
+        ControlBar.TogglePlaylistRequested += DisplayState.TogglePlaylistVisibility;
         ControlBar.ToggleFullscreenRequested += () => ToggleFullscreenRequested?.Invoke();
         Playlist.PlaybackFailed += OnPlaybackFailed;
-
-        _session.CurrentIndexChanged += value => CurrentIndex = value;
-        _playback.PropertyChanged += _playbackPropertyChangedHandler;
     }
-
-    partial void OnCurrentIndexChanged(int value)
-        => OnPropertyChanged(nameof(CurrentItem));
 
     public void SetRate(float rate)
     {
@@ -107,20 +72,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     }
 
     public void SetFullscreen(bool value)
-    {
-        IsFullscreen = value;
-        ControlBar.IsFullscreen = value;
-
-        if (value)
-        {
-            _savedPlaylistVisible = Playlist.IsVisible;
-            Playlist.IsVisible = false;
-        }
-        else
-        {
-            Playlist.IsVisible = _savedPlaylistVisible;
-        }
-    }
+        => DisplayState.SetFullscreen(value);
 
     public void OnAppearing()
     {
@@ -159,7 +111,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
                 GoBack();
                 return true;
             case PlayerInputAction.TogglePlaylist:
-                Playlist.IsVisible = !Playlist.IsVisible;
+                DisplayState.TogglePlaylistVisibility();
                 return true;
             case PlayerInputAction.SeekForwardSmall:
                 _playbackFacade.SeekForward(5_000);
@@ -190,7 +142,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     [RelayCommand]
     private void GoBack()
     {
-        if (IsFullscreen)
+        if (DisplayState.IsFullscreen)
             ToggleFullscreenRequested?.Invoke();
         else
             GoBackInternal();
@@ -214,7 +166,7 @@ public partial class PlayerViewModel : ObservableObject, ITransitioningContentLi
     [RelayCommand]
     private void Cleanup()
     {
-        _playback.PropertyChanged -= _playbackPropertyChangedHandler;
+        DisplayState.Cleanup();
         ControlBar.Cleanup();
         _playback.Cleanup();
         _session.Cleanup();

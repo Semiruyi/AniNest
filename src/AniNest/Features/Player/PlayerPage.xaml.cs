@@ -20,6 +20,8 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
     private readonly IWpfVideoSurfaceSource _videoSurfaceSource;
     private PlayerViewModel? _playerViewModel;
     private PropertyChangedEventHandler? _playerViewModelPropertyChangedHandler;
+    private PlayerDisplayStateViewModel? _displayStateViewModel;
+    private PropertyChangedEventHandler? _displayStatePropertyChangedHandler;
     private PropertyChangedEventHandler? _videoSurfacePropertyChangedHandler;
 
     public PlayerPage()
@@ -118,12 +120,15 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
         VideoContainer.MouseLeave += OnVideoContainerMouseLeave;
 
         _playerViewModelPropertyChangedHandler ??= OnPlayerViewModelPropertyChanged;
+        _displayStatePropertyChangedHandler ??= OnDisplayStatePropertyChanged;
         if (DataContext is PlayerViewModel viewModel && !ReferenceEquals(_playerViewModel, viewModel))
         {
             UnhookPlayerViewModel();
             _playerViewModel = viewModel;
             _playerViewModel.PropertyChanged += _playerViewModelPropertyChangedHandler;
             _playerViewModel.MediaReady += OnPlayerMediaReady;
+            _displayStateViewModel = viewModel.DisplayState;
+            _displayStateViewModel.PropertyChanged += _displayStatePropertyChangedHandler;
         }
 
         UpdateVideoCursorState();
@@ -145,6 +150,10 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
 
         _playerViewModel.PropertyChanged -= _playerViewModelPropertyChangedHandler;
         _playerViewModel.MediaReady -= OnPlayerMediaReady;
+        if (_displayStateViewModel is not null && _displayStatePropertyChangedHandler is not null)
+            _displayStateViewModel.PropertyChanged -= _displayStatePropertyChangedHandler;
+
+        _displayStateViewModel = null;
         _playerViewModel = null;
     }
 
@@ -177,7 +186,13 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
 
     private void OnPlayerViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(PlayerViewModel.IsPlaying))
+        if (e.PropertyName == nameof(PlayerViewModel.DisplayState))
+            Dispatcher.BeginInvoke(UpdateVideoCursorState, DispatcherPriority.Background);
+    }
+
+    private void OnDisplayStatePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(PlayerDisplayStateViewModel.IsPlaying))
             Dispatcher.BeginInvoke(UpdateVideoCursorState, DispatcherPriority.Background);
     }
 
@@ -225,7 +240,7 @@ public partial class PlayerPage : System.Windows.Controls.UserControl
     }
 
     private bool ShouldAutoHideVideoCursor()
-        => _playerViewModel?.IsPlaying == true;
+        => _displayStateViewModel?.IsPlaying == true;
 
     private void HideVideoCursor()
     {

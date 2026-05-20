@@ -55,6 +55,9 @@ The extraction is already underway. The current checkpoint includes:
 - thumbnail status/title-bar background task presentation was split again into a narrower child frontend view-model:
   - `ShellThumbnailStatusPanelViewModel`
   - shell settings selection state and thumbnail runtime status no longer live in the same frontend object
+- player page presentation state extraction has started:
+  - `PlayerDisplayStateViewModel`
+  - fullscreen state, current media title/path display, current playlist index, and playlist visibility are no longer owned only by `PlayerViewModel`
 - `IDialogService` now includes confirmation prompts, so shared view-model logic no longer needs direct `MessageBox` calls
 
 This means the codebase now has a clearer separation between:
@@ -483,19 +486,19 @@ The next slice should continue shrinking the WPF shell without trying to replace
 
 Recommended order:
 
-1. remove any remaining unnecessary forwarding properties from `ShellViewModel`
-2. keep `ShellViewModel` focused on page switching, top-level popup state, and shell-wide coordination
-3. apply the same frontend-thinning pattern to `PlayerViewModel` by separating presentation state from playback/session orchestration
+1. continue shrinking `PlayerViewModel` so it focuses on page-level coordination rather than owning all player display state directly
+2. decide whether control-bar visibility / cursor auto-hide state should live in player page code-behind or another narrow frontend state object
+3. keep `ShellViewModel` and `PlayerViewModel` focused on coordination, while child frontend view-models own localized display state and transient UI state
 4. only after that, revisit lower-level runtime coupling such as timer ownership and platform-specific playback integration
 
 Why this is the right next step:
 
 - the playback contract and shell app services already give the backend a cleaner center of gravity
-- `ShellSettingsPanelViewModel` and `ShellThumbnailStatusPanelViewModel` proved that frontend child view-model extraction can reduce coupling without destabilizing the WPF app
-- `ShellViewModel` is still a visible coupling hotspot, but now it can be reduced incrementally instead of through a rewrite
+- `ShellSettingsPanelViewModel`, `ShellThumbnailStatusPanelViewModel`, and `PlayerDisplayStateViewModel` proved that frontend child view-model extraction can reduce coupling without destabilizing the WPF app
+- `ShellViewModel` has already become much thinner, and `PlayerViewModel` is now ready for the same incremental treatment
 
 Exit criteria for this slice:
 
-- title-bar thumbnail/task presentation no longer depends on settings-panel-owned state
-- `ShellViewModel` has fewer direct UI-facing settings/status properties than it did before this slice
+- player-facing display state is less concentrated in `PlayerViewModel` than before
+- shell/title-bar presentation remains separated from shell settings selection state
 - existing shell behavior and focused tests still pass

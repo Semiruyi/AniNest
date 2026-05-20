@@ -45,6 +45,14 @@ public partial class MainWindow : Window
     private readonly FpsMonitor _fps;
     private readonly Dictionary<SettingsOverlayId, SettingsOverlayRegistration> _settingsOverlays = [];
     private readonly Dictionary<AnimatedOverlay, SelectableOptionGroup> _selectableOverlayHighlights = [];
+    private bool _isFilePopupOpen;
+    private bool _isSettingsPopupOpen;
+    private bool _isLanguageSubmenuOpen;
+    private bool _isFullscreenAnimationSubmenuOpen;
+    private bool _isThumbnailSettingsSubmenuOpen;
+    private bool _isThumbnailPerformanceSubmenuOpen;
+    private bool _isThumbnailAccelerationSubmenuOpen;
+    private bool _isPlayerInputSubmenuOpen;
     private bool _isTrueFullscreen;
     private WindowStyle _savedWindowStyle;
     private WindowState _savedWindowState;
@@ -107,7 +115,7 @@ public partial class MainWindow : Window
             Id = SettingsOverlayId.Language,
             Overlay = LanguageOverlay,
             Anchor = () => LanguageMenuButton,
-            SyncState = static (shell, opened) => shell.IsLanguageSubmenuOpen = opened,
+            SyncState = (_, opened) => _isLanguageSubmenuOpen = opened,
             LogName = nameof(LanguageMenuButton_Click),
             HighlightGroup = LanguageOptionGroup
         });
@@ -117,7 +125,7 @@ public partial class MainWindow : Window
             Id = SettingsOverlayId.FullscreenAnimation,
             Overlay = FullscreenAnimationOverlay,
             Anchor = () => FullscreenAnimationMenuButton,
-            SyncState = static (shell, opened) => shell.IsFullscreenAnimationSubmenuOpen = opened,
+            SyncState = (_, opened) => _isFullscreenAnimationSubmenuOpen = opened,
             LogName = nameof(FullscreenAnimationMenuButton_Click),
             HighlightGroup = FullscreenAnimationOptionGroup
         });
@@ -127,7 +135,7 @@ public partial class MainWindow : Window
             Id = SettingsOverlayId.ThumbnailSettings,
             Overlay = ThumbnailSettingsOverlay,
             Anchor = () => ThumbnailSettingsMenuButton,
-            SyncState = static (shell, opened) => shell.IsThumbnailSettingsSubmenuOpen = opened,
+            SyncState = (_, opened) => _isThumbnailSettingsSubmenuOpen = opened,
             LogName = nameof(ThumbnailSettingsMenuButton_Click)
         });
 
@@ -136,7 +144,7 @@ public partial class MainWindow : Window
             Id = SettingsOverlayId.ThumbnailPerformance,
             Overlay = ThumbnailPerformanceOverlay,
             Anchor = () => ThumbnailPerformanceMenuButton,
-            SyncState = static (shell, opened) => shell.IsThumbnailPerformanceSubmenuOpen = opened,
+            SyncState = (_, opened) => _isThumbnailPerformanceSubmenuOpen = opened,
             LogName = nameof(ThumbnailPerformanceMenuButton_Click),
             ParentId = SettingsOverlayId.ThumbnailSettings,
             HighlightGroup = ThumbnailPerformanceOptionGroup
@@ -147,7 +155,7 @@ public partial class MainWindow : Window
             Id = SettingsOverlayId.ThumbnailAcceleration,
             Overlay = ThumbnailAccelerationOverlay,
             Anchor = () => ThumbnailAccelerationMenuButton,
-            SyncState = static (shell, opened) => shell.IsThumbnailAccelerationSubmenuOpen = opened,
+            SyncState = (_, opened) => _isThumbnailAccelerationSubmenuOpen = opened,
             LogName = nameof(ThumbnailAccelerationMenuButton_Click),
             ParentId = SettingsOverlayId.ThumbnailSettings,
             HighlightGroup = ThumbnailAccelerationOptionGroup
@@ -158,7 +166,7 @@ public partial class MainWindow : Window
             Id = SettingsOverlayId.PlayerInput,
             Overlay = PlayerInputOverlay,
             Anchor = () => PlayerInputMenuButton,
-            SyncState = static (shell, opened) => shell.IsPlayerInputSubmenuOpen = opened,
+            SyncState = (_, opened) => _isPlayerInputSubmenuOpen = opened,
             LogName = nameof(PlayerInputMenuButton_Click),
             OnOpened = shell => shell.PlayerInputSettings.RefreshFromService(),
             OnToggleClosed = shell => shell.PlayerInputSettings.CancelCapture(),
@@ -228,7 +236,7 @@ public partial class MainWindow : Window
     private void EnterFullscreen()
     {
         var vm = (ShellViewModel)DataContext;
-        if (vm.CurrentAnimationCode == "none")
+        if (vm.SettingsPanel.CurrentAnimationCode == "none")
         {
             _savedCornerRadius = RootBorder.CornerRadius;
             _savedWindowStyle = WindowStyle;
@@ -512,11 +520,11 @@ public partial class MainWindow : Window
             return;
         }
 
-        CloseOverlay(SettingsOverlay, shell => shell.IsSettingsPopupOpen = false);
+        CloseOverlay(SettingsOverlay, _ => CloseSettingsPopupState());
         ToggleAnchoredOverlay(
             FileOverlay,
             FileButton,
-            static (shell, opened) => shell.IsFilePopupOpen = opened,
+            (_, opened) => _isFilePopupOpen = opened,
             nameof(FileButton_Click),
             deferReposition: true);
     }
@@ -531,25 +539,25 @@ public partial class MainWindow : Window
 
     private void OnFileOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
     {
-        Shell.IsFilePopupOpen = false;
+        _isFilePopupOpen = false;
         MainWindowLog.Debug($"OnFileOverlayClosed: reason={e.Reason}");
     }
 
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
     {
         MainWindowLog.Debug("SettingsButton_Click");
-        CloseOverlay(FileOverlay, shell => shell.IsFilePopupOpen = false);
+        CloseOverlay(FileOverlay, _ => _isFilePopupOpen = false);
         ToggleAnchoredOverlay(
             SettingsOverlay,
             SettingsButton,
-            static (shell, opened) => shell.IsSettingsPopupOpen = opened,
+            (_, opened) => _isSettingsPopupOpen = opened,
             nameof(SettingsButton_Click),
             deferReposition: true);
     }
 
     private void OnSettingsOverlayClosed(object? sender, AnimatedOverlay.OverlayClosedEventArgs e)
     {
-        Shell.IsSettingsPopupOpen = false;
+        CloseSettingsPopupState();
         CloseSettingsChildOverlays(OverlayCloseReason.ParentClosed);
         MainWindowLog.Debug($"OnSettingsOverlayClosed: reason={e.Reason}");
     }
@@ -613,6 +621,18 @@ public partial class MainWindow : Window
 
         MainWindowLog.Warning($"Missing settings overlay registration: id={id}");
         return false;
+    }
+
+    private void CloseSettingsPopupState()
+    {
+        _isSettingsPopupOpen = false;
+        _isLanguageSubmenuOpen = false;
+        _isFullscreenAnimationSubmenuOpen = false;
+        _isThumbnailSettingsSubmenuOpen = false;
+        _isThumbnailPerformanceSubmenuOpen = false;
+        _isThumbnailAccelerationSubmenuOpen = false;
+        _isPlayerInputSubmenuOpen = false;
+        Shell.PlayerInputSettings.CancelCapture();
     }
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)

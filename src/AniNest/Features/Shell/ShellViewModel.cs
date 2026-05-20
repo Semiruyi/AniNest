@@ -28,6 +28,7 @@ public partial class ShellViewModel : ObservableObject
     private readonly IFolderPickerService _folderPicker;
     private readonly MainPageViewModel _mainPage;
     private readonly PlayerViewModel _playerPage;
+    private readonly PropertyChangedEventHandler _playerDisplayStatePropertyChangedHandler;
     private bool _isPageTransitionPending;
     private string? _pendingTransitionTarget;
 
@@ -40,8 +41,8 @@ public partial class ShellViewModel : ObservableObject
 
     public bool IsOnMainPage => CurrentPage is MainPageViewModel;
     public bool IsOnPlayerPage => CurrentPage is PlayerViewModel;
-    public string CurrentPlayerTitleBarText => _playerPage.CurrentVideoFileName;
-    public string? CurrentPlayerTitleBarToolTip => _playerPage.CurrentVideoPath;
+    public string CurrentPlayerTitleBarText => _playerPage.DisplayState.CurrentVideoFileName;
+    public string? CurrentPlayerTitleBarToolTip => _playerPage.DisplayState.CurrentVideoPath;
     public string TitleBarPrimaryActionText => IsOnPlayerPage
         ? _loc["KeyBinding.Back"]
         : _loc["App.File"];
@@ -82,13 +83,14 @@ public partial class ShellViewModel : ObservableObject
         _folderPicker = folderPicker;
         _mainPage = mainPage;
         _playerPage = playerPage;
+        _playerDisplayStatePropertyChangedHandler = OnPlayerDisplayStatePropertyChanged;
         PlayerInputSettings = playerInputSettings;
         SettingsPanel = settingsPanel;
         ThumbnailStatusPanel = thumbnailStatusPanel;
         _mainPage.FolderSelected += OnMainPageFolderSelected;
         _playerPage.ToggleFullscreenRequested += OnPlayerToggleFullscreenRequested;
         _playerPage.GoBackRequested += OnPlayerGoBackRequested;
-        _playerPage.PropertyChanged += OnPlayerPagePropertyChanged;
+        _playerPage.DisplayState.PropertyChanged += _playerDisplayStatePropertyChangedHandler;
         SettingsPanel.LocalizedDisplayTextChanged += OnSettingsPanelLocalizedDisplayTextChanged;
         applicationLifecycle.ExitRequested += (_, _) => _taskbarAutoHide.RestoreIfNeeded();
 
@@ -128,10 +130,10 @@ public partial class ShellViewModel : ObservableObject
     private void OnPlayerToggleFullscreenRequested()
         => ToggleFullscreenRequested?.Invoke();
 
-    private void OnPlayerPagePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private void OnPlayerDisplayStatePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(PlayerViewModel.CurrentVideoPath) ||
-            e.PropertyName == nameof(PlayerViewModel.CurrentVideoFileName))
+        if (e.PropertyName == nameof(PlayerDisplayStateViewModel.CurrentVideoPath) ||
+            e.PropertyName == nameof(PlayerDisplayStateViewModel.CurrentVideoFileName))
         {
             OnPropertyChanged(nameof(CurrentPlayerTitleBarText));
             OnPropertyChanged(nameof(CurrentPlayerTitleBarToolTip));
