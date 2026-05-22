@@ -30,19 +30,7 @@ class _AniNestAppState extends State<AniNestApp> {
     return MaterialApp(
       title: 'AniNest',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2A86FF),
-          brightness: Brightness.dark,
-        ),
-        scaffoldBackgroundColor: const Color(0xFF0D1117),
-        cardTheme: const CardThemeData(
-          color: Color(0xFF161B22),
-          margin: EdgeInsets.zero,
-        ),
-        useMaterial3: true,
-      ),
+      theme: ThemeData(),
       home: AppShell(controller: _controller),
     );
   }
