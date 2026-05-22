@@ -1,5 +1,5 @@
 import 'package:aninest_flutter/src/features/settings/application/settings_controller.dart';
-import 'package:flutter/material.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key, required this.controller});

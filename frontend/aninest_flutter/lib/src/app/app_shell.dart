@@ -4,7 +4,7 @@ import 'package:aninest_flutter/src/core/platform/app_platform.dart';
 import 'package:aninest_flutter/src/core/widgets/desktop_title_bar.dart';
 import 'package:aninest_flutter/src/core/window/window_frame_controller.dart';
 import 'package:aninest_flutter/src/core/window/window_service.dart';
-import 'package:flutter/material.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.controller});
@@ -35,11 +35,18 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      body: Column(
+      backgroundColor: colorScheme.background,
+      child: Column(
         children: <Widget>[
           if (AppPlatform.isDesktop)
             DesktopTitleBar(controller: _windowFrameController),
+          Container(
+            height: 1,
+            color: colorScheme.border,
+          ),
           Expanded(
             child: AppWorkspace(controller: widget.controller),
           ),

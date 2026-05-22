@@ -1,5 +1,5 @@
 import 'package:aninest_flutter/src/features/metadata/application/metadata_controller.dart';
-import 'package:flutter/material.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class MetadataPage extends StatelessWidget {
   const MetadataPage({super.key, required this.controller});

@@ -4,7 +4,7 @@ import 'package:aninest_flutter/src/features/library/presentation/library_page.d
 import 'package:aninest_flutter/src/features/metadata/presentation/metadata_page.dart';
 import 'package:aninest_flutter/src/features/player/presentation/player_page.dart';
 import 'package:aninest_flutter/src/features/settings/presentation/settings_page.dart';
-import 'package:flutter/material.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class AppWorkspace extends StatelessWidget {
   const AppWorkspace({super.key, required this.controller});

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class WorkspaceFrame extends StatelessWidget {
   const WorkspaceFrame({
@@ -22,6 +22,8 @@ class WorkspaceFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       children: <Widget>[
         Expanded(
@@ -30,15 +32,40 @@ class WorkspaceFrame extends StatelessWidget {
               if (sidebar != null)
                 SizedBox(
                   width: sidebarWidth,
-                  child: sidebar,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colorScheme.card,
+                      border: Border(
+                        right: BorderSide(
+                          color: colorScheme.border,
+                        ),
+                      ),
+                    ),
+                    child: sidebar,
+                  ),
                 ),
               Expanded(
-                child: content,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colorScheme.background,
+                  ),
+                  child: content,
+                ),
               ),
               if (inspector != null)
                 SizedBox(
                   width: inspectorWidth,
-                  child: inspector,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colorScheme.card,
+                      border: Border(
+                        left: BorderSide(
+                          color: colorScheme.border,
+                        ),
+                      ),
+                    ),
+                    child: inspector,
+                  ),
                 ),
             ],
           ),
@@ -46,7 +73,17 @@ class WorkspaceFrame extends StatelessWidget {
         if (bottomPane != null)
           SizedBox(
             height: bottomPaneHeight,
-            child: bottomPane,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: colorScheme.card,
+                border: Border(
+                  top: BorderSide(
+                    color: colorScheme.border,
+                  ),
+                ),
+              ),
+              child: bottomPane,
+            ),
           ),
       ],
     );

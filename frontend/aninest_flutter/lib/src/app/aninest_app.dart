@@ -1,15 +1,16 @@
 import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/app/app_shell.dart';
-import 'package:flutter/material.dart';
+import 'package:aninest_flutter/src/app/app_theme.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart' as s;
 
-class AniNestApp extends StatefulWidget {
+class AniNestApp extends s.StatefulWidget {
   const AniNestApp({super.key});
 
   @override
-  State<AniNestApp> createState() => _AniNestAppState();
+  s.State<AniNestApp> createState() => _AniNestAppState();
 }
 
-class _AniNestAppState extends State<AniNestApp> {
+class _AniNestAppState extends s.State<AniNestApp> {
   late final AppController _controller;
 
   @override
@@ -26,11 +27,11 @@ class _AniNestAppState extends State<AniNestApp> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  s.Widget build(s.BuildContext context) {
+    return s.ShadcnApp(
       title: 'AniNest',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(),
+      theme: AppTheme.shadcnDark,
       home: AppShell(controller: _controller),
     );
   }
