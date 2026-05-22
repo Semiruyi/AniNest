@@ -70,6 +70,53 @@ public sealed class HostScaffoldTests
     }
 
     [Fact]
+    public async Task AddLibraryFolder_RejectsFolderWithoutVideos()
+    {
+        var testRoot = Path.Combine(Path.GetTempPath(), "AniNest.Backend.Tests", $"{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testRoot);
+        var emptyFolder = Path.Combine(testRoot, "Empty Folder");
+        Directory.CreateDirectory(emptyFolder);
+
+        using var client = CreateClient(testRoot);
+
+        var response = await client.PostAsJsonAsync("/api/library/folders", new AddLibraryFolderRequest(emptyFolder));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal("request.invalid", payload.Code);
+    }
+
+    [Fact]
+    public async Task BatchAddLibraryFolders_ImportsOnlyFoldersWithVideos()
+    {
+        var testRoot = Path.Combine(Path.GetTempPath(), "AniNest.Backend.Tests", $"{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testRoot);
+        var importRoot = Path.Combine(testRoot, "Import");
+        Directory.CreateDirectory(importRoot);
+        var validA = Path.Combine(importRoot, "Season A");
+        var validB = Path.Combine(importRoot, "Season B");
+        var invalid = Path.Combine(importRoot, "Readme");
+        Directory.CreateDirectory(validA);
+        Directory.CreateDirectory(validB);
+        Directory.CreateDirectory(invalid);
+        File.WriteAllText(Path.Combine(validA, "Episode 01.mkv"), string.Empty);
+        File.WriteAllText(Path.Combine(validB, "Episode 01.mp4"), string.Empty);
+        File.WriteAllText(Path.Combine(invalid, "note.txt"), string.Empty);
+
+        using var client = CreateClient(testRoot);
+
+        var response = await client.PostAsJsonAsync("/api/library/folders:batch-add", new BatchAddLibraryFoldersRequest(importRoot));
+        response.EnsureSuccessStatusCode();
+
+        var payload = await client.GetFromJsonAsync<LibraryFolderListResponse>("/api/library/folders");
+        Assert.NotNull(payload);
+        Assert.Contains(payload.Items, item => item.FolderId == "season-a");
+        Assert.Contains(payload.Items, item => item.FolderId == "season-b");
+        Assert.DoesNotContain(payload.Items, item => item.FolderId == "readme");
+    }
+
+    [Fact]
     public async Task OpenSessionFolder_ReturnsPlaybackTarget()
     {
         using var client = CreateClient();
@@ -158,12 +205,12 @@ public sealed class HostScaffoldTests
         Assert.Equal("request.conflict", payload.Code);
     }
 
-    private HttpClient CreateClient()
+    private HttpClient CreateClient(string? explicitTestRoot = null)
         => new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.ConfigureAppConfiguration((_, configBuilder) =>
             {
-                var testRoot = Path.Combine(
+                var testRoot = explicitTestRoot ?? Path.Combine(
                     Path.GetTempPath(),
                     "AniNest.Backend.Tests",
                     $"{Guid.NewGuid():N}");

@@ -14,6 +14,7 @@ internal static class HostServiceRegistration
     public static IServiceCollection AddAniNestHostServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<ILibraryModule, LibraryModule>();
+        services.AddSingleton<ILibraryFileScanner, FileSystemLibraryFileScanner>();
         services.AddSingleton<ILibraryCatalogStore>(_ => new FileLibraryCatalogStore(
             ResolvePath(configuration, "AniNest:LibraryCatalogPath", "library-catalog.json"),
             LibraryCatalogDefaults.CreateFolders(),

@@ -9,25 +9,19 @@ internal sealed class LibraryModule : ILibraryModule
 {
     private readonly LibraryCatalogService _catalog;
 
-    public LibraryModule(ILibraryCatalogStore store)
+    public LibraryModule(ILibraryCatalogStore store, ILibraryFileScanner scanner)
     {
-        _catalog = new LibraryCatalogService(store);
+        _catalog = new LibraryCatalogService(store, scanner);
     }
 
     public Task<IReadOnlyList<LibraryFolderDto>> GetFoldersAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult(_catalog.GetFolders());
+        => _catalog.GetFoldersAsync(cancellationToken);
 
     public Task AddFolderAsync(AddLibraryFolderRequest request, CancellationToken cancellationToken = default)
-    {
-        _catalog.AddFolder(request);
-        return Task.CompletedTask;
-    }
+        => _catalog.AddFolderAsync(request, cancellationToken);
 
     public Task AddFolderBatchAsync(BatchAddLibraryFoldersRequest request, CancellationToken cancellationToken = default)
-    {
-        _catalog.AddFolderBatch(request);
-        return Task.CompletedTask;
-    }
+        => _catalog.AddFolderBatchAsync(request, cancellationToken);
 
     public Task DeleteFolderAsync(string folderId, CancellationToken cancellationToken = default)
     {

@@ -1,8 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <BaseOutputPath>$(MSBuildThisFileDirectory)..\..\artifacts\AniNest.Launcher\bin\</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)..\..\artifacts\AniNest.Launcher\obj\</BaseIntermediateOutputPath>
-    <MSBuildProjectExtensionsPath>$(MSBuildThisFileDirectory)..\..\artifacts\AniNest.Launcher\obj\</MSBuildProjectExtensionsPath>
-    <ProjectAssetsFile>$(MSBuildThisFileDirectory)..\..\artifacts\AniNest.Launcher\obj\project.assets.json</ProjectAssetsFile>
-  </PropertyGroup>
-</Project>
