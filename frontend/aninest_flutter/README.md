@@ -15,3 +15,15 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+## Windows media_kit fix
+
+If Windows builds start failing again after switching commits or refreshing the
+pub cache, rerun:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\fix-media-kit-windows-cache.ps1 -SeedCache -Proxy http://127.0.0.1:7890
+```
+
+`-Proxy` is optional. The script reapplies the local `media_kit` Windows CMake
+patch and preloads the stable native cache under `%LOCALAPPDATA%\media_kit_libs_windows_video`.
