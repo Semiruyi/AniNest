@@ -19,6 +19,8 @@
 
 # 编译输出
 [Dd]ebug/
+!src/AniNest.Host/wwwroot/debug/
+!src/AniNest.Host/wwwroot/debug/**
 [Rr]elease/
 x64/
 x86/
@@ -64,4 +66,30 @@ lib/semi/
 
 # Semi player (WIP, not tracked yet)
 src/AniNest.Semi/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins-dependencies
+.pub/
+.pub-cache/
+.metadata
+coverage/
+*.iml
+**/doc/api/
+**/ios/Flutter/.last_build_id
+
+# Flutter platform build outputs
+frontend/**/build/
+frontend/**/android/app/debug/
+frontend/**/android/app/profile/
+frontend/**/android/app/release/
+!frontend/**/android/gradlew
+!frontend/**/android/gradlew.bat
+!frontend/**/android/gradle/wrapper/gradle-wrapper.jar
+!frontend/**/android/app/src/main/**
+!frontend/**/ios/Runner/**
+!frontend/**/linux/**
+!frontend/**/macos/**
+!frontend/**/windows/**
+!frontend/**/web/**
 

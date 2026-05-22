@@ -1,0 +1,1371 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AniNest API Debug</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111318;
+      --panel: #1a1f29;
+      --panel-2: #222938;
+      --panel-3: #0f141d;
+      --border: #30384b;
+      --text: #e8ecf3;
+      --muted: #9ba7bc;
+      --accent: #58a6ff;
+      --accent-2: #4fd1c5;
+      --danger: #ff7b72;
+      --success: #7ee787;
+      --warn: #e3b341;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 1540px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .status {
+      min-width: 280px;
+      padding: 12px 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(420px, 0.85fr);
+      gap: 20px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+
+    .panel p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field-wide {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font: inherit;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    button {
+      border: 1px solid var(--border);
+      background: #253149;
+      color: var(--text);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button.primary {
+      background: #21446d;
+      border-color: #31598b;
+    }
+
+    button.secondary {
+      background: #213b3a;
+      border-color: #2d5a57;
+    }
+
+    button.danger {
+      background: #4c2326;
+      border-color: #7b343a;
+    }
+
+    button.ghost {
+      background: transparent;
+    }
+
+    button:hover {
+      filter: brightness(1.06);
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .snapshot {
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel-3);
+      min-height: 110px;
+    }
+
+    .snapshot h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+    }
+
+    .snapshot dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 6px 10px;
+      font-size: 12px;
+    }
+
+    .snapshot dt {
+      color: var(--muted);
+    }
+
+    .snapshot dd {
+      margin: 0;
+      word-break: break-word;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+      max-height: 340px;
+      overflow: auto;
+    }
+
+    .list-item {
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel-3);
+      display: grid;
+      gap: 8px;
+    }
+
+    .list-item-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .list-item-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #20304a;
+      color: #b8d7ff;
+      font-size: 11px;
+    }
+
+    .pill.ok {
+      background: #1d3a28;
+      color: #9bf2bf;
+    }
+
+    .pill.warn {
+      background: #4a3918;
+      color: #ffd98f;
+    }
+
+    .pill.danger {
+      background: #4a2326;
+      color: #ffb3ad;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .path {
+      color: var(--muted);
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    .inline-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .inline-actions button {
+      padding: 7px 10px;
+      font-size: 12px;
+    }
+
+    .response-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    pre {
+      margin: 0;
+      padding: 16px;
+      min-height: 300px;
+      max-height: 52vh;
+      overflow: auto;
+      background: var(--panel-3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .event-log {
+      display: grid;
+      gap: 10px;
+      max-height: 42vh;
+      overflow: auto;
+    }
+
+    .event-item {
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel-3);
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    .event-item-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .event-type {
+      font-weight: 600;
+      color: var(--accent-2);
+    }
+
+    .event-time {
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .hint {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .empty {
+      padding: 16px;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.01);
+    }
+
+    @media (max-width: 1100px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .grid,
+      .grid-3,
+      .mini-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <div>
+        <h1 class="title">AniNest API Debug</h1>
+        <p class="subtitle">Backend-first smoke lab for settings, library, session, metadata, thumbnails, and SSE events.</p>
+      </div>
+      <div class="status" id="statusBox">Ready. Current target: <strong>same-origin</strong></div>
+    </div>
+
+    <div class="layout">
+      <div class="stack">
+        <section class="panel">
+          <h2>Settings</h2>
+          <p>Read and update player settings to verify persistence and event emission.</p>
+          <div class="grid">
+            <div class="field">
+              <label for="preferredRate">Preferred Rate</label>
+              <input id="preferredRate" type="number" step="0.05" value="1.25">
+            </div>
+            <div class="field">
+              <label for="preferredVolume">Preferred Volume</label>
+              <input id="preferredVolume" type="number" step="1" value="80">
+            </div>
+            <div class="field">
+              <label for="resumePlayback">Resume Playback</label>
+              <input id="resumePlayback" type="text" value="true">
+            </div>
+          </div>
+          <div class="actions">
+            <button class="primary" data-action="getSettings">GET /api/settings</button>
+            <button class="secondary" data-action="getPlayerSettings">GET /api/settings/player</button>
+            <button class="primary" data-action="savePlayerSettings">PUT /api/settings/player</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Library</h2>
+          <p>Import folders, inspect the catalog, and pick a folder to drive the rest of the panels.</p>
+          <div class="grid">
+            <div class="field field-wide">
+              <label for="libraryPath">Folder Path</label>
+              <input id="libraryPath" type="text" placeholder="D:\\Anime\\SomeFolder">
+            </div>
+            <div class="field field-wide">
+              <label for="libraryRootPath">Batch Root Path</label>
+              <input id="libraryRootPath" type="text" placeholder="D:\\Anime">
+            </div>
+            <div class="field">
+              <label for="libraryFolderId">Folder Id</label>
+              <input id="libraryFolderId" type="text" placeholder="sample-folder">
+            </div>
+            <div class="field">
+              <label for="libraryWatchStatus">Watch Status</label>
+              <input id="libraryWatchStatus" type="text" value="Watching">
+            </div>
+            <div class="field">
+              <label for="libraryFavorite">Favorite</label>
+              <input id="libraryFavorite" type="text" value="true">
+            </div>
+          </div>
+          <div class="actions">
+            <button class="primary" data-action="getLibraryFolders">GET /api/library/folders</button>
+            <button class="primary" data-action="addLibraryFolder">POST /api/library/folders</button>
+            <button class="primary" data-action="addLibraryFolderBatch">POST /api/library/folders:batch-add</button>
+            <button data-action="moveLibraryFolderToFront">POST /api/library/folders/{id}:move-to-front</button>
+            <button data-action="setLibraryFavorite">POST /api/library/folders/{id}:favorite</button>
+            <button data-action="setLibraryWatchStatus">POST /api/library/folders/{id}:watch-status</button>
+            <button class="danger" data-action="deleteLibraryFolder">DELETE /api/library/folders/{id}</button>
+          </div>
+          <div class="actions">
+            <button class="ghost" data-action="refreshAll">Refresh All Panels</button>
+          </div>
+          <div class="list" id="libraryList">
+            <div class="empty">No library folders loaded yet.</div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Session And Playlist</h2>
+          <p>Open a folder as the active session, select items, and report progress.</p>
+          <div class="grid">
+            <div class="field">
+              <label for="sessionFolderId">Open Folder Id</label>
+              <input id="sessionFolderId" type="text" placeholder="sample-folder">
+            </div>
+            <div class="field">
+              <label for="sessionCurrentItemId">Current Item Id</label>
+              <input id="sessionCurrentItemId" type="text" placeholder="ep-01">
+            </div>
+            <div class="field">
+              <label for="progressPositionMs">Position Ms</label>
+              <input id="progressPositionMs" type="number" value="120000">
+            </div>
+            <div class="field">
+              <label for="progressDurationMs">Duration Ms</label>
+              <input id="progressDurationMs" type="number" value="1440000">
+            </div>
+            <div class="field">
+              <label for="progressRate">Rate</label>
+              <input id="progressRate" type="number" step="0.05" value="1.0">
+            </div>
+            <div class="field">
+              <label for="progressVolume">Volume</label>
+              <input id="progressVolume" type="number" value="80">
+            </div>
+            <div class="field">
+              <label for="progressPaused">Paused</label>
+              <input id="progressPaused" type="text" value="false">
+            </div>
+          </div>
+          <div class="actions">
+            <button class="primary" data-action="openSessionFolder">POST /api/session/open-folder</button>
+            <button class="secondary" data-action="getSession">GET /api/session</button>
+            <button class="secondary" data-action="getCurrentPlaylist">GET /api/playlist/current</button>
+            <button data-action="selectPlaylistItem">POST /api/playlist/current/items/{id}:select</button>
+            <button data-action="reportSessionProgress">POST /api/session/progress</button>
+            <button data-action="moveSessionNext">POST /api/session/next</button>
+            <button data-action="moveSessionPrevious">POST /api/session/previous</button>
+            <button class="danger" data-action="closeSession">POST /api/session/close</button>
+          </div>
+          <div class="mini-grid">
+            <div class="snapshot">
+              <h3>Session Snapshot</h3>
+              <dl id="sessionSnapshot">
+                <dt>Status</dt><dd>Not loaded</dd>
+              </dl>
+            </div>
+            <div class="snapshot">
+              <h3>Playlist Snapshot</h3>
+              <dl id="playlistSnapshot">
+                <dt>Status</dt><dd>Not loaded</dd>
+              </dl>
+            </div>
+          </div>
+          <div class="list" id="playlistList">
+            <div class="empty">Open a folder to load playlist items.</div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Metadata</h2>
+          <p>Inspect folder metadata, queue work, then process queued items into simulated ready records.</p>
+          <div class="grid">
+            <div class="field">
+              <label for="metadataFolderId">Folder Id</label>
+              <input id="metadataFolderId" type="text" placeholder="sample-folder">
+            </div>
+            <div class="field">
+              <label for="metadataProcessMaxItems">Process Max Items</label>
+              <input id="metadataProcessMaxItems" type="number" value="1">
+            </div>
+          </div>
+          <div class="actions">
+            <button class="secondary" data-action="getMetadataSummary">GET /api/metadata/status-summary</button>
+            <button class="secondary" data-action="getMetadataFolder">GET /api/metadata/folders/{id}</button>
+            <button data-action="refreshMetadataFolder">POST /api/metadata/folders/{id}:refresh</button>
+            <button data-action="retryMetadataFolder">POST /api/metadata/folders/{id}:retry</button>
+            <button data-action="enqueueMissingMetadata">POST /api/metadata:enqueue-missing</button>
+            <button data-action="retryFailedMetadata">POST /api/metadata:retry-failed</button>
+            <button class="primary" data-action="processMetadataQueue">POST /api/metadata:process-queue</button>
+          </div>
+          <div class="mini-grid">
+            <div class="snapshot">
+              <h3>Metadata Summary</h3>
+              <dl id="metadataSummarySnapshot">
+                <dt>Status</dt><dd>Not loaded</dd>
+              </dl>
+            </div>
+            <div class="snapshot">
+              <h3>Metadata Folder</h3>
+              <dl id="metadataFolderSnapshot">
+                <dt>Status</dt><dd>Not loaded</dd>
+              </dl>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Thumbnails</h2>
+          <p>Prioritize, regenerate, or process thumbnails for the selected folder. Partial generation stays visible.</p>
+          <div class="grid-3">
+            <div class="field">
+              <label for="thumbnailFolderId">Folder Id</label>
+              <input id="thumbnailFolderId" type="text" placeholder="sample-folder">
+            </div>
+            <div class="field">
+              <label for="thumbnailVideoId">Video Id</label>
+              <input id="thumbnailVideoId" type="text" placeholder="ep-01">
+            </div>
+            <div class="field">
+              <label for="thumbnailProcessMaxItems">Process Max Items</label>
+              <input id="thumbnailProcessMaxItems" type="number" value="3">
+            </div>
+          </div>
+          <div class="actions">
+            <button class="secondary" data-action="getThumbnailFolder">GET /api/thumbnails/folders/{id}</button>
+            <button class="secondary" data-action="getThumbnailSummary">GET /api/thumbnails/folders/{id}/summary</button>
+            <button class="secondary" data-action="getThumbnailVideo">GET /api/thumbnails/videos/{id}</button>
+            <button data-action="prioritizeThumbnailFolder">POST /api/thumbnails/folders/{id}:prioritize</button>
+            <button data-action="regenerateThumbnailFolder">POST /api/thumbnails/folders/{id}:regenerate</button>
+            <button class="primary" data-action="processThumbnailFolder">POST /api/thumbnails/folders/{id}:process</button>
+            <button class="danger" data-action="clearThumbnailFolder">DELETE /api/thumbnails/folders/{id}/cache</button>
+          </div>
+          <div class="mini-grid">
+            <div class="snapshot">
+              <h3>Thumbnail Summary</h3>
+              <dl id="thumbnailSummarySnapshot">
+                <dt>Status</dt><dd>Not loaded</dd>
+              </dl>
+            </div>
+            <div class="snapshot">
+              <h3>Selected Video</h3>
+              <dl id="thumbnailVideoSnapshot">
+                <dt>Status</dt><dd>Not loaded</dd>
+              </dl>
+            </div>
+          </div>
+          <div class="list" id="thumbnailList">
+            <div class="empty">Load a folder to inspect thumbnail states.</div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="stack">
+        <section class="panel">
+          <div class="response-meta">
+            <strong>Response</strong>
+            <span id="responseSummary">No request sent yet</span>
+          </div>
+          <pre id="responseView">Click a button to inspect the backend payload.</pre>
+          <div class="hint">Suggested flow: Settings -> Library -> Session -> Metadata -> Thumbnails.</div>
+        </section>
+
+        <section class="panel">
+          <div class="response-meta">
+            <strong>Event Stream</strong>
+            <span id="eventStatus">Disconnected</span>
+          </div>
+          <div class="actions">
+            <button class="secondary" data-action="connectEvents">Connect SSE</button>
+            <button class="ghost" data-action="disconnectEvents">Disconnect SSE</button>
+            <button class="ghost" data-action="clearEvents">Clear Log</button>
+          </div>
+          <div class="event-log" id="eventLog">
+            <div class="empty">No events yet.</div>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const responseView = document.getElementById("responseView");
+    const responseSummary = document.getElementById("responseSummary");
+    const statusBox = document.getElementById("statusBox");
+    const eventStatus = document.getElementById("eventStatus");
+    const libraryList = document.getElementById("libraryList");
+    const playlistList = document.getElementById("playlistList");
+    const thumbnailList = document.getElementById("thumbnailList");
+    const eventLog = document.getElementById("eventLog");
+    const sessionSnapshot = document.getElementById("sessionSnapshot");
+    const playlistSnapshot = document.getElementById("playlistSnapshot");
+    const metadataSummarySnapshot = document.getElementById("metadataSummarySnapshot");
+    const metadataFolderSnapshot = document.getElementById("metadataFolderSnapshot");
+    const thumbnailSummarySnapshot = document.getElementById("thumbnailSummarySnapshot");
+    const thumbnailVideoSnapshot = document.getElementById("thumbnailVideoSnapshot");
+
+    const state = {
+      libraryItems: [],
+      session: null,
+      playlist: null,
+      metadataSummary: null,
+      metadataFolder: null,
+      thumbnailSummary: null,
+      thumbnailVideo: null,
+      thumbnailItems: [],
+      events: [],
+      eventSource: null
+    };
+
+    const refreshLocks = new Map();
+
+    function value(id) {
+      return document.getElementById(id).value.trim();
+    }
+
+    function setValue(id, nextValue) {
+      document.getElementById(id).value = nextValue ?? "";
+    }
+
+    function boolValue(id) {
+      return value(id).toLowerCase() === "true";
+    }
+
+    function numberValue(id, fallback) {
+      const parsed = Number(value(id));
+      return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    function pretty(data) {
+      return typeof data === "string" ? data : JSON.stringify(data, null, 2);
+    }
+
+    function renderPairs(target, pairs) {
+      target.innerHTML = pairs.map(([key, val]) =>
+        `<dt>${key}</dt><dd>${val ?? ""}</dd>`).join("");
+    }
+
+    function setStatus(text) {
+      statusBox.innerHTML = text;
+    }
+
+    function badgeClass(text) {
+      const normalized = String(text || "").toLowerCase();
+      if (normalized.includes("ready") || normalized.includes("connected")) return "ok";
+      if (normalized.includes("fail") || normalized.includes("review") || normalized.includes("error")) return "danger";
+      if (normalized.includes("queue") || normalized.includes("pending") || normalized.includes("generating") || normalized.includes("scraping")) return "warn";
+      return "";
+    }
+
+    function badge(text) {
+      return `<span class="pill ${badgeClass(text)}">${text}</span>`;
+    }
+
+    async function request(method, path, body) {
+      const startedAt = performance.now();
+      setStatus(`Requesting <strong>${method}</strong> ${path}`);
+
+      const options = {
+        method,
+        headers: {}
+      };
+
+      if (body !== undefined) {
+        options.headers["Content-Type"] = "application/json";
+        options.body = JSON.stringify(body);
+      }
+
+      const response = await fetch(path, options);
+      const elapsed = Math.round(performance.now() - startedAt);
+      const contentType = response.headers.get("content-type") || "";
+      const payload = contentType.includes("application/json")
+        ? await response.json()
+        : await response.text();
+
+      responseSummary.textContent = `${response.status} ${response.statusText} in ${elapsed} ms`;
+      responseView.textContent = pretty(payload);
+      setStatus(response.ok
+        ? `Last request succeeded: <strong>${method}</strong> ${path}`
+        : `Last request failed: <strong>${method}</strong> ${path}`);
+
+      if (!response.ok) {
+        const message = typeof payload === "string" ? payload : JSON.stringify(payload);
+        throw new Error(message);
+      }
+
+      return payload;
+    }
+
+    function chooseFolder(folderId) {
+      setValue("libraryFolderId", folderId);
+      setValue("sessionFolderId", folderId);
+      setValue("metadataFolderId", folderId);
+      setValue("thumbnailFolderId", folderId);
+    }
+
+    function chooseItem(itemId) {
+      setValue("sessionCurrentItemId", itemId);
+      setValue("thumbnailVideoId", itemId);
+    }
+
+    function renderLibrary() {
+      if (!state.libraryItems.length) {
+        libraryList.innerHTML = '<div class="empty">No library folders loaded yet.</div>';
+        return;
+      }
+
+      libraryList.innerHTML = state.libraryItems.map(item => `
+        <div class="list-item">
+          <div class="list-item-head">
+            <div>
+              <div class="list-item-title">${item.name}</div>
+              <div class="path">${item.path}</div>
+            </div>
+            <span class="pill">${item.folderId}</span>
+          </div>
+          <div class="meta">
+            <span>videos: ${item.videoCount}</span>
+            <span>status: ${item.watchStatus}</span>
+            <span>favorite: ${item.isFavorite}</span>
+          </div>
+          <div class="inline-actions">
+            <button class="ghost" onclick="window.debugActions.pickFolder('${item.folderId}')">Use This Folder</button>
+            <button class="secondary" onclick="window.debugActions.openFolder('${item.folderId}')">Open Session</button>
+            <button class="secondary" onclick="window.debugActions.loadMetadata('${item.folderId}')">Load Metadata</button>
+            <button class="secondary" onclick="window.debugActions.loadThumbnails('${item.folderId}')">Load Thumbnails</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderSession() {
+      if (!state.session) {
+        renderPairs(sessionSnapshot, [["Status", "Not loaded"]]);
+        return;
+      }
+
+      renderPairs(sessionSnapshot, [
+        ["Folder", state.session.folderId],
+        ["Current Item", state.session.currentItemId],
+        ["Current Index", state.session.currentIndex],
+        ["Saved Progress", state.session.savedProgressMs],
+        ["Rate", state.session.preferredRate],
+        ["Volume", state.session.preferredVolume]
+      ]);
+
+      chooseFolder(state.session.folderId);
+      if (state.session.currentItemId) {
+        chooseItem(state.session.currentItemId);
+      }
+    }
+
+    function renderPlaylist() {
+      if (!state.playlist) {
+        renderPairs(playlistSnapshot, [["Status", "Not loaded"]]);
+        playlistList.innerHTML = '<div class="empty">Open a folder to load playlist items.</div>';
+        return;
+      }
+
+      renderPairs(playlistSnapshot, [
+        ["Folder", state.playlist.folderId],
+        ["Current Item", state.playlist.currentItemId],
+        ["Item Count", state.playlist.items.length]
+      ]);
+
+      playlistList.innerHTML = state.playlist.items.map((item, index) => `
+        <div class="list-item">
+          <div class="list-item-head">
+            <div>
+              <div class="list-item-title">${item.title}</div>
+              <div class="path">${item.path}</div>
+            </div>
+            <span class="pill">${item.itemId}</span>
+          </div>
+          <div class="meta">
+            <span>index: ${index}</span>
+            <span>durationMs: ${item.durationMs}</span>
+            <span>${item.itemId === state.playlist.currentItemId ? "current" : "idle"}</span>
+          </div>
+          <div class="inline-actions">
+            <button class="ghost" onclick="window.debugActions.pickItem('${item.itemId}')">Use This Item</button>
+            <button class="secondary" onclick="window.debugActions.selectItem('${item.itemId}')">Select</button>
+            <button class="secondary" onclick="window.debugActions.loadVideoThumbnail('${item.itemId}')">Load Thumbnail</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderMetadataSummary() {
+      if (!state.metadataSummary) {
+        renderPairs(metadataSummarySnapshot, [["Status", "Not loaded"]]);
+        return;
+      }
+
+      renderPairs(metadataSummarySnapshot, [
+        ["Needs Metadata", state.metadataSummary.needsMetadata],
+        ["Queued", state.metadataSummary.queued],
+        ["Scraping", state.metadataSummary.scraping],
+        ["Ready", state.metadataSummary.ready],
+        ["Needs Review", state.metadataSummary.needsReview],
+        ["Network Error", state.metadataSummary.networkError],
+        ["No Match", state.metadataSummary.noMatch],
+        ["Provider Error", state.metadataSummary.providerError]
+      ]);
+    }
+
+    function renderMetadataFolder() {
+      if (!state.metadataFolder) {
+        renderPairs(metadataFolderSnapshot, [["Status", "Not loaded"]]);
+        return;
+      }
+
+      renderPairs(metadataFolderSnapshot, [
+        ["Folder", state.metadataFolder.folderId],
+        ["Title", state.metadataFolder.title],
+        ["State", badge(state.metadataFolder.state)],
+        ["Failure", state.metadataFolder.failureKind],
+        ["Source", state.metadataFolder.source],
+        ["Season", state.metadataFolder.season],
+        ["Episodes", state.metadataFolder.episodeCount]
+      ]);
+    }
+
+    function renderThumbnailSummary() {
+      if (!state.thumbnailSummary) {
+        renderPairs(thumbnailSummarySnapshot, [["Status", "Not loaded"]]);
+        return;
+      }
+
+      renderPairs(thumbnailSummarySnapshot, [
+        ["Folder", state.thumbnailSummary.folderId],
+        ["Total", state.thumbnailSummary.total],
+        ["Pending", state.thumbnailSummary.pending],
+        ["Generating", state.thumbnailSummary.generating],
+        ["Ready", state.thumbnailSummary.ready],
+        ["Failed", state.thumbnailSummary.failed],
+        ["Completion", `${state.thumbnailSummary.completionPercent}%`]
+      ]);
+    }
+
+    function renderThumbnailVideo() {
+      if (!state.thumbnailVideo) {
+        renderPairs(thumbnailVideoSnapshot, [["Status", "Not loaded"]]);
+        return;
+      }
+
+      renderPairs(thumbnailVideoSnapshot, [
+        ["Video", state.thumbnailVideo.targetId],
+        ["State", badge(state.thumbnailVideo.state)],
+        ["Progress", state.thumbnailVideo.progressPercent],
+        ["Image", state.thumbnailVideo.imagePath],
+        ["Updated", state.thumbnailVideo.updatedAtUtc]
+      ]);
+    }
+
+    function renderThumbnailList() {
+      if (!state.thumbnailItems.length) {
+        thumbnailList.innerHTML = '<div class="empty">Load a folder to inspect thumbnail states.</div>';
+        return;
+      }
+
+      thumbnailList.innerHTML = state.thumbnailItems.map(item => `
+        <div class="list-item">
+          <div class="list-item-head">
+            <div>
+              <div class="list-item-title">${item.targetId}</div>
+              <div class="path">${item.imagePath || "No image yet"}</div>
+            </div>
+            ${badge(item.state)}
+          </div>
+          <div class="meta">
+            <span>progress: ${item.progressPercent}</span>
+            <span>updated: ${item.updatedAtUtc || "n/a"}</span>
+          </div>
+          <div class="inline-actions">
+            <button class="ghost" onclick="window.debugActions.loadVideoThumbnail('${item.targetId}')">Inspect</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderEvents() {
+      if (!state.events.length) {
+        eventLog.innerHTML = '<div class="empty">No events yet.</div>';
+        return;
+      }
+
+      eventLog.innerHTML = state.events.map(item => `
+        <div class="event-item">
+          <div class="event-item-head">
+            <span class="event-type">${item.type}</span>
+            <span class="event-time">${item.timestampUtc || item.receivedAt}</span>
+          </div>
+          <pre>${pretty(item.payload)}</pre>
+        </div>
+      `).join("");
+    }
+
+    function addEvent(type, payload) {
+      const entry = {
+        type,
+        payload,
+        timestampUtc: payload && payload.timestampUtc ? payload.timestampUtc : null,
+        receivedAt: new Date().toISOString()
+      };
+
+      state.events.unshift(entry);
+      state.events = state.events.slice(0, 60);
+      renderEvents();
+    }
+
+    function scheduleRefresh(key, work) {
+      if (refreshLocks.has(key)) {
+        return refreshLocks.get(key);
+      }
+
+      const task = Promise.resolve()
+        .then(work)
+        .catch(() => {})
+        .finally(() => refreshLocks.delete(key));
+
+      refreshLocks.set(key, task);
+      return task;
+    }
+
+    async function refreshLibrary() {
+      const payload = await request("GET", "/api/library/folders");
+      state.libraryItems = payload.items || [];
+      renderLibrary();
+      return payload;
+    }
+
+    async function refreshSession() {
+      try {
+        state.session = await request("GET", "/api/session");
+      } catch (error) {
+        state.session = null;
+      }
+      renderSession();
+    }
+
+    async function refreshPlaylist() {
+      try {
+        state.playlist = await request("GET", "/api/playlist/current");
+      } catch (error) {
+        state.playlist = null;
+      }
+      renderPlaylist();
+    }
+
+    async function refreshMetadataSummary() {
+      state.metadataSummary = await request("GET", "/api/metadata/status-summary");
+      renderMetadataSummary();
+    }
+
+    async function refreshMetadataFolder() {
+      const folderId = value("metadataFolderId");
+      if (!folderId) return;
+      state.metadataFolder = await request("GET", `/api/metadata/folders/${encodeURIComponent(folderId)}`);
+      renderMetadataFolder();
+    }
+
+    async function refreshThumbnailSummary() {
+      const folderId = value("thumbnailFolderId");
+      if (!folderId) return;
+      state.thumbnailSummary = await request("GET", `/api/thumbnails/folders/${encodeURIComponent(folderId)}/summary`);
+      renderThumbnailSummary();
+    }
+
+    async function refreshThumbnailFolder() {
+      const folderId = value("thumbnailFolderId");
+      if (!folderId) return;
+      state.thumbnailItems = await request("GET", `/api/thumbnails/folders/${encodeURIComponent(folderId)}`);
+      renderThumbnailList();
+    }
+
+    async function refreshThumbnailVideo() {
+      const videoId = value("thumbnailVideoId");
+      if (!videoId) return;
+      state.thumbnailVideo = await request("GET", `/api/thumbnails/videos/${encodeURIComponent(videoId)}`);
+      renderThumbnailVideo();
+    }
+
+    async function refreshAll() {
+      await refreshLibrary();
+      await refreshSession();
+      await refreshPlaylist();
+
+      try { await refreshMetadataSummary(); } catch (_) {}
+      try { await refreshMetadataFolder(); } catch (_) {}
+      try { await refreshThumbnailSummary(); } catch (_) {}
+      try { await refreshThumbnailFolder(); } catch (_) {}
+      try { await refreshThumbnailVideo(); } catch (_) {}
+    }
+
+    function connectEvents() {
+      if (state.eventSource) {
+        state.eventSource.close();
+      }
+
+      const source = new EventSource("/api/events");
+      state.eventSource = source;
+      eventStatus.textContent = "Connecting";
+
+      source.onopen = () => {
+        eventStatus.textContent = "Connected";
+        setStatus("Event stream connected.");
+      };
+
+      source.onerror = () => {
+        eventStatus.textContent = "Disconnected";
+      };
+
+      [
+        "host.connected",
+        "settings.changed",
+        "library.folder_added",
+        "library.folder_removed",
+        "library.folder_updated",
+        "library.folder_reordered",
+        "session.changed",
+        "session.progress_saved",
+        "session.completed",
+        "session.closed",
+        "metadata.folder_updated",
+        "metadata.summary_changed",
+        "thumbnail.folder_updated"
+      ].forEach(type => {
+        source.addEventListener(type, event => {
+          const payload = JSON.parse(event.data);
+          addEvent(type, payload);
+          void reactToEvent(type, payload);
+        });
+      });
+    }
+
+    function disconnectEvents() {
+      if (state.eventSource) {
+        state.eventSource.close();
+        state.eventSource = null;
+      }
+      eventStatus.textContent = "Disconnected";
+    }
+
+    const actions = {
+      getSettings: () => request("GET", "/api/settings"),
+      getPlayerSettings: async () => {
+        const payload = await request("GET", "/api/settings/player");
+        setValue("preferredRate", payload.preferredRate);
+        setValue("preferredVolume", payload.preferredVolume);
+        setValue("resumePlayback", String(payload.resumePlayback));
+      },
+      savePlayerSettings: () => request("PUT", "/api/settings/player", {
+        preferredRate: numberValue("preferredRate", 1),
+        preferredVolume: numberValue("preferredVolume", 80),
+        resumePlayback: boolValue("resumePlayback")
+      }),
+
+      getLibraryFolders: refreshLibrary,
+      addLibraryFolder: async () => {
+        await request("POST", "/api/library/folders", { path: value("libraryPath") });
+        await refreshLibrary();
+      },
+      addLibraryFolderBatch: async () => {
+        await request("POST", "/api/library/folders:batch-add", { rootPath: value("libraryRootPath") });
+        await refreshLibrary();
+      },
+      moveLibraryFolderToFront: async () => {
+        await request("POST", `/api/library/folders/${encodeURIComponent(value("libraryFolderId"))}:move-to-front`);
+        await refreshLibrary();
+      },
+      setLibraryFavorite: async () => {
+        await request("POST", `/api/library/folders/${encodeURIComponent(value("libraryFolderId"))}:favorite`, {
+          isFavorite: boolValue("libraryFavorite")
+        });
+        await refreshLibrary();
+      },
+      setLibraryWatchStatus: async () => {
+        await request("POST", `/api/library/folders/${encodeURIComponent(value("libraryFolderId"))}:watch-status`, {
+          status: value("libraryWatchStatus")
+        });
+        await refreshLibrary();
+      },
+      deleteLibraryFolder: async () => {
+        await request("DELETE", `/api/library/folders/${encodeURIComponent(value("libraryFolderId"))}`);
+        await refreshLibrary();
+      },
+
+      openSessionFolder: async () => {
+        const payload = await request("POST", "/api/session/open-folder", {
+          folderId: value("sessionFolderId")
+        });
+        state.session = payload.session;
+        renderSession();
+        await refreshPlaylist();
+      },
+      getSession: refreshSession,
+      getCurrentPlaylist: refreshPlaylist,
+      selectPlaylistItem: async () => {
+        const payload = await request("POST", `/api/playlist/current/items/${encodeURIComponent(value("sessionCurrentItemId"))}:select`);
+        state.session = payload.session;
+        renderSession();
+        await refreshPlaylist();
+      },
+      reportSessionProgress: async () => {
+        await request("POST", "/api/session/progress", {
+          itemId: value("sessionCurrentItemId"),
+          positionMs: numberValue("progressPositionMs", 0),
+          durationMs: numberValue("progressDurationMs", 0),
+          preferredRate: numberValue("progressRate", 1),
+          preferredVolume: numberValue("progressVolume", 80),
+          isPaused: boolValue("progressPaused")
+        });
+        await refreshSession();
+      },
+      moveSessionNext: async () => {
+        await request("POST", "/api/session/next");
+        await refreshSession();
+        await refreshPlaylist();
+      },
+      moveSessionPrevious: async () => {
+        await request("POST", "/api/session/previous");
+        await refreshSession();
+        await refreshPlaylist();
+      },
+      closeSession: async () => {
+        await request("POST", "/api/session/close");
+        state.session = null;
+        state.playlist = null;
+        renderSession();
+        renderPlaylist();
+      },
+
+      getMetadataSummary: refreshMetadataSummary,
+      getMetadataFolder: refreshMetadataFolder,
+      refreshMetadataFolder: async () => {
+        await request("POST", `/api/metadata/folders/${encodeURIComponent(value("metadataFolderId"))}:refresh`);
+        await refreshMetadataFolder();
+        await refreshMetadataSummary();
+      },
+      retryMetadataFolder: async () => {
+        await request("POST", `/api/metadata/folders/${encodeURIComponent(value("metadataFolderId"))}:retry`);
+        await refreshMetadataFolder();
+        await refreshMetadataSummary();
+      },
+      enqueueMissingMetadata: async () => {
+        await request("POST", "/api/metadata:enqueue-missing");
+        await refreshMetadataSummary();
+      },
+      retryFailedMetadata: async () => {
+        await request("POST", "/api/metadata:retry-failed", { includeNoMatch: true });
+        await refreshMetadataSummary();
+      },
+      processMetadataQueue: async () => {
+        await request("POST", `/api/metadata:process-queue?maxItems=${encodeURIComponent(numberValue("metadataProcessMaxItems", 1))}`);
+        await refreshMetadataSummary();
+        await refreshMetadataFolder();
+      },
+
+      getThumbnailFolder: refreshThumbnailFolder,
+      getThumbnailSummary: refreshThumbnailSummary,
+      getThumbnailVideo: refreshThumbnailVideo,
+      prioritizeThumbnailFolder: async () => {
+        await request("POST", `/api/thumbnails/folders/${encodeURIComponent(value("thumbnailFolderId"))}:prioritize`);
+        await refreshThumbnailSummary();
+        await refreshThumbnailFolder();
+      },
+      regenerateThumbnailFolder: async () => {
+        await request("POST", `/api/thumbnails/folders/${encodeURIComponent(value("thumbnailFolderId"))}:regenerate`);
+        await refreshThumbnailSummary();
+        await refreshThumbnailFolder();
+      },
+      processThumbnailFolder: async () => {
+        await request("POST", `/api/thumbnails/folders/${encodeURIComponent(value("thumbnailFolderId"))}:process?maxItems=${encodeURIComponent(numberValue("thumbnailProcessMaxItems", 1))}`);
+        await refreshThumbnailSummary();
+        await refreshThumbnailFolder();
+        await refreshThumbnailVideo();
+      },
+      clearThumbnailFolder: async () => {
+        await request("DELETE", `/api/thumbnails/folders/${encodeURIComponent(value("thumbnailFolderId"))}/cache`);
+        await refreshThumbnailSummary();
+        await refreshThumbnailFolder();
+      },
+
+      connectEvents,
+      disconnectEvents,
+      clearEvents: () => {
+        state.events = [];
+        renderEvents();
+      },
+
+      refreshAll
+    };
+
+    function sameFolder(payloadFolderId, inputId) {
+      return payloadFolderId
+        && value(inputId)
+        && payloadFolderId.toLowerCase() === value(inputId).toLowerCase();
+    }
+
+    async function reactToEvent(type, payload) {
+      switch (type) {
+        case "settings.changed":
+          scheduleRefresh("settings.player", async () => {
+            const player = await fetchJson("/api/settings/player");
+            setValue("preferredRate", player.preferredRate);
+            setValue("preferredVolume", player.preferredVolume);
+            setValue("resumePlayback", String(player.resumePlayback));
+          });
+          break;
+
+        case "library.folder_added":
+        case "library.folder_removed":
+        case "library.folder_updated":
+        case "library.folder_reordered":
+          scheduleRefresh("library", refreshLibrary);
+          break;
+
+        case "session.changed":
+        case "session.progress_saved":
+        case "session.completed":
+        case "session.closed":
+          scheduleRefresh("session", refreshSession);
+          scheduleRefresh("playlist", refreshPlaylist);
+          if (payload.folderId && sameFolder(payload.folderId, "thumbnailFolderId")) {
+            scheduleRefresh("thumbnail.summary", refreshThumbnailSummary);
+            scheduleRefresh("thumbnail.folder", refreshThumbnailFolder);
+          }
+          break;
+
+        case "metadata.summary_changed":
+          scheduleRefresh("metadata.summary", refreshMetadataSummary);
+          break;
+
+        case "metadata.folder_updated":
+          scheduleRefresh("metadata.summary", refreshMetadataSummary);
+          if (sameFolder(payload.folderId, "metadataFolderId")) {
+            scheduleRefresh("metadata.folder", refreshMetadataFolder);
+          }
+          break;
+
+        case "thumbnail.folder_updated":
+          if (sameFolder(payload.folderId, "thumbnailFolderId")) {
+            scheduleRefresh("thumbnail.summary", refreshThumbnailSummary);
+            scheduleRefresh("thumbnail.folder", refreshThumbnailFolder);
+            if (value("thumbnailVideoId")) {
+              scheduleRefresh("thumbnail.video", refreshThumbnailVideo);
+            }
+          }
+          break;
+      }
+    }
+
+    async function fetchJson(path) {
+      const response = await fetch(path);
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status}`);
+      }
+      return response.json();
+    }
+
+    window.debugActions = {
+      pickFolder(folderId) {
+        chooseFolder(folderId);
+      },
+      pickItem(itemId) {
+        chooseItem(itemId);
+      },
+      async openFolder(folderId) {
+        chooseFolder(folderId);
+        await actions.openSessionFolder();
+      },
+      async selectItem(itemId) {
+        chooseItem(itemId);
+        await actions.selectPlaylistItem();
+      },
+      async loadMetadata(folderId) {
+        chooseFolder(folderId);
+        await refreshMetadataFolder();
+        await refreshMetadataSummary();
+      },
+      async loadThumbnails(folderId) {
+        chooseFolder(folderId);
+        await refreshThumbnailSummary();
+        await refreshThumbnailFolder();
+      },
+      async loadVideoThumbnail(itemId) {
+        chooseItem(itemId);
+        await refreshThumbnailVideo();
+      }
+    };
+
+    document.querySelectorAll("[data-action]").forEach(button => {
+      button.addEventListener("click", async () => {
+        const actionName = button.getAttribute("data-action");
+
+        try {
+          await actions[actionName]();
+        } catch (error) {
+          responseSummary.textContent = "request failed";
+          responseView.textContent = error instanceof Error ? error.stack || error.message : String(error);
+          setStatus(`Request failed: <strong>${actionName}</strong>`);
+        }
+      });
+    });
+
+    renderLibrary();
+    renderSession();
+    renderPlaylist();
+    renderMetadataSummary();
+    renderMetadataFolder();
+    renderThumbnailSummary();
+    renderThumbnailVideo();
+    renderThumbnailList();
+    renderEvents();
+    connectEvents();
+  </script>
+</body>
+</html>

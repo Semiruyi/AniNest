@@ -1,0 +1,60 @@
+import 'package:aninest_flutter/src/models/enums.dart';
+
+class LibraryMetadataSummaryDto {
+  const LibraryMetadataSummaryDto({
+    required this.title,
+    required this.posterPath,
+  });
+
+  final String? title;
+  final String? posterPath;
+
+  factory LibraryMetadataSummaryDto.fromJson(Map<String, dynamic> json) {
+    return LibraryMetadataSummaryDto(
+      title: json['title'] as String?,
+      posterPath: json['posterPath'] as String?,
+    );
+  }
+}
+
+class LibraryFolderDto {
+  const LibraryFolderDto({
+    required this.folderId,
+    required this.name,
+    required this.path,
+    required this.videoCount,
+    required this.coverPath,
+    required this.playedCount,
+    required this.watchStatus,
+    required this.isFavorite,
+    required this.metadataSummary,
+  });
+
+  final String folderId;
+  final String name;
+  final String path;
+  final int videoCount;
+  final String? coverPath;
+  final int playedCount;
+  final WatchStatus watchStatus;
+  final bool isFavorite;
+  final LibraryMetadataSummaryDto? metadataSummary;
+
+  factory LibraryFolderDto.fromJson(Map<String, dynamic> json) {
+    return LibraryFolderDto(
+      folderId: json['folderId'] as String,
+      name: json['name'] as String,
+      path: json['path'] as String,
+      videoCount: json['videoCount'] as int? ?? 0,
+      coverPath: json['coverPath'] as String?,
+      playedCount: json['playedCount'] as int? ?? 0,
+      watchStatus: WatchStatus.fromJson(json['watchStatus']),
+      isFavorite: json['isFavorite'] as bool? ?? false,
+      metadataSummary: json['metadataSummary'] is Map<String, dynamic>
+          ? LibraryMetadataSummaryDto.fromJson(
+              json['metadataSummary'] as Map<String, dynamic>,
+            )
+          : null,
+    );
+  }
+}
