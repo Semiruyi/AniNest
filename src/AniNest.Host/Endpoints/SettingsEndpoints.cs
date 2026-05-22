@@ -21,6 +21,30 @@ internal static class SettingsEndpoints
         group.MapGet("/player", (ISettingsModule module, CancellationToken cancellationToken)
             => module.GetPlayerAsync(cancellationToken));
 
+        group.MapPut("/player", async (PlayerSettingsDto request, ISettingsModule module, CancellationToken cancellationToken) =>
+        {
+            await module.SavePlayerAsync(request, cancellationToken);
+            return Results.NoContent();
+        });
+
+        group.MapGet("/metadata", (ISettingsModule module, CancellationToken cancellationToken)
+            => module.GetMetadataAsync(cancellationToken));
+
+        group.MapPut("/metadata", async (MetadataSettingsDto request, ISettingsModule module, CancellationToken cancellationToken) =>
+        {
+            await module.SaveMetadataAsync(request, cancellationToken);
+            return Results.NoContent();
+        });
+
+        group.MapGet("/thumbnails", (ISettingsModule module, CancellationToken cancellationToken)
+            => module.GetThumbnailsAsync(cancellationToken));
+
+        group.MapPut("/thumbnails", async (ThumbnailSettingsDto request, ISettingsModule module, CancellationToken cancellationToken) =>
+        {
+            await module.SaveThumbnailsAsync(request, cancellationToken);
+            return Results.NoContent();
+        });
+
         return app;
     }
 }

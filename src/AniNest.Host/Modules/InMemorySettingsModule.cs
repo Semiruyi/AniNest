@@ -1,49 +1,51 @@
 using AniNest.Application.Modules;
+using AniNest.Application.Settings;
 using AniNest.Contracts.Settings;
 
 namespace AniNest.Host.Modules;
 
 internal sealed class InMemorySettingsModule : ISettingsModule
 {
-    private AppSettingsDto _settings = new(
-        new LibrarySettingsDto(Array.Empty<string>()),
-        new PlayerSettingsDto(1.0, 80, true),
-        new MetadataSettingsDto(true),
-        new ThumbnailSettingsDto(30, true));
+    private readonly SettingsService _settings;
+
+    public InMemorySettingsModule()
+    {
+        _settings = new SettingsService(new InMemorySettingsStore());
+    }
 
     public Task<AppSettingsDto> GetAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult(_settings);
+        => Task.FromResult(_settings.Get());
 
     public Task SaveAsync(AppSettingsDto settings, CancellationToken cancellationToken = default)
     {
-        _settings = settings;
+        _settings.Save(settings);
         return Task.CompletedTask;
     }
 
     public Task<PlayerSettingsDto> GetPlayerAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult(_settings.Player);
+        => Task.FromResult(_settings.GetPlayer());
 
     public Task SavePlayerAsync(PlayerSettingsDto settings, CancellationToken cancellationToken = default)
     {
-        _settings = _settings with { Player = settings };
+        _settings.SavePlayer(settings);
         return Task.CompletedTask;
     }
 
     public Task<MetadataSettingsDto> GetMetadataAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult(_settings.Metadata);
+        => Task.FromResult(_settings.GetMetadata());
 
     public Task SaveMetadataAsync(MetadataSettingsDto settings, CancellationToken cancellationToken = default)
     {
-        _settings = _settings with { Metadata = settings };
+        _settings.SaveMetadata(settings);
         return Task.CompletedTask;
     }
 
     public Task<ThumbnailSettingsDto> GetThumbnailsAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult(_settings.Thumbnails);
+        => Task.FromResult(_settings.GetThumbnails());
 
     public Task SaveThumbnailsAsync(ThumbnailSettingsDto settings, CancellationToken cancellationToken = default)
     {
-        _settings = _settings with { Thumbnails = settings };
+        _settings.SaveThumbnails(settings);
         return Task.CompletedTask;
     }
 }

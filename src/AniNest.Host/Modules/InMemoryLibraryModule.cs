@@ -1,3 +1,4 @@
+using AniNest.Application.Library;
 using AniNest.Application.Modules;
 using AniNest.Contracts.Library;
 using AniNest.Core.Enums;
@@ -6,38 +7,49 @@ namespace AniNest.Host.Modules;
 
 internal sealed class InMemoryLibraryModule : ILibraryModule
 {
-    private readonly List<LibraryFolderDto> _folders =
-    [
-        new(
-            "sample-folder",
-            "Sample Anime",
-            "D:/Media/Sample Anime",
-            12,
-            null,
-            3,
-            WatchStatus.Watching,
-            true,
-            new LibraryMetadataSummaryDto("Sample Anime", null))
-    ];
+    private readonly LibraryCatalogService _catalog;
+
+    public InMemoryLibraryModule()
+    {
+        _catalog = new LibraryCatalogService(new InMemoryLibraryCatalogStore());
+    }
 
     public Task<IReadOnlyList<LibraryFolderDto>> GetFoldersAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<LibraryFolderDto>>(_folders.ToArray());
+        => Task.FromResult(_catalog.GetFolders());
 
     public Task AddFolderAsync(AddLibraryFolderRequest request, CancellationToken cancellationToken = default)
-        => Task.CompletedTask;
+    {
+        _catalog.AddFolder(request);
+        return Task.CompletedTask;
+    }
 
     public Task AddFolderBatchAsync(BatchAddLibraryFoldersRequest request, CancellationToken cancellationToken = default)
-        => Task.CompletedTask;
+    {
+        _catalog.AddFolderBatch(request);
+        return Task.CompletedTask;
+    }
 
     public Task DeleteFolderAsync(string folderId, CancellationToken cancellationToken = default)
-        => Task.CompletedTask;
+    {
+        _catalog.DeleteFolder(folderId);
+        return Task.CompletedTask;
+    }
 
     public Task SetFavoriteAsync(string folderId, bool isFavorite, CancellationToken cancellationToken = default)
-        => Task.CompletedTask;
+    {
+        _catalog.SetFavorite(folderId, isFavorite);
+        return Task.CompletedTask;
+    }
 
     public Task SetWatchStatusAsync(string folderId, WatchStatus status, CancellationToken cancellationToken = default)
-        => Task.CompletedTask;
+    {
+        _catalog.SetWatchStatus(folderId, status);
+        return Task.CompletedTask;
+    }
 
     public Task MoveFolderToFrontAsync(string folderId, CancellationToken cancellationToken = default)
-        => Task.CompletedTask;
+    {
+        _catalog.MoveFolderToFront(folderId);
+        return Task.CompletedTask;
+    }
 }

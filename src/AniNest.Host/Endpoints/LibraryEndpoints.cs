@@ -33,6 +33,24 @@ internal static class LibraryEndpoints
             return Results.NoContent();
         });
 
+        group.MapPost("/folders/{folderId}:favorite", async (string folderId, SetFavoriteRequest request, ILibraryModule module, CancellationToken cancellationToken) =>
+        {
+            await module.SetFavoriteAsync(folderId, request.IsFavorite, cancellationToken);
+            return Results.NoContent();
+        });
+
+        group.MapPost("/folders/{folderId}:watch-status", async (string folderId, SetWatchStatusRequest request, ILibraryModule module, CancellationToken cancellationToken) =>
+        {
+            await module.SetWatchStatusAsync(folderId, request.Status, cancellationToken);
+            return Results.NoContent();
+        });
+
+        group.MapPost("/folders/{folderId}:move-to-front", async (string folderId, ILibraryModule module, CancellationToken cancellationToken) =>
+        {
+            await module.MoveFolderToFrontAsync(folderId, cancellationToken);
+            return Results.NoContent();
+        });
+
         return app;
     }
 }
