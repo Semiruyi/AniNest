@@ -11,6 +11,9 @@ internal static class ThumbnailEndpoints
         group.MapGet("/folders/{folderId}", (string folderId, IThumbnailModule module, CancellationToken cancellationToken)
             => module.GetByFolderAsync(folderId, cancellationToken));
 
+        group.MapGet("/folders/{folderId}/summary", (string folderId, IThumbnailModule module, CancellationToken cancellationToken)
+            => module.GetFolderSummaryAsync(folderId, cancellationToken));
+
         group.MapGet("/videos/{videoId}", async (string videoId, IThumbnailModule module, CancellationToken cancellationToken) =>
         {
             var status = await module.GetByVideoAsync(videoId, cancellationToken);
@@ -33,6 +36,12 @@ internal static class ThumbnailEndpoints
         {
             await module.ClearFolderCacheAsync(folderId, cancellationToken);
             return Results.NoContent();
+        });
+
+        group.MapPost("/folders/{folderId}:process", async (string folderId, int? maxItems, IThumbnailModule module, CancellationToken cancellationToken) =>
+        {
+            var payload = await module.ProcessFolderAsync(folderId, maxItems ?? int.MaxValue, cancellationToken);
+            return Results.Ok(payload);
         });
 
         return app;

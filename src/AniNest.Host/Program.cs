@@ -9,6 +9,7 @@ builder.Services.AddAniNestHostServices(builder.Configuration);
 var app = builder.Build();
 
 app.UseApiExceptionHandling();
+app.UseStaticFiles();
 app.MapGet("/", () => Results.Redirect("/api/settings"));
 app.MapLibraryEndpoints();
 app.MapPlaylistEndpoints();

@@ -1,10 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using AniNest.Contracts.Common;
 using AniNest.Contracts.Library;
+using AniNest.Contracts.Metadata;
 using AniNest.Contracts.Playlist;
 using AniNest.Contracts.Session;
 using AniNest.Contracts.Settings;
+using AniNest.Contracts.Thumbnails;
 using AniNest.Host.Modules;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -205,7 +208,202 @@ public sealed class HostScaffoldTests
         Assert.Equal("request.conflict", payload.Code);
     }
 
-    private HttpClient CreateClient(string? explicitTestRoot = null)
+    [Fact]
+    public async Task MetadataStatusSummary_ReturnsSeededCounts()
+    {
+        using var client = CreateClient();
+
+        var payload = await client.GetFromJsonAsync<MetadataStatusSummaryDto>("/api/metadata/status-summary");
+
+        Assert.NotNull(payload);
+        Assert.Equal(1, payload.Ready);
+    }
+
+    [Fact]
+    public async Task RefreshMetadataFolder_MovesFolderToQueued()
+    {
+        using var client = CreateClient();
+
+        var response = await client.PostAsync("/api/metadata/folders/sample-folder:refresh", content: null);
+        response.EnsureSuccessStatusCode();
+
+        var payload = await client.GetFromJsonAsync<MetadataDto>("/api/metadata/folders/sample-folder");
+        Assert.NotNull(payload);
+        Assert.Equal(AniNest.Core.Enums.MetadataState.Queued, payload.State);
+        Assert.Equal(AniNest.Core.Enums.MetadataFailureKind.None, payload.FailureKind);
+    }
+
+    [Fact]
+    public async Task RetryFailedMetadata_RequeuesFailedItems()
+    {
+        var testRoot = Path.Combine(Path.GetTempPath(), "AniNest.Backend.Tests", $"{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testRoot);
+        using var client = CreateClient(testRoot, seedFailedMetadata: true);
+
+        var response = await client.PostAsJsonAsync("/api/metadata:retry-failed", new RetryFailedMetadataRequest(true));
+        response.EnsureSuccessStatusCode();
+
+        var payload = await client.GetFromJsonAsync<MetadataDto>("/api/metadata/folders/failed-folder");
+        Assert.NotNull(payload);
+        Assert.Equal(AniNest.Core.Enums.MetadataState.Queued, payload.State);
+        Assert.Equal(AniNest.Core.Enums.MetadataFailureKind.None, payload.FailureKind);
+    }
+
+    [Fact]
+    public async Task EnqueueMissingMetadata_RequeuesMissingItems()
+    {
+        var testRoot = Path.Combine(Path.GetTempPath(), "AniNest.Backend.Tests", $"{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testRoot);
+        using var client = CreateClient(testRoot, seedMissingMetadata: true);
+
+        var response = await client.PostAsync("/api/metadata:enqueue-missing", content: null);
+        response.EnsureSuccessStatusCode();
+
+        var payload = await client.GetFromJsonAsync<MetadataDto>("/api/metadata/folders/missing-folder");
+        Assert.NotNull(payload);
+        Assert.Equal(AniNest.Core.Enums.MetadataState.Queued, payload.State);
+    }
+
+    [Fact]
+    public async Task ProcessQueuedMetadata_PromotesItemToReady()
+    {
+        var testRoot = Path.Combine(Path.GetTempPath(), "AniNest.Backend.Tests", $"{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testRoot);
+        using var client = CreateClient(testRoot, seedMissingMetadata: true);
+
+        var enqueue = await client.PostAsync("/api/metadata:enqueue-missing", content: null);
+        enqueue.EnsureSuccessStatusCode();
+
+        var response = await client.PostAsync("/api/metadata:process-queue?maxItems=1", content: null);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<MetadataProcessingResultDto>();
+        Assert.NotNull(result);
+        Assert.Equal(1, result.ProcessedCount);
+        Assert.Contains("missing-folder", result.FolderIds);
+
+        var payload = await client.GetFromJsonAsync<MetadataDto>("/api/metadata/folders/missing-folder");
+        Assert.NotNull(payload);
+        Assert.Equal(AniNest.Core.Enums.MetadataState.Ready, payload.State);
+        Assert.Equal("Missing Folder", payload.Title);
+        Assert.Equal("simulated", payload.Source);
+    }
+
+    [Fact]
+    public async Task ThumbnailFolderSummary_ReturnsDerivedCounts()
+    {
+        using var client = CreateClient();
+
+        var payload = await client.GetFromJsonAsync<ThumbnailFolderSummaryDto>("/api/thumbnails/folders/sample-folder/summary");
+
+        Assert.NotNull(payload);
+        Assert.Equal("sample-folder", payload.FolderId);
+        Assert.Equal(12, payload.Total);
+        Assert.Equal(12, payload.Pending);
+        Assert.Equal(0, payload.Ready);
+    }
+
+    [Fact]
+    public async Task PrioritizeThumbnailFolder_MarksFolderAsGenerating()
+    {
+        using var client = CreateClient();
+
+        var response = await client.PostAsync("/api/thumbnails/folders/sample-folder:prioritize", content: null);
+        response.EnsureSuccessStatusCode();
+
+        var payload = await client.GetFromJsonAsync<ThumbnailFolderSummaryDto>("/api/thumbnails/folders/sample-folder/summary");
+        Assert.NotNull(payload);
+        Assert.Equal(12, payload.Generating);
+        Assert.Equal(0, payload.Pending);
+    }
+
+    [Fact]
+    public async Task ClearThumbnailFolderCache_RemovesGeneratedStatuses()
+    {
+        using var client = CreateClient();
+
+        var prioritize = await client.PostAsync("/api/thumbnails/folders/sample-folder:prioritize", content: null);
+        prioritize.EnsureSuccessStatusCode();
+
+        var clear = await client.DeleteAsync("/api/thumbnails/folders/sample-folder/cache");
+        clear.EnsureSuccessStatusCode();
+
+        var payload = await client.GetFromJsonAsync<ThumbnailFolderSummaryDto>("/api/thumbnails/folders/sample-folder/summary");
+        Assert.NotNull(payload);
+        Assert.Equal(12, payload.Pending);
+        Assert.Equal(0, payload.Generating);
+    }
+
+    [Fact]
+    public async Task ProcessThumbnailFolder_GeneratesReadyStatuses()
+    {
+        using var client = CreateClient();
+
+        var response = await client.PostAsync("/api/thumbnails/folders/sample-folder:process?maxItems=3", content: null);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<ThumbnailProcessingResultDto>();
+        Assert.NotNull(result);
+        Assert.Equal("sample-folder", result.FolderId);
+        Assert.Equal(3, result.ProcessedCount);
+        Assert.Equal(3, result.Summary.Ready);
+        Assert.Equal(9, result.Summary.Pending);
+
+        var video = await client.GetFromJsonAsync<ThumbnailStatusDto>("/api/thumbnails/videos/ep-01");
+        Assert.NotNull(video);
+        Assert.Equal(AniNest.Core.Enums.ThumbnailState.Ready, video.State);
+        Assert.Contains("/generated/thumbnails/sample-folder/ep-01.jpg", video.ImagePath, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task EventStream_ReturnsServerSentEventsPayload()
+    {
+        using var client = CreateClient();
+        using var response = await client.GetAsync("/api/events", HttpCompletionOption.ResponseHeadersRead);
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal("text/event-stream", response.Content.Headers.ContentType?.MediaType);
+
+        await using var stream = await response.Content.ReadAsStreamAsync();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+
+        var firstLine = await reader.ReadLineAsync();
+        var secondLine = await reader.ReadLineAsync();
+
+        Assert.Equal("event: host.connected", firstLine);
+        Assert.NotNull(secondLine);
+        Assert.StartsWith("data: ", secondLine, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SavingPlayerSettings_PublishesSettingsChangedEvent()
+    {
+        using var client = CreateClient();
+        using var response = await client.GetAsync("/api/events", HttpCompletionOption.ResponseHeadersRead);
+        response.EnsureSuccessStatusCode();
+
+        await using var stream = await response.Content.ReadAsStreamAsync();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+
+        await reader.ReadLineAsync();
+        await reader.ReadLineAsync();
+        await reader.ReadLineAsync();
+
+        var updateResponse = await client.PutAsJsonAsync("/api/settings/player", new PlayerSettingsDto(1.5, 70, true));
+        updateResponse.EnsureSuccessStatusCode();
+
+        var eventLine = await ReadNextNonEmptyLineAsync(reader);
+        var dataLine = await ReadNextNonEmptyLineAsync(reader);
+
+        Assert.Equal("event: settings.changed", eventLine);
+        Assert.NotNull(dataLine);
+        Assert.Contains("\"scope\":\"player\"", dataLine, StringComparison.Ordinal);
+    }
+
+    private HttpClient CreateClient(
+        string? explicitTestRoot = null,
+        bool seedFailedMetadata = false,
+        bool seedMissingMetadata = false)
         => new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.ConfigureAppConfiguration((_, configBuilder) =>
@@ -266,6 +464,37 @@ public sealed class HostScaffoldTests
                     "local",
                     AniNest.Core.Enums.MetadataState.Ready,
                     AniNest.Core.Enums.MetadataFailureKind.None));
+                if (seedFailedMetadata)
+                {
+                    metadataStore.Save(new AniNest.Contracts.Metadata.MetadataDto(
+                        "failed-folder",
+                        "Failed Folder",
+                        null,
+                        null,
+                        [],
+                        null,
+                        null,
+                        null,
+                        "local",
+                        AniNest.Core.Enums.MetadataState.NeedsReview,
+                        AniNest.Core.Enums.MetadataFailureKind.NetworkError));
+                }
+
+                if (seedMissingMetadata)
+                {
+                    metadataStore.Save(new AniNest.Contracts.Metadata.MetadataDto(
+                        "missing-folder",
+                        null,
+                        null,
+                        null,
+                        [],
+                        null,
+                        null,
+                        null,
+                        null,
+                        AniNest.Core.Enums.MetadataState.NeedsMetadata,
+                        AniNest.Core.Enums.MetadataFailureKind.None));
+                }
 
                 var thumbnailPath = Path.Combine(testRoot, "thumbnails.json");
 
@@ -279,4 +508,16 @@ public sealed class HostScaffoldTests
                 });
             });
         }).CreateClient();
+
+    private static async Task<string?> ReadNextNonEmptyLineAsync(StreamReader reader)
+    {
+        while (true)
+        {
+            var line = await reader.ReadLineAsync();
+            if (line is null || line.Length > 0)
+            {
+                return line;
+            }
+        }
+    }
 }

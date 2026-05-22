@@ -24,11 +24,29 @@ internal static class MetadataEndpoints
             return Results.Accepted();
         });
 
-        group.MapPost(":retry-failed", async (RetryFailedMetadataRequest request, IMetadataModule module, CancellationToken cancellationToken) =>
+        group.MapPost("/folders/{folderId}:retry", async (string folderId, IMetadataModule module, CancellationToken cancellationToken) =>
+        {
+            await module.RetryFolderAsync(folderId, cancellationToken);
+            return Results.Accepted();
+        });
+
+        app.MapPost("/api/metadata:enqueue-missing", async (IMetadataModule module, CancellationToken cancellationToken) =>
+        {
+            await module.EnqueueMissingAsync(cancellationToken);
+            return Results.Accepted();
+        }).WithTags("Metadata");
+
+        app.MapPost("/api/metadata:retry-failed", async (RetryFailedMetadataRequest request, IMetadataModule module, CancellationToken cancellationToken) =>
         {
             await module.RetryFailedAsync(request.IncludeNoMatch, cancellationToken);
             return Results.Accepted();
-        });
+        }).WithTags("Metadata");
+
+        app.MapPost("/api/metadata:process-queue", async (int? maxItems, IMetadataModule module, CancellationToken cancellationToken) =>
+        {
+            var payload = await module.ProcessQueueAsync(maxItems ?? 1, cancellationToken);
+            return Results.Ok(payload);
+        }).WithTags("Metadata");
 
         return app;
     }

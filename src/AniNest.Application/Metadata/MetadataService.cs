@@ -15,6 +15,9 @@ public sealed class MetadataService
     public MetadataDto? GetByFolderId(string folderId)
         => _store.GetByFolderId(folderId);
 
+    public IReadOnlyList<MetadataDto> GetAll()
+        => _store.GetAll();
+
     public MetadataStatusSummaryDto GetSummary()
     {
         var all = _store.GetAll();
@@ -70,4 +73,7 @@ public sealed class MetadataService
             });
         }
     }
+
+    public void Save(MetadataDto metadata)
+        => _store.Save(metadata);
 }

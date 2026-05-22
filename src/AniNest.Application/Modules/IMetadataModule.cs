@@ -10,4 +10,5 @@ public interface IMetadataModule
     Task EnqueueMissingAsync(CancellationToken cancellationToken = default);
     Task RetryFailedAsync(bool includeNoMatch, CancellationToken cancellationToken = default);
     Task<MetadataStatusSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default);
+    Task<MetadataProcessingResultDto> ProcessQueueAsync(int maxItems, CancellationToken cancellationToken = default);
 }

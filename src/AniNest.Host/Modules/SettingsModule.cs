@@ -1,16 +1,19 @@
 using AniNest.Application.Modules;
 using AniNest.Application.Settings;
 using AniNest.Contracts.Settings;
+using AniNest.Host.Events;
 
 namespace AniNest.Host.Modules;
 
 internal sealed class SettingsModule : ISettingsModule
 {
     private readonly SettingsService _settings;
+    private readonly IHostEventStream _events;
 
-    public SettingsModule(ISettingsStore store)
+    public SettingsModule(ISettingsStore store, IHostEventStream events)
     {
         _settings = new SettingsService(store);
+        _events = events;
     }
 
     public Task<AppSettingsDto> GetAsync(CancellationToken cancellationToken = default)
@@ -19,6 +22,7 @@ internal sealed class SettingsModule : ISettingsModule
     public Task SaveAsync(AppSettingsDto settings, CancellationToken cancellationToken = default)
     {
         _settings.Save(settings);
+        _events.Publish("settings.changed", new { scope = "app" });
         return Task.CompletedTask;
     }
 
@@ -28,6 +32,7 @@ internal sealed class SettingsModule : ISettingsModule
     public Task SavePlayerAsync(PlayerSettingsDto settings, CancellationToken cancellationToken = default)
     {
         _settings.SavePlayer(settings);
+        _events.Publish("settings.changed", new { scope = "player" });
         return Task.CompletedTask;
     }
 
@@ -37,6 +42,7 @@ internal sealed class SettingsModule : ISettingsModule
     public Task SaveMetadataAsync(MetadataSettingsDto settings, CancellationToken cancellationToken = default)
     {
         _settings.SaveMetadata(settings);
+        _events.Publish("settings.changed", new { scope = "metadata" });
         return Task.CompletedTask;
     }
 
@@ -46,6 +52,7 @@ internal sealed class SettingsModule : ISettingsModule
     public Task SaveThumbnailsAsync(ThumbnailSettingsDto settings, CancellationToken cancellationToken = default)
     {
         _settings.SaveThumbnails(settings);
+        _events.Publish("settings.changed", new { scope = "thumbnails" });
         return Task.CompletedTask;
     }
 }

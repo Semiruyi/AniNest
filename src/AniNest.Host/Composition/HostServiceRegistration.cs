@@ -5,6 +5,7 @@ using AniNest.Application.Playback;
 using AniNest.Application.Playlist;
 using AniNest.Application.Settings;
 using AniNest.Application.Thumbnail;
+using AniNest.Host.Events;
 using AniNest.Host.Modules;
 
 namespace AniNest.Host.Composition;
@@ -13,6 +14,8 @@ internal static class HostServiceRegistration
 {
     public static IServiceCollection AddAniNestHostServices(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddSingleton<IHostEventStream, InMemoryHostEventStream>();
+
         services.AddSingleton<ILibraryModule, LibraryModule>();
         services.AddSingleton<ILibraryFileScanner, FileSystemLibraryFileScanner>();
         services.AddSingleton<ILibraryCatalogStore>(_ => new FileLibraryCatalogStore(

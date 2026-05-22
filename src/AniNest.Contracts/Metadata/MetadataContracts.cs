@@ -28,3 +28,7 @@ public sealed record MetadataStatusSummaryDto(
 
 public sealed record RetryFailedMetadataRequest(
     bool IncludeNoMatch);
+
+public sealed record MetadataProcessingResultDto(
+    int ProcessedCount,
+    IReadOnlyList<string> FolderIds);

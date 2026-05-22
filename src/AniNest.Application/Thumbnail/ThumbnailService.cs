@@ -17,6 +17,32 @@ public sealed class ThumbnailService
     public ThumbnailStatusDto? GetByTargetId(string targetId)
         => _store.GetByTargetId(targetId) is { } record ? Map(record) : null;
 
+    public ThumbnailFolderSummaryDto GetFolderSummary(string folderId, int totalItems)
+    {
+        var records = _store.GetByFolderId(folderId);
+        var pending = records.Count(record => record.State == Core.Enums.ThumbnailState.Pending);
+        var generating = records.Count(record => record.State == Core.Enums.ThumbnailState.Generating);
+        var ready = records.Count(record => record.State == Core.Enums.ThumbnailState.Ready);
+        var failed = records.Count(record => record.State == Core.Enums.ThumbnailState.Failed);
+        var updatedAt = records
+            .Where(record => record.UpdatedAtUtc.HasValue)
+            .Select(record => record.UpdatedAtUtc)
+            .Max();
+
+        var effectiveTotal = totalItems > 0 ? totalItems : records.Count;
+        var completionPercent = effectiveTotal == 0 ? 0 : (double)ready / effectiveTotal * 100;
+
+        return new ThumbnailFolderSummaryDto(
+            folderId,
+            effectiveTotal,
+            pending,
+            generating,
+            ready,
+            failed,
+            completionPercent,
+            updatedAt);
+    }
+
     public void SaveMany(IReadOnlyList<ThumbnailRecord> records)
         => _store.SaveMany(records);
 
