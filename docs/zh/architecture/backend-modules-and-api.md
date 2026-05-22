@@ -18,6 +18,41 @@
 
 这意味着后端不再持有 WPF 控件、视频表面或具体桌面 UI 状态，也不直接承担 Flutter 播放器实例管理。
 
+## 当前实现进度
+
+截至当前版本，新后端骨架已经完成以下落地：
+
+- 已建立项目分层：
+  - `AniNest.Core`
+  - `AniNest.Contracts`
+  - `AniNest.Application`
+  - `AniNest.Host`
+  - `AniNest.Backend.Tests`
+- 已建立统一错误响应模型与 Host 全局异常映射
+- 已为以下模块建立 `Application service + Host file store + API + tests` 的基础形态：
+  - `Library`
+  - `Playlist`
+  - `Session / Playback`
+  - `Settings`
+  - `Metadata`
+  - `Thumbnail`
+- `Settings`、`Library`、`PlaybackProgress`、`Metadata`、`Thumbnail` 已具备文件持久化能力
+- `Playlist` 已可以基于真实目录文件生成
+- `Session` 已具备：
+  - 按目录恢复上次播放项
+  - 按视频进度恢复起播位置
+  - 播放超过 90% 后从头播
+  - 关闭会话时保存当前项
+- Host 集成测试已覆盖主要 API 骨架
+- 当前后端测试总数已达到 40 条量级，并以新接口行为作为重构基线
+
+当前尚未完成的部分主要是“增强实现”，而不是“继续搭骨架”：
+
+- `Library` 仍未接入完整真实扫描策略
+- `Metadata` 尚未接入真实抓取 worker / provider 调度
+- `Thumbnail` 尚未接入真实缩略图生成任务
+- `Session / Playlist` 还未完整迁入旧工程中的所有排序与恢复细节
+
 ## 总体结构
 
 推荐项目结构：

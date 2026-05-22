@@ -18,6 +18,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AniNest.Host", "src\AniNest
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AniNest.Backend.Tests", "src\Tests.Backend\AniNest.Backend.Tests.csproj", "{E1DCFF2B-57CA-4C10-9575-80D1CDBF57E9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AniNest.Contracts", "src\AniNest.Contracts\AniNest.Contracts.csproj", "{3C628345-7984-495C-A78F-D37407B2918B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,6 +54,10 @@ Global
 		{E1DCFF2B-57CA-4C10-9575-80D1CDBF57E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E1DCFF2B-57CA-4C10-9575-80D1CDBF57E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E1DCFF2B-57CA-4C10-9575-80D1CDBF57E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C628345-7984-495C-A78F-D37407B2918B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C628345-7984-495C-A78F-D37407B2918B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C628345-7984-495C-A78F-D37407B2918B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C628345-7984-495C-A78F-D37407B2918B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -64,5 +70,6 @@ Global
 		{6F1D5B4D-CE2D-4A0A-A53A-2A8CF95F4CE8} = {D75F8157-C0B2-4D95-8595-C3567D553116}
 		{74E50E4C-3523-43F3-AF10-D6787AC4D34A} = {D75F8157-C0B2-4D95-8595-C3567D553116}
 		{E1DCFF2B-57CA-4C10-9575-80D1CDBF57E9} = {D75F8157-C0B2-4D95-8595-C3567D553116}
+		{3C628345-7984-495C-A78F-D37407B2918B} = {D75F8157-C0B2-4D95-8595-C3567D553116}
 	EndGlobalSection
 EndGlobal
