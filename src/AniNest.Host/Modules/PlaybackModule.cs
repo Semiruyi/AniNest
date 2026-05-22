@@ -7,23 +7,25 @@ using AniNest.Contracts.Settings;
 
 namespace AniNest.Host.Modules;
 
-internal sealed class InMemoryPlaybackCoordinator : IPlaylistModule, ISessionModule
+internal sealed class PlaybackModule : IPlaylistModule, ISessionModule
 {
     private readonly PlaybackSessionEngine _engine;
 
-    public InMemoryPlaybackCoordinator()
+    public PlaybackModule(
+        IPlaylistCatalogStore playlistStore,
+        IPlaybackProgressStore progressStore)
     {
-        var playlistStore = new InMemoryPlaylistCatalogStore();
         var playlistCatalog = new PlaylistCatalogService(playlistStore);
-        var progressStore = new InMemoryPlaybackProgressStore();
-        progressStore.SaveFolderProgress("sample-folder", "ep-01");
-        progressStore.SaveVideoProgress("D:/Media/Sample Anime/01.mp4", 93_000, 1_440_000);
 
         _engine = new PlaybackSessionEngine(
             playlistCatalog,
             new PlayerSettingsDto(1.0, 80, true),
             progressStore);
-        _engine.ActivateFolder("sample-folder");
+
+        if (playlistCatalog.GetAll().Count > 0)
+        {
+            _engine.ActivateFolder(playlistCatalog.GetAll()[0].FolderId);
+        }
     }
 
     public Task<PlaylistDto> GetByFolderAsync(string folderId, CancellationToken cancellationToken = default)

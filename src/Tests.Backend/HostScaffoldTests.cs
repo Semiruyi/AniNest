@@ -5,19 +5,14 @@ using AniNest.Contracts.Library;
 using AniNest.Contracts.Playlist;
 using AniNest.Contracts.Session;
 using AniNest.Contracts.Settings;
+using AniNest.Host.Modules;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 
 namespace AniNest.Backend.Tests;
 
-public sealed class HostScaffoldTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class HostScaffoldTests
 {
-    private readonly WebApplicationFactory<Program> _factory;
-
-    public HostScaffoldTests(WebApplicationFactory<Program> factory)
-    {
-        _factory = factory;
-    }
-
     [Fact]
     public async Task GetSettings_ReturnsSeededSettings()
     {
@@ -164,5 +159,77 @@ public sealed class HostScaffoldTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     private HttpClient CreateClient()
-        => _factory.WithWebHostBuilder(_ => { }).CreateClient();
+        => new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureAppConfiguration((_, configBuilder) =>
+            {
+                var testRoot = Path.Combine(
+                    Path.GetTempPath(),
+                    "AniNest.Backend.Tests",
+                    $"{Guid.NewGuid():N}");
+                var sampleFolderPath = Path.Combine(testRoot, "Sample Anime");
+                Directory.CreateDirectory(sampleFolderPath);
+                for (int index = 1; index <= 12; index++)
+                {
+                    File.WriteAllText(Path.Combine(sampleFolderPath, $"Episode {index:00}.mp4"), string.Empty);
+                }
+
+                var libraryCatalogPath = Path.Combine(testRoot, "library-catalog.json");
+                var libraryStore = new FileLibraryCatalogStore(
+                    libraryCatalogPath,
+                    [
+                        new AniNest.Application.Library.LibraryFolderRecord(
+                            "sample-folder",
+                            "Sample Anime",
+                            sampleFolderPath,
+                            12,
+                            null,
+                            new LibraryMetadataSummaryDto("Sample Anime", null),
+                            0)
+                    ],
+                    new Dictionary<string, AniNest.Core.Enums.WatchStatus>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["sample-folder"] = AniNest.Core.Enums.WatchStatus.Watching
+                    },
+                    new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["sample-folder"] = true
+                    });
+                libraryStore.SaveFolders(libraryStore.GetFolders());
+
+                var playbackProgressPath = Path.Combine(testRoot, "playback-progress.json");
+                var progressStore = new FilePlaybackProgressStore(
+                    playbackProgressPath,
+                    PlaybackProgressDefaults.CreateVideoProgress(),
+                    PlaybackProgressDefaults.CreateFolderProgress());
+                progressStore.SaveFolderProgress("sample-folder", "ep-01");
+                progressStore.SaveVideoProgress(Path.Combine(sampleFolderPath, "Episode 01.mp4"), 93_000, 1_440_000);
+
+                var metadataPath = Path.Combine(testRoot, "metadata.json");
+                var metadataStore = new FileMetadataStore(metadataPath, MetadataDefaults.Create());
+                metadataStore.Save(new AniNest.Contracts.Metadata.MetadataDto(
+                    "sample-folder",
+                    "Sample Anime",
+                    "Sample Anime",
+                    "A sample metadata record used by the backend scaffold.",
+                    ["slice-of-life"],
+                    null,
+                    "S1",
+                    12,
+                    "local",
+                    AniNest.Core.Enums.MetadataState.Ready,
+                    AniNest.Core.Enums.MetadataFailureKind.None));
+
+                var thumbnailPath = Path.Combine(testRoot, "thumbnails.json");
+
+                configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["AniNest:SettingsPath"] = Path.Combine(testRoot, "host-settings.json"),
+                    ["AniNest:LibraryCatalogPath"] = libraryCatalogPath,
+                    ["AniNest:PlaybackProgressPath"] = playbackProgressPath,
+                    ["AniNest:MetadataPath"] = metadataPath,
+                    ["AniNest:ThumbnailPath"] = thumbnailPath
+                });
+            });
+        }).CreateClient();
 }

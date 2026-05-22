@@ -5,13 +5,13 @@ using AniNest.Core.Enums;
 
 namespace AniNest.Host.Modules;
 
-internal sealed class InMemoryLibraryModule : ILibraryModule
+internal sealed class LibraryModule : ILibraryModule
 {
     private readonly LibraryCatalogService _catalog;
 
-    public InMemoryLibraryModule()
+    public LibraryModule(ILibraryCatalogStore store)
     {
-        _catalog = new LibraryCatalogService(new InMemoryLibraryCatalogStore());
+        _catalog = new LibraryCatalogService(store);
     }
 
     public Task<IReadOnlyList<LibraryFolderDto>> GetFoldersAsync(CancellationToken cancellationToken = default)

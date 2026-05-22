@@ -4,13 +4,13 @@ using AniNest.Contracts.Settings;
 
 namespace AniNest.Host.Modules;
 
-internal sealed class InMemorySettingsModule : ISettingsModule
+internal sealed class SettingsModule : ISettingsModule
 {
     private readonly SettingsService _settings;
 
-    public InMemorySettingsModule()
+    public SettingsModule(ISettingsStore store)
     {
-        _settings = new SettingsService(new InMemorySettingsStore());
+        _settings = new SettingsService(store);
     }
 
     public Task<AppSettingsDto> GetAsync(CancellationToken cancellationToken = default)
