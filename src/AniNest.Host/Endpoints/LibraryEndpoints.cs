@@ -17,8 +17,8 @@ internal static class LibraryEndpoints
 
         group.MapPost("/folders", async (AddLibraryFolderRequest request, ILibraryModule module, CancellationToken cancellationToken) =>
         {
-            await module.AddFolderAsync(request, cancellationToken);
-            return Results.Accepted();
+            var result = await module.AddFolderAsync(request, cancellationToken);
+            return Results.Ok(result);
         });
 
         group.MapPost("/folders:batch-add", async (BatchAddLibraryFoldersRequest request, ILibraryModule module, CancellationToken cancellationToken) =>

@@ -84,10 +84,11 @@ public sealed class HostScaffoldTests
 
         var response = await client.PostAsJsonAsync("/api/library/folders", new AddLibraryFolderRequest(emptyFolder));
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        response.EnsureSuccessStatusCode();
+        var payload = await response.Content.ReadFromJsonAsync<AddLibraryFolderResult>();
         Assert.NotNull(payload);
-        Assert.Equal("request.invalid", payload.Code);
+        Assert.Equal("failed", payload.Status);
+        Assert.Equal("no_supported_videos", payload.ReasonCode);
     }
 
     [Fact]

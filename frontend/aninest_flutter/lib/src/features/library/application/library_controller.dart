@@ -20,9 +20,12 @@ class LibraryController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addFolder(String path) async {
-    await _libraryApi.addFolder(path);
-    await refresh();
+  Future<AddLibraryFolderResultDto> addFolder(String path) async {
+    final result = await _libraryApi.addFolder(path);
+    if (result.isAdded) {
+      await refresh();
+    }
+    return result;
   }
 
   void clear() {

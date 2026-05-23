@@ -23,6 +23,12 @@ public sealed record LibraryFolderListResponse(
 public sealed record AddLibraryFolderRequest(
     string Path);
 
+public sealed record AddLibraryFolderResult(
+    string Status,
+    string Message,
+    string? ReasonCode,
+    LibraryFolderDto? Folder);
+
 public sealed record BatchAddLibraryFoldersRequest(
     string RootPath);
 

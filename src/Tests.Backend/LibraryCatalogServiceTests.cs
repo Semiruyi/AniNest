@@ -15,8 +15,11 @@ public sealed class LibraryCatalogServiceTests
         scanner.ScanResults[path] = new LibraryFolderScanResult(12, Path.Combine(path, "poster.jpg"));
         var service = new LibraryCatalogService(store, scanner);
 
-        await service.AddFolderAsync(new AddLibraryFolderRequest(path));
+        var result = await service.AddFolderAsync(new AddLibraryFolderRequest(path));
 
+        Assert.Equal("added", result.Status);
+        Assert.Null(result.ReasonCode);
+        Assert.NotNull(result.Folder);
         var folders = await service.GetFoldersAsync();
         Assert.Equal(3, folders.Count);
         var folder = Assert.Single(folders, item => item.FolderId == "bocchi-the-rock");
@@ -33,10 +36,25 @@ public sealed class LibraryCatalogServiceTests
         scanner.ScanResults[path] = new LibraryFolderScanResult(0, null);
         var service = new LibraryCatalogService(store, scanner);
 
-        var action = () => service.AddFolderAsync(new AddLibraryFolderRequest(path));
+        var result = await service.AddFolderAsync(new AddLibraryFolderRequest(path));
+        Assert.Equal("failed", result.Status);
+        Assert.Equal("no_supported_videos", result.ReasonCode);
+        Assert.Contains("does not contain any supported video files", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
 
-        var error = await Assert.ThrowsAsync<ArgumentException>(action);
-        Assert.Contains("does not contain any supported video files", error.Message, StringComparison.OrdinalIgnoreCase);
+    [Fact]
+    public async Task AddFolder_ReturnsAlreadyExists_ForDuplicateFolder()
+    {
+        var store = CreateStore(out var root);
+        var scanner = new FakeLibraryFileScanner();
+        var path = Path.Combine(root, "Folder 01");
+        var service = new LibraryCatalogService(store, scanner);
+
+        var result = await service.AddFolderAsync(new AddLibraryFolderRequest(path));
+
+        Assert.Equal("alreadyExists", result.Status);
+        Assert.Equal("already_exists", result.ReasonCode);
+        Assert.NotNull(result.Folder);
     }
 
     [Fact]

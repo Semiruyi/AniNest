@@ -57,37 +57,51 @@ public sealed class LibraryCatalogService
         return normalized.Select(MapFolder).ToArray();
     }
 
-    public async Task AddFolderAsync(AddLibraryFolderRequest request, CancellationToken cancellationToken = default)
+    public async Task<AddLibraryFolderResult> AddFolderAsync(AddLibraryFolderRequest request, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         if (string.IsNullOrWhiteSpace(request.Path))
-            throw new ArgumentException("Library folder path is required.", nameof(request));
+            return Failed("Library folder path is required.", "path_required");
         if (!Directory.Exists(request.Path))
-            throw new ArgumentException($"Library folder '{request.Path}' does not exist.", nameof(request));
+            return Failed($"Library folder '{request.Path}' does not exist.", "path_not_found");
 
         var folders = _store.GetFolders().ToList();
         var folderId = CreateFolderId(request.Path);
         if (folders.Any(folder => string.Equals(folder.FolderId, folderId, StringComparison.OrdinalIgnoreCase)))
-            throw new InvalidOperationException($"Library folder '{request.Path}' has already been added.");
+        {
+            var existingFolder = folders.First(folder =>
+                string.Equals(folder.FolderId, folderId, StringComparison.OrdinalIgnoreCase));
+            return new AddLibraryFolderResult(
+                "alreadyExists",
+                $"Library folder '{request.Path}' has already been added.",
+                "already_exists",
+                MapFolder(existingFolder));
+        }
 
         var scanResult = await _scanner.ScanFolderAsync(request.Path, cancellationToken);
         if (scanResult.VideoCount == 0)
-            throw new ArgumentException($"Library folder '{request.Path}' does not contain any supported video files.", nameof(request));
+            return Failed($"Library folder '{request.Path}' does not contain any supported video files.", "no_supported_videos");
 
         var order = folders.Count == 0 ? 0 : folders.Max(folder => folder.Order) + 1;
         var name = Path.GetFileName(request.Path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
 
-        folders.Add(new LibraryFolderRecord(
+        var addedRecord = new LibraryFolderRecord(
             folderId,
             string.IsNullOrWhiteSpace(name) ? request.Path : name,
             request.Path,
             scanResult.VideoCount,
             scanResult.CoverPath,
             null,
-            order));
+            order);
+        folders.Add(addedRecord);
 
         _store.SaveFolders(folders);
+        return new AddLibraryFolderResult(
+            "added",
+            $"Library folder '{request.Path}' was added successfully.",
+            null,
+            MapFolder(addedRecord));
     }
 
     public async Task AddFolderBatchAsync(BatchAddLibraryFoldersRequest request, CancellationToken cancellationToken = default)
@@ -199,4 +213,7 @@ public sealed class LibraryCatalogService
 
         return name.Trim().ToLowerInvariant().Replace(' ', '-');
     }
+
+    private static AddLibraryFolderResult Failed(string message, string reasonCode)
+        => new("failed", message, reasonCode, null);
 }

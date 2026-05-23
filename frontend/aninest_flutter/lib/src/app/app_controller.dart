@@ -65,11 +65,15 @@ class AppController extends ChangeNotifier {
     });
   }
 
-  Future<void> addFolder(String path) async {
+  Future<AddLibraryFolderResultDto?> addFolder(String path) async {
+    AddLibraryFolderResultDto? result;
     await _run(() async {
-      await library.addFolder(path);
-      await metadata.refresh(selectedFolderId);
+      result = await library.addFolder(path);
+      if (result?.isAdded ?? false) {
+        await metadata.refresh(selectedFolderId);
+      }
     });
+    return result;
   }
 
   Future<void> updateBaseUrl(String nextBaseUrl) async {

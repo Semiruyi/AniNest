@@ -58,3 +58,32 @@ class LibraryFolderDto {
     );
   }
 }
+
+class AddLibraryFolderResultDto {
+  const AddLibraryFolderResultDto({
+    required this.status,
+    required this.message,
+    required this.reasonCode,
+    required this.folder,
+  });
+
+  final String status;
+  final String message;
+  final String? reasonCode;
+  final LibraryFolderDto? folder;
+
+  bool get isAdded => status == 'added';
+  bool get isAlreadyExists => status == 'alreadyExists';
+  bool get isFailed => status == 'failed';
+
+  factory AddLibraryFolderResultDto.fromJson(Map<String, dynamic> json) {
+    return AddLibraryFolderResultDto(
+      status: json['status'] as String? ?? 'failed',
+      message: json['message'] as String? ?? 'Unknown result.',
+      reasonCode: json['reasonCode'] as String?,
+      folder: json['folder'] is Map<String, dynamic>
+          ? LibraryFolderDto.fromJson(json['folder'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+}

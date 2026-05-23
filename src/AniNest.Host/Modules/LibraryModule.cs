@@ -20,16 +20,19 @@ internal sealed class LibraryModule : ILibraryModule
     public Task<IReadOnlyList<LibraryFolderDto>> GetFoldersAsync(CancellationToken cancellationToken = default)
         => _catalog.GetFoldersAsync(cancellationToken);
 
-    public async Task AddFolderAsync(AddLibraryFolderRequest request, CancellationToken cancellationToken = default)
+    public async Task<AddLibraryFolderResult> AddFolderAsync(AddLibraryFolderRequest request, CancellationToken cancellationToken = default)
     {
-        await _catalog.AddFolderAsync(request, cancellationToken);
-        var added = (await _catalog.GetFoldersAsync(cancellationToken))
-            .FirstOrDefault(folder => string.Equals(folder.Path, request.Path, StringComparison.OrdinalIgnoreCase));
-        _events.Publish("library.folder_added", new
+        var result = await _catalog.AddFolderAsync(request, cancellationToken);
+        if (string.Equals(result.Status, "added", StringComparison.OrdinalIgnoreCase))
         {
-            folderId = added?.FolderId,
-            path = request.Path
-        });
+            _events.Publish("library.folder_added", new
+            {
+                folderId = result.Folder?.FolderId,
+                path = request.Path
+            });
+        }
+
+        return result;
     }
 
     public async Task AddFolderBatchAsync(BatchAddLibraryFoldersRequest request, CancellationToken cancellationToken = default)

@@ -14,11 +14,12 @@ class LibraryApi {
         .toList();
   }
 
-  Future<void> addFolder(String path) async {
-    await _client.post(
+  Future<AddLibraryFolderResultDto> addFolder(String path) async {
+    final payload = await _client.post(
       '/api/library/folders',
       body: <String, dynamic>{'path': path},
     );
+    return AddLibraryFolderResultDto.fromJson(payload);
   }
 
   Future<void> addFolderBatch(String rootPath) async {
