@@ -2,7 +2,7 @@ import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/core/platform/app_platform.dart';
 import 'package:aninest_flutter/src/core/window/window_frame_controller.dart';
 import 'package:aninest_flutter/src/core/window/window_service.dart';
-import 'package:aninest_flutter/src/presentation/window/content.dart';
+import 'package:aninest_flutter/src/presentation/window/content_area.dart';
 import 'package:aninest_flutter/src/presentation/window/sidebar.dart';
 import 'package:aninest_flutter/src/presentation/window/title_bar.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -48,8 +48,11 @@ class _AppWindowState extends State<AppWindow> {
           Expanded(
             child: Row(
               children: <Widget>[
-                Sidebar(controller: widget.controller.library),
-                Expanded(child: Content(controller: widget.controller)),
+                Sidebar(),
+                Expanded(child: Align(
+                  alignment: Alignment.center,
+                  child: ContentArea(controller: widget.controller),
+                )),
               ],
             ),
           ),

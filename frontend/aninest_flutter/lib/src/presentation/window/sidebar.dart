@@ -3,9 +3,8 @@ import 'package:aninest_flutter/src/presentation/features/library/library_page.d
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class Sidebar extends StatelessWidget {
-  const Sidebar({super.key, required this.controller, this.width = 280});
+  const Sidebar({super.key, this.width = 280});
 
-  final LibraryController controller;
   final double width;
 
   @override
@@ -19,7 +18,7 @@ class Sidebar extends StatelessWidget {
           color: colorScheme.card,
           border: Border(right: BorderSide(color: colorScheme.border)),
         ),
-        child: LibraryPage(controller: controller),
+        child: Text("side bar"),
       ),
     );
   }
