@@ -36,9 +36,7 @@ class WorkspaceFrame extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: colorScheme.card,
                       border: Border(
-                        right: BorderSide(
-                          color: colorScheme.border,
-                        ),
+                        right: BorderSide(color: colorScheme.border),
                       ),
                     ),
                     child: sidebar,
@@ -46,9 +44,7 @@ class WorkspaceFrame extends StatelessWidget {
                 ),
               Expanded(
                 child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colorScheme.background,
-                  ),
+                  decoration: BoxDecoration(color: colorScheme.background),
                   child: content,
                 ),
               ),
@@ -59,9 +55,7 @@ class WorkspaceFrame extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: colorScheme.card,
                       border: Border(
-                        left: BorderSide(
-                          color: colorScheme.border,
-                        ),
+                        left: BorderSide(color: colorScheme.border),
                       ),
                     ),
                     child: inspector,
@@ -76,11 +70,7 @@ class WorkspaceFrame extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: colorScheme.card,
-                border: Border(
-                  top: BorderSide(
-                    color: colorScheme.border,
-                  ),
-                ),
+                border: Border(top: BorderSide(color: colorScheme.border)),
               ),
               child: bottomPane,
             ),

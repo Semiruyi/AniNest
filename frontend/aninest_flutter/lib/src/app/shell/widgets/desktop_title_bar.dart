@@ -22,9 +22,7 @@ class DesktopTitleBar extends StatelessWidget {
       width: 46,
       height: 44,
       child: Tooltip(
-        tooltip: (context) => TooltipContainer(
-          child: Text(tooltip),
-        ),
+        tooltip: (context) => TooltipContainer(child: Text(tooltip)),
         child: destructive
             ? DestructiveButton(
                 density: ButtonDensity.icon,

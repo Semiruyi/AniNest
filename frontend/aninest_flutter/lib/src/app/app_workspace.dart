@@ -1,5 +1,5 @@
 import 'package:aninest_flutter/src/app/app_controller.dart';
-import 'package:aninest_flutter/src/core/widgets/workspace_frame.dart';
+import 'package:aninest_flutter/src/app/workspace/workspace_frame.dart';
 import 'package:aninest_flutter/src/features/library/presentation/library_page.dart';
 import 'package:aninest_flutter/src/features/metadata/presentation/metadata_page.dart';
 import 'package:aninest_flutter/src/features/player/presentation/player_page.dart';

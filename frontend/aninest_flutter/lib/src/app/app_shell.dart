@@ -1,7 +1,7 @@
 import 'package:aninest_flutter/src/app/app_controller.dart';
+import 'package:aninest_flutter/src/app/shell/widgets/desktop_title_bar.dart';
 import 'package:aninest_flutter/src/app/app_workspace.dart';
 import 'package:aninest_flutter/src/core/platform/app_platform.dart';
-import 'package:aninest_flutter/src/core/widgets/desktop_title_bar.dart';
 import 'package:aninest_flutter/src/core/window/window_frame_controller.dart';
 import 'package:aninest_flutter/src/core/window/window_service.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -43,13 +43,8 @@ class _AppShellState extends State<AppShell> {
         children: <Widget>[
           if (AppPlatform.isDesktop)
             DesktopTitleBar(controller: _windowFrameController),
-          Container(
-            height: 1,
-            color: colorScheme.border,
-          ),
-          Expanded(
-            child: AppWorkspace(controller: widget.controller),
-          ),
+          Container(height: 1, color: colorScheme.border),
+          Expanded(child: AppWorkspace(controller: widget.controller)),
         ],
       ),
     );
