@@ -1,0 +1,13 @@
+{
+  "@@locale": "zh",
+  "appTitle": "AniNest",
+  "menuFile": "文件",
+  "menuSettings": "设置",
+  "menuLanguage": "语言",
+  "menuAddFolder": "添加文件夹",
+  "menuScanFolder": "扫描文件夹",
+  "languageEnglish": "English",
+  "languageSimplifiedChinese": "简体中文",
+  "sidebarPlaceholder": "侧边栏",
+  "contentPlaceholder": "内容区"
+}

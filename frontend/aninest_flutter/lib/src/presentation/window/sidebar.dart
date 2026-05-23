@@ -1,5 +1,4 @@
-import 'package:aninest_flutter/src/features/library/application/library_controller.dart';
-import 'package:aninest_flutter/src/presentation/features/library/library_page.dart';
+import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class Sidebar extends StatelessWidget {
@@ -10,6 +9,7 @@ class Sidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return SizedBox(
       width: width,
@@ -18,7 +18,7 @@ class Sidebar extends StatelessWidget {
           color: colorScheme.card,
           border: Border(right: BorderSide(color: colorScheme.border)),
         ),
-        child: Text("side bar"),
+        child: Text(l10n.sidebarPlaceholder),
       ),
     );
   }

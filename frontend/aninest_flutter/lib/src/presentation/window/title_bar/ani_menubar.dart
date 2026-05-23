@@ -1,65 +1,64 @@
-import 'package:flutter/services.dart';
+import 'package:aninest_flutter/src/app/app_controller.dart';
+import 'package:aninest_flutter/src/app/app_locale.dart';
+import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-class AniMenubar extends StatefulWidget {
-  const AniMenubar({super.key});
+class AniMenubar extends StatelessWidget {
+  const AniMenubar({super.key, required this.controller});
 
-  @override
-  State<AniMenubar> createState() => _AniMenubarState();
-}
-
-class _AniMenubarState extends State<AniMenubar> {
-  int _selectedLanguage = 1;
+  final AppController controller;
 
   @override
   Widget build(BuildContext context) {
-    return Menubar(
-      children: [
-        const MenuButton(
-          subMenu: [
-            MenuButton(
-              leading: Icon(BootstrapIcons.folder2Open),
-              child: Text('Add Folder'),
-            ),
-            MenuButton(
-              leading: Icon(BootstrapIcons.folderPlus),
-              child: Text('Scan Folder'),
-            ),
-          ],
-          child: Text('File'),
-        ),
+    final l10n = AppLocalizations.of(context);
 
-        MenuButton(
-          subMenu: [
-            MenuButton(
-              subMenu: [
-                MenuRadioGroup<int>(
-                value: _selectedLanguage,
-                onChanged: (context, value) {
-                  setState(() {
-                    _selectedLanguage = value;
-                  });
-                },
-                children: const [
-                  MenuRadio<int>(
-                    value: 0,
-                    autoClose: false,
-                    child: Text('简体中文'),
-                  ),
-                  MenuRadio<int>(
-                    value: 1,
-                    autoClose: false,
-                    child: Text('English'),
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) => Menubar(
+        children: [
+          MenuButton(
+            subMenu: [
+              MenuButton(
+                leading: const Icon(BootstrapIcons.folder2Open),
+                child: Text(l10n.menuAddFolder),
+              ),
+              MenuButton(
+                leading: const Icon(BootstrapIcons.folderPlus),
+                child: Text(l10n.menuScanFolder),
+              ),
+            ],
+            child: Text(l10n.menuFile),
+          ),
+          MenuButton(
+            subMenu: [
+              MenuButton(
+                subMenu: [
+                  MenuRadioGroup<AppLocaleOption>(
+                    value: controller.locale,
+                    onChanged: (context, value) async {
+                      await controller.saveLocale(value);
+                    },
+                    children: [
+                      MenuRadio<AppLocaleOption>(
+                        value: AppLocaleOption.simplifiedChinese,
+                        autoClose: false,
+                        child: Text(l10n.languageSimplifiedChinese),
+                      ),
+                      MenuRadio<AppLocaleOption>(
+                        value: AppLocaleOption.english,
+                        autoClose: false,
+                        child: Text(l10n.languageEnglish),
+                      ),
+                    ],
                   ),
                 ],
+                child: Text(l10n.menuLanguage),
               ),
-              ],
-              child: Text('Language')
-            ),
-          ],
-          child: const Text('Settings'),
-        ),
-      ],
+            ],
+            child: Text(l10n.menuSettings),
+          ),
+        ],
+      ),
     );
   }
 }

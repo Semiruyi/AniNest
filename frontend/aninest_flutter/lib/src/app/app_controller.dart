@@ -1,3 +1,4 @@
+import 'package:aninest_flutter/src/app/app_locale.dart';
 import 'package:aninest_flutter/src/api/api_exception.dart';
 import 'package:aninest_flutter/src/api/aninest_http_client.dart';
 import 'package:aninest_flutter/src/features/library/application/library_controller.dart';
@@ -7,6 +8,7 @@ import 'package:aninest_flutter/src/features/settings/application/settings_contr
 import 'package:aninest_flutter/src/models/library_models.dart';
 import 'package:aninest_flutter/src/models/settings_models.dart';
 import 'package:aninest_flutter/src/services/library_api.dart';
+import 'package:aninest_flutter/src/services/local_preferences.dart';
 import 'package:aninest_flutter/src/services/metadata_api.dart';
 import 'package:aninest_flutter/src/services/playlist_api.dart';
 import 'package:aninest_flutter/src/services/session_api.dart';
@@ -20,7 +22,7 @@ class AppController extends ChangeNotifier {
     _wireServices();
     library = LibraryController(_libraryApi);
     player = PlayerController(_sessionApi, _playlistApi);
-    settings = SettingsController(_settingsApi);
+    settings = SettingsController(_settingsApi, LocalPreferences());
     metadata = MetadataController(_metadataApi, _thumbnailApi);
   }
 
@@ -42,6 +44,7 @@ class AppController extends ChangeNotifier {
   String? lastError;
 
   String get baseUrl => _client.baseUrl;
+  AppLocaleOption get locale => settings.locale;
 
   List<LibraryFolderDto> get folders => library.folders;
 
@@ -121,6 +124,12 @@ class AppController extends ChangeNotifier {
   Future<void> savePlayerSettings(PlayerSettingsDto settings) async {
     await _run(() async {
       await this.settings.savePlayerSettings(settings);
+    }, showSpinner: false);
+  }
+
+  Future<void> saveLocale(AppLocaleOption locale) async {
+    await _run(() async {
+      await settings.saveLocale(locale);
     }, showSpinner: false);
   }
 

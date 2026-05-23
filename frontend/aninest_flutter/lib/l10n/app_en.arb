@@ -1,0 +1,13 @@
+{
+  "@@locale": "en",
+  "appTitle": "AniNest",
+  "menuFile": "File",
+  "menuSettings": "Settings",
+  "menuLanguage": "Language",
+  "menuAddFolder": "Add Folder",
+  "menuScanFolder": "Scan Folder",
+  "languageEnglish": "English",
+  "languageSimplifiedChinese": "简体中文",
+  "sidebarPlaceholder": "Sidebar",
+  "contentPlaceholder": "Content"
+}

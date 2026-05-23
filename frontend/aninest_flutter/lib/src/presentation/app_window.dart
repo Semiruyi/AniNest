@@ -43,7 +43,10 @@ class _AppWindowState extends State<AppWindow> {
       child: Column(
         children: <Widget>[
           if (AppPlatform.isDesktop)
-            TitleBar(controller: _windowFrameController),
+            TitleBar(
+              controller: _windowFrameController,
+              appController: widget.controller,
+            ),
           Container(height: 1, color: colorScheme.border),
           Expanded(
             child: Row(
