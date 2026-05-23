@@ -1,11 +1,11 @@
 import 'package:aninest_flutter/src/core/window/window_frame_controller.dart';
 import 'package:aninest_flutter/src/presentation/window/title_bar/drag_bar.dart';
-import 'package:aninest_flutter/src/presentation/window/title_bar/menu_bar.dart';
+import 'package:aninest_flutter/src/presentation/window/title_bar/ani_menubar.dart';
 import 'package:aninest_flutter/src/presentation/window/title_bar/window_control_bar.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class TitleBar extends StatelessWidget {
-  const TitleBar({super.key, required this.controller, this.title = 'AniNest'});
+  const TitleBar({super.key, required this.controller, this.title = 'Ani'});
 
   final WindowFrameController controller;
   final String title;
@@ -19,7 +19,11 @@ class TitleBar extends StatelessWidget {
       height: 44,
       child: Row(
         children: <Widget>[
-          MenuBar(title: title),
+          Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: Text(title),
+          ),
+          AniMenubar(),
           const Expanded(child: DragBar()),
           WindowControlBar(controller: controller),
         ],
