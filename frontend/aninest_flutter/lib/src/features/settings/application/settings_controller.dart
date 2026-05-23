@@ -1,6 +1,6 @@
 import 'package:aninest_flutter/src/app/app_locale.dart';
+import 'package:aninest_flutter/src/core/storage/local_preferences.dart';
 import 'package:aninest_flutter/src/models/settings_models.dart';
-import 'package:aninest_flutter/src/services/local_preferences.dart';
 import 'package:aninest_flutter/src/services/settings_api.dart';
 import 'package:flutter/foundation.dart';
 

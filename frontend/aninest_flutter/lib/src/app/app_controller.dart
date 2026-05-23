@@ -8,7 +8,7 @@ import 'package:aninest_flutter/src/features/settings/application/settings_contr
 import 'package:aninest_flutter/src/models/library_models.dart';
 import 'package:aninest_flutter/src/models/settings_models.dart';
 import 'package:aninest_flutter/src/services/library_api.dart';
-import 'package:aninest_flutter/src/services/local_preferences.dart';
+import 'package:aninest_flutter/src/core/storage/local_preferences.dart';
 import 'package:aninest_flutter/src/services/metadata_api.dart';
 import 'package:aninest_flutter/src/services/playlist_api.dart';
 import 'package:aninest_flutter/src/services/session_api.dart';

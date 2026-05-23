@@ -1,12 +1,29 @@
+import 'dart:async';
+
 import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/app/app_locale.dart';
+import 'package:aninest_flutter/src/core/platform/directory_picker.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class AniMenubar extends StatelessWidget {
-  const AniMenubar({super.key, required this.controller});
+  const AniMenubar({
+    super.key,
+    required this.controller,
+    this.directoryPicker = const DirectoryPicker(),
+  });
 
   final AppController controller;
+  final DirectoryPicker directoryPicker;
+
+  Future<void> _handleAddFolder() async {
+    final path = await directoryPicker.pickDirectory();
+    if (path == null || path.isEmpty) {
+      return;
+    }
+
+    await controller.addFolder(path);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +37,9 @@ class AniMenubar extends StatelessWidget {
             subMenu: [
               MenuButton(
                 leading: const Icon(BootstrapIcons.folder2Open),
+                onPressed: (context) {
+                  unawaited(_handleAddFolder());
+                },
                 child: Text(l10n.menuAddFolder),
               ),
               MenuButton(
