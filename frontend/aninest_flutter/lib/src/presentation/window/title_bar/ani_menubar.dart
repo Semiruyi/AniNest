@@ -4,16 +4,20 @@ import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/app/app_locale.dart';
 import 'package:aninest_flutter/src/core/platform/directory_picker.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
+import 'package:aninest_flutter/src/presentation/feedback/app_feedback_controller.dart';
+import 'package:aninest_flutter/src/presentation/feedback/app_feedback_models.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class AniMenubar extends StatelessWidget {
   const AniMenubar({
     super.key,
     required this.controller,
+    required this.feedbackController,
     this.directoryPicker = const DirectoryPicker(),
   });
 
   final AppController controller;
+  final AppFeedbackController feedbackController;
   final DirectoryPicker directoryPicker;
 
   Future<void> _handleAddFolder() async {
@@ -23,6 +27,26 @@ class AniMenubar extends StatelessWidget {
     }
 
     await controller.addFolder(path);
+  }
+
+  void _showTestInfoToast() {
+    feedbackController.publish(
+      const AppFeedbackRequest(
+        kind: AppFeedbackKind.toastInfo,
+        title: 'Test Info',
+        message: 'This is an informational toast from the window feedback layer.',
+      ),
+    );
+  }
+
+  void _showTestErrorDialog() {
+    feedbackController.publish(
+      const AppFeedbackRequest(
+        kind: AppFeedbackKind.dialogError,
+        title: 'Test Error',
+        message: 'This is a dialog-based error message from the window feedback layer.',
+      ),
+    );
   }
 
   @override
@@ -73,6 +97,17 @@ class AniMenubar extends StatelessWidget {
                   ),
                 ],
                 child: Text(l10n.menuLanguage),
+              ),
+              const MenuDivider(),
+              MenuButton(
+                leading: const Icon(RadixIcons.infoCircled),
+                onPressed: (context) => _showTestInfoToast(),
+                child: const Text('Test Info Toast'),
+              ),
+              MenuButton(
+                leading: const Icon(RadixIcons.exclamationTriangle),
+                onPressed: (context) => _showTestErrorDialog(),
+                child: const Text('Test Error Dialog'),
               ),
             ],
             child: Text(l10n.menuSettings),

@@ -1,5 +1,6 @@
 import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/core/window/window_frame_controller.dart';
+import 'package:aninest_flutter/src/presentation/feedback/app_feedback_controller.dart';
 import 'package:aninest_flutter/src/presentation/window/title_bar/drag_bar.dart';
 import 'package:aninest_flutter/src/presentation/window/title_bar/ani_menubar.dart';
 import 'package:aninest_flutter/src/presentation/window/title_bar/window_control_bar.dart';
@@ -10,11 +11,13 @@ class TitleBar extends StatelessWidget {
     super.key,
     required this.controller,
     required this.appController,
+    required this.feedbackController,
     this.title = 'Ani',
   });
 
   final WindowFrameController controller;
   final AppController appController;
+  final AppFeedbackController feedbackController;
   final String title;
 
   @override
@@ -30,7 +33,10 @@ class TitleBar extends StatelessWidget {
             padding: const EdgeInsets.all(10.0),
             child: Text(title),
           ),
-          AniMenubar(controller: appController),
+          AniMenubar(
+            controller: appController,
+            feedbackController: feedbackController,
+          ),
           const Expanded(child: DragBar()),
           WindowControlBar(controller: controller),
         ],
