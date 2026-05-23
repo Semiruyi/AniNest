@@ -5,6 +5,7 @@ import 'package:aninest_flutter/src/core/window/window_service.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_controller.dart';
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_models.dart';
+import 'package:aninest_flutter/src/presentation/window/app_page.dart';
 import 'package:aninest_flutter/src/presentation/window/content_area.dart';
 import 'package:aninest_flutter/src/presentation/window/sidebar.dart';
 import 'package:aninest_flutter/src/presentation/window/title_bar.dart';
@@ -23,6 +24,7 @@ class _AppWindowState extends State<AppWindow> {
   late final WindowFrameController _windowFrameController;
   late final AppFeedbackController _feedbackController;
   bool _isPresentingFeedback = false;
+  AppPage _currentPage = AppPage.library;
 
   @override
   void initState() {
@@ -140,11 +142,24 @@ class _AppWindowState extends State<AppWindow> {
           Expanded(
             child: Row(
               children: <Widget>[
-                Sidebar(),
+                Sidebar(
+                  currentPage: _currentPage,
+                  onPageSelected: (page) {
+                    if (_currentPage == page) {
+                      return;
+                    }
+                    setState(() {
+                      _currentPage = page;
+                    });
+                  },
+                ),
                 Expanded(
                   child: Align(
                     alignment: Alignment.center,
-                    child: ContentArea(controller: widget.controller),
+                    child: ContentArea(
+                      controller: widget.controller,
+                      currentPage: _currentPage,
+                    ),
                   ),
                 ),
               ],

@@ -7,5 +7,10 @@ class LibraryPage extends StatelessWidget {
   final LibraryController controller;
 
   @override
-  Widget build(BuildContext context) => const SizedBox.expand();
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(color: Color(0xFF1D4ED8)),
+      child: const SizedBox.expand(),
+    );
+  }
 }

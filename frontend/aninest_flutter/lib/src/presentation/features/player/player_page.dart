@@ -7,5 +7,10 @@ class PlayerPage extends StatelessWidget {
   final PlayerController controller;
 
   @override
-  Widget build(BuildContext context) => const SizedBox.expand();
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(color: Color(0xFF15803D)),
+      child: const SizedBox.expand(),
+    );
+  }
 }

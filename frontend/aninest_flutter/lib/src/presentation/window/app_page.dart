@@ -1,0 +1,1 @@
+enum AppPage { library, player }
