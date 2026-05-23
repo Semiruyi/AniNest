@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/app/app_locale.dart';
+import 'package:aninest_flutter/src/core/logging/app_logger.dart';
 import 'package:aninest_flutter/src/core/platform/directory_picker.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_controller.dart';
@@ -20,33 +22,64 @@ class AniMenubar extends StatelessWidget {
   final AppFeedbackController feedbackController;
   final DirectoryPicker directoryPicker;
 
-  Future<void> _handleAddFolder() async {
-    final path = await directoryPicker.pickDirectory();
-    if (path == null || path.isEmpty) {
-      return;
+  Future<void> _handleAddFolder(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+
+    try {
+      final path = await directoryPicker.pickDirectory();
+      if (path == null || path.isEmpty) {
+        return;
+      }
+
+      final result = await controller.addFolder(path);
+      if (result == null) {
+        AppLogger.warning(
+          'AniMenubar.AddFolder',
+          'Received null addFolder result.',
+        );
+        return;
+      }
+
+      if (result.isAdded) {
+        return;
+      }
+
+      final folderName = _folderDisplayName(path, result.folder?.name);
+      if (result.isAlreadyExists) {
+        feedbackController.publish(
+          AppFeedbackRequest(
+            kind: AppFeedbackKind.toastInfo,
+            title: l10n.addFolderAlreadyAddedTitle,
+            message: l10n.addFolderAlreadyAddedMessage(folderName),
+          ),
+        );
+        return;
+      }
+
+      feedbackController.publish(
+        AppFeedbackRequest(
+          kind: AppFeedbackKind.dialogError,
+          title: l10n.addFolderErrorTitle,
+          message: result.message,
+        ),
+      );
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'AniMenubar.AddFolder',
+        'Unhandled exception while processing addFolder.',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  String _folderDisplayName(String path, String? fallbackName) {
+    if (fallbackName != null && fallbackName.isNotEmpty) {
+      return fallbackName;
     }
 
-    await controller.addFolder(path);
-  }
-
-  void _showTestInfoToast() {
-    feedbackController.publish(
-      const AppFeedbackRequest(
-        kind: AppFeedbackKind.toastInfo,
-        title: 'Test Info',
-        message: 'This is an informational toast from the window feedback layer.',
-      ),
-    );
-  }
-
-  void _showTestErrorDialog() {
-    feedbackController.publish(
-      const AppFeedbackRequest(
-        kind: AppFeedbackKind.dialogError,
-        title: 'Test Error',
-        message: 'This is a dialog-based error message from the window feedback layer.',
-      ),
-    );
+    final name = path.split(Platform.pathSeparator).last;
+    return name.isEmpty ? path : name;
   }
 
   @override
@@ -62,7 +95,7 @@ class AniMenubar extends StatelessWidget {
               MenuButton(
                 leading: const Icon(BootstrapIcons.folder2Open),
                 onPressed: (context) {
-                  unawaited(_handleAddFolder());
+                  unawaited(_handleAddFolder(context));
                 },
                 child: Text(l10n.menuAddFolder),
               ),
@@ -97,17 +130,6 @@ class AniMenubar extends StatelessWidget {
                   ),
                 ],
                 child: Text(l10n.menuLanguage),
-              ),
-              const MenuDivider(),
-              MenuButton(
-                leading: const Icon(RadixIcons.infoCircled),
-                onPressed: (context) => _showTestInfoToast(),
-                child: const Text('Test Info Toast'),
-              ),
-              MenuButton(
-                leading: const Icon(RadixIcons.exclamationTriangle),
-                onPressed: (context) => _showTestErrorDialog(),
-                child: const Text('Test Error Dialog'),
               ),
             ],
             child: Text(l10n.menuSettings),

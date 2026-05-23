@@ -2,6 +2,7 @@ import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/core/platform/app_platform.dart';
 import 'package:aninest_flutter/src/core/window/window_frame_controller.dart';
 import 'package:aninest_flutter/src/core/window/window_service.dart';
+import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_controller.dart';
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_models.dart';
 import 'package:aninest_flutter/src/presentation/window/content_area.dart';
@@ -63,6 +64,8 @@ class _AppWindowState extends State<AppWindow> {
   }
 
   Future<void> _presentFeedback(AppFeedbackRequest request) async {
+    final l10n = AppLocalizations.of(context);
+
     switch (request.kind) {
       case AppFeedbackKind.toastInfo:
         showToast(
@@ -79,13 +82,14 @@ class _AppWindowState extends State<AppWindow> {
       case AppFeedbackKind.dialogError:
         await showDialog<void>(
           context: context,
+          barrierDismissible: false,
           builder: (context) => AlertDialog(
             title: Text(request.title),
             content: Text(request.message),
             actions: [
               PrimaryButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Close'),
+                child: Text(l10n.commonClose),
               ),
             ],
           ),
@@ -101,17 +105,19 @@ class _AppWindowState extends State<AppWindow> {
     required ToastOverlay overlay,
   }) {
     return SurfaceCard(
-      child: Basic(
-        title: Text(title),
-        subtitle: Text(message),
-        trailing: PrimaryButton(
-            size: ButtonSize.small,
-            onPressed: () {
-              // Close the toast programmatically when clicking Undo.
-              overlay.close();
-            },
-            child: const Text('OK')),
-        trailingAlignment: Alignment.center,
+      child: IntrinsicWidth(
+        child: Basic(
+          leading: icon,
+          leadingAlignment: Alignment.center,
+          title: Text(title),
+          subtitle: Text(message),
+          trailing: GhostButton(
+            density: ButtonDensity.icon,
+            onPressed: overlay.close,
+            child: const Icon(RadixIcons.cross2),
+          ),
+          trailingAlignment: Alignment.center,
+        ),
       ),
     );
   }
@@ -135,10 +141,12 @@ class _AppWindowState extends State<AppWindow> {
             child: Row(
               children: <Widget>[
                 Sidebar(),
-                Expanded(child: Align(
-                  alignment: Alignment.center,
-                  child: ContentArea(controller: widget.controller),
-                )),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: ContentArea(controller: widget.controller),
+                  ),
+                ),
               ],
             ),
           ),

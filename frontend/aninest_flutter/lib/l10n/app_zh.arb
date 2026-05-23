@@ -9,5 +9,14 @@
   "languageEnglish": "English",
   "languageSimplifiedChinese": "简体中文",
   "sidebarPlaceholder": "侧边栏",
-  "contentPlaceholder": "内容区"
+  "contentPlaceholder": "内容区",
+  "addFolderAlreadyAddedTitle": "文件夹已存在",
+  "addFolderAlreadyAddedMessage": "{name} 已在媒体库中。",
+  "@addFolderAlreadyAddedMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "addFolderErrorTitle": "无法添加文件夹",
+  "commonClose": "关闭"
 }

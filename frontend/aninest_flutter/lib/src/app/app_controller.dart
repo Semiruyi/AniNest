@@ -1,6 +1,7 @@
 import 'package:aninest_flutter/src/app/app_locale.dart';
 import 'package:aninest_flutter/src/api/api_exception.dart';
 import 'package:aninest_flutter/src/api/aninest_http_client.dart';
+import 'package:aninest_flutter/src/core/logging/app_logger.dart';
 import 'package:aninest_flutter/src/features/library/application/library_controller.dart';
 import 'package:aninest_flutter/src/features/metadata/application/metadata_controller.dart';
 import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
@@ -73,6 +74,13 @@ class AppController extends ChangeNotifier {
         await metadata.refresh(selectedFolderId);
       }
     });
+    if (result == null && lastError != null) {
+      result = _buildAddFolderFailureResult(path, lastError!);
+      AppLogger.warning(
+        'AppController.AddFolder',
+        'Converted operation failure into result status=${result?.status}, reason=${result?.reasonCode}',
+      );
+    }
     return result;
   }
 
@@ -150,8 +158,20 @@ class AppController extends ChangeNotifier {
     try {
       await operation();
     } on ApiException catch (error) {
+      AppLogger.error(
+        'AppController.Run',
+        'ApiException during operation.',
+        error: error,
+        stackTrace: StackTrace.current,
+      );
       lastError = '${error.code}: ${error.message}';
     } catch (error) {
+      AppLogger.error(
+        'AppController.Run',
+        'Unhandled exception during operation.',
+        error: error,
+        stackTrace: StackTrace.current,
+      );
       lastError = error.toString();
     } finally {
       isLoading = false;
@@ -166,6 +186,30 @@ class AppController extends ChangeNotifier {
     _settingsApi = SettingsApi(_client);
     _metadataApi = MetadataApi(_client);
     _thumbnailApi = ThumbnailApi(_client);
+  }
+
+  AddLibraryFolderResultDto _buildAddFolderFailureResult(
+    String path,
+    String errorMessage,
+  ) {
+    final normalized = errorMessage.toLowerCase();
+    if (normalized.contains('socketexception') ||
+        normalized.contains('clientexception')) {
+      return AddLibraryFolderResultDto(
+        status: 'failed',
+        message:
+            'Unable to connect to the backend at $baseUrl. Please make sure AniNest.Host is running, then try again.',
+        reasonCode: 'network_error',
+        folder: null,
+      );
+    }
+
+    return AddLibraryFolderResultDto(
+      status: 'failed',
+      message: 'Unable to add folder "$path". $errorMessage',
+      reasonCode: 'unexpected_error',
+      folder: null,
+    );
   }
 
   @override

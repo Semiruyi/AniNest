@@ -7,7 +7,16 @@
   "menuAddFolder": "Add Folder",
   "menuScanFolder": "Scan Folder",
   "languageEnglish": "English",
-  "languageSimplifiedChinese": "简体中文",
+  "languageSimplifiedChinese": "Simplified Chinese",
   "sidebarPlaceholder": "Sidebar",
-  "contentPlaceholder": "Content"
+  "contentPlaceholder": "Content",
+  "addFolderAlreadyAddedTitle": "Folder already added",
+  "addFolderAlreadyAddedMessage": "{name} is already in your library.",
+  "@addFolderAlreadyAddedMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "addFolderErrorTitle": "Unable to add folder",
+  "commonClose": "Close"
 }
