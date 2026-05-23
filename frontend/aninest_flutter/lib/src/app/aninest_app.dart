@@ -1,6 +1,6 @@
 import 'package:aninest_flutter/src/app/app_controller.dart';
-import 'package:aninest_flutter/src/app/app_shell.dart';
 import 'package:aninest_flutter/src/app/app_theme.dart';
+import 'package:aninest_flutter/src/presentation/app_window.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' as s;
 
 class AniNestApp extends s.StatefulWidget {
@@ -32,7 +32,7 @@ class _AniNestAppState extends s.State<AniNestApp> {
       title: 'AniNest',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.shadcnDark,
-      home: AppShell(controller: _controller),
+      home: AppWindow(controller: _controller),
     );
   }
 }

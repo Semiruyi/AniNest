@@ -1,21 +1,22 @@
 import 'package:aninest_flutter/src/app/app_controller.dart';
-import 'package:aninest_flutter/src/app/shell/widgets/desktop_title_bar.dart';
-import 'package:aninest_flutter/src/app/app_workspace.dart';
 import 'package:aninest_flutter/src/core/platform/app_platform.dart';
 import 'package:aninest_flutter/src/core/window/window_frame_controller.dart';
 import 'package:aninest_flutter/src/core/window/window_service.dart';
+import 'package:aninest_flutter/src/presentation/window/content.dart';
+import 'package:aninest_flutter/src/presentation/window/sidebar.dart';
+import 'package:aninest_flutter/src/presentation/window/title_bar.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-class AppShell extends StatefulWidget {
-  const AppShell({super.key, required this.controller});
+class AppWindow extends StatefulWidget {
+  const AppWindow({super.key, required this.controller});
 
   final AppController controller;
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  State<AppWindow> createState() => _AppWindowState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppWindowState extends State<AppWindow> {
   late final WindowFrameController _windowFrameController;
 
   @override
@@ -42,9 +43,16 @@ class _AppShellState extends State<AppShell> {
       child: Column(
         children: <Widget>[
           if (AppPlatform.isDesktop)
-            DesktopTitleBar(controller: _windowFrameController),
+            TitleBar(controller: _windowFrameController),
           Container(height: 1, color: colorScheme.border),
-          Expanded(child: AppWorkspace(controller: widget.controller)),
+          Expanded(
+            child: Row(
+              children: <Widget>[
+                Sidebar(controller: widget.controller.library),
+                Expanded(child: Content(controller: widget.controller)),
+              ],
+            ),
+          ),
         ],
       ),
     );

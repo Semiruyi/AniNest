@@ -2,12 +2,8 @@ import 'package:aninest_flutter/src/core/window/window_frame_controller.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
-class DesktopTitleBar extends StatelessWidget {
-  const DesktopTitleBar({
-    super.key,
-    required this.controller,
-    this.title = 'AniNest',
-  });
+class TitleBar extends StatelessWidget {
+  const TitleBar({super.key, required this.controller, this.title = 'AniNest'});
 
   final WindowFrameController controller;
   final String title;
