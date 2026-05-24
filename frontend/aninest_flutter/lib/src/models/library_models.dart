@@ -21,7 +21,6 @@ class LibraryFolderDto {
   const LibraryFolderDto({
     required this.folderId,
     required this.name,
-    required this.path,
     required this.videoCount,
     required this.coverUrl,
     required this.playedCount,
@@ -32,7 +31,6 @@ class LibraryFolderDto {
 
   final String folderId;
   final String name;
-  final String path;
   final int videoCount;
   final String? coverUrl;
   final int playedCount;
@@ -44,7 +42,6 @@ class LibraryFolderDto {
     return LibraryFolderDto(
       folderId: json['folderId'] as String,
       name: json['name'] as String,
-      path: json['path'] as String,
       videoCount: json['videoCount'] as int? ?? 0,
       coverUrl: json['coverUrl'] as String?,
       playedCount: json['playedCount'] as int? ?? 0,

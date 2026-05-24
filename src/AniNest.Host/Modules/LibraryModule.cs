@@ -50,8 +50,7 @@ internal sealed class LibraryModule : ILibraryModule
         {
             _events.Publish("library.folder_added", new
             {
-                folderId = folder.FolderId,
-                folder.Path
+                folderId = folder.FolderId
             });
         }
     }

@@ -136,7 +136,7 @@ class _LibraryCard extends StatelessWidget {
 
   String _subtitleFor(LibraryFolderDto folder) {
     if (folder.videoCount <= 0) {
-      return folder.path;
+      return 'No episodes detected';
     }
     return '${folder.playedCount} / ${folder.videoCount} episodes';
   }

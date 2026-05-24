@@ -9,7 +9,6 @@ public sealed record LibraryMetadataSummaryDto(
 public sealed record LibraryFolderDto(
     string FolderId,
     string Name,
-    string Path,
     int VideoCount,
     string? CoverUrl,
     int PlayedCount,
