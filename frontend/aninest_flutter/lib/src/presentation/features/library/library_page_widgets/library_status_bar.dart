@@ -1,8 +1,11 @@
+import 'package:aninest_flutter/src/features/library/application/library_controller.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_layout.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class LibraryStatusBar extends StatelessWidget {
-  const LibraryStatusBar({super.key});
+  const LibraryStatusBar({super.key, required this.controller});
+
+  final LibraryController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -15,20 +18,25 @@ class LibraryStatusBar extends StatelessWidget {
         color: colorScheme.background,
         border: Border(top: BorderSide(color: colorScheme.border)),
       ),
-      child: Row(
-        children: <Widget>[
-          const Text('128 items'),
-          const Gap(16),
-          Text(
-            '0 selected',
-            style: TextStyle(color: colorScheme.mutedForeground),
-          ),
-          const Spacer(),
-          Text(
-            'Library idle',
-            style: TextStyle(color: colorScheme.mutedForeground),
-          ),
-        ],
+      child: AnimatedBuilder(
+        animation: controller,
+        builder: (context, _) => Row(
+          children: <Widget>[
+            Text('${controller.folders.length} items'),
+            const Gap(16),
+            Text(
+              controller.selectedFolderId == null ? '0 selected' : '1 selected',
+              style: TextStyle(color: colorScheme.mutedForeground),
+            ),
+            const Spacer(),
+            Text(
+              controller.selectedFolder == null
+                  ? 'Library idle'
+                  : 'Selected ${controller.selectedFolder!.name}',
+              style: TextStyle(color: colorScheme.mutedForeground),
+            ),
+          ],
+        ),
       ),
     );
   }

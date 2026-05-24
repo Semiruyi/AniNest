@@ -35,4 +35,21 @@ class LibraryApi {
       body: <String, dynamic>{'isFavorite': isFavorite},
     );
   }
+
+  Future<void> setWatchStatus(String folderId, String status) async {
+    await _client.post(
+      '/api/library/folders/$folderId:watch-status',
+      body: <String, dynamic>{'status': status},
+    );
+  }
+
+  Future<void> moveToFront(String folderId) async {
+    await _client.post('/api/library/folders/$folderId:move-to-front');
+  }
+
+  Future<void> deleteFolder(String folderId) async {
+    await _client.delete('/api/library/folders/$folderId');
+  }
+
+  String? resolveMediaUrl(String? path) => _client.resolveUrl(path);
 }

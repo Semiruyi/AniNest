@@ -17,6 +17,14 @@ class AniNestHttpClient {
     _baseUrl = _normalizeBaseUrl(nextBaseUrl);
   }
 
+  String? resolveUrl(String? path) {
+    if (path == null || path.isEmpty) {
+      return null;
+    }
+
+    return _resolve(path).toString();
+  }
+
   Future<Map<String, dynamic>> getObject(String path) async {
     final payload = await _send('GET', path);
     return (payload as Map).cast<String, dynamic>();

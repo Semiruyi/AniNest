@@ -36,16 +36,16 @@ class LibraryPage extends StatelessWidget {
                   minSize: kLibraryContentPaneMinSize,
                   child: LibraryContentPane(controller: controller),
                 ),
-                const ResizablePane(
+                ResizablePane(
                   initialSize: kLibraryRightPaneInitialSize,
                   minSize: kLibraryRightPaneMinSize,
                   maxSize: kLibraryRightPaneMaxSize,
-                  child: LibraryInspectorPane(),
+                  child: LibraryInspectorPane(controller: controller),
                 ),
               ],
             ),
           ),
-          const LibraryStatusBar(),
+          LibraryStatusBar(controller: controller),
         ],
       ),
     );
