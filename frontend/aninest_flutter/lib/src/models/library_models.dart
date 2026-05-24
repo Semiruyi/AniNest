@@ -15,6 +15,13 @@ class LibraryMetadataSummaryDto {
       posterUrl: json['posterUrl'] as String?,
     );
   }
+
+  LibraryMetadataSummaryDto copyWith({String? title, String? posterUrl}) {
+    return LibraryMetadataSummaryDto(
+      title: title ?? this.title,
+      posterUrl: posterUrl ?? this.posterUrl,
+    );
+  }
 }
 
 class LibraryFolderDto {
@@ -52,6 +59,28 @@ class LibraryFolderDto {
               json['metadataSummary'] as Map<String, dynamic>,
             )
           : null,
+    );
+  }
+
+  LibraryFolderDto copyWith({
+    String? folderId,
+    String? name,
+    int? videoCount,
+    String? coverUrl,
+    int? playedCount,
+    WatchStatus? watchStatus,
+    bool? isFavorite,
+    LibraryMetadataSummaryDto? metadataSummary,
+  }) {
+    return LibraryFolderDto(
+      folderId: folderId ?? this.folderId,
+      name: name ?? this.name,
+      videoCount: videoCount ?? this.videoCount,
+      coverUrl: coverUrl ?? this.coverUrl,
+      playedCount: playedCount ?? this.playedCount,
+      watchStatus: watchStatus ?? this.watchStatus,
+      isFavorite: isFavorite ?? this.isFavorite,
+      metadataSummary: metadataSummary ?? this.metadataSummary,
     );
   }
 }

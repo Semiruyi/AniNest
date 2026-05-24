@@ -43,6 +43,21 @@ class AniNestHttpClient {
 
   Future<dynamic> delete(String path) => _send('DELETE', path);
 
+  Future<http.StreamedResponse> openGetStream(
+    String path, {
+    Map<String, String>? headers,
+  }) {
+    final request = http.Request('GET', _resolve(path));
+    if (headers != null) {
+      request.headers.addAll(headers);
+    }
+    return _httpClient.send(request);
+  }
+
+  void close() {
+    _httpClient.close();
+  }
+
   Future<dynamic> _send(String method, String path, {Object? body}) async {
     final request = http.Request(method, _resolve(path));
     request.headers['Accept'] = 'application/json';

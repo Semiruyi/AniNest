@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:aninest_flutter/src/app/app_locale.dart';
 import 'package:aninest_flutter/src/api/api_exception.dart';
 import 'package:aninest_flutter/src/api/aninest_http_client.dart';
@@ -14,7 +16,9 @@ import 'package:aninest_flutter/src/services/metadata_api.dart';
 import 'package:aninest_flutter/src/services/playlist_api.dart';
 import 'package:aninest_flutter/src/services/session_api.dart';
 import 'package:aninest_flutter/src/services/settings_api.dart';
+import 'package:aninest_flutter/src/services/host_event_service.dart';
 import 'package:aninest_flutter/src/services/thumbnail_api.dart';
+import 'package:aninest_flutter/src/models/host_event_models.dart';
 import 'package:flutter/foundation.dart';
 
 class AppController extends ChangeNotifier {
@@ -25,6 +29,7 @@ class AppController extends ChangeNotifier {
     player = PlayerController(_sessionApi, _playlistApi);
     settings = SettingsController(_settingsApi, LocalPreferences());
     metadata = MetadataController(_metadataApi, _thumbnailApi);
+    _hostEventService = HostEventService(_client);
   }
 
   final AniNestHttpClient _client;
@@ -35,11 +40,14 @@ class AppController extends ChangeNotifier {
   late SettingsApi _settingsApi;
   late MetadataApi _metadataApi;
   late ThumbnailApi _thumbnailApi;
+  late HostEventService _hostEventService;
 
   late final LibraryController library;
   late final PlayerController player;
   late final SettingsController settings;
   late final MetadataController metadata;
+
+  StreamSubscription<HostEventEnvelopeDto>? _hostEventSubscription;
 
   bool isLoading = false;
   String? lastError;
@@ -58,6 +66,7 @@ class AppController extends ChangeNotifier {
   AppSettingsDto? get appSettings => settings.appSettings;
 
   Future<void> bootstrap() async {
+    _startHostEvents();
     await _run(() async {
       await settings.load();
       await library.refresh();
@@ -91,6 +100,7 @@ class AppController extends ChangeNotifier {
     player.rebind(_sessionApi, _playlistApi);
     settings.rebind(_settingsApi);
     metadata.rebind(_metadataApi, _thumbnailApi);
+    await _restartHostEvents();
     await bootstrap();
   }
 
@@ -188,6 +198,60 @@ class AppController extends ChangeNotifier {
     _thumbnailApi = ThumbnailApi(_client);
   }
 
+  void _startHostEvents() {
+    _hostEventSubscription ??= _hostEventService.events.listen(
+      _handleHostEvent,
+    );
+    _hostEventService.start();
+  }
+
+  Future<void> _restartHostEvents() async {
+    await _hostEventSubscription?.cancel();
+    _hostEventSubscription = null;
+    await _hostEventService.restart();
+  }
+
+  Future<void> _handleHostEvent(HostEventEnvelopeDto envelope) async {
+    try {
+      switch (envelope.type) {
+        case 'metadata.folder_updated':
+          final payload = envelope.payload;
+          if (payload is! Map<String, dynamic>) {
+            return;
+          }
+
+          final update = MetadataFolderUpdatedEventDto.fromJson(payload);
+          if (update.folderId.isEmpty) {
+            return;
+          }
+
+          library.applyMetadataFolderUpdate(update);
+          metadata.applyFolderUpdate(update, selectedFolderId);
+          if (selectedFolderId == update.folderId) {
+            await metadata.refreshSelectedFolder(update.folderId);
+          }
+          break;
+
+        case 'metadata.summary_changed':
+          final payload = envelope.payload;
+          if (payload is! Map<String, dynamic>) {
+            return;
+          }
+
+          final update = MetadataSummaryChangedEventDto.fromJson(payload);
+          metadata.applySummary(update.summary);
+          break;
+      }
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'AppController.HostEvents',
+        'Failed to process host event ${envelope.type}.',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   AddLibraryFolderResultDto _buildAddFolderFailureResult(
     String path,
     String errorMessage,
@@ -214,10 +278,13 @@ class AppController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _hostEventSubscription?.cancel();
+    _hostEventService.dispose();
     library.dispose();
     player.dispose();
     settings.dispose();
     metadata.dispose();
+    _client.close();
     super.dispose();
   }
 }

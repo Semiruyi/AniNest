@@ -198,8 +198,16 @@ public sealed class LibraryCatalogService
         string state,
         bool hasMetadata)
     {
+        var coverUrl = folder.CoverUrl;
+        if (string.IsNullOrWhiteSpace(coverUrl) && !string.IsNullOrWhiteSpace(posterPath))
+        {
+            coverUrl = _resourceUrlService.GetUrl(
+                new ResourceKey(ResourceKind.LibraryCover, folder.FolderId));
+        }
+
         return folder with
         {
+            CoverUrl = coverUrl,
             MetadataSummary = new LibraryMetadataSummaryDto(
                 title,
                 string.IsNullOrWhiteSpace(posterPath)

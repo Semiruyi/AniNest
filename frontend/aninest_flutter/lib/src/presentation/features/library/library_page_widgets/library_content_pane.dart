@@ -19,14 +19,6 @@ class LibraryContentPane extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          AnimatedBuilder(
-            animation: controller,
-            builder: (context, _) => LibraryPaneHeader(
-              title: 'All Media',
-              subtitle: '${controller.folders.length} items in the library',
-            ),
-          ),
-          const Gap(12),
           Expanded(
             child: AnimatedBuilder(
               animation: controller,

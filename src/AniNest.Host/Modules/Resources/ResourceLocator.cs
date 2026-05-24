@@ -9,15 +9,18 @@ internal sealed class ResourceLocator : IResourceLocator
     private readonly ILibraryCatalogStore _libraryCatalogStore;
     private readonly ILibraryFileScanner _libraryFileScanner;
     private readonly IMetadataStore _metadataStore;
+    private readonly string _metadataPosterRootPath;
 
     public ResourceLocator(
         ILibraryCatalogStore libraryCatalogStore,
         ILibraryFileScanner libraryFileScanner,
-        IMetadataStore metadataStore)
+        IMetadataStore metadataStore,
+        string metadataPosterRootPath)
     {
         _libraryCatalogStore = libraryCatalogStore;
         _libraryFileScanner = libraryFileScanner;
         _metadataStore = metadataStore;
+        _metadataPosterRootPath = metadataPosterRootPath;
     }
 
     public async Task<ResolvedResource?> ResolveAsync(
@@ -72,7 +75,14 @@ internal sealed class ResourceLocator : IResourceLocator
             }
         }
 
-        return folder.CoverPath;
+        if (!string.IsNullOrWhiteSpace(folder.CoverPath))
+            return folder.CoverPath;
+
+        var metadata = _metadataStore.GetByFolderId(folderId);
+        if (!string.IsNullOrWhiteSpace(metadata?.PosterPath))
+            return ResolveMetadataPosterPath(metadata!.PosterPath);
+
+        return ResolveMetadataPosterPath(folder.MetadataSummary?.PosterPath);
     }
 
     private string? ResolveLibraryPosterPath(string folderId)
@@ -80,12 +90,23 @@ internal sealed class ResourceLocator : IResourceLocator
         var metadata = _metadataStore.GetByFolderId(folderId);
         if (!string.IsNullOrWhiteSpace(metadata?.PosterPath))
         {
-            return metadata!.PosterPath;
+            return ResolveMetadataPosterPath(metadata!.PosterPath);
         }
 
-        return _libraryCatalogStore.GetFolders()
+        return ResolveMetadataPosterPath(_libraryCatalogStore.GetFolders()
             .FirstOrDefault(folder =>
                 string.Equals(folder.FolderId, folderId, StringComparison.OrdinalIgnoreCase))
-            ?.MetadataSummary?.PosterPath;
+            ?.MetadataSummary?.PosterPath);
+    }
+
+    private string? ResolveMetadataPosterPath(string? posterPath)
+    {
+        if (string.IsNullOrWhiteSpace(posterPath))
+            return null;
+
+        if (Path.IsPathRooted(posterPath))
+            return posterPath;
+
+        return Path.Combine(_metadataPosterRootPath, posterPath);
     }
 }

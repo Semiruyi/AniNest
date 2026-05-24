@@ -1,4 +1,5 @@
 import 'package:aninest_flutter/src/models/enums.dart';
+import 'package:aninest_flutter/src/models/host_event_models.dart';
 import 'package:aninest_flutter/src/models/library_models.dart';
 import 'package:aninest_flutter/src/services/library_api.dart';
 import 'package:flutter/foundation.dart';
@@ -91,6 +92,39 @@ class LibraryController extends ChangeNotifier {
 
     _folders = const [];
     _selectedFolderId = null;
+    notifyListeners();
+  }
+
+  void applyMetadataFolderUpdate(MetadataFolderUpdatedEventDto update) {
+    var changed = false;
+    final nextFolders = _folders
+        .map((folder) {
+          if (folder.folderId != update.folderId) {
+            return folder;
+          }
+
+          changed = true;
+          final nextMetadata = update.hasMetadata
+              ? (folder.metadataSummary ??
+                        const LibraryMetadataSummaryDto(
+                          title: null,
+                          posterUrl: null,
+                        ))
+                    .copyWith(title: update.title, posterUrl: update.posterUrl)
+              : null;
+
+          return folder.copyWith(
+            coverUrl: update.coverUrl,
+            metadataSummary: nextMetadata,
+          );
+        })
+        .toList(growable: false);
+
+    if (!changed) {
+      return;
+    }
+
+    _folders = nextFolders;
     notifyListeners();
   }
 

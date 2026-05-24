@@ -156,6 +156,35 @@ public sealed class LibraryCatalogServiceTests
         Assert.Equal("folder-02", folders[0].FolderId);
     }
 
+    [Fact]
+    public void ApplyMetadataSummary_UsesMetadataPosterAsCoverFallback_WhenFolderHasNoCover()
+    {
+        var service = new LibraryCatalogService(
+            CreateStore(),
+            new FakeLibraryFileScanner(),
+            new FakeResourceUrlService());
+        var folder = new LibraryFolderDto(
+            "folder-01",
+            "Folder 01",
+            12,
+            null,
+            0,
+            WatchStatus.Unknown,
+            false,
+            null);
+
+        var updated = service.ApplyMetadataSummary(
+            folder,
+            "Bocchi",
+            "posters/folder-01.jpg",
+            MetadataState.Ready.ToString(),
+            hasMetadata: true);
+
+        Assert.Equal("/api/resources/library-cover/folder-01", updated.CoverUrl);
+        Assert.NotNull(updated.MetadataSummary);
+        Assert.Equal("/api/resources/library-poster/folder-01", updated.MetadataSummary!.PosterUrl);
+    }
+
     private static InMemoryLibraryCatalogStore CreateStore()
         => CreateStore(out _);
 

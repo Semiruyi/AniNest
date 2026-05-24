@@ -69,7 +69,11 @@ internal static class HostServiceRegistration
         services.AddSingleton<IMetadataTaskScheduler, MetadataTaskScheduler>();
         services.AddSingleton<IMetadataRuntimeStateService, MetadataRuntimeStateService>();
         services.AddSingleton<IMetadataLifecycleService, MetadataLifecycleService>();
-        services.AddSingleton<IResourceLocator, ResourceLocator>();
+        services.AddSingleton<IResourceLocator>(sp => new ResourceLocator(
+            sp.GetRequiredService<ILibraryCatalogStore>(),
+            sp.GetRequiredService<ILibraryFileScanner>(),
+            sp.GetRequiredService<IMetadataStore>(),
+            ResolvePath(configuration, "AniNest:MetadataPosterRootPath", Path.Combine("metadata", "posters"))));
 
         services.AddSingleton<ISettingsStore>(_ => new FileSettingsStore(
             ResolvePath(configuration, "AniNest:SettingsPath", "host-settings.json"),

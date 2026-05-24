@@ -414,6 +414,36 @@ public sealed class HostScaffoldTests
         Assert.Contains("\"scope\":\"player\"", dataLine, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task RefreshingMetadata_PublishesFolderUpdatedEventWithFrontendFields()
+    {
+        using var client = CreateClient();
+        using var response = await client.GetAsync("/api/events", HttpCompletionOption.ResponseHeadersRead);
+        response.EnsureSuccessStatusCode();
+
+        await using var stream = await response.Content.ReadAsStreamAsync();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+
+        await reader.ReadLineAsync();
+        await reader.ReadLineAsync();
+        await reader.ReadLineAsync();
+
+        var refreshResponse = await client.PostAsync("/api/metadata/folders/sample-folder:refresh", content: null);
+        refreshResponse.EnsureSuccessStatusCode();
+
+        var eventLine = await ReadNextNonEmptyLineAsync(reader);
+        var dataLine = await ReadNextNonEmptyLineAsync(reader);
+
+        Assert.Equal("event: metadata.folder_updated", eventLine);
+        Assert.NotNull(dataLine);
+        Assert.Contains("\"folderId\":\"sample-folder\"", dataLine, StringComparison.Ordinal);
+        Assert.Contains("\"title\":\"Sample Anime\"", dataLine, StringComparison.Ordinal);
+        Assert.Contains("\"hasMetadata\":true", dataLine, StringComparison.Ordinal);
+        Assert.Contains("\"coverUrl\":\"/api/resources/library-cover/sample-folder\"", dataLine, StringComparison.Ordinal);
+        Assert.Contains("\"posterUrl\":null", dataLine, StringComparison.Ordinal);
+        Assert.Contains("\"updatedAtUtc\":", dataLine, StringComparison.Ordinal);
+    }
+
     private HttpClient CreateClient(
         string? explicitTestRoot = null,
         bool seedFailedMetadata = false,

@@ -16,11 +16,6 @@ class LibraryNavigationPane extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const <Widget>[
-            LibraryPaneHeader(
-              title: 'Categories',
-              subtitle: 'Browse the library by group',
-            ),
-            Gap(12),
             _NavGroup(
               title: 'Library',
               items: <_NavItemData>[

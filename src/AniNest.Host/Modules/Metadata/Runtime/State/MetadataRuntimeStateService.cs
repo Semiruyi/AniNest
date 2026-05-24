@@ -1,4 +1,5 @@
 using AniNest.Application.Metadata;
+using AniNest.Application.Resources;
 using AniNest.Contracts.Metadata;
 using AniNest.Core.Enums;
 using AniNest.Host.Events;
@@ -14,6 +15,7 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
     private readonly IMetadataAssetService _assets;
     private readonly IMetadataProjectionService _projection;
     private readonly IMetadataFetchPipeline _pipeline;
+    private readonly IResourceUrlService _resourceUrlService;
     private readonly IHostEventStream _events;
     private readonly ILogger<MetadataRuntimeStateService> _logger;
 
@@ -24,6 +26,7 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
         IMetadataAssetService assets,
         IMetadataProjectionService projection,
         IMetadataFetchPipeline pipeline,
+        IResourceUrlService resourceUrlService,
         IHostEventStream events,
         ILogger<MetadataRuntimeStateService> logger)
     {
@@ -33,6 +36,7 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
         _assets = assets;
         _projection = projection;
         _pipeline = pipeline;
+        _resourceUrlService = resourceUrlService;
         _events = events;
         _logger = logger;
     }
@@ -67,11 +71,21 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
     public void PublishFolderState(string folderId)
     {
         var metadata = GetMetadata(folderId);
+        var summary = GetFolderStateSummary(folderId);
         _events.Publish("metadata.folder_updated", new
         {
             folderId,
             state = metadata?.State.ToString(),
-            failureKind = metadata?.FailureKind.ToString()
+            failureKind = metadata?.FailureKind.ToString(),
+            hasMetadata = summary.HasMetadata,
+            title = summary.Title,
+            posterUrl = string.IsNullOrWhiteSpace(summary.PosterPath)
+                ? null
+                : _resourceUrlService.GetUrl(new ResourceKey(ResourceKind.LibraryPoster, folderId)),
+            coverUrl = !summary.HasMetadata
+                ? null
+                : _resourceUrlService.GetUrl(new ResourceKey(ResourceKind.LibraryCover, folderId)),
+            updatedAtUtc = DateTimeOffset.UtcNow
         });
         PublishSummaryChanged();
     }
