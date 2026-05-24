@@ -5,6 +5,10 @@ namespace AniNest.Application.Metadata;
 public interface IMetadataLifecycleService
 {
     Task<MetadataDto?> GetByFolderAsync(string folderId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<MetadataReviewDto>> GetReviewQueueAsync(CancellationToken cancellationToken = default);
+    Task<MetadataReviewDto?> GetReviewByFolderAsync(string folderId, CancellationToken cancellationToken = default);
+    Task ConfirmReviewAsync(string folderId, string sourceId, CancellationToken cancellationToken = default);
+    Task RejectReviewCandidateAsync(string folderId, string sourceId, CancellationToken cancellationToken = default);
     Task<MetadataStatusSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default);
     Task SyncLibrarySnapshotAsync(IReadOnlyList<MetadataFolderRef> folders, CancellationToken cancellationToken = default);
     Task RefreshFolderAsync(string folderId, CancellationToken cancellationToken = default);

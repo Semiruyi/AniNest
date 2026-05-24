@@ -10,6 +10,7 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
 {
     private readonly IMetadataStore _legacyStore;
     private readonly IMetadataRecordStore _recordStore;
+    private readonly IMetadataReviewStore _reviewStore;
     private readonly IMetadataPayloadRepository _payloadRepository;
     private readonly IMetadataFetchPipeline _pipeline;
     private readonly IHostEventStream _events;
@@ -18,6 +19,7 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
     public MetadataRuntimeStateService(
         IMetadataStore legacyStore,
         IMetadataRecordStore recordStore,
+        IMetadataReviewStore reviewStore,
         IMetadataPayloadRepository payloadRepository,
         IMetadataFetchPipeline pipeline,
         IHostEventStream events,
@@ -25,6 +27,7 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
     {
         _legacyStore = legacyStore;
         _recordStore = recordStore;
+        _reviewStore = reviewStore;
         _payloadRepository = payloadRepository;
         _pipeline = pipeline;
         _events = events;
@@ -103,6 +106,7 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
         if (!string.IsNullOrWhiteSpace(record?.MetadataFilePath))
             _payloadRepository.Delete(record.MetadataFilePath);
 
+        _reviewStore.Delete(folderId);
         _recordStore.Delete(folderId);
     }
 
@@ -260,6 +264,7 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
                 LastSucceededAtUtc = DateTime.UtcNow
             };
             _recordStore.Save(completedRecord);
+            _reviewStore.Delete(completedRecord.FolderId);
             _legacyStore.Save(new MetadataDto(
                 completedRecord.FolderId,
                 resolution.Payload.Title,
@@ -286,6 +291,9 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
         {
             if (!string.IsNullOrWhiteSpace(scraping.MetadataFilePath))
                 _payloadRepository.Delete(scraping.MetadataFilePath);
+
+            if (resolution.ReviewRecord is not null)
+                _reviewStore.Save(resolution.ReviewRecord);
 
             var reviewRecord = scraping with
             {

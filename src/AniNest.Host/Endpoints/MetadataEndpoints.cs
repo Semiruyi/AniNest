@@ -18,6 +18,27 @@ internal static class MetadataEndpoints
             return metadata is null ? Results.NotFound() : Results.Ok(metadata);
         });
 
+        group.MapGet("/reviews", (IMetadataModule module, CancellationToken cancellationToken)
+            => module.GetReviewQueueAsync(cancellationToken));
+
+        group.MapGet("/reviews/{folderId}", async (string folderId, IMetadataModule module, CancellationToken cancellationToken) =>
+        {
+            var review = await module.GetReviewByFolderAsync(folderId, cancellationToken);
+            return review is null ? Results.NotFound() : Results.Ok(review);
+        });
+
+        group.MapPost("/reviews/{folderId}:confirm", async (string folderId, ConfirmMetadataReviewRequest request, IMetadataModule module, CancellationToken cancellationToken) =>
+        {
+            await module.ConfirmReviewAsync(folderId, request.SourceId, cancellationToken);
+            return Results.Accepted();
+        });
+
+        group.MapPost("/reviews/{folderId}:reject-candidate", async (string folderId, RejectMetadataReviewCandidateRequest request, IMetadataModule module, CancellationToken cancellationToken) =>
+        {
+            await module.RejectReviewCandidateAsync(folderId, request.SourceId, cancellationToken);
+            return Results.Accepted();
+        });
+
         group.MapPost("/folders/{folderId}:refresh", async (string folderId, IMetadataModule module, CancellationToken cancellationToken) =>
         {
             await module.RefreshFolderAsync(folderId, cancellationToken);

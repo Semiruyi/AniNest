@@ -231,3 +231,41 @@ BuildSearchKeywords
 2. 用 `Acquisition` 接入真实 Bangumi 搜索与详情拉取
 3. 用 `Confidence` 做保守匹配
 4. 用 `Resolution` 决定 `Ready / NeedsReview / NoMatch`
+
+---
+
+## 7. Review 人工复核
+
+当 `Resolution` 不能把结果自动推进到 `Ready` 时，系统进入 `NeedsReview`，并保存一条 review 记录。
+
+### Review 记录职责
+
+- 保存当前 folder 的候选列表
+- 保存建议候选 `SuggestedSourceId`
+- 保存失败原因或拒绝原因
+- 保存已经被人工拒绝过的 `RejectedSourceIds`
+
+### 当前支持的人工动作
+
+1. `confirm`
+   - 人工确认某个 `sourceId`
+   - 生命周期直接重新拉取详情并落库
+   - 元数据状态推进到 `Ready`
+   - review 记录删除
+
+2. `reject-candidate`
+   - 人工拒绝某个候选 `sourceId`
+   - 该候选从 review 队列中移除
+   - `RejectedSourceIds` 追加该 `sourceId`
+   - 系统重新计算 `SuggestedSourceId`
+   - 如果候选已耗尽，review 原因更新为 `review.candidates_exhausted`
+
+### 设计边界
+
+`Review` 只处理人工决策，不重新运行完整抓取流水线。
+
+也就是说：
+
+- `Preparation / Acquisition / Confidence / Resolution` 负责生成 review 候选
+- `LifecycleService` 负责处理人工确认与人工拒绝
+- 后续如果要做“全部候选被拒绝后自动重新规划关键词再抓一次”，那是下一层调度策略，不塞进当前 review 操作里

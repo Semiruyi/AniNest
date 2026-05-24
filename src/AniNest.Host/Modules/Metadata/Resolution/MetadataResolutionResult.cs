@@ -9,4 +9,5 @@ internal sealed record MetadataResolutionResult(
     FolderMetadataPayload? Payload,
     string? SourceId,
     string? PosterUrl,
-    string? Reason);
+    string? Reason,
+    MetadataReviewRecord? ReviewRecord);

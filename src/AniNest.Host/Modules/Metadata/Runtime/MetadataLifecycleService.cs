@@ -8,17 +8,29 @@ namespace AniNest.Host.Modules;
 internal sealed class MetadataLifecycleService : IMetadataLifecycleService
 {
     private readonly IMetadataRuntimeStateService _state;
+    private readonly IMetadataReviewStore _reviewStore;
+    private readonly IMetadataPayloadRepository _payloadRepository;
+    private readonly IMetadataStore _legacyStore;
+    private readonly IAnimeMetadataProvider _provider;
     private readonly IMetadataTaskPlanner _planner;
     private readonly IMetadataTaskQueue _queue;
     private readonly ILogger<MetadataLifecycleService> _logger;
 
     public MetadataLifecycleService(
         IMetadataRuntimeStateService state,
+        IMetadataReviewStore reviewStore,
+        IMetadataPayloadRepository payloadRepository,
+        IMetadataStore legacyStore,
+        IAnimeMetadataProvider provider,
         IMetadataTaskPlanner planner,
         IMetadataTaskQueue queue,
         ILogger<MetadataLifecycleService> logger)
     {
         _state = state;
+        _reviewStore = reviewStore;
+        _payloadRepository = payloadRepository;
+        _legacyStore = legacyStore;
+        _provider = provider;
         _planner = planner;
         _queue = queue;
         _logger = logger;
@@ -34,6 +46,121 @@ internal sealed class MetadataLifecycleService : IMetadataLifecycleService
     {
         _state.EnsureInitialized();
         return Task.FromResult(_state.BuildSummary());
+    }
+
+    public Task<IReadOnlyList<MetadataReviewDto>> GetReviewQueueAsync(CancellationToken cancellationToken = default)
+    {
+        _state.EnsureInitialized();
+        return Task.FromResult<IReadOnlyList<MetadataReviewDto>>(
+            _reviewStore.GetAll()
+                .OrderByDescending(item => item.UpdatedAtUtc)
+                .Select(MapReview)
+                .ToArray());
+    }
+
+    public Task<MetadataReviewDto?> GetReviewByFolderAsync(string folderId, CancellationToken cancellationToken = default)
+    {
+        _state.EnsureInitialized();
+        return Task.FromResult(_reviewStore.GetByFolderId(folderId) is { } review ? MapReview(review) : null);
+    }
+
+    public async Task ConfirmReviewAsync(string folderId, string sourceId, CancellationToken cancellationToken = default)
+    {
+        _state.EnsureInitialized();
+        var record = _state.RequireRecord(folderId);
+        var review = _reviewStore.GetByFolderId(folderId)
+            ?? throw new KeyNotFoundException($"Metadata review for folder '{folderId}' was not found.");
+        if (!review.Candidates.Any(candidate => string.Equals(candidate.SourceId, sourceId, StringComparison.OrdinalIgnoreCase)))
+            throw new InvalidOperationException($"Metadata review candidate '{sourceId}' was not found for folder '{folderId}'.");
+
+        var detail = await _provider.GetSubjectAsync(sourceId, cancellationToken);
+        var payload = new FolderMetadataPayload(
+            folderId,
+            sourceId,
+            detail.Title,
+            detail.OriginalTitle,
+            detail.Summary,
+            detail.PosterUrl,
+            null,
+            detail.AirDate,
+            detail.Year,
+            detail.Rating,
+            detail.EpisodeCount,
+            detail.Tags,
+            detail.Source,
+            DateTime.UtcNow);
+        var payloadPath = MetadataStoragePathCodec.GetPayloadPath(folderId);
+        _payloadRepository.Save(payloadPath, payload);
+
+        var completedRecord = record with
+        {
+            State = MetadataState.Ready,
+            FailureKind = MetadataFailureKind.None,
+            SourceId = sourceId,
+            MetadataFilePath = payloadPath,
+            PosterFilePath = null,
+            LastSucceededAtUtc = DateTime.UtcNow
+        };
+        _state.SaveRecord(completedRecord);
+        _reviewStore.Delete(folderId);
+        _legacyStore.Save(new MetadataDto(
+            folderId,
+            payload.Title,
+            payload.OriginalTitle,
+            payload.Summary,
+            payload.Tags,
+            payload.LocalPosterPath,
+            null,
+            payload.EpisodeCount,
+            payload.Source,
+            completedRecord.State,
+            completedRecord.FailureKind));
+        _logger.LogInformation(
+            "Metadata review confirmed manually. FolderId={FolderId}, SourceId={SourceId}, SuggestedSourceId={SuggestedSourceId}",
+            folderId,
+            sourceId,
+            review.SuggestedSourceId);
+        _state.PublishFolderState(folderId);
+    }
+
+    public Task RejectReviewCandidateAsync(string folderId, string sourceId, CancellationToken cancellationToken = default)
+    {
+        _state.EnsureInitialized();
+        var review = _reviewStore.GetByFolderId(folderId)
+            ?? throw new KeyNotFoundException($"Metadata review for folder '{folderId}' was not found.");
+
+        var remainingCandidates = review.Candidates
+            .Where(candidate => !string.Equals(candidate.SourceId, sourceId, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        if (remainingCandidates.Length == review.Candidates.Count)
+            throw new InvalidOperationException($"Metadata review candidate '{sourceId}' was not found for folder '{folderId}'.");
+
+        var rejectedSourceIds = review.RejectedSourceIds
+            .Concat([sourceId])
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var nextSuggested = remainingCandidates
+            .OrderByDescending(candidate => candidate.Score)
+            .ThenBy(candidate => candidate.SourceId, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault();
+        var updatedReview = review with
+        {
+            SuggestedSourceId = nextSuggested?.SourceId,
+            SuggestedTitle = nextSuggested?.DisplayTitle ?? nextSuggested?.MatchedTitle,
+            Reason = remainingCandidates.Length == 0 ? "review.candidates_exhausted" : "review.candidate_rejected",
+            Candidates = remainingCandidates,
+            RejectedSourceIds = rejectedSourceIds,
+            UpdatedAtUtc = DateTime.UtcNow
+        };
+        _reviewStore.Save(updatedReview);
+
+        _logger.LogInformation(
+            "Metadata review candidate rejected manually. FolderId={FolderId}, SourceId={SourceId}, RemainingCandidates={RemainingCandidates}",
+            folderId,
+            sourceId,
+            remainingCandidates.Length);
+        _state.PublishFolderState(folderId);
+        return Task.CompletedTask;
     }
 
     public Task SyncLibrarySnapshotAsync(IReadOnlyList<MetadataFolderRef> folders, CancellationToken cancellationToken = default)
@@ -168,4 +295,25 @@ internal sealed class MetadataLifecycleService : IMetadataLifecycleService
             plan.BypassCooldown);
         _queue.Enqueue(plan);
     }
+
+    private static MetadataReviewDto MapReview(MetadataReviewRecord review)
+        => new(
+            review.FolderId,
+            review.FolderName,
+            review.State,
+            review.FailureKind,
+            review.SuggestedSourceId,
+            review.SuggestedTitle,
+            review.Reason,
+            review.Candidates.Select(candidate => new MetadataReviewCandidateDto(
+                candidate.SourceId,
+                candidate.MatchedTitle,
+                candidate.OriginalTitle,
+                candidate.DisplayTitle,
+                candidate.Score,
+                candidate.ConfidenceLevel,
+                candidate.Reasons))
+                .ToArray(),
+            review.RejectedSourceIds,
+            review.UpdatedAtUtc);
 }

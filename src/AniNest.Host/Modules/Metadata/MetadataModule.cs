@@ -16,6 +16,18 @@ internal sealed class MetadataModule : IMetadataModule
     public Task<MetadataDto?> GetByFolderAsync(string folderId, CancellationToken cancellationToken = default)
         => _lifecycle.GetByFolderAsync(folderId, cancellationToken);
 
+    public Task<IReadOnlyList<MetadataReviewDto>> GetReviewQueueAsync(CancellationToken cancellationToken = default)
+        => _lifecycle.GetReviewQueueAsync(cancellationToken);
+
+    public Task<MetadataReviewDto?> GetReviewByFolderAsync(string folderId, CancellationToken cancellationToken = default)
+        => _lifecycle.GetReviewByFolderAsync(folderId, cancellationToken);
+
+    public Task ConfirmReviewAsync(string folderId, string sourceId, CancellationToken cancellationToken = default)
+        => _lifecycle.ConfirmReviewAsync(folderId, sourceId, cancellationToken);
+
+    public Task RejectReviewCandidateAsync(string folderId, string sourceId, CancellationToken cancellationToken = default)
+        => _lifecycle.RejectReviewCandidateAsync(folderId, sourceId, cancellationToken);
+
     public Task RefreshFolderAsync(string folderId, CancellationToken cancellationToken = default)
         => _lifecycle.RefreshFolderAsync(folderId, cancellationToken);
 

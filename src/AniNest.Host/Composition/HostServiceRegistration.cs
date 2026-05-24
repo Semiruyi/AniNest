@@ -48,6 +48,8 @@ internal static class HostServiceRegistration
         services.AddSingleton<IMetadataRecordStore>(_ => new FileMetadataRecordStore(
             ResolvePath(configuration, "AniNest:MetadataIndexPath", Path.Combine("metadata", "index.json")),
             MetadataStorageDefaults.CreateRecords()));
+        services.AddSingleton<IMetadataReviewStore>(_ => new FileMetadataReviewStore(
+            ResolvePath(configuration, "AniNest:MetadataReviewPath", Path.Combine("metadata", "review.json"))));
         services.AddSingleton<IMetadataPayloadRepository>(_ => new FileMetadataPayloadRepository(
             ResolvePath(configuration, "AniNest:MetadataPayloadRootPath", Path.Combine("metadata", "payload"))));
         services.AddSingleton<IMetadataPosterCache>(_ => new FileMetadataPosterCache(
