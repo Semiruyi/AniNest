@@ -82,54 +82,70 @@ class _LibraryCard extends StatelessWidget {
       child: SizedBox(
         height: 312,
         child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colorScheme.secondary,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    BootstrapIcons.image,
-                    size: 28,
-                    color: colorScheme.mutedForeground,
-                  ),
-                ),
+          padding: const EdgeInsets.all(0),
+          child: CardImage(
+            direction: Axis.vertical,
+            onPressed: () {},
+            gap: 10,
+            image: _LibraryCardArtwork(index: index),
+            title: Text('Media Title ${index + 1}').semiBold(),
+            subtitle: Text(
+              'Season 1 • 12 Episodes',
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.mutedForeground,
               ),
-              const Gap(10),
-              Text('Media Title ${index + 1}').semiBold(),
-              const Gap(4),
-              Text(
-                'Season 1 • 12 Episodes',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: colorScheme.mutedForeground,
-                ),
-              ),
-              const Gap(8),
-              Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  color: colorScheme.secondary,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: ((index % 5) + 1) / 5,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                ),
-              ),
+            ),
+            backgroundColor: colorScheme.secondary,
+            borderColor: colorScheme.border,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LibraryCardArtwork extends StatelessWidget {
+  const _LibraryCardArtwork({required this.index});
+
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return AspectRatio(
+      aspectRatio: 0.72,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: <Color>[
+              colorScheme.secondary,
+              colorScheme.secondary.withValues(alpha: 0.72),
             ],
           ),
+        ),
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(
+              BootstrapIcons.image,
+              size: 28,
+              color: colorScheme.mutedForeground,
+            ),
+            const Gap(8),
+            Text(
+              'Cover ${index + 1}',
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.mutedForeground,
+              ),
+            ),
+          ],
         ),
       ),
     );
