@@ -2,8 +2,10 @@ namespace AniNest.Application.Metadata;
 
 public interface IAnimeMetadataProvider
 {
-    Task<ProviderSearchResult> SearchBestMatchAsync(
+    Task<IReadOnlyList<ProviderSearchResult>> SearchAsync(
         MetadataKeywordPlan plan,
+        string keyword,
+        int maxCount,
         CancellationToken cancellationToken);
 
     Task<ProviderSubjectDetail> GetSubjectAsync(

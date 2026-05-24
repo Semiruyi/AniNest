@@ -45,7 +45,7 @@ internal sealed class MetadataBackgroundService : BackgroundService
                 continue;
             }
 
-            _state.ExecutePlaceholder(record);
+            await _state.ExecuteAsync(record, stoppingToken);
         }
     }
 }

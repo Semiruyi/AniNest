@@ -74,6 +74,10 @@ MetadataRecord
 ### 职责
 
 - 使用清洗后的关键词计划向 Bangumi 发起搜索
+- 支持多关键字搜索顺序，例如：`PrimaryKeyword -> SeasonAwareKeyword -> SimplifiedKeyword -> Alias`
+- 对搜索结果去重，只保留有限数量的候选进入详情拉取
+- 不应因为某一个关键字请求失败，就立即终止整个获取流程
+- 应按“被多少关键字重复命中 + 搜索排名”对候选做初步排序
 - 拉取候选条目的详情
 - 统一封装 provider 返回结果
 - 区分搜索失败、无候选、详情失败等不同失败类别
@@ -91,6 +95,31 @@ MetadataRecord
 
 - 不能只拿搜索第一条就直接落库
 - 不能把网络失败和“无匹配结果”混成同一种失败
+- 如果不做候选去重和数量上限，Bangumi 搜索很容易把流水线拖慢
+- 如果 Acquisition 不保留“搜索命中但详情失败”的中间状态，后续日志会很难排障
+
+### 当前实现骨架
+
+当前版本中，`Acquisition` 建议按下面顺序工作：
+
+```text
+BuildSearchKeywords
+  -> Search(keyword #1)
+  -> Search(keyword #2)
+  -> DistinctBy(sourceId)
+  -> Take(top N)
+  -> GetSubject(detail)
+  -> MetadataAcquisitionResult
+```
+
+建议默认值：
+
+- 每个关键字最多取 `5` 条搜索结果
+- 候选池最多保留 `8` 个去重后的 sourceId
+- 最多拉取 `3` 条详情
+- 只有在所有关键字都搜索失败时，才记为 `search_failed:*`
+- 搜到了候选但详情全失败，记为 `detail_failed`
+- 一个候选也没有，记为 `no_match`
 
 ---
 
@@ -105,6 +134,7 @@ MetadataRecord
 
 - 对候选执行保守评分
 - 综合标题、别名、季数、年份、剧场版/TV 倾向、分集数等信号
+- 识别总集篇、OVA、SP、特典、剧场版与 TV 正片之间的格式冲突
 - 给出明确理由，而不是只给一个黑盒总分
 - 支持硬性否决条件，例如季数冲突、格式冲突、年份差距过大
 
@@ -114,6 +144,7 @@ MetadataRecord
 - `BestCandidate`
 - `ConfidenceLevel`
 - `Reasons`
+- `CandidateScoreTable`
 
 ### 边界
 
@@ -148,6 +179,20 @@ MetadataRecord
 - `NextState`
 - `FailureKind`
 - `SelectedPayload`
+
+### 建议失败语义
+
+- `search_failed:*` -> `NetworkError`
+- `detail_failed` -> `ProviderError`
+- `no_match` -> `NoMatch`
+- `confidence.rejected` -> `NoMatch`
+
+### 建议日志
+
+`Resolution` 之前至少保留两类日志：
+
+- 一条摘要日志：最佳候选、置信度、最终状态
+- 一条候选评分表日志：`sourceId / score / level / reasons`
 
 ### 边界
 

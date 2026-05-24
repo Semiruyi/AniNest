@@ -1,7 +1,8 @@
 namespace AniNest.Application.Metadata;
 
 public sealed record ProviderSearchResult(
-    bool IsMatch,
-    string? SourceId,
+    string SourceId,
     string? MatchedTitle,
-    string? FailureReason);
+    string? OriginalTitle,
+    int? Year,
+    string Source);

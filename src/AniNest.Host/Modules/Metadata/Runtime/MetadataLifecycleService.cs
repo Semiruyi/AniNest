@@ -124,7 +124,7 @@ internal sealed class MetadataLifecycleService : IMetadataLifecycleService
         return Task.CompletedTask;
     }
 
-    public Task<MetadataProcessingResultDto> ProcessQueueAsync(int maxItems, CancellationToken cancellationToken = default)
+    public async Task<MetadataProcessingResultDto> ProcessQueueAsync(int maxItems, CancellationToken cancellationToken = default)
     {
         _state.EnsureInitialized();
         _logger.LogInformation("Metadata manual process queue requested. MaxItems={MaxItems}", maxItems);
@@ -139,11 +139,11 @@ internal sealed class MetadataLifecycleService : IMetadataLifecycleService
                 break;
 
             cancellationToken.ThrowIfCancellationRequested();
-            _state.ExecutePlaceholder(next);
+            await _state.ExecuteAsync(next, cancellationToken);
             processed.Add(next.FolderId);
         }
 
-        return Task.FromResult(new MetadataProcessingResultDto(processed.Count, processed));
+        return new MetadataProcessingResultDto(processed.Count, processed);
     }
 
     public MetadataFolderStateSummary GetFolderStateSummary(string folderId)

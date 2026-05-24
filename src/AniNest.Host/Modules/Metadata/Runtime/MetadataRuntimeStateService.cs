@@ -11,6 +11,7 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
     private readonly IMetadataStore _legacyStore;
     private readonly IMetadataRecordStore _recordStore;
     private readonly IMetadataPayloadRepository _payloadRepository;
+    private readonly IMetadataFetchPipeline _pipeline;
     private readonly IHostEventStream _events;
     private readonly ILogger<MetadataRuntimeStateService> _logger;
 
@@ -18,12 +19,14 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
         IMetadataStore legacyStore,
         IMetadataRecordStore recordStore,
         IMetadataPayloadRepository payloadRepository,
+        IMetadataFetchPipeline pipeline,
         IHostEventStream events,
         ILogger<MetadataRuntimeStateService> logger)
     {
         _legacyStore = legacyStore;
         _recordStore = recordStore;
         _payloadRepository = payloadRepository;
+        _pipeline = pipeline;
         _events = events;
         _logger = logger;
     }
@@ -198,10 +201,10 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
         }
     }
 
-    public void ExecutePlaceholder(MetadataRecord record)
+    public async Task ExecuteAsync(MetadataRecord record, CancellationToken cancellationToken)
     {
         _logger.LogInformation(
-            "Metadata placeholder execution started. FolderId={FolderId}, State={State}",
+            "Metadata execution started. FolderId={FolderId}, State={State}",
             record.FolderId,
             record.State);
         var scraping = record with
@@ -213,6 +216,118 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
         _recordStore.Save(scraping);
         PublishFolderState(record.FolderId);
 
+        try
+        {
+            var resolution = await _pipeline.ExecuteAsync(scraping, cancellationToken);
+            if (TryApplyResolution(scraping, resolution))
+                return;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Metadata pipeline failed and will fall back to placeholder. FolderId={FolderId}",
+                record.FolderId);
+        }
+
+        ExecutePlaceholderFallback(scraping);
+    }
+
+    private bool TryApplyResolution(MetadataRecord scraping, MetadataResolutionResult resolution)
+    {
+        if (resolution.NextState == MetadataState.Ready && resolution.Payload is not null)
+        {
+            var payloadPath = MetadataStoragePathCodec.GetPayloadPath(scraping.FolderId);
+            _payloadRepository.Save(payloadPath, resolution.Payload);
+
+            if (!string.IsNullOrWhiteSpace(scraping.MetadataFilePath) &&
+                !string.Equals(scraping.MetadataFilePath, payloadPath, StringComparison.OrdinalIgnoreCase))
+            {
+                _payloadRepository.Delete(scraping.MetadataFilePath);
+            }
+
+            var completedRecord = scraping with
+            {
+                State = MetadataState.Ready,
+                FailureKind = MetadataFailureKind.None,
+                SourceId = resolution.SourceId,
+                MetadataFilePath = payloadPath,
+                PosterFilePath = null,
+                LastSucceededAtUtc = DateTime.UtcNow
+            };
+            _recordStore.Save(completedRecord);
+            _legacyStore.Save(new MetadataDto(
+                completedRecord.FolderId,
+                resolution.Payload.Title,
+                resolution.Payload.OriginalTitle,
+                resolution.Payload.Summary,
+                resolution.Payload.Tags,
+                resolution.Payload.LocalPosterPath,
+                null,
+                resolution.Payload.EpisodeCount,
+                resolution.Payload.Source,
+                completedRecord.State,
+                completedRecord.FailureKind));
+
+            _logger.LogInformation(
+                "Metadata execution completed from pipeline. FolderId={FolderId}, PayloadPath={PayloadPath}, SourceId={SourceId}",
+                completedRecord.FolderId,
+                payloadPath,
+                completedRecord.SourceId);
+            PublishFolderState(completedRecord.FolderId);
+            return true;
+        }
+
+        if (resolution.NextState is MetadataState.NeedsReview or MetadataState.NeedsMetadata)
+        {
+            if (!string.IsNullOrWhiteSpace(scraping.MetadataFilePath))
+                _payloadRepository.Delete(scraping.MetadataFilePath);
+
+            var reviewRecord = scraping with
+            {
+                State = resolution.NextState,
+                FailureKind = resolution.FailureKind,
+                SourceId = resolution.SourceId,
+                MetadataFilePath = null,
+                PosterFilePath = null
+            };
+            _recordStore.Save(reviewRecord);
+            _legacyStore.Save(new MetadataDto(
+                reviewRecord.FolderId,
+                null,
+                null,
+                resolution.Reason,
+                [],
+                null,
+                null,
+                null,
+                null,
+                reviewRecord.State,
+                reviewRecord.FailureKind));
+
+            _logger.LogInformation(
+                "Metadata execution completed with review state. FolderId={FolderId}, NextState={NextState}, FailureKind={FailureKind}, Reason={Reason}",
+                reviewRecord.FolderId,
+                reviewRecord.State,
+                reviewRecord.FailureKind,
+                resolution.Reason);
+            PublishFolderState(reviewRecord.FolderId);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void ExecutePlaceholderFallback(MetadataRecord record)
+    {
+        _logger.LogInformation(
+            "Metadata placeholder fallback started. FolderId={FolderId}, State={State}",
+            record.FolderId,
+            record.State);
         var title = string.IsNullOrWhiteSpace(record.FolderName)
             ? FormatFolderTitle(record.FolderId)
             : record.FolderName;
@@ -240,7 +355,7 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
             _payloadRepository.Delete(record.MetadataFilePath);
         }
 
-        var readyRecord = scraping with
+        var readyRecord = record with
         {
             State = MetadataState.Ready,
             MetadataFilePath = payloadPath,
@@ -261,7 +376,7 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
             readyRecord.FailureKind));
 
         _logger.LogInformation(
-            "Metadata placeholder execution completed. FolderId={FolderId}, PayloadPath={PayloadPath}",
+            "Metadata placeholder fallback completed. FolderId={FolderId}, PayloadPath={PayloadPath}",
             record.FolderId,
             payloadPath);
         PublishFolderState(record.FolderId);

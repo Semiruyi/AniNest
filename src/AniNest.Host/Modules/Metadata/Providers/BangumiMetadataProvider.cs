@@ -18,15 +18,14 @@ internal sealed class BangumiMetadataProvider : IAnimeMetadataProvider
         _settingsAccessor = settingsAccessor;
     }
 
-    public async Task<ProviderSearchResult> SearchBestMatchAsync(
+    public async Task<IReadOnlyList<ProviderSearchResult>> SearchAsync(
         MetadataKeywordPlan plan,
+        string keyword,
+        int maxCount,
         CancellationToken cancellationToken)
     {
-        var keyword = string.IsNullOrWhiteSpace(plan.PrimaryKeyword)
-            ? plan.BaseTitle
-            : plan.PrimaryKeyword;
         if (string.IsNullOrWhiteSpace(keyword))
-            return new ProviderSearchResult(false, null, null, "empty_keyword");
+            return [];
 
         using var request = CreateRequest(HttpMethod.Post, "v0/search/subjects");
         var body = JsonSerializer.Serialize(new
@@ -44,12 +43,17 @@ internal sealed class BangumiMetadataProvider : IAnimeMetadataProvider
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         var payload = await JsonSerializer.DeserializeAsync<BangumiSearchResponse>(stream, SerializerOptions, cancellationToken);
-        var first = payload?.Data?.FirstOrDefault();
-        if (first is null)
-            return new ProviderSearchResult(false, null, null, "no_match");
-
-        var title = string.IsNullOrWhiteSpace(first.NameCn) ? first.Name : first.NameCn;
-        return new ProviderSearchResult(true, first.Id.ToString(), title, null);
+        return payload?.Data?
+            .Where(item => item.Id > 0)
+            .Take(Math.Max(1, maxCount))
+            .Select(item => new ProviderSearchResult(
+                item.Id.ToString(),
+                string.IsNullOrWhiteSpace(item.NameCn) ? item.Name : item.NameCn,
+                item.Name,
+                TryParseYear(item.Date),
+                "bangumi"))
+            .ToArray()
+            ?? [];
     }
 
     public async Task<ProviderSubjectDetail> GetSubjectAsync(string sourceId, CancellationToken cancellationToken)
@@ -122,6 +126,7 @@ internal sealed class BangumiMetadataProvider : IAnimeMetadataProvider
         public int Id { get; set; }
         public string? Name { get; set; }
         public string? NameCn { get; set; }
+        public string? Date { get; set; }
     }
 
     private sealed class BangumiSubjectResponse

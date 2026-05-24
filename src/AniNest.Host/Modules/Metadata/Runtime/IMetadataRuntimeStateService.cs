@@ -17,5 +17,5 @@ internal interface IMetadataRuntimeStateService
     void PublishFolderState(string folderId);
     void PublishSummaryChanged();
     void NormalizeTransientStates();
-    void ExecutePlaceholder(MetadataRecord record);
+    Task ExecuteAsync(MetadataRecord record, CancellationToken cancellationToken);
 }

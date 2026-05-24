@@ -39,9 +39,10 @@ internal sealed class MetadataResolutionService : IMetadataResolutionService
 
         if (!acquisition.SearchSucceeded)
         {
+            var failureKind = ResolveFailureKind(acquisition.FailureReason);
             return new MetadataResolutionResult(
                 MetadataState.NeedsReview,
-                MetadataFailureKind.NoMatch,
+                failureKind,
                 null,
                 null,
                 null,
@@ -55,5 +56,22 @@ internal sealed class MetadataResolutionService : IMetadataResolutionService
             null,
             null,
             "confidence.rejected");
+    }
+
+    private static MetadataFailureKind ResolveFailureKind(string? failureReason)
+    {
+        if (string.IsNullOrWhiteSpace(failureReason))
+            return MetadataFailureKind.ProviderError;
+
+        if (failureReason.StartsWith("search_failed:", StringComparison.OrdinalIgnoreCase))
+            return MetadataFailureKind.NetworkError;
+
+        if (string.Equals(failureReason, "detail_failed", StringComparison.OrdinalIgnoreCase))
+            return MetadataFailureKind.ProviderError;
+
+        if (string.Equals(failureReason, "no_match", StringComparison.OrdinalIgnoreCase))
+            return MetadataFailureKind.NoMatch;
+
+        return MetadataFailureKind.ProviderError;
     }
 }
