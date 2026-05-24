@@ -437,6 +437,8 @@ public sealed class HostScaffoldTests
         Assert.Equal("event: metadata.folder_updated", eventLine);
         Assert.NotNull(dataLine);
         Assert.Contains("\"folderId\":\"sample-folder\"", dataLine, StringComparison.Ordinal);
+        Assert.Contains("\"matchedTitle\":\"Sample Anime\"", dataLine, StringComparison.Ordinal);
+        Assert.Contains("\"originalTitle\":\"Sample Anime\"", dataLine, StringComparison.Ordinal);
         Assert.Contains("\"title\":\"Sample Anime\"", dataLine, StringComparison.Ordinal);
         Assert.Contains("\"hasMetadata\":true", dataLine, StringComparison.Ordinal);
         Assert.Contains("\"coverUrl\":\"/api/resources/library-cover/sample-folder\"", dataLine, StringComparison.Ordinal);

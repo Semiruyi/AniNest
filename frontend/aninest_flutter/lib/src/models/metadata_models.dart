@@ -8,6 +8,9 @@ class MetadataDto {
     required this.summary,
     required this.tags,
     required this.posterPath,
+    required this.airDate,
+    required this.year,
+    required this.rating,
     required this.season,
     required this.episodeCount,
     required this.source,
@@ -21,6 +24,9 @@ class MetadataDto {
   final String? summary;
   final List<String> tags;
   final String? posterPath;
+  final String? airDate;
+  final int? year;
+  final double? rating;
   final String? season;
   final int? episodeCount;
   final String? source;
@@ -37,6 +43,9 @@ class MetadataDto {
           .map((item) => item.toString())
           .toList(),
       posterPath: json['posterPath'] as String?,
+      airDate: json['airDate'] as String?,
+      year: json['year'] as int?,
+      rating: (json['rating'] as num?)?.toDouble(),
       season: json['season'] as String?,
       episodeCount: json['episodeCount'] as int?,
       source: json['source'] as String?,

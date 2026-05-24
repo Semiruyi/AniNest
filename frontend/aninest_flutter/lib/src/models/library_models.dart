@@ -2,24 +2,42 @@ import 'package:aninest_flutter/src/models/enums.dart';
 
 class LibraryMetadataSummaryDto {
   const LibraryMetadataSummaryDto({
-    required this.title,
+    required this.matchedTitle,
+    required this.originalTitle,
     required this.posterUrl,
+    required this.state,
+    required this.hasMetadata,
   });
 
-  final String? title;
+  final String? matchedTitle;
+  final String? originalTitle;
   final String? posterUrl;
+  final String state;
+  final bool hasMetadata;
 
   factory LibraryMetadataSummaryDto.fromJson(Map<String, dynamic> json) {
     return LibraryMetadataSummaryDto(
-      title: json['title'] as String?,
+      matchedTitle: json['matchedTitle'] as String? ?? json['title'] as String?,
+      originalTitle: json['originalTitle'] as String?,
       posterUrl: json['posterUrl'] as String?,
+      state: json['state'] as String? ?? 'Unknown',
+      hasMetadata: json['hasMetadata'] as bool? ?? false,
     );
   }
 
-  LibraryMetadataSummaryDto copyWith({String? title, String? posterUrl}) {
+  LibraryMetadataSummaryDto copyWith({
+    String? matchedTitle,
+    String? originalTitle,
+    String? posterUrl,
+    String? state,
+    bool? hasMetadata,
+  }) {
     return LibraryMetadataSummaryDto(
-      title: title ?? this.title,
+      matchedTitle: matchedTitle ?? this.matchedTitle,
+      originalTitle: originalTitle ?? this.originalTitle,
       posterUrl: posterUrl ?? this.posterUrl,
+      state: state ?? this.state,
+      hasMetadata: hasMetadata ?? this.hasMetadata,
     );
   }
 }

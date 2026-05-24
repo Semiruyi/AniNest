@@ -78,6 +78,8 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
             state = metadata?.State.ToString(),
             failureKind = metadata?.FailureKind.ToString(),
             hasMetadata = summary.HasMetadata,
+            matchedTitle = metadata?.Title ?? summary.Title,
+            originalTitle = metadata?.OriginalTitle,
             title = summary.Title,
             posterUrl = string.IsNullOrWhiteSpace(summary.PosterPath)
                 ? null
@@ -175,7 +177,10 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
                 assets.Payload.EpisodeCount,
                 assets.Payload.Source,
                 completedRecord.State,
-                completedRecord.FailureKind));
+                completedRecord.FailureKind,
+                assets.Payload.AirDate,
+                assets.Payload.Year,
+                assets.Payload.Rating));
 
             _logger.LogInformation(
                 "Metadata execution completed from pipeline. FolderId={FolderId}, PayloadPath={PayloadPath}, SourceId={SourceId}, PosterFilePath={PosterFilePath}",
@@ -275,7 +280,10 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
             payload.EpisodeCount,
             payload.Source,
             readyRecord.State,
-            readyRecord.FailureKind));
+            readyRecord.FailureKind,
+            payload.AirDate,
+            payload.Year,
+            payload.Rating));
 
         _logger.LogInformation(
             "Metadata placeholder fallback completed. FolderId={FolderId}, PayloadPath={PayloadPath}",

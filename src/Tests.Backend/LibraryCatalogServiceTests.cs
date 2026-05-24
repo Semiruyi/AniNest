@@ -59,6 +59,27 @@ public sealed class LibraryCatalogServiceTests
     }
 
     [Fact]
+    public async Task AddFolder_AppendsHashSuffix_ForDifferentFoldersWithSameName()
+    {
+        var store = CreateStore(out var root);
+        var scanner = new FakeLibraryFileScanner();
+        var duplicateRoot = CreateChildFolder(root, "Another Root");
+        var path = CreateChildFolder(duplicateRoot, "Folder 01");
+        scanner.ScanResults[path] = new LibraryFolderScanResult(6, null);
+        var service = new LibraryCatalogService(store, scanner, new FakeResourceUrlService());
+
+        var result = await service.AddFolderAsync(new AddLibraryFolderRequest(path));
+
+        Assert.Equal("added", result.Status);
+        Assert.NotNull(result.Folder);
+        Assert.StartsWith("folder-01-", result.Folder!.FolderId, StringComparison.OrdinalIgnoreCase);
+
+        var folders = await service.GetFoldersAsync();
+        Assert.Equal(3, folders.Count);
+        Assert.Single(folders, item => item.FolderId == result.Folder.FolderId);
+    }
+
+    [Fact]
     public async Task AddFolderBatch_AddsOnlyValidNewFolders()
     {
         var store = CreateStore(out var root);
@@ -78,10 +99,11 @@ public sealed class LibraryCatalogServiceTests
         await service.AddFolderBatchAsync(new BatchAddLibraryFoldersRequest(importRoot));
 
         var folders = await service.GetFoldersAsync();
-        Assert.Equal(4, folders.Count);
+        Assert.Equal(5, folders.Count);
         Assert.Contains(folders, folder => folder.FolderId == "season-a");
         Assert.Contains(folders, folder => folder.FolderId == "season-b");
         Assert.Single(folders, folder => folder.FolderId == "folder-01");
+        Assert.Contains(folders, folder => folder.FolderId.StartsWith("folder-01-", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -176,12 +198,15 @@ public sealed class LibraryCatalogServiceTests
         var updated = service.ApplyMetadataSummary(
             folder,
             "Bocchi",
+            "ぼっち・ざ・ろっく！",
             "posters/folder-01.jpg",
             MetadataState.Ready.ToString(),
             hasMetadata: true);
 
         Assert.Equal("/api/resources/library-cover/folder-01", updated.CoverUrl);
         Assert.NotNull(updated.MetadataSummary);
+        Assert.Equal("Bocchi", updated.MetadataSummary!.MatchedTitle);
+        Assert.Equal("ぼっち・ざ・ろっく！", updated.MetadataSummary!.OriginalTitle);
         Assert.Equal("/api/resources/library-poster/folder-01", updated.MetadataSummary!.PosterUrl);
     }
 

@@ -3,7 +3,8 @@ using AniNest.Core.Enums;
 namespace AniNest.Contracts.Library;
 
 public sealed record LibraryMetadataSummaryDto(
-    string? Title,
+    string? MatchedTitle,
+    string? OriginalTitle,
     string? PosterUrl,
     string State,
     bool HasMetadata);

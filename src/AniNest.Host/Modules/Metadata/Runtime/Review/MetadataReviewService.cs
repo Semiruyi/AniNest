@@ -103,7 +103,10 @@ internal sealed class MetadataReviewService : IMetadataReviewService
             assets.Payload.EpisodeCount,
             assets.Payload.Source,
             completedRecord.State,
-            completedRecord.FailureKind));
+            completedRecord.FailureKind,
+            assets.Payload.AirDate,
+            assets.Payload.Year,
+            assets.Payload.Rating));
         _logger.LogInformation(
             "Metadata review confirmed manually. FolderId={FolderId}, SourceId={SourceId}, SuggestedSourceId={SuggestedSourceId}, PosterFilePath={PosterFilePath}",
             folderId,

@@ -3,17 +3,14 @@ import 'package:aninest_flutter/src/presentation/features/library/library_page_w
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class LibraryInspectorTitleBlock extends StatelessWidget {
-  const LibraryInspectorTitleBlock({
-    super.key,
-    required this.folder,
-  });
+  const LibraryInspectorTitleBlock({super.key, required this.folder});
 
   final LibraryFolderDto folder;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final metadataTitle = folder.metadataSummary?.title;
+    final metadataTitle = displayMetadataTitle(folder);
 
     return SurfaceCard(
       padding: const EdgeInsets.all(12),
@@ -39,7 +36,8 @@ class LibraryInspectorTitleBlock extends StatelessWidget {
               ],
             ],
           ),
-          if (metadataTitle == null || metadataTitle.trim().isEmpty) ...<Widget>[
+          if (metadataTitle == null ||
+              metadataTitle.trim().isEmpty) ...<Widget>[
             const Gap(6),
             Text(
               'Metadata title not available yet',
@@ -48,10 +46,10 @@ class LibraryInspectorTitleBlock extends StatelessWidget {
                 color: colorScheme.mutedForeground,
               ),
             ),
-          ] else if (metadataTitle != folder.name) ...<Widget>[
+          ] else ...<Widget>[
             const Gap(6),
             Text(
-              folder.name,
+              metadataTitle,
               style: TextStyle(
                 fontSize: 13,
                 color: colorScheme.mutedForeground,

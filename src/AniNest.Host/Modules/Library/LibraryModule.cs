@@ -120,10 +120,12 @@ internal sealed class LibraryModule : ILibraryModule
     private LibraryFolderDto ApplyMetadataSummary(LibraryFolderDto folder)
     {
         _metadataBootstrap.EnsureInitialized();
+        var metadata = _metadataState.GetMetadata(folder.FolderId);
         var summary = _metadataState.GetFolderStateSummary(folder.FolderId);
         return _catalog.ApplyMetadataSummary(
             folder,
-            summary.Title,
+            metadata?.Title ?? summary.Title,
+            metadata?.OriginalTitle,
             summary.PosterPath,
             summary.State.ToString(),
             summary.HasMetadata);

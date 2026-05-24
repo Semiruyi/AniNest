@@ -30,6 +30,7 @@ class AppController extends ChangeNotifier {
     settings = SettingsController(_settingsApi, LocalPreferences());
     metadata = MetadataController(_metadataApi, _thumbnailApi);
     _hostEventService = HostEventService(_client);
+    library.addListener(_handleLibrarySelectionChanged);
   }
 
   final AniNestHttpClient _client;
@@ -48,6 +49,7 @@ class AppController extends ChangeNotifier {
   late final MetadataController metadata;
 
   StreamSubscription<HostEventEnvelopeDto>? _hostEventSubscription;
+  String? _lastMetadataFolderId;
 
   bool isLoading = false;
   String? lastError;
@@ -71,7 +73,7 @@ class AppController extends ChangeNotifier {
       await settings.load();
       await library.refresh();
       await player.restore();
-      await metadata.refresh(selectedFolderId);
+      await _refreshMetadataForSelectionAsync(force: true);
     });
   }
 
@@ -107,14 +109,14 @@ class AppController extends ChangeNotifier {
   Future<void> refreshLibrary() async {
     await _run(() async {
       await library.refresh();
-      await metadata.refresh(selectedFolderId);
+      await _refreshMetadataForSelectionAsync(force: true);
     }, showSpinner: false);
   }
 
   Future<void> openFolder(String folderId) async {
     await _run(() async {
       await player.openFolder(folderId);
-      await metadata.refresh(selectedFolderId);
+      await _refreshMetadataForSelectionAsync(force: true);
     });
   }
 
@@ -139,8 +141,12 @@ class AppController extends ChangeNotifier {
   Future<void> closeSession() async {
     await _run(() async {
       await player.closeSession();
-      await metadata.refresh(selectedFolderId);
+      await _refreshMetadataForSelectionAsync(force: true);
     }, showSpinner: false);
+  }
+
+  void selectFolder(String? folderId) {
+    library.selectFolder(folderId);
   }
 
   Future<void> savePlayerSettings(PlayerSettingsDto settings) async {
@@ -252,6 +258,25 @@ class AppController extends ChangeNotifier {
     }
   }
 
+  void _handleLibrarySelectionChanged() {
+    final currentFolderId = library.selectedFolderId;
+    if (currentFolderId == _lastMetadataFolderId) {
+      return;
+    }
+
+    unawaited(_refreshMetadataForSelectionAsync());
+  }
+
+  Future<void> _refreshMetadataForSelectionAsync({bool force = false}) async {
+    final folderId = library.selectedFolderId;
+    if (!force && folderId == _lastMetadataFolderId) {
+      return;
+    }
+
+    _lastMetadataFolderId = folderId;
+    await metadata.refresh(folderId);
+  }
+
   AddLibraryFolderResultDto _buildAddFolderFailureResult(
     String path,
     String errorMessage,
@@ -278,6 +303,7 @@ class AppController extends ChangeNotifier {
 
   @override
   void dispose() {
+    library.removeListener(_handleLibrarySelectionChanged);
     _hostEventSubscription?.cancel();
     _hostEventService.dispose();
     library.dispose();

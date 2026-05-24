@@ -13,7 +13,10 @@ public sealed record MetadataDto(
     int? EpisodeCount,
     string? Source,
     MetadataState State,
-    MetadataFailureKind FailureKind);
+    MetadataFailureKind FailureKind,
+    string? AirDate = null,
+    int? Year = null,
+    double? Rating = null);
 
 public sealed record MetadataStatusSummaryDto(
     int NeedsMetadata,

@@ -22,7 +22,7 @@ class ContentArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
-      LibraryPage(controller: controller.library),
+      LibraryPage(controller: controller),
       PlayerPage(controller: controller.player),
     ];
 

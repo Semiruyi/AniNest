@@ -27,7 +27,8 @@ class MetadataFolderUpdatedEventDto {
     required this.state,
     required this.failureKind,
     required this.hasMetadata,
-    required this.title,
+    required this.matchedTitle,
+    required this.originalTitle,
     required this.posterUrl,
     required this.coverUrl,
     required this.updatedAtUtc,
@@ -37,7 +38,8 @@ class MetadataFolderUpdatedEventDto {
   final MetadataState state;
   final MetadataFailureKind failureKind;
   final bool hasMetadata;
-  final String? title;
+  final String? matchedTitle;
+  final String? originalTitle;
   final String? posterUrl;
   final String? coverUrl;
   final DateTime? updatedAtUtc;
@@ -48,7 +50,8 @@ class MetadataFolderUpdatedEventDto {
       state: MetadataState.fromJson(json['state']),
       failureKind: MetadataFailureKind.fromJson(json['failureKind']),
       hasMetadata: json['hasMetadata'] as bool? ?? false,
-      title: json['title'] as String?,
+      matchedTitle: json['matchedTitle'] as String? ?? json['title'] as String?,
+      originalTitle: json['originalTitle'] as String?,
       posterUrl: json['posterUrl'] as String?,
       coverUrl: json['coverUrl'] as String?,
       updatedAtUtc: DateTime.tryParse(json['updatedAtUtc'] as String? ?? ''),

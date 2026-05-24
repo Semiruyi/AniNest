@@ -37,7 +37,10 @@ internal sealed class MetadataProjectionService : IMetadataProjectionService
             payload?.EpisodeCount,
             payload?.Source,
             record.State,
-            record.FailureKind);
+            record.FailureKind,
+            payload?.AirDate,
+            payload?.Year,
+            payload?.Rating);
     }
 
     public MetadataStatusSummaryDto BuildSummary(IReadOnlyList<MetadataRecord> records)

@@ -34,6 +34,7 @@ void main() {
       );
       expect(metadata.folderId, 'bocchi-the-rock');
       expect(metadata.hasMetadata, isTrue);
+      expect(metadata.matchedTitle, 'Bocchi the Rock!');
       expect(metadata.coverUrl, '/api/resources/library-cover/bocchi-the-rock');
 
       await service.dispose();
@@ -81,7 +82,7 @@ void main() {
 
       final folder = controller.folders.single;
       expect(folder.coverUrl, '/api/resources/library-cover/bocchi-the-rock');
-      expect(folder.metadataSummary?.title, 'Bocchi the Rock!');
+      expect(folder.metadataSummary?.matchedTitle, 'Bocchi the Rock!');
       expect(
         folder.metadataSummary?.posterUrl,
         '/api/resources/library-poster/bocchi-the-rock',

@@ -1,4 +1,4 @@
-import 'package:aninest_flutter/src/features/library/application/library_controller.dart';
+import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_content_pane.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_inspector_pane.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_layout.dart';
@@ -10,7 +10,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 class LibraryPage extends StatelessWidget {
   const LibraryPage({super.key, required this.controller});
 
-  final LibraryController controller;
+  final AppController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -40,12 +40,15 @@ class LibraryPage extends StatelessWidget {
                   initialSize: kLibraryRightPaneInitialSize,
                   minSize: kLibraryRightPaneMinSize,
                   maxSize: kLibraryRightPaneMaxSize,
-                  child: LibraryInspectorPane(controller: controller),
+                  child: LibraryInspectorPane(
+                    libraryController: controller.library,
+                    metadataController: controller.metadata,
+                  ),
                 ),
               ],
             ),
           ),
-          LibraryStatusBar(controller: controller),
+          LibraryStatusBar(controller: controller.library),
         ],
       ),
     );

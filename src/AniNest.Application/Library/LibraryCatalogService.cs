@@ -1,6 +1,8 @@
 using AniNest.Contracts.Library;
 using AniNest.Core.Enums;
 using AniNest.Application.Resources;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace AniNest.Application.Library;
 
@@ -73,17 +75,19 @@ public sealed class LibraryCatalogService
             return Failed($"Library folder '{request.Path}' does not exist.", "path_not_found");
 
         var folders = _store.GetFolders().ToList();
-        var folderId = CreateFolderId(request.Path);
-        if (folders.Any(folder => string.Equals(folder.FolderId, folderId, StringComparison.OrdinalIgnoreCase)))
+        var normalizedPath = NormalizePath(request.Path);
+        var existingByPath = folders.FirstOrDefault(folder =>
+            string.Equals(NormalizePath(folder.Path), normalizedPath, StringComparison.OrdinalIgnoreCase));
+        if (existingByPath is not null)
         {
-            var existingFolder = folders.First(folder =>
-                string.Equals(folder.FolderId, folderId, StringComparison.OrdinalIgnoreCase));
             return new AddLibraryFolderResult(
                 "alreadyExists",
                 $"Library folder '{request.Path}' has already been added.",
                 "already_exists",
-                MapFolder(existingFolder));
+                MapFolder(existingByPath));
         }
+
+        var folderId = CreateFolderId(request.Path, folders.Select(folder => folder.FolderId));
 
         var scanResult = await _scanner.ScanFolderAsync(request.Path, cancellationToken);
         if (scanResult.VideoCount == 0)
@@ -129,9 +133,12 @@ public sealed class LibraryCatalogService
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var folderId = CreateFolderId(path);
-            if (knownFolderIds.Contains(folderId))
+            var normalizedPath = NormalizePath(path);
+            if (folders.Any(folder =>
+                string.Equals(NormalizePath(folder.Path), normalizedPath, StringComparison.OrdinalIgnoreCase)))
                 continue;
+
+            var folderId = CreateFolderId(path, knownFolderIds);
 
             var scanResult = await _scanner.ScanFolderAsync(path, cancellationToken);
             if (scanResult.VideoCount == 0)
@@ -193,7 +200,8 @@ public sealed class LibraryCatalogService
 
     public LibraryFolderDto ApplyMetadataSummary(
         LibraryFolderDto folder,
-        string? title,
+        string? matchedTitle,
+        string? originalTitle,
         string? posterPath,
         string state,
         bool hasMetadata)
@@ -209,7 +217,8 @@ public sealed class LibraryCatalogService
         {
             CoverUrl = coverUrl,
             MetadataSummary = new LibraryMetadataSummaryDto(
-                title,
+                matchedTitle,
+                originalTitle,
                 string.IsNullOrWhiteSpace(posterPath)
                     ? null
                     : _resourceUrlService.GetUrl(
@@ -248,6 +257,7 @@ public sealed class LibraryCatalogService
 
         return new LibraryMetadataSummaryDto(
             folder.MetadataSummary.Title,
+            null,
             string.IsNullOrWhiteSpace(folder.MetadataSummary.PosterPath)
                 ? null
                 : _resourceUrlService.GetUrl(
@@ -262,14 +272,58 @@ public sealed class LibraryCatalogService
             throw new KeyNotFoundException($"Library folder '{folderId}' was not found.");
     }
 
-    private static string CreateFolderId(string path)
+    private static string CreateFolderId(string path, IEnumerable<string> existingFolderIds)
     {
         var name = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
         if (string.IsNullOrWhiteSpace(name))
             name = path;
 
-        return name.Trim().ToLowerInvariant().Replace(' ', '-');
+        var baseId = SlugifyFolderName(name);
+        if (string.IsNullOrWhiteSpace(baseId))
+            baseId = "folder";
+
+        var comparer = StringComparer.OrdinalIgnoreCase;
+        if (!existingFolderIds.Contains(baseId, comparer))
+            return baseId;
+
+        var suffix = ComputeShortPathHash(path);
+        return $"{baseId}-{suffix}";
     }
+
+    private static string SlugifyFolderName(string value)
+    {
+        var builder = new StringBuilder(value.Length);
+        var previousWasSeparator = false;
+
+        foreach (var ch in value.Trim().ToLowerInvariant())
+        {
+            if (char.IsLetterOrDigit(ch))
+            {
+                builder.Append(ch);
+                previousWasSeparator = false;
+                continue;
+            }
+
+            if (previousWasSeparator)
+                continue;
+
+            builder.Append('-');
+            previousWasSeparator = true;
+        }
+
+        return builder.ToString().Trim('-');
+    }
+
+    private static string ComputeShortPathHash(string path)
+    {
+        var normalized = NormalizePath(path);
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));
+        return Convert.ToHexStringLower(bytes)[..8];
+    }
+
+    private static string NormalizePath(string path)
+        => Path.GetFullPath(path)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
     private static AddLibraryFolderResult Failed(string message, string reasonCode)
         => new("failed", message, reasonCode, null);

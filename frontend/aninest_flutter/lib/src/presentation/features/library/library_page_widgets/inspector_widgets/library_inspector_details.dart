@@ -1,4 +1,5 @@
 import 'package:aninest_flutter/src/models/library_models.dart';
+import 'package:aninest_flutter/src/models/metadata_models.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/details/library_inspector_artwork_card.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/details/library_inspector_helpers.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/details/library_inspector_library_section.dart';
@@ -10,10 +11,12 @@ class LibraryInspectorDetails extends StatelessWidget {
   const LibraryInspectorDetails({
     super.key,
     required this.folder,
+    required this.metadata,
     required this.imageUrl,
   });
 
   final LibraryFolderDto folder;
+  final MetadataDto? metadata;
   final String? imageUrl;
 
   @override
@@ -28,7 +31,7 @@ class LibraryInspectorDetails extends StatelessWidget {
         const Gap(12),
         LibraryInspectorTitleBlock(folder: folder),
         const Gap(12),
-        LibraryInspectorMetadataSection(folder: folder),
+        LibraryInspectorMetadataSection(folder: folder, metadata: metadata),
         const Gap(12),
         LibraryInspectorLibrarySection(folder: folder),
       ],

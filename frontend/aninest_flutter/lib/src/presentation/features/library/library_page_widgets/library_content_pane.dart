@@ -1,4 +1,4 @@
-import 'package:aninest_flutter/src/features/library/application/library_controller.dart';
+import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/content_widgets/library_card_grid.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/content_widgets/library_empty_state.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_shared.dart';
@@ -7,7 +7,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 class LibraryContentPane extends StatelessWidget {
   const LibraryContentPane({super.key, required this.controller});
 
-  final LibraryController controller;
+  final AppController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -21,16 +21,16 @@ class LibraryContentPane extends StatelessWidget {
         children: <Widget>[
           Expanded(
             child: AnimatedBuilder(
-              animation: controller,
+              animation: controller.library,
               builder: (context, _) {
-                if (controller.folders.isEmpty) {
+                if (controller.library.folders.isEmpty) {
                   return const LibraryEmptyState();
                 }
 
                 return LibraryCardGrid(
-                  folders: controller.folders,
-                  selectedFolderId: controller.selectedFolderId,
-                  resolveMediaUrl: controller.resolveMediaUrl,
+                  folders: controller.library.folders,
+                  selectedFolderId: controller.library.selectedFolderId,
+                  resolveMediaUrl: controller.library.resolveMediaUrl,
                   onFolderPressed: controller.selectFolder,
                 );
               },

@@ -35,12 +35,9 @@ class LibraryFolderCard extends StatelessWidget {
             direction: Axis.vertical,
             onPressed: onPressed,
             gap: 10,
-            image: _LibraryCardArtwork(
-              title: _titleFor(folder),
-              imageUrl: imageUrl,
-            ),
+            image: _LibraryCardArtwork(title: folder.name, imageUrl: imageUrl),
             title: _LibraryCardTitle(
-              title: _titleFor(folder),
+              title: folder.name,
               watchStatus: folder.watchStatus,
               isFavorite: folder.isFavorite,
             ),
@@ -57,14 +54,6 @@ class LibraryFolderCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _titleFor(LibraryFolderDto folder) {
-    final metadataTitle = folder.metadataSummary?.title;
-    if (metadataTitle != null && metadataTitle.trim().isNotEmpty) {
-      return metadataTitle;
-    }
-    return folder.name;
   }
 
   String _subtitleFor(LibraryFolderDto folder) {
@@ -112,7 +101,6 @@ class _LibraryCardTitle extends StatelessWidget {
             ],
           ],
         ),
-        
       ],
     );
   }

@@ -107,10 +107,19 @@ class LibraryController extends ChangeNotifier {
           final nextMetadata = update.hasMetadata
               ? (folder.metadataSummary ??
                         const LibraryMetadataSummaryDto(
-                          title: null,
+                          matchedTitle: null,
+                          originalTitle: null,
                           posterUrl: null,
+                          state: 'Unknown',
+                          hasMetadata: false,
                         ))
-                    .copyWith(title: update.title, posterUrl: update.posterUrl)
+                    .copyWith(
+                      matchedTitle: update.matchedTitle,
+                      originalTitle: update.originalTitle,
+                      posterUrl: update.posterUrl,
+                      state: update.state.name,
+                      hasMetadata: update.hasMetadata,
+                    )
               : null;
 
           return folder.copyWith(

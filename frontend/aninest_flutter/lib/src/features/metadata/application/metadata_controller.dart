@@ -107,11 +107,14 @@ class MetadataController extends ChangeNotifier {
 
     _metadata = MetadataDto(
       folderId: update.folderId,
-      title: update.title,
-      originalTitle: _metadata?.originalTitle,
+      title: update.matchedTitle,
+      originalTitle: update.originalTitle ?? _metadata?.originalTitle,
       summary: _metadata?.summary,
       tags: _metadata?.tags ?? const [],
       posterPath: update.posterUrl,
+      airDate: _metadata?.airDate,
+      year: _metadata?.year,
+      rating: _metadata?.rating,
       season: _metadata?.season,
       episodeCount: _metadata?.episodeCount,
       source: _metadata?.source,
