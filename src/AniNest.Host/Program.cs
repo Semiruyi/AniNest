@@ -6,12 +6,12 @@ using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var hostLogPath = builder.Configuration["AniNest:HostLogPath"]
-                  ?? Path.Combine(
-                      Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                      "AniNest",
-                      "logs",
-                      "host.log");
+var hostLogPathSetting = builder.Configuration["AniNest:HostLogPath"];
+var hostLogPath = string.IsNullOrWhiteSpace(hostLogPathSetting)
+    ? Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "data", "logs", "host.log"))
+    : Path.IsPathRooted(hostLogPathSetting)
+        ? hostLogPathSetting
+        : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, hostLogPathSetting));
 
 builder.Logging.AddProvider(new FileLoggerProvider(hostLogPath, LogLevel.Information));
 

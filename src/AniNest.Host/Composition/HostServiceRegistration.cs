@@ -90,9 +90,15 @@ internal static class HostServiceRegistration
     }
 
     private static string ResolvePath(IConfiguration configuration, string key, string fileName)
-        => configuration[key]
-           ?? Path.Combine(
-               Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-               "AniNest",
-               fileName);
+    {
+        var configured = configuration[key];
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            return Path.IsPathRooted(configured)
+                ? configured
+                : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, configured));
+        }
+
+        return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "data", fileName));
+    }
 }
