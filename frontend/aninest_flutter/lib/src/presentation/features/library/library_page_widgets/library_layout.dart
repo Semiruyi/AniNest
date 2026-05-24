@@ -1,0 +1,10 @@
+const double kLibraryToolbarHeight = 60;
+const double kLibraryStatusBarHeight = 30;
+const double kLibraryLeftPaneInitialSize = 240;
+const double kLibraryLeftPaneMinSize = 200;
+const double kLibraryLeftPaneMaxSize = 320;
+const double kLibraryContentPaneMinSize = 520;
+const double kLibraryRightPaneInitialSize = 320;
+const double kLibraryRightPaneMinSize = 280;
+const double kLibraryRightPaneMaxSize = 420;
+const double kLibraryPanePadding = 12;
