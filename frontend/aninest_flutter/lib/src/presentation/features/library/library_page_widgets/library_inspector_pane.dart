@@ -1,4 +1,6 @@
 import 'package:aninest_flutter/src/features/library/application/library_controller.dart';
+import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/library_inspector_details.dart';
+import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/library_inspector_empty_state.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_layout.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_shared.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -18,16 +20,29 @@ class LibraryInspectorPane extends StatelessWidget {
         padding: const EdgeInsets.all(kLibraryPanePadding),
         child: AnimatedBuilder(
           animation: controller,
-          builder: (context, _) => Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              const LibraryPaneHeader(
-                title: 'Inspector',
-                subtitle: 'Selection and quick actions',
-              ),
-              
-            ],
-          ),
+          builder: (context, _) {
+            final folder = controller.selectedFolder;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const LibraryPaneHeader(
+                  title: 'Inspector',
+                  subtitle: 'Selection details and library metadata',
+                ),
+                const Gap(12),
+                if (folder == null)
+                  const LibraryInspectorEmptyState()
+                else
+                  LibraryInspectorDetails(
+                    folder: folder,
+                    imageUrl: controller.resolveMediaUrl(
+                      folder.coverUrl ?? folder.metadataSummary?.posterUrl,
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );

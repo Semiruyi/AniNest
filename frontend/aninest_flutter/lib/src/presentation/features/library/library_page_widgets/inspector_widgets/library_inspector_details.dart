@@ -1,0 +1,37 @@
+import 'package:aninest_flutter/src/models/library_models.dart';
+import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/details/library_inspector_artwork_card.dart';
+import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/details/library_inspector_helpers.dart';
+import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/details/library_inspector_library_section.dart';
+import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/details/library_inspector_metadata_section.dart';
+import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/details/library_inspector_title_block.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
+
+class LibraryInspectorDetails extends StatelessWidget {
+  const LibraryInspectorDetails({
+    super.key,
+    required this.folder,
+    required this.imageUrl,
+  });
+
+  final LibraryFolderDto folder;
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        LibraryInspectorArtworkCard(
+          title: displayLibraryFolderTitle(folder),
+          imageUrl: imageUrl,
+        ),
+        const Gap(12),
+        LibraryInspectorTitleBlock(folder: folder),
+        const Gap(12),
+        LibraryInspectorMetadataSection(folder: folder),
+        const Gap(12),
+        LibraryInspectorLibrarySection(folder: folder),
+      ],
+    );
+  }
+}
