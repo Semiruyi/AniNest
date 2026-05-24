@@ -31,14 +31,14 @@ class LibraryInspectorMetadataSection extends StatelessWidget {
         ),
         if (originalTitle != null && originalTitle != matchedTitle)
           LibraryInspectorField(label: 'Original title', value: originalTitle),
-        LibraryInspectorField(
-          label: 'State',
-          value: metadata?.state.name ?? displayMetadataState(folder),
-        ),
-        LibraryInspectorField(
-          label: 'Matched',
-          value: summary?.hasMetadata == true ? 'Yes' : 'No',
-        ),
+        // LibraryInspectorField(
+        //   label: 'State',
+        //   value: metadata?.state.name ?? displayMetadataState(folder),
+        // ),
+        // LibraryInspectorField(
+        //   label: 'Matched',
+        //   value: summary?.hasMetadata == true ? 'Yes' : 'No',
+        // ),
         if (metadata?.episodeCount != null)
           LibraryInspectorField(
             label: 'Episodes',
@@ -65,10 +65,6 @@ class LibraryInspectorMetadataSection extends StatelessWidget {
           ),
         if (metadata?.summary != null && metadata!.summary!.trim().isNotEmpty)
           LibraryInspectorField(label: 'Summary', value: metadata!.summary!),
-        LibraryInspectorField(
-          label: 'Watch status',
-          value: watchStatusLabel(folder.watchStatus),
-        ),
         LibraryInspectorField(
           label: 'Favorite',
           value: folder.isFavorite ? 'Yes' : 'No',

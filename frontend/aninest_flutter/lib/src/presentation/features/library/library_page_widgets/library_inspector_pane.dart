@@ -32,11 +32,6 @@ class LibraryInspectorPane extends StatelessWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const LibraryPaneHeader(
-                  title: 'Inspector',
-                  subtitle: 'Selection details and library metadata',
-                ),
-                const Gap(12),
                 if (folder == null)
                   const LibraryInspectorEmptyState()
                 else

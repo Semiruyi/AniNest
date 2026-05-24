@@ -1,7 +1,5 @@
 import 'package:aninest_flutter/src/models/library_models.dart';
 import 'package:aninest_flutter/src/models/metadata_models.dart';
-import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/details/library_inspector_artwork_card.dart';
-import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/details/library_inspector_helpers.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/details/library_inspector_library_section.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/details/library_inspector_metadata_section.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/details/library_inspector_title_block.dart';
@@ -24,13 +22,6 @@ class LibraryInspectorDetails extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        LibraryInspectorArtworkCard(
-          title: displayLibraryFolderTitle(folder),
-          imageUrl: imageUrl,
-        ),
-        const Gap(12),
-        LibraryInspectorTitleBlock(folder: folder),
-        const Gap(12),
         LibraryInspectorMetadataSection(folder: folder, metadata: metadata),
         const Gap(12),
         LibraryInspectorLibrarySection(folder: folder),
