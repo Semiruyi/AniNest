@@ -1,5 +1,4 @@
 using AniNest.Application.Library;
-using AniNest.Contracts.Library;
 using AniNest.Core.Enums;
 
 namespace AniNest.Host.Modules;
@@ -16,7 +15,7 @@ internal static class LibraryCatalogDefaults
                 "D:/Media/Sample Anime",
                 12,
                 null,
-                new LibraryMetadataSummaryDto("Sample Anime", null),
+                new LibraryFolderMetadataSummary("Sample Anime", null),
                 0)
         ];
     }

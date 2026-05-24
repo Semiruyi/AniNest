@@ -1,11 +1,18 @@
 import 'dart:math' as math;
 
 import 'package:animated_containers/animated_containers.dart';
+import 'package:aninest_flutter/src/features/library/application/library_controller.dart';
+import 'package:aninest_flutter/src/models/library_models.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_shared.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class LibraryContentPane extends StatelessWidget {
-  const LibraryContentPane({super.key});
+  const LibraryContentPane({
+    super.key,
+    required this.controller,
+  });
+
+  final LibraryController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -17,41 +24,56 @@ class LibraryContentPane extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const LibraryPaneHeader(
-            title: 'All Media',
-            subtitle: '128 items • Animated wrap view',
+          AnimatedBuilder(
+            animation: controller,
+            builder: (context, _) => LibraryPaneHeader(
+              title: 'All Media',
+              subtitle: '${controller.folders.length} items • Animated wrap view',
+            ),
           ),
           const Gap(12),
           Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final cardWidth = _resolveCardWidth(constraints.maxWidth);
-
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: AnimatedWrap.material3(
-                    spacing: 12,
-                    runSpacing: 12,
-                    alignment: WrapAlignment.start,
-                    runAlignment: WrapAlignment.start,
-                    staggeredInitialInsertionAnimation: const Duration(
-                      milliseconds: 35,
-                    ),
-                    children: List<Widget>.generate(
-                      12,
-                      (index) => SizedBox(
-                        key: ValueKey('library-card-$index'),
-                        width: cardWidth,
-                        child: _LibraryCard(index: index),
-                      ),
-                    ),
-                  ),
-                );
-              },
+            child: AnimatedBuilder(
+              animation: controller,
+              builder: (context, _) => _buildBody(context),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    if (controller.folders.isEmpty) {
+      return const _LibraryEmptyState();
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = _resolveCardWidth(constraints.maxWidth);
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: AnimatedWrap.material3(
+            spacing: 12,
+            runSpacing: 12,
+            alignment: WrapAlignment.start,
+            runAlignment: WrapAlignment.start,
+            staggeredInitialInsertionAnimation: const Duration(
+              milliseconds: 35,
+            ),
+            children: controller.folders
+                .map(
+                  (folder) => SizedBox(
+                    key: ValueKey(folder.folderId),
+                    width: cardWidth,
+                    child: _LibraryCard(folder: folder),
+                  ),
+                )
+                .toList(),
+          ),
+        );
+      },
     );
   }
 
@@ -70,9 +92,9 @@ class LibraryContentPane extends StatelessWidget {
 }
 
 class _LibraryCard extends StatelessWidget {
-  const _LibraryCard({required this.index});
+  const _LibraryCard({required this.folder});
 
-  final int index;
+  final LibraryFolderDto folder;
 
   @override
   Widget build(BuildContext context) {
@@ -81,34 +103,53 @@ class _LibraryCard extends StatelessWidget {
     return SurfaceCard(
       child: SizedBox(
         height: 312,
-        child: Padding(
-          padding: const EdgeInsets.all(0),
-          child: CardImage(
-            direction: Axis.vertical,
-            onPressed: () {},
-            gap: 10,
-            image: _LibraryCardArtwork(index: index),
-            title: Text('Media Title ${index + 1}').semiBold(),
-            subtitle: Text(
-              'Season 1 • 12 Episodes',
-              style: TextStyle(
-                fontSize: 13,
-                color: colorScheme.mutedForeground,
-              ),
-            ),
-            backgroundColor: colorScheme.secondary,
-            borderColor: colorScheme.border,
+        child: CardImage(
+          direction: Axis.vertical,
+          onPressed: () {},
+          gap: 10,
+          image: _LibraryCardArtwork(
+            title: _titleFor(folder),
+            imageUrl: folder.coverUrl ?? folder.metadataSummary?.posterUrl,
           ),
+          title: Text(_titleFor(folder)).semiBold(),
+          subtitle: Text(
+            _subtitleFor(folder),
+            style: TextStyle(
+              fontSize: 13,
+              color: colorScheme.mutedForeground,
+            ),
+          ),
+          backgroundColor: colorScheme.secondary,
+          borderColor: colorScheme.border,
         ),
       ),
     );
   }
+
+  String _titleFor(LibraryFolderDto folder) {
+    final metadataTitle = folder.metadataSummary?.title;
+    if (metadataTitle != null && metadataTitle.trim().isNotEmpty) {
+      return metadataTitle;
+    }
+    return folder.name;
+  }
+
+  String _subtitleFor(LibraryFolderDto folder) {
+    if (folder.videoCount <= 0) {
+      return folder.path;
+    }
+    return '${folder.playedCount} / ${folder.videoCount} episodes';
+  }
 }
 
 class _LibraryCardArtwork extends StatelessWidget {
-  const _LibraryCardArtwork({required this.index});
+  const _LibraryCardArtwork({
+    required this.title,
+    required this.imageUrl,
+  });
 
-  final int index;
+  final String title;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -128,20 +169,89 @@ class _LibraryCardArtwork extends StatelessWidget {
             ],
           ),
         ),
+        clipBehavior: Clip.antiAlias,
         alignment: Alignment.center,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Icon(
-              BootstrapIcons.image,
-              size: 28,
+        child: imageUrl == null
+            ? _ArtworkFallback(title: title)
+            : Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    _ArtworkFallback(title: title),
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) {
+                    return child;
+                  }
+                  return _ArtworkFallback(title: title);
+                },
+              ),
+      ),
+    );
+  }
+}
+
+class _ArtworkFallback extends StatelessWidget {
+  const _ArtworkFallback({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        Icon(
+          BootstrapIcons.image,
+          size: 28,
+          color: colorScheme.mutedForeground,
+        ),
+        const Gap(8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
               color: colorScheme.mutedForeground,
             ),
-            const Gap(8),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LibraryEmptyState extends StatelessWidget {
+  const _LibraryEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 320),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              BootstrapIcons.collectionPlay,
+              size: 32,
+              color: colorScheme.mutedForeground,
+            ),
+            const Gap(12),
+            const Text('No media folders yet').semiBold(),
+            const Gap(6),
             Text(
-              'Cover ${index + 1}',
+              'Add a folder from the toolbar to start building your library.',
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 13,
                 color: colorScheme.mutedForeground,
               ),
             ),

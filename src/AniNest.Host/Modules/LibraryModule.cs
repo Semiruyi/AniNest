@@ -1,5 +1,6 @@
 using AniNest.Application.Library;
 using AniNest.Application.Modules;
+using AniNest.Application.Resources;
 using AniNest.Contracts.Library;
 using AniNest.Core.Enums;
 using AniNest.Host.Events;
@@ -11,9 +12,13 @@ internal sealed class LibraryModule : ILibraryModule
     private readonly LibraryCatalogService _catalog;
     private readonly IHostEventStream _events;
 
-    public LibraryModule(ILibraryCatalogStore store, ILibraryFileScanner scanner, IHostEventStream events)
+    public LibraryModule(
+        ILibraryCatalogStore store,
+        ILibraryFileScanner scanner,
+        IResourceUrlService resourceUrlService,
+        IHostEventStream events)
     {
-        _catalog = new LibraryCatalogService(store, scanner);
+        _catalog = new LibraryCatalogService(store, scanner, resourceUrlService);
         _events = events;
     }
 

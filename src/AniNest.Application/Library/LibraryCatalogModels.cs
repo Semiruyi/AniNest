@@ -1,5 +1,3 @@
-using AniNest.Contracts.Library;
-
 namespace AniNest.Application.Library;
 
 public sealed record LibraryFolderRecord(
@@ -8,5 +6,5 @@ public sealed record LibraryFolderRecord(
     string Path,
     int VideoCount,
     string? CoverPath,
-    LibraryMetadataSummaryDto? MetadataSummary,
+    LibraryFolderMetadataSummary? MetadataSummary,
     int Order);

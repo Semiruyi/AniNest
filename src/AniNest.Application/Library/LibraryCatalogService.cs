@@ -1,5 +1,6 @@
 using AniNest.Contracts.Library;
 using AniNest.Core.Enums;
+using AniNest.Application.Resources;
 
 namespace AniNest.Application.Library;
 
@@ -7,11 +8,16 @@ public sealed class LibraryCatalogService
 {
     private readonly ILibraryCatalogStore _store;
     private readonly ILibraryFileScanner _scanner;
+    private readonly IResourceUrlService _resourceUrlService;
 
-    public LibraryCatalogService(ILibraryCatalogStore store, ILibraryFileScanner scanner)
+    public LibraryCatalogService(
+        ILibraryCatalogStore store,
+        ILibraryFileScanner scanner,
+        IResourceUrlService resourceUrlService)
     {
         _store = store;
         _scanner = scanner;
+        _resourceUrlService = resourceUrlService;
     }
 
     public async Task<IReadOnlyList<LibraryFolderDto>> GetFoldersAsync(CancellationToken cancellationToken = default)
@@ -192,11 +198,30 @@ public sealed class LibraryCatalogService
             folder.Name,
             folder.Path,
             folder.VideoCount,
-            folder.CoverPath,
+            string.IsNullOrWhiteSpace(folder.CoverPath)
+                ? null
+                : _resourceUrlService.GetUrl(
+                    new ResourceKey(ResourceKind.LibraryCover, folder.FolderId)),
             0,
             watchStatus,
             isFavorite,
-            folder.MetadataSummary);
+            MapMetadataSummary(folder));
+    }
+
+    private LibraryMetadataSummaryDto? MapMetadataSummary(
+        LibraryFolderRecord folder)
+    {
+        if (folder.MetadataSummary is null)
+        {
+            return null;
+        }
+
+        return new LibraryMetadataSummaryDto(
+            folder.MetadataSummary.Title,
+            string.IsNullOrWhiteSpace(folder.MetadataSummary.PosterPath)
+                ? null
+                : _resourceUrlService.GetUrl(
+                    new ResourceKey(ResourceKind.LibraryPoster, folder.FolderId)));
     }
 
     private void EnsureFolderExists(string folderId)

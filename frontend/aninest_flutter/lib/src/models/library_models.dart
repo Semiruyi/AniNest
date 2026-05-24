@@ -3,16 +3,16 @@ import 'package:aninest_flutter/src/models/enums.dart';
 class LibraryMetadataSummaryDto {
   const LibraryMetadataSummaryDto({
     required this.title,
-    required this.posterPath,
+    required this.posterUrl,
   });
 
   final String? title;
-  final String? posterPath;
+  final String? posterUrl;
 
   factory LibraryMetadataSummaryDto.fromJson(Map<String, dynamic> json) {
     return LibraryMetadataSummaryDto(
       title: json['title'] as String?,
-      posterPath: json['posterPath'] as String?,
+      posterUrl: json['posterUrl'] as String?,
     );
   }
 }
@@ -23,7 +23,7 @@ class LibraryFolderDto {
     required this.name,
     required this.path,
     required this.videoCount,
-    required this.coverPath,
+    required this.coverUrl,
     required this.playedCount,
     required this.watchStatus,
     required this.isFavorite,
@@ -34,7 +34,7 @@ class LibraryFolderDto {
   final String name;
   final String path;
   final int videoCount;
-  final String? coverPath;
+  final String? coverUrl;
   final int playedCount;
   final WatchStatus watchStatus;
   final bool isFavorite;
@@ -46,7 +46,7 @@ class LibraryFolderDto {
       name: json['name'] as String,
       path: json['path'] as String,
       videoCount: json['videoCount'] as int? ?? 0,
-      coverPath: json['coverPath'] as String?,
+      coverUrl: json['coverUrl'] as String?,
       playedCount: json['playedCount'] as int? ?? 0,
       watchStatus: WatchStatus.fromJson(json['watchStatus']),
       isFavorite: json['isFavorite'] as bool? ?? false,

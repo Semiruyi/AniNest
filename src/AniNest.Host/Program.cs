@@ -12,6 +12,7 @@ app.UseApiExceptionHandling();
 app.UseStaticFiles();
 app.MapGet("/", () => Results.Redirect("/api/settings"));
 app.MapLibraryEndpoints();
+app.MapResourceEndpoints();
 app.MapPlaylistEndpoints();
 app.MapSessionEndpoints();
 app.MapMetadataEndpoints();

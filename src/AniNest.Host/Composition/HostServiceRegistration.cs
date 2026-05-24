@@ -3,10 +3,12 @@ using AniNest.Application.Metadata;
 using AniNest.Application.Modules;
 using AniNest.Application.Playback;
 using AniNest.Application.Playlist;
+using AniNest.Application.Resources;
 using AniNest.Application.Settings;
 using AniNest.Application.Thumbnail;
 using AniNest.Host.Events;
 using AniNest.Host.Modules;
+using AniNest.Host.Modules.Resources;
 
 namespace AniNest.Host.Composition;
 
@@ -15,6 +17,7 @@ internal static class HostServiceRegistration
     public static IServiceCollection AddAniNestHostServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<IHostEventStream, InMemoryHostEventStream>();
+        services.AddSingleton<IResourceUrlService, ResourceUrlService>();
 
         services.AddSingleton<ILibraryModule, LibraryModule>();
         services.AddSingleton<ILibraryFileScanner, FileSystemLibraryFileScanner>();
@@ -41,6 +44,7 @@ internal static class HostServiceRegistration
         services.AddSingleton<IMetadataStore>(_ => new FileMetadataStore(
             ResolvePath(configuration, "AniNest:MetadataPath", "metadata.json"),
             MetadataDefaults.Create()));
+        services.AddSingleton<IResourceLocator, ResourceLocator>();
 
         services.AddSingleton<ISettingsStore>(_ => new FileSettingsStore(
             ResolvePath(configuration, "AniNest:SettingsPath", "host-settings.json"),

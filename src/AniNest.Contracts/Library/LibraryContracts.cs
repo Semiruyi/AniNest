@@ -4,14 +4,14 @@ namespace AniNest.Contracts.Library;
 
 public sealed record LibraryMetadataSummaryDto(
     string? Title,
-    string? PosterPath);
+    string? PosterUrl);
 
 public sealed record LibraryFolderDto(
     string FolderId,
     string Name,
     string Path,
     int VideoCount,
-    string? CoverPath,
+    string? CoverUrl,
     int PlayedCount,
     WatchStatus WatchStatus,
     bool IsFavorite,

@@ -25,8 +25,8 @@ class LibraryPage extends StatelessWidget {
             child: ResizablePanel.horizontal(
               draggerBuilder: ResizablePanel.defaultDraggerBuilder,
               draggerThickness: 12,
-              children: const <ResizablePane>[
-                ResizablePane(
+              children: <ResizablePane>[
+                const ResizablePane(
                   initialSize: kLibraryLeftPaneInitialSize,
                   minSize: kLibraryLeftPaneMinSize,
                   maxSize: kLibraryLeftPaneMaxSize,
@@ -34,9 +34,9 @@ class LibraryPage extends StatelessWidget {
                 ),
                 ResizablePane.flex(
                   minSize: kLibraryContentPaneMinSize,
-                  child: LibraryContentPane(),
+                  child: LibraryContentPane(controller: controller),
                 ),
-                ResizablePane(
+                const ResizablePane(
                   initialSize: kLibraryRightPaneInitialSize,
                   minSize: kLibraryRightPaneMinSize,
                   maxSize: kLibraryRightPaneMaxSize,

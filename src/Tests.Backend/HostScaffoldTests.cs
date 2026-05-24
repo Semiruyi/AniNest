@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
+using AniNest.Application.Library;
 using AniNest.Contracts.Common;
 using AniNest.Contracts.Library;
 using AniNest.Contracts.Metadata;
@@ -56,6 +57,18 @@ public sealed class HostScaffoldTests
         Assert.NotNull(payload);
         Assert.Single(payload.Items);
         Assert.Equal("sample-folder", payload.Items[0].FolderId);
+        Assert.Equal("/api/resources/library-cover/sample-folder", payload.Items[0].CoverUrl);
+    }
+
+    [Fact]
+    public async Task GetResourceCover_ReturnsImageStream()
+    {
+        using var client = CreateClient();
+
+        var response = await client.GetAsync("/api/resources/library-cover/sample-folder");
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal("image/jpeg", response.Content.Headers.ContentType?.MediaType);
     }
 
     [Fact]
@@ -419,6 +432,7 @@ public sealed class HostScaffoldTests
                 {
                     File.WriteAllText(Path.Combine(sampleFolderPath, $"Episode {index:00}.mp4"), string.Empty);
                 }
+                File.WriteAllBytes(Path.Combine(sampleFolderPath, "poster.jpg"), [0xFF, 0xD8, 0xFF, 0xD9]);
 
                 var libraryCatalogPath = Path.Combine(testRoot, "library-catalog.json");
                 var libraryStore = new FileLibraryCatalogStore(
@@ -429,8 +443,8 @@ public sealed class HostScaffoldTests
                             "Sample Anime",
                             sampleFolderPath,
                             12,
-                            null,
-                            new LibraryMetadataSummaryDto("Sample Anime", null),
+                            Path.Combine(sampleFolderPath, "poster.jpg"),
+                            new LibraryFolderMetadataSummary("Sample Anime", null),
                             0)
                     ],
                     new Dictionary<string, AniNest.Core.Enums.WatchStatus>(StringComparer.OrdinalIgnoreCase)

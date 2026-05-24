@@ -1,4 +1,5 @@
 using AniNest.Application.Library;
+using AniNest.Application.Resources;
 using AniNest.Contracts.Library;
 using AniNest.Core.Enums;
 
@@ -13,7 +14,7 @@ public sealed class LibraryCatalogServiceTests
         var scanner = new FakeLibraryFileScanner();
         var path = CreateChildFolder(root, "Bocchi The Rock");
         scanner.ScanResults[path] = new LibraryFolderScanResult(12, Path.Combine(path, "poster.jpg"));
-        var service = new LibraryCatalogService(store, scanner);
+        var service = new LibraryCatalogService(store, scanner, new FakeResourceUrlService());
 
         var result = await service.AddFolderAsync(new AddLibraryFolderRequest(path));
 
@@ -24,7 +25,7 @@ public sealed class LibraryCatalogServiceTests
         Assert.Equal(3, folders.Count);
         var folder = Assert.Single(folders, item => item.FolderId == "bocchi-the-rock");
         Assert.Equal(12, folder.VideoCount);
-        Assert.Equal(Path.Combine(path, "poster.jpg"), folder.CoverPath);
+        Assert.Equal("/api/resources/library-cover/bocchi-the-rock", folder.CoverUrl);
     }
 
     [Fact]
@@ -34,7 +35,7 @@ public sealed class LibraryCatalogServiceTests
         var scanner = new FakeLibraryFileScanner();
         var path = CreateChildFolder(root, "Empty Folder");
         scanner.ScanResults[path] = new LibraryFolderScanResult(0, null);
-        var service = new LibraryCatalogService(store, scanner);
+        var service = new LibraryCatalogService(store, scanner, new FakeResourceUrlService());
 
         var result = await service.AddFolderAsync(new AddLibraryFolderRequest(path));
         Assert.Equal("failed", result.Status);
@@ -48,7 +49,7 @@ public sealed class LibraryCatalogServiceTests
         var store = CreateStore(out var root);
         var scanner = new FakeLibraryFileScanner();
         var path = Path.Combine(root, "Folder 01");
-        var service = new LibraryCatalogService(store, scanner);
+        var service = new LibraryCatalogService(store, scanner, new FakeResourceUrlService());
 
         var result = await service.AddFolderAsync(new AddLibraryFolderRequest(path));
 
@@ -72,7 +73,7 @@ public sealed class LibraryCatalogServiceTests
         scanner.ScanResults[folderB] = new LibraryFolderScanResult(8, null);
         scanner.ScanResults[duplicate] = new LibraryFolderScanResult(6, null);
 
-        var service = new LibraryCatalogService(store, scanner);
+        var service = new LibraryCatalogService(store, scanner, new FakeResourceUrlService());
 
         await service.AddFolderBatchAsync(new BatchAddLibraryFoldersRequest(importRoot));
 
@@ -95,14 +96,14 @@ public sealed class LibraryCatalogServiceTests
         ]);
         var scanner = new FakeLibraryFileScanner();
         scanner.ScanResults[existingPath] = new LibraryFolderScanResult(15, Path.Combine(existingPath, "folder.jpg"));
-        var service = new LibraryCatalogService(store, scanner);
+        var service = new LibraryCatalogService(store, scanner, new FakeResourceUrlService());
 
         var folders = await service.GetFoldersAsync();
 
         Assert.Single(folders);
         Assert.Equal("folder-01", folders[0].FolderId);
         Assert.Equal(15, folders[0].VideoCount);
-        Assert.Equal(Path.Combine(existingPath, "folder.jpg"), folders[0].CoverPath);
+        Assert.Equal("/api/resources/library-cover/folder-01", folders[0].CoverUrl);
         Assert.Single(store.GetFolders());
     }
 
@@ -110,7 +111,7 @@ public sealed class LibraryCatalogServiceTests
     public async Task SetFavorite_UpdatesFolderState()
     {
         var store = CreateStore(out _);
-        var service = new LibraryCatalogService(store, new FakeLibraryFileScanner());
+        var service = new LibraryCatalogService(store, new FakeLibraryFileScanner(), new FakeResourceUrlService());
 
         service.SetFavorite("folder-02", true);
 
@@ -122,7 +123,7 @@ public sealed class LibraryCatalogServiceTests
     public async Task SetWatchStatus_UpdatesFolderState()
     {
         var store = CreateStore(out _);
-        var service = new LibraryCatalogService(store, new FakeLibraryFileScanner());
+        var service = new LibraryCatalogService(store, new FakeLibraryFileScanner(), new FakeResourceUrlService());
 
         service.SetWatchStatus("folder-02", WatchStatus.Completed);
 
@@ -134,7 +135,7 @@ public sealed class LibraryCatalogServiceTests
     public async Task MoveFolderToFront_ReordersFolders()
     {
         var store = CreateStore(out _);
-        var service = new LibraryCatalogService(store, new FakeLibraryFileScanner());
+        var service = new LibraryCatalogService(store, new FakeLibraryFileScanner(), new FakeResourceUrlService());
 
         service.MoveFolderToFront("folder-02");
 
@@ -146,7 +147,7 @@ public sealed class LibraryCatalogServiceTests
     public async Task DeleteFolder_RemovesAndReordersRemainingFolders()
     {
         var store = CreateStore(out _);
-        var service = new LibraryCatalogService(store, new FakeLibraryFileScanner());
+        var service = new LibraryCatalogService(store, new FakeLibraryFileScanner(), new FakeResourceUrlService());
 
         service.DeleteFolder("folder-01");
 
@@ -185,5 +186,16 @@ public sealed class LibraryCatalogServiceTests
         var path = Path.Combine(parentPath, name);
         Directory.CreateDirectory(path);
         return path;
+    }
+
+    private sealed class FakeResourceUrlService : IResourceUrlService
+    {
+        public string GetUrl(ResourceKey key)
+            => $"/api/resources/{key.Kind switch
+            {
+                ResourceKind.LibraryCover => "library-cover",
+                ResourceKind.LibraryPoster => "library-poster",
+                _ => "unknown"
+            }}/{key.OwnerId}";
     }
 }
