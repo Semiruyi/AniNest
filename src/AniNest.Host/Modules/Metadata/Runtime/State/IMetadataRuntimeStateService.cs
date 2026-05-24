@@ -5,7 +5,6 @@ namespace AniNest.Host.Modules;
 
 internal interface IMetadataRuntimeStateService
 {
-    void EnsureInitialized();
     IReadOnlyList<MetadataRecord> GetAllRecords();
     MetadataRecord? GetRecord(string folderId);
     MetadataRecord RequireRecord(string folderId);
@@ -16,6 +15,5 @@ internal interface IMetadataRuntimeStateService
     MetadataFolderStateSummary GetFolderStateSummary(string folderId);
     void PublishFolderState(string folderId);
     void PublishSummaryChanged();
-    void NormalizeTransientStates();
     Task ExecuteAsync(MetadataRecord record, CancellationToken cancellationToken);
 }

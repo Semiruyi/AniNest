@@ -11,7 +11,8 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
     private readonly IMetadataStore _legacyStore;
     private readonly IMetadataRecordStore _recordStore;
     private readonly IMetadataReviewStore _reviewStore;
-    private readonly IMetadataPayloadRepository _payloadRepository;
+    private readonly IMetadataAssetService _assets;
+    private readonly IMetadataProjectionService _projection;
     private readonly IMetadataFetchPipeline _pipeline;
     private readonly IHostEventStream _events;
     private readonly ILogger<MetadataRuntimeStateService> _logger;
@@ -20,7 +21,8 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
         IMetadataStore legacyStore,
         IMetadataRecordStore recordStore,
         IMetadataReviewStore reviewStore,
-        IMetadataPayloadRepository payloadRepository,
+        IMetadataAssetService assets,
+        IMetadataProjectionService projection,
         IMetadataFetchPipeline pipeline,
         IHostEventStream events,
         ILogger<MetadataRuntimeStateService> logger)
@@ -28,66 +30,11 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
         _legacyStore = legacyStore;
         _recordStore = recordStore;
         _reviewStore = reviewStore;
-        _payloadRepository = payloadRepository;
+        _assets = assets;
+        _projection = projection;
         _pipeline = pipeline;
         _events = events;
         _logger = logger;
-    }
-
-    public void EnsureInitialized()
-    {
-        if (_recordStore.GetAll().Count > 0)
-            return;
-
-        _logger.LogInformation("Metadata record store empty. Importing legacy metadata records.");
-        foreach (var metadata in _legacyStore.GetAll())
-        {
-            var payloadPath = string.IsNullOrWhiteSpace(metadata.Title) &&
-                              string.IsNullOrWhiteSpace(metadata.OriginalTitle) &&
-                              string.IsNullOrWhiteSpace(metadata.Summary) &&
-                              metadata.Tags.Count == 0 &&
-                              string.IsNullOrWhiteSpace(metadata.Source)
-                ? null
-                : MetadataStoragePathCodec.GetPayloadPath(metadata.FolderId);
-
-            if (!string.IsNullOrWhiteSpace(payloadPath))
-            {
-                _payloadRepository.Save(payloadPath, new FolderMetadataPayload(
-                    metadata.FolderId,
-                    null,
-                    metadata.Title,
-                    metadata.OriginalTitle,
-                    metadata.Summary,
-                    null,
-                    metadata.PosterPath,
-                    null,
-                    null,
-                    null,
-                    metadata.EpisodeCount,
-                    metadata.Tags,
-                    metadata.Source,
-                    DateTime.UtcNow));
-            }
-
-            _recordStore.Save(new MetadataRecord(
-                metadata.FolderId,
-                metadata.FolderId,
-                metadata.Title ?? metadata.FolderId,
-                string.Empty,
-                metadata.State,
-                metadata.FailureKind,
-                null,
-                null,
-                metadata.State == MetadataState.Ready ? DateTime.UtcNow : null,
-                null,
-                payloadPath,
-                metadata.PosterPath));
-
-            _logger.LogInformation(
-                "Metadata legacy record imported. FolderId={FolderId}, State={State}",
-                metadata.FolderId,
-                metadata.State);
-        }
     }
 
     public IReadOnlyList<MetadataRecord> GetAllRecords() => _recordStore.GetAll();
@@ -103,63 +50,19 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
     public void DeleteRecord(string folderId)
     {
         var record = _recordStore.GetByFolderId(folderId);
-        if (!string.IsNullOrWhiteSpace(record?.MetadataFilePath))
-            _payloadRepository.Delete(record.MetadataFilePath);
-
+        _assets.DeleteAssets(record);
         _reviewStore.Delete(folderId);
         _recordStore.Delete(folderId);
     }
 
     public MetadataDto? GetMetadata(string folderId)
-    {
-        var record = _recordStore.GetByFolderId(folderId);
-        if (record is null)
-            return _legacyStore.GetByFolderId(folderId);
-
-        FolderMetadataPayload? payload = null;
-        if (!string.IsNullOrWhiteSpace(record.MetadataFilePath))
-            payload = _payloadRepository.Load(record.MetadataFilePath);
-
-        return new MetadataDto(
-            record.FolderId,
-            payload?.Title,
-            payload?.OriginalTitle,
-            payload?.Summary,
-            payload?.Tags ?? [],
-            payload?.LocalPosterPath,
-            null,
-            payload?.EpisodeCount,
-            payload?.Source,
-            record.State,
-            record.FailureKind);
-    }
+        => _projection.GetMetadata(folderId, _recordStore.GetByFolderId(folderId));
 
     public MetadataStatusSummaryDto BuildSummary()
-    {
-        var all = _recordStore.GetAll();
-        return new MetadataStatusSummaryDto(
-            all.Count(item => item.State == MetadataState.NeedsMetadata),
-            all.Count(item => item.State == MetadataState.Queued),
-            all.Count(item => item.State == MetadataState.Scraping),
-            all.Count(item => item.State == MetadataState.Ready),
-            all.Count(item => item.State == MetadataState.NeedsReview),
-            all.Count(item => item.State == MetadataState.Disabled),
-            all.Count(item => item.FailureKind == MetadataFailureKind.NetworkError),
-            all.Count(item => item.FailureKind == MetadataFailureKind.NoMatch),
-            all.Count(item => item.FailureKind == MetadataFailureKind.ProviderError));
-    }
+        => _projection.BuildSummary(_recordStore.GetAll());
 
     public MetadataFolderStateSummary GetFolderStateSummary(string folderId)
-    {
-        var metadata = GetMetadata(folderId);
-        return metadata is null
-            ? new MetadataFolderStateSummary(false, MetadataState.NeedsMetadata, null, null)
-            : new MetadataFolderStateSummary(
-                !string.IsNullOrWhiteSpace(metadata.Title) || !string.IsNullOrWhiteSpace(metadata.PosterPath),
-                metadata.State,
-                metadata.Title,
-                metadata.PosterPath);
-    }
+        => _projection.BuildFolderStateSummary(GetMetadata(folderId));
 
     public void PublishFolderState(string folderId)
     {
@@ -186,25 +89,6 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
         _events.Publish("metadata.summary_changed", summary);
     }
 
-    public void NormalizeTransientStates()
-    {
-        foreach (var record in _recordStore.GetAll())
-        {
-            if (record.State is not (MetadataState.Queued or MetadataState.Scraping))
-                continue;
-
-            _logger.LogInformation(
-                "Metadata stale runtime state normalized. FolderId={FolderId}, PreviousState={PreviousState}",
-                record.FolderId,
-                record.State);
-            _recordStore.Save(record with
-            {
-                State = MetadataState.NeedsMetadata,
-                FailureKind = MetadataFailureKind.None
-            });
-        }
-    }
-
     public async Task ExecuteAsync(MetadataRecord record, CancellationToken cancellationToken)
     {
         _logger.LogInformation(
@@ -223,7 +107,7 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
         try
         {
             var resolution = await _pipeline.ExecuteAsync(scraping, cancellationToken);
-            if (TryApplyResolution(scraping, resolution))
+            if (await TryApplyResolutionAsync(scraping, resolution, cancellationToken))
                 return;
         }
         catch (OperationCanceledException)
@@ -241,56 +125,57 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
         ExecutePlaceholderFallback(scraping);
     }
 
-    private bool TryApplyResolution(MetadataRecord scraping, MetadataResolutionResult resolution)
+    private async Task<bool> TryApplyResolutionAsync(
+        MetadataRecord scraping,
+        MetadataResolutionResult resolution,
+        CancellationToken cancellationToken)
     {
         if (resolution.NextState == MetadataState.Ready && resolution.Payload is not null)
         {
-            var payloadPath = MetadataStoragePathCodec.GetPayloadPath(scraping.FolderId);
-            _payloadRepository.Save(payloadPath, resolution.Payload);
-
-            if (!string.IsNullOrWhiteSpace(scraping.MetadataFilePath) &&
-                !string.Equals(scraping.MetadataFilePath, payloadPath, StringComparison.OrdinalIgnoreCase))
-            {
-                _payloadRepository.Delete(scraping.MetadataFilePath);
-            }
+            var assets = await _assets.SaveResolvedPayloadAsync(
+                scraping.FolderId,
+                resolution.Payload,
+                scraping.MetadataFilePath,
+                scraping.PosterFilePath,
+                cancellationToken);
 
             var completedRecord = scraping with
             {
                 State = MetadataState.Ready,
                 FailureKind = MetadataFailureKind.None,
                 SourceId = resolution.SourceId,
-                MetadataFilePath = payloadPath,
-                PosterFilePath = null,
+                MetadataFilePath = assets.PayloadPath,
+                PosterFilePath = assets.PosterFilePath,
                 LastSucceededAtUtc = DateTime.UtcNow
             };
             _recordStore.Save(completedRecord);
             _reviewStore.Delete(completedRecord.FolderId);
             _legacyStore.Save(new MetadataDto(
                 completedRecord.FolderId,
-                resolution.Payload.Title,
-                resolution.Payload.OriginalTitle,
-                resolution.Payload.Summary,
-                resolution.Payload.Tags,
-                resolution.Payload.LocalPosterPath,
+                assets.Payload.Title,
+                assets.Payload.OriginalTitle,
+                assets.Payload.Summary,
+                assets.Payload.Tags,
+                assets.Payload.LocalPosterPath,
                 null,
-                resolution.Payload.EpisodeCount,
-                resolution.Payload.Source,
+                assets.Payload.EpisodeCount,
+                assets.Payload.Source,
                 completedRecord.State,
                 completedRecord.FailureKind));
 
             _logger.LogInformation(
-                "Metadata execution completed from pipeline. FolderId={FolderId}, PayloadPath={PayloadPath}, SourceId={SourceId}",
+                "Metadata execution completed from pipeline. FolderId={FolderId}, PayloadPath={PayloadPath}, SourceId={SourceId}, PosterFilePath={PosterFilePath}",
                 completedRecord.FolderId,
-                payloadPath,
-                completedRecord.SourceId);
+                assets.PayloadPath,
+                completedRecord.SourceId,
+                completedRecord.PosterFilePath ?? "(null)");
             PublishFolderState(completedRecord.FolderId);
             return true;
         }
 
         if (resolution.NextState is MetadataState.NeedsReview or MetadataState.NeedsMetadata)
         {
-            if (!string.IsNullOrWhiteSpace(scraping.MetadataFilePath))
-                _payloadRepository.Delete(scraping.MetadataFilePath);
+            _assets.DeleteAssets(scraping.MetadataFilePath, scraping.PosterFilePath);
 
             if (resolution.ReviewRecord is not null)
                 _reviewStore.Save(resolution.ReviewRecord);
@@ -355,18 +240,13 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
             ["placeholder"],
             "placeholder",
             DateTime.UtcNow);
-        _payloadRepository.Save(payloadPath, payload);
-
-        if (!string.IsNullOrWhiteSpace(record.MetadataFilePath) &&
-            !string.Equals(record.MetadataFilePath, payloadPath, StringComparison.OrdinalIgnoreCase))
-        {
-            _payloadRepository.Delete(record.MetadataFilePath);
-        }
+        var assets = _assets.SavePlaceholderPayload(record, payload);
 
         var readyRecord = record with
         {
             State = MetadataState.Ready,
-            MetadataFilePath = payloadPath,
+            MetadataFilePath = assets.PayloadPath,
+            PosterFilePath = assets.PosterFilePath,
             LastSucceededAtUtc = DateTime.UtcNow
         };
         _recordStore.Save(readyRecord);
@@ -386,7 +266,7 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
         _logger.LogInformation(
             "Metadata placeholder fallback completed. FolderId={FolderId}, PayloadPath={PayloadPath}",
             record.FolderId,
-            payloadPath);
+            assets.PayloadPath);
         PublishFolderState(record.FolderId);
     }
 
