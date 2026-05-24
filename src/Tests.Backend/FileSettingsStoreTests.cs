@@ -25,7 +25,7 @@ public sealed class FileSettingsStoreTests
         var updated = new AppSettingsDto(
             new LibrarySettingsDto(["D:/Anime/A"]),
             new PlayerSettingsDto(1.5, 55, false),
-            new MetadataSettingsDto(false),
+            new MetadataSettingsDto(false, "token-b"),
             new ThumbnailSettingsDto(7, false));
 
         store.Save(updated);
@@ -34,6 +34,7 @@ public sealed class FileSettingsStoreTests
         Assert.Equal(1.5, reloaded.Player.PreferredRate);
         Assert.Equal(55, reloaded.Player.PreferredVolume);
         Assert.False(reloaded.Metadata.AutoScrapeMetadata);
+        Assert.Equal("token-b", reloaded.Metadata.BangumiAccessToken);
         Assert.Equal(7, reloaded.Thumbnails.ExpiryDays);
     }
 
@@ -44,6 +45,6 @@ public sealed class FileSettingsStoreTests
         => new(
             new LibrarySettingsDto(Array.Empty<string>()),
             new PlayerSettingsDto(1.0, 80, true),
-            new MetadataSettingsDto(true),
+            new MetadataSettingsDto(true, null),
             new ThumbnailSettingsDto(30, true));
 }

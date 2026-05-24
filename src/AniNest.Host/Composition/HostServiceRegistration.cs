@@ -6,6 +6,7 @@ using AniNest.Application.Playlist;
 using AniNest.Application.Resources;
 using AniNest.Application.Settings;
 using AniNest.Application.Thumbnail;
+using AniNest.Contracts.Settings;
 using AniNest.Host.Events;
 using AniNest.Host.Modules;
 using AniNest.Host.Modules.Resources;
@@ -44,6 +45,15 @@ internal static class HostServiceRegistration
         services.AddSingleton<IMetadataStore>(_ => new FileMetadataStore(
             ResolvePath(configuration, "AniNest:MetadataPath", "metadata.json"),
             MetadataDefaults.Create()));
+        services.AddSingleton<IMetadataRecordStore>(_ => new FileMetadataRecordStore(
+            ResolvePath(configuration, "AniNest:MetadataIndexPath", Path.Combine("metadata", "index.json")),
+            MetadataStorageDefaults.CreateRecords()));
+        services.AddSingleton<IMetadataPayloadRepository>(_ => new FileMetadataPayloadRepository(
+            ResolvePath(configuration, "AniNest:MetadataPayloadRootPath", Path.Combine("metadata", "payload"))));
+        services.AddSingleton<IMetadataPosterCache>(_ => new FileMetadataPosterCache(
+            ResolvePath(configuration, "AniNest:MetadataPosterRootPath", Path.Combine("metadata", "posters"))));
+        services.AddSingleton<IMetadataTaskScheduler, MetadataTaskScheduler>();
+        services.AddSingleton<IMetadataLifecycleService, MetadataLifecycleService>();
         services.AddSingleton<IResourceLocator, ResourceLocator>();
 
         services.AddSingleton<ISettingsStore>(_ => new FileSettingsStore(
@@ -53,6 +63,18 @@ internal static class HostServiceRegistration
         services.AddSingleton<ISettingsModule, SettingsModule>();
         services.AddSingleton<IMetadataModule, MetadataModule>();
         services.AddSingleton<IThumbnailModule, ThumbnailModule>();
+        if (configuration.GetValue("AniNest:MetadataWorkerEnabled", true))
+            services.AddHostedService<MetadataBackgroundService>();
+        services.AddHttpClient<IAnimeMetadataProvider, BangumiMetadataProvider>(client =>
+        {
+            client.BaseAddress = new Uri("https://api.bgm.tv/");
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
+        services.AddSingleton<Func<MetadataSettingsDto>>(sp =>
+        {
+            var module = sp.GetRequiredService<ISettingsModule>();
+            return () => module.GetMetadataAsync().GetAwaiter().GetResult();
+        });
 
         return services;
     }

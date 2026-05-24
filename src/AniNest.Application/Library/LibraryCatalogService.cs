@@ -188,6 +188,29 @@ public sealed class LibraryCatalogService
         _store.SaveFolders(folders.Select((folder, index) => folder with { Order = index }).ToArray());
     }
 
+    public LibraryFolderRecord? GetFolderRecord(string folderId)
+        => _store.GetFolders().FirstOrDefault(folder => string.Equals(folder.FolderId, folderId, StringComparison.OrdinalIgnoreCase));
+
+    public LibraryFolderDto ApplyMetadataSummary(
+        LibraryFolderDto folder,
+        string? title,
+        string? posterPath,
+        string state,
+        bool hasMetadata)
+    {
+        return folder with
+        {
+            MetadataSummary = new LibraryMetadataSummaryDto(
+                title,
+                string.IsNullOrWhiteSpace(posterPath)
+                    ? null
+                    : _resourceUrlService.GetUrl(
+                        new ResourceKey(ResourceKind.LibraryPoster, folder.FolderId)),
+                state,
+                hasMetadata)
+        };
+    }
+
     private LibraryFolderDto MapFolder(LibraryFolderRecord folder)
     {
         var watchStatus = _store.GetWatchStatus(folder.FolderId);
@@ -220,7 +243,9 @@ public sealed class LibraryCatalogService
             string.IsNullOrWhiteSpace(folder.MetadataSummary.PosterPath)
                 ? null
                 : _resourceUrlService.GetUrl(
-                    new ResourceKey(ResourceKind.LibraryPoster, folder.FolderId)));
+                    new ResourceKey(ResourceKind.LibraryPoster, folder.FolderId)),
+            folder.MetadataSummary.State,
+            folder.MetadataSummary.HasMetadata);
     }
 
     private void EnsureFolderExists(string folderId)

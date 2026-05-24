@@ -300,7 +300,7 @@ public sealed class HostScaffoldTests
         Assert.NotNull(payload);
         Assert.Equal(AniNest.Core.Enums.MetadataState.Ready, payload.State);
         Assert.Equal("Missing Folder", payload.Title);
-        Assert.Equal("simulated", payload.Source);
+        Assert.Equal("placeholder", payload.Source);
     }
 
     [Fact]
@@ -444,7 +444,7 @@ public sealed class HostScaffoldTests
                             sampleFolderPath,
                             12,
                             Path.Combine(sampleFolderPath, "poster.jpg"),
-                            new LibraryFolderMetadataSummary("Sample Anime", null),
+                            new LibraryFolderMetadataSummary("Sample Anime", null, AniNest.Core.Enums.MetadataState.Ready.ToString(), true),
                             0)
                     ],
                     new Dictionary<string, AniNest.Core.Enums.WatchStatus>(StringComparer.OrdinalIgnoreCase)
@@ -519,6 +519,10 @@ public sealed class HostScaffoldTests
                     ["AniNest:LibraryCatalogPath"] = libraryCatalogPath,
                     ["AniNest:PlaybackProgressPath"] = playbackProgressPath,
                     ["AniNest:MetadataPath"] = metadataPath,
+                    ["AniNest:MetadataIndexPath"] = Path.Combine(testRoot, "metadata", "index.json"),
+                    ["AniNest:MetadataPayloadRootPath"] = Path.Combine(testRoot, "metadata", "payload"),
+                    ["AniNest:MetadataPosterRootPath"] = Path.Combine(testRoot, "metadata", "posters"),
+                    ["AniNest:MetadataWorkerEnabled"] = "false",
                     ["AniNest:ThumbnailPath"] = thumbnailPath
                 });
             });

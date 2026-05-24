@@ -4,7 +4,9 @@ namespace AniNest.Contracts.Library;
 
 public sealed record LibraryMetadataSummaryDto(
     string? Title,
-    string? PosterUrl);
+    string? PosterUrl,
+    string State,
+    bool HasMetadata);
 
 public sealed record LibraryFolderDto(
     string FolderId,

@@ -9,7 +9,8 @@ public sealed record PlayerSettingsDto(
     bool ResumePlayback);
 
 public sealed record MetadataSettingsDto(
-    bool AutoScrapeMetadata);
+    bool AutoScrapeMetadata,
+    string? BangumiAccessToken);
 
 public sealed record ThumbnailSettingsDto(
     int ExpiryDays,

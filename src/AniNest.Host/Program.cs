@@ -1,8 +1,19 @@
 using AniNest.Host.Composition;
 using AniNest.Host.Endpoints;
 using AniNest.Host.ErrorHandling;
+using AniNest.Host.Logging;
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var hostLogPath = builder.Configuration["AniNest:HostLogPath"]
+                  ?? Path.Combine(
+                      Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                      "AniNest",
+                      "logs",
+                      "host.log");
+
+builder.Logging.AddProvider(new FileLoggerProvider(hostLogPath, LogLevel.Information));
 
 builder.Services.AddAniNestHostServices(builder.Configuration);
 

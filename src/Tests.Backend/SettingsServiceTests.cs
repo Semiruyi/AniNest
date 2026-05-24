@@ -36,7 +36,7 @@ public sealed class SettingsServiceTests
         var updated = new AppSettingsDto(
             new LibrarySettingsDto(["D:/Anime/A", "D:/Anime/B"]),
             new PlayerSettingsDto(1.25, 55, false),
-            new MetadataSettingsDto(false),
+            new MetadataSettingsDto(false, "token-a"),
             new ThumbnailSettingsDto(7, false));
 
         service.Save(updated);
@@ -45,6 +45,7 @@ public sealed class SettingsServiceTests
         Assert.Equal(2, settings.Library.FolderPaths.Count);
         Assert.Equal(1.25, settings.Player.PreferredRate);
         Assert.False(settings.Metadata.AutoScrapeMetadata);
+        Assert.Equal("token-a", settings.Metadata.BangumiAccessToken);
         Assert.Equal(7, settings.Thumbnails.ExpiryDays);
     }
 
@@ -54,7 +55,7 @@ public sealed class SettingsServiceTests
             new AppSettingsDto(
                 new LibrarySettingsDto(Array.Empty<string>()),
                 new PlayerSettingsDto(1.0, 80, true),
-                new MetadataSettingsDto(true),
+                new MetadataSettingsDto(true, null),
                 new ThumbnailSettingsDto(30, true)));
 
         return new SettingsService(store);

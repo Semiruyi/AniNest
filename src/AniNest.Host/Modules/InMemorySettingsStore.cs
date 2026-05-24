@@ -8,7 +8,7 @@ internal sealed class InMemorySettingsStore : ISettingsStore
     private AppSettingsDto _settings = new(
         new LibrarySettingsDto(Array.Empty<string>()),
         new PlayerSettingsDto(1.0, 80, true),
-        new MetadataSettingsDto(true),
+        new MetadataSettingsDto(true, null),
         new ThumbnailSettingsDto(30, true));
 
     public AppSettingsDto Load()

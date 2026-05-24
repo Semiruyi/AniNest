@@ -27,13 +27,18 @@ class PlayerSettingsDto {
 }
 
 class MetadataSettingsDto {
-  const MetadataSettingsDto({required this.autoScrapeMetadata});
+  const MetadataSettingsDto({
+    required this.autoScrapeMetadata,
+    required this.bangumiAccessToken,
+  });
 
   final bool autoScrapeMetadata;
+  final String? bangumiAccessToken;
 
   factory MetadataSettingsDto.fromJson(Map<String, dynamic> json) {
     return MetadataSettingsDto(
       autoScrapeMetadata: json['autoScrapeMetadata'] as bool? ?? false,
+      bangumiAccessToken: json['bangumiAccessToken'] as String?,
     );
   }
 }

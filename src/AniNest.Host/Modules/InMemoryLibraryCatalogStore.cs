@@ -15,7 +15,7 @@ internal sealed class InMemoryLibraryCatalogStore : ILibraryCatalogStore
             "D:/Media/Sample Anime",
             12,
             null,
-            new LibraryFolderMetadataSummary("Sample Anime", null),
+            new LibraryFolderMetadataSummary("Sample Anime", null, MetadataState.Ready.ToString(), true),
             0)
     ];
 
