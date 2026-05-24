@@ -52,7 +52,10 @@ internal static class HostServiceRegistration
             ResolvePath(configuration, "AniNest:MetadataPayloadRootPath", Path.Combine("metadata", "payload"))));
         services.AddSingleton<IMetadataPosterCache>(_ => new FileMetadataPosterCache(
             ResolvePath(configuration, "AniNest:MetadataPosterRootPath", Path.Combine("metadata", "posters"))));
+        services.AddSingleton<IMetadataTaskPlanner, MetadataTaskPlanner>();
+        services.AddSingleton<IMetadataTaskQueue, MetadataTaskQueue>();
         services.AddSingleton<IMetadataTaskScheduler, MetadataTaskScheduler>();
+        services.AddSingleton<IMetadataRuntimeStateService, MetadataRuntimeStateService>();
         services.AddSingleton<IMetadataLifecycleService, MetadataLifecycleService>();
         services.AddSingleton<IResourceLocator, ResourceLocator>();
 

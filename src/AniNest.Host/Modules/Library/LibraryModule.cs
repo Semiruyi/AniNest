@@ -13,7 +13,8 @@ internal sealed class LibraryModule : ILibraryModule
 {
     private readonly LibraryCatalogService _catalog;
     private readonly ILibraryFileScanner _scanner;
-    private readonly MetadataLifecycleService _metadataLifecycle;
+    private readonly IMetadataLifecycleService _metadataLifecycle;
+    private readonly IMetadataRuntimeStateService _metadataState;
     private readonly IHostEventStream _events;
     private readonly ILogger<LibraryModule> _logger;
 
@@ -22,12 +23,14 @@ internal sealed class LibraryModule : ILibraryModule
         ILibraryFileScanner scanner,
         IResourceUrlService resourceUrlService,
         IMetadataLifecycleService metadataLifecycle,
+        IMetadataRuntimeStateService metadataState,
         IHostEventStream events,
         ILogger<LibraryModule> logger)
     {
         _catalog = new LibraryCatalogService(store, scanner, resourceUrlService);
         _scanner = scanner;
-        _metadataLifecycle = (MetadataLifecycleService)metadataLifecycle;
+        _metadataLifecycle = metadataLifecycle;
+        _metadataState = metadataState;
         _events = events;
         _logger = logger;
     }
@@ -113,7 +116,8 @@ internal sealed class LibraryModule : ILibraryModule
 
     private LibraryFolderDto ApplyMetadataSummary(LibraryFolderDto folder)
     {
-        var summary = _metadataLifecycle.GetFolderStateSummary(folder.FolderId);
+        _metadataState.EnsureInitialized();
+        var summary = _metadataState.GetFolderStateSummary(folder.FolderId);
         return _catalog.ApplyMetadataSummary(
             folder,
             summary.Title,

@@ -6,33 +6,31 @@ namespace AniNest.Host.Modules;
 
 internal sealed class MetadataBackgroundService : BackgroundService
 {
-    private readonly IMetadataTaskScheduler _scheduler;
-    private readonly IMetadataRecordStore _recordStore;
-    private readonly MetadataLifecycleService _lifecycle;
+    private readonly IMetadataTaskQueue _queue;
+    private readonly IMetadataRuntimeStateService _state;
     private readonly ILogger<MetadataBackgroundService> _logger;
 
     public MetadataBackgroundService(
-        IMetadataTaskScheduler scheduler,
-        IMetadataRecordStore recordStore,
-        IMetadataLifecycleService lifecycle,
+        IMetadataTaskQueue queue,
+        IMetadataRuntimeStateService state,
         ILogger<MetadataBackgroundService> logger)
     {
-        _scheduler = scheduler;
-        _recordStore = recordStore;
-        _lifecycle = (MetadataLifecycleService)lifecycle;
+        _queue = queue;
+        _state = state;
         _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("Metadata background service starting.");
-        NormalizeStaleStates();
+        _state.EnsureInitialized();
+        _state.NormalizeTransientStates();
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            var plan = await _scheduler.DequeueAsync(stoppingToken);
+            var plan = await _queue.DequeueAsync(stoppingToken);
             _logger.LogInformation("Metadata background worker received task. FolderId={FolderId}, Reason={Reason}", plan.FolderId, plan.Reason);
-            var record = _recordStore.GetByFolderId(plan.FolderId);
+            var record = _state.GetRecord(plan.FolderId);
             if (record is null)
             {
                 _logger.LogWarning("Metadata background worker skipped missing record. FolderId={FolderId}", plan.FolderId);
@@ -47,23 +45,7 @@ internal sealed class MetadataBackgroundService : BackgroundService
                 continue;
             }
 
-            _lifecycle.ExecutePlaceholder(record);
-        }
-    }
-
-    private void NormalizeStaleStates()
-    {
-        foreach (var record in _recordStore.GetAll())
-        {
-            if (record.State is not (AniNest.Core.Enums.MetadataState.Queued or AniNest.Core.Enums.MetadataState.Scraping))
-                continue;
-
-            _logger.LogInformation("Metadata background service normalized stale state. FolderId={FolderId}, PreviousState={PreviousState}", record.FolderId, record.State);
-            _recordStore.Save(record with
-            {
-                State = AniNest.Core.Enums.MetadataState.NeedsMetadata,
-                FailureKind = AniNest.Core.Enums.MetadataFailureKind.None
-            });
+            _state.ExecutePlaceholder(record);
         }
     }
 }
