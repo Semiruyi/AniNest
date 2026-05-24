@@ -42,7 +42,7 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
                               metadata.Tags.Count == 0 &&
                               string.IsNullOrWhiteSpace(metadata.Source)
                 ? null
-                : GetPayloadPath(metadata.FolderId);
+                : MetadataStoragePathCodec.GetPayloadPath(metadata.FolderId);
 
             if (!string.IsNullOrWhiteSpace(payloadPath))
             {
@@ -94,7 +94,14 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
 
     public void SaveRecord(MetadataRecord record) => _recordStore.Save(record);
 
-    public void DeleteRecord(string folderId) => _recordStore.Delete(folderId);
+    public void DeleteRecord(string folderId)
+    {
+        var record = _recordStore.GetByFolderId(folderId);
+        if (!string.IsNullOrWhiteSpace(record?.MetadataFilePath))
+            _payloadRepository.Delete(record.MetadataFilePath);
+
+        _recordStore.Delete(folderId);
+    }
 
     public MetadataDto? GetMetadata(string folderId)
     {
@@ -209,7 +216,7 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
         var title = string.IsNullOrWhiteSpace(record.FolderName)
             ? FormatFolderTitle(record.FolderId)
             : record.FolderName;
-        var payloadPath = GetPayloadPath(record.FolderId);
+        var payloadPath = MetadataStoragePathCodec.GetPayloadPath(record.FolderId);
         var payload = new FolderMetadataPayload(
             record.FolderId,
             record.SourceId,
@@ -226,6 +233,12 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
             "placeholder",
             DateTime.UtcNow);
         _payloadRepository.Save(payloadPath, payload);
+
+        if (!string.IsNullOrWhiteSpace(record.MetadataFilePath) &&
+            !string.Equals(record.MetadataFilePath, payloadPath, StringComparison.OrdinalIgnoreCase))
+        {
+            _payloadRepository.Delete(record.MetadataFilePath);
+        }
 
         var readyRecord = scraping with
         {
@@ -253,9 +266,6 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
             payloadPath);
         PublishFolderState(record.FolderId);
     }
-
-    private static string GetPayloadPath(string folderId)
-        => $"{folderId}.json";
 
     private static string FormatFolderTitle(string folderId)
     {
