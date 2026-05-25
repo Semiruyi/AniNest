@@ -1,5 +1,6 @@
 using System.Text.Json;
 using AniNest.Contracts.Common;
+using Microsoft.Extensions.Logging;
 
 namespace AniNest.Host.ErrorHandling;
 
@@ -13,6 +14,15 @@ internal static class ApiExceptionHandlingExtensions
             {
                 await next();
             }
+            catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+            {
+                var logger = context.RequestServices
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("ApiExceptionHandling");
+                logger.LogInformation(
+                    "Request aborted by client after response pipeline started. Path={Path}",
+                    context.Request.Path);
+            }
             catch (Exception ex)
             {
                 await WriteErrorResponseAsync(context, ex);
@@ -22,7 +32,22 @@ internal static class ApiExceptionHandlingExtensions
 
     private static async Task WriteErrorResponseAsync(HttpContext context, Exception exception)
     {
+        var logger = context.RequestServices
+            .GetRequiredService<ILoggerFactory>()
+            .CreateLogger("ApiExceptionHandling");
+
+        if (context.Response.HasStarted)
+        {
+            logger.LogWarning(
+                exception,
+                "Unhandled exception occurred after the response started. Path={Path}, Method={Method}",
+                context.Request.Path,
+                context.Request.Method);
+            return;
+        }
+
         var (statusCode, payload) = MapException(exception);
+        context.Response.Clear();
         context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/json";
 

@@ -1,6 +1,7 @@
 using AniNest.Contracts.Events;
 using AniNest.Host.Events;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace AniNest.Host.Endpoints;
 
@@ -10,24 +11,34 @@ internal static class EventEndpoints
 
     public static IEndpointRouteBuilder MapEventEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/events", async (HttpContext context, IHostEventStream stream, CancellationToken cancellationToken) =>
+        app.MapGet("/api/events", async (HttpContext context, IHostEventStream stream, ILoggerFactory loggerFactory, CancellationToken cancellationToken) =>
         {
+            var logger = loggerFactory.CreateLogger("EventEndpoints");
             context.Response.Headers.CacheControl = "no-cache";
             context.Response.Headers.Append("X-Accel-Buffering", "no");
             context.Response.ContentType = "text/event-stream";
 
-            await WriteEventAsync(
-                context,
-                new EventEnvelopeDto(
-                    "host.connected",
-                    DateTimeOffset.UtcNow,
-                    0,
-                    new { message = "AniNest host event stream connected." }),
-                cancellationToken);
-
-            await foreach (var envelope in stream.Subscribe(cancellationToken))
+            try
             {
-                await WriteEventAsync(context, envelope, cancellationToken);
+                await WriteEventAsync(
+                    context,
+                    new EventEnvelopeDto(
+                        "host.connected",
+                        DateTimeOffset.UtcNow,
+                        0,
+                        new { message = "AniNest host event stream connected." }),
+                    cancellationToken);
+
+                await foreach (var envelope in stream.Subscribe(cancellationToken))
+                {
+                    await WriteEventAsync(context, envelope, cancellationToken);
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested || context.RequestAborted.IsCancellationRequested)
+            {
+                logger.LogInformation(
+                    "SSE connection closed by client. TraceIdentifier={TraceIdentifier}",
+                    context.TraceIdentifier);
             }
         }).WithTags("Events");
 
