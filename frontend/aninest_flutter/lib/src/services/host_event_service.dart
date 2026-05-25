@@ -98,6 +98,7 @@ class HostEventService {
 
   Future<void> _consume(http.StreamedResponse response) async {
     String? eventType;
+    String? eventId;
     final dataLines = <String>[];
     final done = Completer<void>();
     _consumeCompletion = done;
@@ -108,8 +109,9 @@ class HostEventService {
         .listen(
           (line) {
             if (line.isEmpty) {
-              _emitEnvelope(eventType, dataLines);
+              _emitEnvelope(eventType, eventId, dataLines);
               eventType = null;
+              eventId = null;
               dataLines.clear();
               return;
             }
@@ -119,12 +121,17 @@ class HostEventService {
               return;
             }
 
+            if (line.startsWith('id:')) {
+              eventId = line.substring(3).trim();
+              return;
+            }
+
             if (line.startsWith('data:')) {
               dataLines.add(line.substring(5).trimLeft());
             }
           },
           onDone: () {
-            _emitEnvelope(eventType, dataLines);
+            _emitEnvelope(eventType, eventId, dataLines);
             if (!done.isCompleted) {
               done.complete();
             }
@@ -143,7 +150,11 @@ class HostEventService {
     }
   }
 
-  void _emitEnvelope(String? eventType, List<String> dataLines) {
+  void _emitEnvelope(
+    String? eventType,
+    String? eventId,
+    List<String> dataLines,
+  ) {
     if (dataLines.isEmpty) {
       return;
     }
@@ -159,12 +170,18 @@ class HostEventService {
         return;
       }
 
+      AppLogger.info(
+        'HostEventService',
+        'Decoded SSE envelope. eventType=$eventType, eventId=$eventId, envelopeType=${envelope.type}, sequence=${envelope.sequence}',
+      );
+
       _events.add(
         envelope.type.isNotEmpty
             ? envelope
             : HostEventEnvelopeDto(
                 type: eventType ?? '',
                 timestampUtc: envelope.timestampUtc,
+                sequence: envelope.sequence,
                 payload: envelope.payload,
               ),
       );

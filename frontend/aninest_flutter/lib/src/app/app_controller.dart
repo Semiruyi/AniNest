@@ -50,6 +50,8 @@ class AppController extends ChangeNotifier {
 
   StreamSubscription<HostEventEnvelopeDto>? _hostEventSubscription;
   String? _lastMetadataFolderId;
+  int _selectionRefreshSuspensionCount = 0;
+  int? _lastProcessedHostEventSequence;
 
   bool isLoading = false;
   String? lastError;
@@ -60,6 +62,7 @@ class AppController extends ChangeNotifier {
   List<LibraryFolderDto> get folders => library.folders;
 
   String? get selectedFolderId =>
+      library.selectedFolderId ??
       player.selectedFolderId ??
       (library.folders.isNotEmpty ? library.folders.first.folderId : null);
 
@@ -71,7 +74,7 @@ class AppController extends ChangeNotifier {
     _startHostEvents();
     await _run(() async {
       await settings.load();
-      await library.refresh();
+      await _runWithSuspendedLibrarySelectionRefresh(library.refresh);
       await player.restore();
       await _refreshMetadataForSelectionAsync(force: true);
     });
@@ -79,10 +82,24 @@ class AppController extends ChangeNotifier {
 
   Future<AddLibraryFolderResultDto?> addFolder(String path) async {
     AddLibraryFolderResultDto? result;
+    AppLogger.info(
+      'AppController.AddFolder',
+      'Starting addFolder for path=$path',
+    );
     await _run(() async {
-      result = await library.addFolder(path);
+      result = await _runWithSuspendedLibrarySelectionRefresh(
+        () => library.addFolder(path),
+      );
+      AppLogger.info(
+        'AppController.AddFolder',
+        'library.addFolder completed. status=${result?.status}, selectedFolderId=${library.selectedFolderId}, currentFolderCount=${library.folders.length}',
+      );
       if (result?.isAdded ?? false) {
-        await metadata.refresh(selectedFolderId);
+        await _refreshMetadataForSelectionAsync(force: true);
+        AppLogger.info(
+          'AppController.AddFolder',
+          'selection metadata refresh completed after addFolder. selectedFolderId=$selectedFolderId',
+        );
       }
     });
     if (result == null && lastError != null) {
@@ -108,7 +125,7 @@ class AppController extends ChangeNotifier {
 
   Future<void> refreshLibrary() async {
     await _run(() async {
-      await library.refresh();
+      await _runWithSuspendedLibrarySelectionRefresh(library.refresh);
       await _refreshMetadataForSelectionAsync(force: true);
     }, showSpinner: false);
   }
@@ -219,10 +236,115 @@ class AppController extends ChangeNotifier {
 
   Future<void> _handleHostEvent(HostEventEnvelopeDto envelope) async {
     try {
+      final sequence = envelope.sequence;
+      if (sequence != null &&
+          _lastProcessedHostEventSequence != null &&
+          sequence <= _lastProcessedHostEventSequence!) {
+        AppLogger.info(
+          'AppController.HostEvents',
+          'Skipping stale host event type=${envelope.type}, sequence=$sequence, lastProcessed=$_lastProcessedHostEventSequence',
+        );
+        return;
+      }
+      if (sequence != null) {
+        _lastProcessedHostEventSequence = sequence;
+      }
+
+      AppLogger.info(
+        'AppController.HostEvents',
+        'Received host event type=${envelope.type}, sequence=${envelope.sequence}, timestampUtc=${envelope.timestampUtc?.toIso8601String()}',
+      );
       switch (envelope.type) {
+        case 'library.folder_added':
+          final payload = _coercePayloadMap(envelope.payload);
+          if (payload == null) {
+            return;
+          }
+
+          final added = LibraryFolderAddedEventDto.fromJson(payload);
+          AppLogger.info(
+            'AppController.HostEvents',
+            'Processing library.folder_added. folderId=${added.folderId}, hasFolderSnapshot=${added.folder != null}',
+          );
+          if (added.folderId.isEmpty) {
+            return;
+          }
+          if (added.folder != null) {
+            library.applyFolderAdded(added.folder!);
+          } else {
+            await refreshLibrary();
+          }
+          break;
+
+        case 'library.folder_removed':
+          final payload = _coercePayloadMap(envelope.payload);
+          if (payload == null) {
+            return;
+          }
+
+          final removed = LibraryFolderRemovedEventDto.fromJson(payload);
+          AppLogger.info(
+            'AppController.HostEvents',
+            'Processing library.folder_removed. folderId=${removed.folderId}',
+          );
+          if (removed.folderId.isEmpty) {
+            return;
+          }
+          library.applyFolderRemoved(removed.folderId);
+          if (selectedFolderId == null) {
+            await _refreshMetadataForSelectionAsync(force: true);
+          }
+          break;
+
+        case 'library.folder_updated':
+          final payload = _coercePayloadMap(envelope.payload);
+          if (payload == null) {
+            return;
+          }
+
+          final updated = LibraryFolderUpdatedEventDto.fromJson(payload);
+          AppLogger.info(
+            'AppController.HostEvents',
+            'Processing library.folder_updated. folderId=${updated.folderId}, hasFolderSnapshot=${updated.folder != null}, isFavorite=${updated.isFavorite}, watchStatus=${updated.watchStatus?.name}',
+          );
+          if (updated.folderId.isEmpty) {
+            return;
+          }
+          if (updated.folder != null) {
+            library.applyFolderUpdated(updated.folder!);
+          } else {
+            await refreshLibrary();
+          }
+          break;
+
+        case 'library.folder_reordered':
+          final payload = _coercePayloadMap(envelope.payload);
+          if (payload == null) {
+            return;
+          }
+
+          final reordered = LibraryFolderReorderedEventDto.fromJson(payload);
+          AppLogger.info(
+            'AppController.HostEvents',
+            'Processing library.folder_reordered. folderId=${reordered.folderId}, position=${reordered.position}, hasFolderSnapshot=${reordered.folder != null}',
+          );
+          if (reordered.folderId.isEmpty) {
+            return;
+          }
+          library.applyFolderReordered(
+            reordered.folderId,
+            reordered.position ?? 0,
+            folder: reordered.folder,
+          );
+          break;
+
         case 'metadata.folder_updated':
-          final payload = envelope.payload;
-          if (payload is! Map<String, dynamic>) {
+          final payload = _coercePayloadMap(envelope.payload);
+          if (payload == null) {
+            AppLogger.warning(
+              'AppController.HostEvents',
+              'Skipping metadata.folder_updated due to unsupported payload type=${envelope.payload.runtimeType}',
+            );
             return;
           }
 
@@ -231,16 +353,28 @@ class AppController extends ChangeNotifier {
             return;
           }
 
+          AppLogger.info(
+            'AppController.HostEvents',
+            'Processing metadata.folder_updated for folderId=${update.folderId}, selectedFolderId=$selectedFolderId, coverUrl=${update.coverUrl}, posterUrl=${update.posterUrl}, hasMetadata=${update.hasMetadata}',
+          );
           library.applyMetadataFolderUpdate(update);
           metadata.applyFolderUpdate(update, selectedFolderId);
           if (selectedFolderId == update.folderId) {
             await metadata.refreshSelectedFolder(update.folderId);
+            AppLogger.info(
+              'AppController.HostEvents',
+              'Refreshed selected metadata for folderId=${update.folderId}',
+            );
           }
           break;
 
         case 'metadata.summary_changed':
-          final payload = envelope.payload;
-          if (payload is! Map<String, dynamic>) {
+          final payload = _coercePayloadMap(envelope.payload);
+          if (payload == null) {
+            AppLogger.warning(
+              'AppController.HostEvents',
+              'Skipping metadata.summary_changed due to unsupported payload type=${envelope.payload.runtimeType}',
+            );
             return;
           }
 
@@ -259,6 +393,10 @@ class AppController extends ChangeNotifier {
   }
 
   void _handleLibrarySelectionChanged() {
+    if (_selectionRefreshSuspensionCount > 0) {
+      return;
+    }
+
     final currentFolderId = library.selectedFolderId;
     if (currentFolderId == _lastMetadataFolderId) {
       return;
@@ -275,6 +413,17 @@ class AppController extends ChangeNotifier {
 
     _lastMetadataFolderId = folderId;
     await metadata.refresh(folderId);
+  }
+
+  Future<T> _runWithSuspendedLibrarySelectionRefresh<T>(
+    Future<T> Function() action,
+  ) async {
+    _selectionRefreshSuspensionCount++;
+    try {
+      return await action();
+    } finally {
+      _selectionRefreshSuspensionCount--;
+    }
   }
 
   AddLibraryFolderResultDto _buildAddFolderFailureResult(
@@ -299,6 +448,16 @@ class AppController extends ChangeNotifier {
       reasonCode: 'unexpected_error',
       folder: null,
     );
+  }
+
+  Map<String, dynamic>? _coercePayloadMap(Object? payload) {
+    if (payload is Map<String, dynamic>) {
+      return payload;
+    }
+    if (payload is Map) {
+      return payload.map((key, value) => MapEntry(key.toString(), value));
+    }
+    return null;
   }
 
   @override

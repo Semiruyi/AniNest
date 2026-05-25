@@ -54,16 +54,18 @@ internal sealed class LibraryModule : ILibraryModule
         _logger.LogInformation("Library add folder processed. Status={Status}, Path={Path}", result.Status, request.Path);
         if (string.Equals(result.Status, "added", StringComparison.OrdinalIgnoreCase))
         {
-            if (result.Folder is not null)
-            {
-                var snapshot = await BuildSnapshotAsync([result.Folder], cancellationToken);
-                await _metadataLifecycle.SyncLibrarySnapshotAsync(snapshot, cancellationToken);
-            }
+            var folders = await _catalog.GetFoldersAsync(cancellationToken);
+            var snapshot = await BuildSnapshotAsync(folders, cancellationToken);
+            await _metadataLifecycle.SyncLibrarySnapshotAsync(snapshot, cancellationToken);
+            var addedFolder = folders
+                .FirstOrDefault(folder => string.Equals(folder.FolderId, result.Folder?.FolderId, StringComparison.OrdinalIgnoreCase));
+            var addedSnapshot = addedFolder is null ? null : ApplyMetadataSummary(addedFolder);
 
             _events.Publish("library.folder_added", new
             {
                 folderId = result.Folder?.FolderId,
-                path = request.Path
+                path = request.Path,
+                folder = addedSnapshot is null ? null : MapFolderEventPayload(addedSnapshot)
             });
         }
 
@@ -83,7 +85,8 @@ internal sealed class LibraryModule : ILibraryModule
         {
             _events.Publish("library.folder_added", new
             {
-                folderId = folder.FolderId
+                folderId = folder.FolderId,
+                folder = MapFolderEventPayload(ApplyMetadataSummary(folder))
             });
         }
     }
@@ -96,25 +99,34 @@ internal sealed class LibraryModule : ILibraryModule
         return Task.CompletedTask;
     }
 
-    public Task SetFavoriteAsync(string folderId, bool isFavorite, CancellationToken cancellationToken = default)
+    public async Task SetFavoriteAsync(string folderId, bool isFavorite, CancellationToken cancellationToken = default)
     {
         _catalog.SetFavorite(folderId, isFavorite);
-        _events.Publish("library.folder_updated", new { folderId, isFavorite });
-        return Task.CompletedTask;
+        await PublishLibraryFolderSnapshotEventAsync("library.folder_updated", folderId, cancellationToken, new
+        {
+            folderId,
+            isFavorite
+        });
     }
 
-    public Task SetWatchStatusAsync(string folderId, WatchStatus status, CancellationToken cancellationToken = default)
+    public async Task SetWatchStatusAsync(string folderId, WatchStatus status, CancellationToken cancellationToken = default)
     {
         _catalog.SetWatchStatus(folderId, status);
-        _events.Publish("library.folder_updated", new { folderId, watchStatus = status.ToString() });
-        return Task.CompletedTask;
+        await PublishLibraryFolderSnapshotEventAsync("library.folder_updated", folderId, cancellationToken, new
+        {
+            folderId,
+            watchStatus = status.ToString()
+        });
     }
 
-    public Task MoveFolderToFrontAsync(string folderId, CancellationToken cancellationToken = default)
+    public async Task MoveFolderToFrontAsync(string folderId, CancellationToken cancellationToken = default)
     {
         _catalog.MoveFolderToFront(folderId);
-        _events.Publish("library.folder_reordered", new { folderId, position = 0 });
-        return Task.CompletedTask;
+        await PublishLibraryFolderSnapshotEventAsync("library.folder_reordered", folderId, cancellationToken, new
+        {
+            folderId,
+            position = 0
+        });
     }
 
     private LibraryFolderDto ApplyMetadataSummary(LibraryFolderDto folder)
@@ -158,4 +170,56 @@ internal sealed class LibraryModule : ILibraryModule
 
         return result;
     }
+
+    private async Task PublishLibraryFolderSnapshotEventAsync(
+        string type,
+        string folderId,
+        CancellationToken cancellationToken,
+        object payload)
+    {
+        var folder = await GetFolderSnapshotAsync(folderId, cancellationToken);
+        _events.Publish(type, MergePayload(payload, folder is null ? null : MapFolderEventPayload(folder)));
+    }
+
+    private async Task<LibraryFolderDto?> GetFolderSnapshotAsync(
+        string folderId,
+        CancellationToken cancellationToken)
+    {
+        var folders = await _catalog.GetFoldersAsync(cancellationToken);
+        var folder = folders.FirstOrDefault(item =>
+            string.Equals(item.FolderId, folderId, StringComparison.OrdinalIgnoreCase));
+        return folder is null ? null : ApplyMetadataSummary(folder);
+    }
+
+    private static object MergePayload(object payload, object? folder)
+        => new
+        {
+            folderId = payload.GetType().GetProperty("folderId")?.GetValue(payload) as string,
+            isFavorite = payload.GetType().GetProperty("isFavorite")?.GetValue(payload) as bool?,
+            watchStatus = payload.GetType().GetProperty("watchStatus")?.GetValue(payload) as string,
+            position = payload.GetType().GetProperty("position")?.GetValue(payload) as int?,
+            folder
+        };
+
+    private static object MapFolderEventPayload(LibraryFolderDto folder)
+        => new
+        {
+            folderId = folder.FolderId,
+            name = folder.Name,
+            videoCount = folder.VideoCount,
+            coverUrl = folder.CoverUrl,
+            playedCount = folder.PlayedCount,
+            watchStatus = folder.WatchStatus.ToString(),
+            isFavorite = folder.IsFavorite,
+            metadataSummary = folder.MetadataSummary is null
+                ? null
+                : new
+                {
+                    matchedTitle = folder.MetadataSummary.MatchedTitle,
+                    originalTitle = folder.MetadataSummary.OriginalTitle,
+                    posterUrl = folder.MetadataSummary.PosterUrl,
+                    state = folder.MetadataSummary.State,
+                    hasMetadata = folder.MetadataSummary.HasMetadata
+                }
+        };
 }

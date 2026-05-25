@@ -105,6 +105,39 @@ public sealed class HostScaffoldTests
     }
 
     [Fact]
+    public async Task AddLibraryFolder_PreservesExistingFolderArtworkAndMetadata()
+    {
+        var testRoot = Path.Combine(Path.GetTempPath(), "AniNest.Backend.Tests", $"{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testRoot);
+        var addedFolder = Path.Combine(testRoot, "New Folder");
+        Directory.CreateDirectory(addedFolder);
+        File.WriteAllText(Path.Combine(addedFolder, "Episode 01.mkv"), string.Empty);
+
+        using var client = CreateClient(testRoot);
+
+        var addResponse = await client.PostAsJsonAsync("/api/library/folders", new AddLibraryFolderRequest(addedFolder));
+        addResponse.EnsureSuccessStatusCode();
+
+        var addPayload = await addResponse.Content.ReadFromJsonAsync<AddLibraryFolderResult>();
+        Assert.NotNull(addPayload);
+        Assert.Equal("added", addPayload.Status);
+
+        var library = await client.GetFromJsonAsync<LibraryFolderListResponse>("/api/library/folders");
+        Assert.NotNull(library);
+        Assert.Equal(2, library.Items.Count);
+
+        var existing = Assert.Single(library.Items, item => item.FolderId == "sample-folder");
+        Assert.Equal("/api/resources/library-cover/sample-folder", existing.CoverUrl);
+        Assert.NotNull(existing.MetadataSummary);
+        Assert.True(existing.MetadataSummary.HasMetadata);
+
+        var metadata = await client.GetFromJsonAsync<MetadataDto>("/api/metadata/folders/sample-folder");
+        Assert.NotNull(metadata);
+        Assert.Equal(AniNest.Core.Enums.MetadataState.Ready, metadata.State);
+        Assert.Equal("Sample Anime", metadata.Title);
+    }
+
+    [Fact]
     public async Task BatchAddLibraryFolders_ImportsOnlyFoldersWithVideos()
     {
         var testRoot = Path.Combine(Path.GetTempPath(), "AniNest.Backend.Tests", $"{Guid.NewGuid():N}");
@@ -383,10 +416,13 @@ public sealed class HostScaffoldTests
 
         var firstLine = await reader.ReadLineAsync();
         var secondLine = await reader.ReadLineAsync();
+        var thirdLine = await reader.ReadLineAsync();
 
-        Assert.Equal("event: host.connected", firstLine);
-        Assert.NotNull(secondLine);
-        Assert.StartsWith("data: ", secondLine, StringComparison.Ordinal);
+        Assert.StartsWith("id: ", firstLine, StringComparison.Ordinal);
+        Assert.Equal("event: host.connected", secondLine);
+        Assert.NotNull(thirdLine);
+        Assert.StartsWith("data: ", thirdLine, StringComparison.Ordinal);
+        Assert.Contains("\"sequence\":0", thirdLine, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -431,9 +467,11 @@ public sealed class HostScaffoldTests
         var refreshResponse = await client.PostAsync("/api/metadata/folders/sample-folder:refresh", content: null);
         refreshResponse.EnsureSuccessStatusCode();
 
+        var idLine = await ReadNextNonEmptyLineAsync(reader);
         var eventLine = await ReadNextNonEmptyLineAsync(reader);
         var dataLine = await ReadNextNonEmptyLineAsync(reader);
 
+        Assert.StartsWith("id: ", idLine, StringComparison.Ordinal);
         Assert.Equal("event: metadata.folder_updated", eventLine);
         Assert.NotNull(dataLine);
         Assert.Contains("\"folderId\":\"sample-folder\"", dataLine, StringComparison.Ordinal);
@@ -444,6 +482,37 @@ public sealed class HostScaffoldTests
         Assert.Contains("\"coverUrl\":\"/api/resources/library-cover/sample-folder\"", dataLine, StringComparison.Ordinal);
         Assert.Contains("\"posterUrl\":null", dataLine, StringComparison.Ordinal);
         Assert.Contains("\"updatedAtUtc\":", dataLine, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task UpdatingLibraryFavorite_PublishesFolderSnapshotEvent()
+    {
+        using var client = CreateClient();
+        using var response = await client.GetAsync("/api/events", HttpCompletionOption.ResponseHeadersRead);
+        response.EnsureSuccessStatusCode();
+
+        await using var stream = await response.Content.ReadAsStreamAsync();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+
+        await reader.ReadLineAsync();
+        await reader.ReadLineAsync();
+        await reader.ReadLineAsync();
+
+        var updateResponse = await client.PostAsJsonAsync("/api/library/folders/sample-folder:favorite", new SetFavoriteRequest(false));
+        updateResponse.EnsureSuccessStatusCode();
+
+        var idLine = await ReadNextNonEmptyLineAsync(reader);
+        var eventLine = await ReadNextNonEmptyLineAsync(reader);
+        var dataLine = await ReadNextNonEmptyLineAsync(reader);
+
+        Assert.StartsWith("id: ", idLine, StringComparison.Ordinal);
+        Assert.Equal("event: library.folder_updated", eventLine);
+        Assert.NotNull(dataLine);
+        Assert.Contains("\"folderId\":\"sample-folder\"", dataLine, StringComparison.Ordinal);
+        Assert.Contains("\"isFavorite\":false", dataLine, StringComparison.Ordinal);
+        Assert.Contains("\"folder\":{", dataLine, StringComparison.Ordinal);
+        Assert.Contains("\"coverUrl\":\"/api/resources/library-cover/sample-folder\"", dataLine, StringComparison.Ordinal);
+        Assert.Contains("\"watchStatus\":\"Watching\"", dataLine, StringComparison.Ordinal);
     }
 
     private HttpClient CreateClient(
