@@ -31,7 +31,7 @@ class PlayerPage extends StatelessWidget {
                   child: Column(
                     children: <Widget>[
                       const Expanded(child: PlayerVideoStage()),
-                      const SizedBox(height: 66, child: PlayerControlBar()),
+                      const SizedBox(height: 70, child: PlayerControlBar()),
                     ],
                   ),
                 ),
