@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:aninest_flutter/src/core/logging/app_logger.dart';
 import 'package:animated_containers/animated_containers.dart';
 import 'package:aninest_flutter/src/models/library_models.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/content_widgets/library_folder_card.dart';
@@ -20,14 +19,11 @@ class LibraryCardGrid extends StatelessWidget {
   final String? Function(String? path) resolveMediaUrl;
   final ValueChanged<String?> onFolderPressed;
 
-  static String? _lastRenderSignature;
-
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final cardWidth = _resolveCardWidth(constraints.maxWidth);
-        _logRenderSnapshot();
 
         return SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: 16),
@@ -72,35 +68,5 @@ class LibraryCardGrid extends StatelessWidget {
     );
     final width = (maxWidth - (columns - 1) * spacing) / columns;
     return width.clamp(minCardWidth, maxCardWidth);
-  }
-
-  void _logRenderSnapshot() {
-    final resolved = folders
-        .map(
-          (folder) => (
-            folder: folder,
-            imageUrl: resolveMediaUrl(
-              folder.coverUrl ?? folder.metadataSummary?.posterUrl,
-            ),
-          ),
-        )
-        .toList(growable: false);
-    final withImage = resolved
-        .where((entry) => entry.imageUrl?.isNotEmpty ?? false)
-        .length;
-    final missing = resolved
-        .where((entry) => !(entry.imageUrl?.isNotEmpty ?? false))
-        .map((entry) => '${entry.folder.folderId}:${entry.folder.name}')
-        .take(5)
-        .join(', ');
-    final signature =
-        'count=${folders.length}|selected=$selectedFolderId|withImage=$withImage|missing=${folders.length - withImage}|ids=$missing';
-
-    if (signature == _lastRenderSignature) {
-      return;
-    }
-
-    _lastRenderSignature = signature;
-    AppLogger.info('LibraryCardGrid.Render', signature);
   }
 }

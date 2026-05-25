@@ -1,7 +1,6 @@
 import 'package:aninest_flutter/src/models/enums.dart';
 import 'package:aninest_flutter/src/models/host_event_models.dart';
 import 'package:aninest_flutter/src/models/library_models.dart';
-import 'package:aninest_flutter/src/core/logging/app_logger.dart';
 import 'package:aninest_flutter/src/services/library_api.dart';
 import 'package:flutter/foundation.dart';
 
@@ -36,27 +35,14 @@ class LibraryController extends ChangeNotifier {
 
   Future<void> refresh() async {
     final previousSelectedId = _selectedFolderId;
-    AppLogger.info(
-      'LibraryController.Refresh',
-      'Refreshing library. previousSelectedId=$previousSelectedId, previousFolderCount=${_folders.length}',
-    );
     final nextFolders = await _libraryApi.getFolders();
     _folders = _mergeRefreshedFolders(nextFolders);
     _selectedFolderId = _resolveSelectedFolderId(previousSelectedId);
-    AppLogger.info(
-      'LibraryController.Refresh',
-      'Refresh completed. selectedFolderId=$_selectedFolderId, ${_describeFolders(_folders)}',
-    );
     notifyListeners();
   }
 
   Future<AddLibraryFolderResultDto> addFolder(String path) async {
-    AppLogger.info('LibraryController.AddFolder', 'Adding folder path=$path');
     final result = await _libraryApi.addFolder(path);
-    AppLogger.info(
-      'LibraryController.AddFolder',
-      'Add folder result: status=${result.status}, reason=${result.reasonCode}, folderId=${result.folder?.folderId}, coverUrl=${result.folder?.coverUrl}, posterUrl=${result.folder?.metadataSummary?.posterUrl}',
-    );
     if (result.isAdded) {
       if (result.folder != null) {
         applyFolderAdded(result.folder!);
@@ -137,10 +123,6 @@ class LibraryController extends ChangeNotifier {
   }
 
   void applyMetadataFolderUpdate(MetadataFolderUpdatedEventDto update) {
-    AppLogger.info(
-      'LibraryController.MetadataUpdate',
-      'Received metadata update for folderId=${update.folderId}, state=${update.state.name}, hasMetadata=${update.hasMetadata}, coverUrl=${update.coverUrl}, posterUrl=${update.posterUrl}',
-    );
     var changed = false;
     final nextFolders = _folders
         .map((folder) {
@@ -185,18 +167,10 @@ class LibraryController extends ChangeNotifier {
     }
 
     _folders = nextFolders;
-    AppLogger.info(
-      'LibraryController.MetadataUpdate',
-      'Applied metadata update. ${_describeFolders(_folders, focusFolderId: update.folderId)}',
-    );
     notifyListeners();
   }
 
   void applyFolderAdded(LibraryFolderDto folder) {
-    AppLogger.info(
-      'LibraryController.FolderMutation',
-      'Applying folder added. folderId=${folder.folderId}, name=${folder.name}',
-    );
     final index = _folders.indexWhere(
       (item) => item.folderId == folder.folderId,
     );
@@ -213,10 +187,6 @@ class LibraryController extends ChangeNotifier {
   }
 
   void applyFolderUpdated(LibraryFolderDto folder) {
-    AppLogger.info(
-      'LibraryController.FolderMutation',
-      'Applying folder updated. folderId=${folder.folderId}, name=${folder.name}, isFavorite=${folder.isFavorite}, watchStatus=${folder.watchStatus.name}',
-    );
     final index = _folders.indexWhere(
       (item) => item.folderId == folder.folderId,
     );
@@ -240,10 +210,6 @@ class LibraryController extends ChangeNotifier {
     String folderId,
     LibraryFolderDto Function(LibraryFolderDto folder) update,
   ) {
-    AppLogger.info(
-      'LibraryController.FolderMutation',
-      'Patching local folder state. folderId=$folderId',
-    );
     final index = _folders.indexWhere((item) => item.folderId == folderId);
     if (index < 0) {
       return;
@@ -256,10 +222,6 @@ class LibraryController extends ChangeNotifier {
   }
 
   void applyFolderRemoved(String folderId) {
-    AppLogger.info(
-      'LibraryController.FolderMutation',
-      'Applying folder removed. folderId=$folderId',
-    );
     final nextFolders = _folders
         .where((folder) => folder.folderId != folderId)
         .toList(growable: false);
@@ -277,10 +239,6 @@ class LibraryController extends ChangeNotifier {
     int position, {
     LibraryFolderDto? folder,
   }) {
-    AppLogger.info(
-      'LibraryController.FolderMutation',
-      'Applying folder reordered. folderId=$folderId, position=$position, hasSnapshot=${folder != null}',
-    );
     final nextFolders = _folders.toList();
     final existingIndex = nextFolders.indexWhere(
       (item) => item.folderId == folderId,
@@ -412,34 +370,5 @@ class LibraryController extends ChangeNotifier {
       return fallback;
     }
     return primary ?? fallback;
-  }
-
-  String _describeFolders(
-    List<LibraryFolderDto> folders, {
-    String? focusFolderId,
-  }) {
-    final withArtwork = folders
-        .where(
-          (folder) =>
-              (folder.coverUrl?.isNotEmpty ?? false) ||
-              (folder.metadataSummary?.posterUrl?.isNotEmpty ?? false),
-        )
-        .length;
-    final withoutArtwork = folders.length - withArtwork;
-    LibraryFolderDto? focusFolder;
-    if (focusFolderId != null) {
-      for (final folder in folders) {
-        if (folder.folderId == focusFolderId) {
-          focusFolder = folder;
-          break;
-        }
-      }
-    }
-
-    final focusDescription = focusFolder == null
-        ? ''
-        : ', focusFolder={id=${focusFolder.folderId}, name=${focusFolder.name}, coverUrl=${focusFolder.coverUrl}, posterUrl=${focusFolder.metadataSummary?.posterUrl}}';
-
-    return 'folderCount=${folders.length}, withArtwork=$withArtwork, withoutArtwork=$withoutArtwork$focusDescription';
   }
 }

@@ -1,9 +1,6 @@
 import 'package:aninest_flutter/src/models/enums.dart';
-import 'package:aninest_flutter/src/core/logging/app_logger.dart';
 import 'package:aninest_flutter/src/models/library_models.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
-
-final Set<String> _loggedArtworkStates = <String>{};
 
 class LibraryFolderCard extends StatelessWidget {
   const LibraryFolderCard({
@@ -118,7 +115,6 @@ class _LibraryCardArtwork extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    _logArtworkState();
 
     return AspectRatio(
       aspectRatio: 0.72,
@@ -143,10 +139,8 @@ class _LibraryCardArtwork extends StatelessWidget {
                 width: double.infinity,
                 height: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  _logArtworkError(error);
-                  return _ArtworkFallback(title: title);
-                },
+                errorBuilder: (context, error, stackTrace) =>
+                    _ArtworkFallback(title: title),
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) {
                     return child;
@@ -155,34 +149,6 @@ class _LibraryCardArtwork extends StatelessWidget {
                 },
               ),
       ),
-    );
-  }
-
-  void _logArtworkState() {
-    final key = imageUrl == null
-        ? 'missing:$title'
-        : 'present:$title:$imageUrl';
-    if (_loggedArtworkStates.contains(key)) {
-      return;
-    }
-
-    _loggedArtworkStates.add(key);
-    AppLogger.info(
-      'LibraryFolderCard.Artwork',
-      'Artwork state for "$title": imageUrl=${imageUrl ?? '<null>'}',
-    );
-  }
-
-  void _logArtworkError(Object error) {
-    final key = 'error:$title:$imageUrl';
-    if (_loggedArtworkStates.contains(key)) {
-      return;
-    }
-
-    _loggedArtworkStates.add(key);
-    AppLogger.warning(
-      'LibraryFolderCard.Artwork',
-      'Failed to load artwork for "$title". imageUrl=$imageUrl, error=$error',
     );
   }
 }

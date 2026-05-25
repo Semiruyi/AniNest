@@ -170,11 +170,6 @@ class HostEventService {
         return;
       }
 
-      AppLogger.info(
-        'HostEventService',
-        'Decoded SSE envelope. eventType=$eventType, eventId=$eventId, envelopeType=${envelope.type}, sequence=${envelope.sequence}',
-      );
-
       _events.add(
         envelope.type.isNotEmpty
             ? envelope
