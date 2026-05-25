@@ -1,7 +1,16 @@
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-class PlayerControlBarProgressSection extends StatelessWidget {
+class PlayerControlBarProgressSection extends StatefulWidget {
   const PlayerControlBarProgressSection({super.key});
+
+  @override
+  State<PlayerControlBarProgressSection> createState() =>
+      _PlayerControlBarProgressSectionState();
+}
+
+class _PlayerControlBarProgressSectionState
+    extends State<PlayerControlBarProgressSection> {
+  SliderValue _value = const SliderValue.single(0.5);
 
   @override
   Widget build(BuildContext context) {
@@ -10,16 +19,16 @@ class PlayerControlBarProgressSection extends StatelessWidget {
         color: const Color(0xFF9F1239),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 12),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            'Progress Section',
-            style: TextStyle(color: Color(0xFFF8FAFC), fontSize: 12),
-          ),
-        ),
-      ).semiBold(),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      alignment: Alignment.center,
+      child: Slider(
+        value: _value,
+        onChanged: (SliderValue value) {
+          setState(() {
+            _value = value;
+          });
+        },
+      ),
     );
   }
 }
