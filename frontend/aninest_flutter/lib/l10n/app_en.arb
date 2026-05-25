@@ -18,5 +18,64 @@
     }
   },
   "addFolderErrorTitle": "Unable to add folder",
-  "commonClose": "Close"
+  "commonClose": "Close",
+  "commonCancel": "Cancel",
+  "commonDelete": "Delete",
+  "commonOperationFailed": "Operation Failed",
+  "libraryCardMenuOpen": "Open",
+  "libraryCardMenuFavorite": "Favorite",
+  "libraryCardMenuWatchStatus": "Watch Status",
+  "libraryCardMenuMoveToFront": "Move to Front",
+  "libraryCardMenuDelete": "Delete Card",
+  "libraryCardDeleteDialogTitle": "Delete Card",
+  "libraryCardDeleteDialogMessage": "Remove this folder from the library? This only removes the card from AniNest.",
+  "libraryActionOpenTitle": "Opened",
+  "libraryActionOpenMessage": "{name} is now open in the player.",
+  "@libraryActionOpenMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "libraryActionFavoriteAddedTitle": "Added to Favorites",
+  "libraryActionFavoriteAddedMessage": "{name} was added to favorites.",
+  "@libraryActionFavoriteAddedMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "libraryActionFavoriteRemovedTitle": "Removed from Favorites",
+  "libraryActionFavoriteRemovedMessage": "{name} was removed from favorites.",
+  "@libraryActionFavoriteRemovedMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "libraryActionWatchStatusTitle": "Watch Status Updated",
+  "libraryActionWatchStatusMessage": "{name} is now marked as {status}.",
+  "@libraryActionWatchStatusMessage": {
+    "placeholders": {
+      "name": {},
+      "status": {}
+    }
+  },
+  "libraryActionMoveToFrontTitle": "Moved to Front",
+  "libraryActionMoveToFrontMessage": "{name} was moved to the front of the library.",
+  "@libraryActionMoveToFrontMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "libraryActionDeleteTitle": "Removed from Library",
+  "libraryActionDeleteMessage": "{name} was removed from the library.",
+  "@libraryActionDeleteMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "watchStatusUnknown": "Unknown",
+  "watchStatusWatching": "Watching",
+  "watchStatusCompleted": "Completed",
+  "watchStatusOnHold": "On Hold",
+  "watchStatusDropped": "Dropped",
+  "watchStatusPlanned": "Planned"
 }

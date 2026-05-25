@@ -1,5 +1,6 @@
 import 'package:aninest_flutter/src/models/enums.dart';
 import 'package:aninest_flutter/src/models/library_models.dart';
+import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/content_widgets/library_folder_card_context_menu.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class LibraryFolderCard extends StatelessWidget {
@@ -9,47 +10,71 @@ class LibraryFolderCard extends StatelessWidget {
     required this.imageUrl,
     required this.isSelected,
     required this.onPressed,
+    required this.onContextMenuRequested,
+    required this.onOpen,
+    required this.onToggleFavorite,
+    required this.onSetWatchStatus,
+    required this.onMoveToFront,
+    required this.onDelete,
   });
 
   final LibraryFolderDto folder;
   final String? imageUrl;
   final bool isSelected;
   final VoidCallback onPressed;
+  final VoidCallback onContextMenuRequested;
+  final VoidCallback onOpen;
+  final ValueChanged<bool> onToggleFavorite;
+  final ValueChanged<WatchStatus> onSetWatchStatus;
+  final VoidCallback onMoveToFront;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected ? colorScheme.primary : colorScheme.border,
-          width: isSelected ? 1.5 : 1,
+    return LibraryFolderCardContextMenu(
+      folder: folder,
+      onContextMenuRequested: onContextMenuRequested,
+      onOpen: onOpen,
+      onToggleFavorite: onToggleFavorite,
+      onSetWatchStatus: onSetWatchStatus,
+      onMoveToFront: onMoveToFront,
+      onDelete: onDelete,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? colorScheme.primary : colorScheme.border,
+            width: isSelected ? 1.5 : 1,
+          ),
         ),
-      ),
-      child: SurfaceCard(
-        child: SizedBox(
-          height: 312,
-          child: CardImage(
-            direction: Axis.vertical,
-            onPressed: onPressed,
-            gap: 10,
-            image: _LibraryCardArtwork(title: folder.name, imageUrl: imageUrl),
-            title: _LibraryCardTitle(
-              title: folder.name,
-              watchStatus: folder.watchStatus,
-              isFavorite: folder.isFavorite,
-            ),
-            subtitle: Text(
-              _subtitleFor(folder),
-              style: TextStyle(
-                fontSize: 13,
-                color: colorScheme.mutedForeground,
+        child: SurfaceCard(
+          child: SizedBox(
+            height: 312,
+            child: CardImage(
+              direction: Axis.vertical,
+              onPressed: onPressed,
+              gap: 10,
+              image: _LibraryCardArtwork(
+                title: folder.name,
+                imageUrl: imageUrl,
               ),
+              title: _LibraryCardTitle(
+                title: folder.name,
+                watchStatus: folder.watchStatus,
+                isFavorite: folder.isFavorite,
+              ),
+              subtitle: Text(
+                _subtitleFor(folder),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colorScheme.mutedForeground,
+                ),
+              ),
+              backgroundColor: colorScheme.secondary,
+              borderColor: colorScheme.border,
             ),
-            backgroundColor: colorScheme.secondary,
-            borderColor: colorScheme.border,
           ),
         ),
       ),

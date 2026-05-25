@@ -8,6 +8,7 @@ import 'package:aninest_flutter/src/features/library/application/library_control
 import 'package:aninest_flutter/src/features/metadata/application/metadata_controller.dart';
 import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
 import 'package:aninest_flutter/src/features/settings/application/settings_controller.dart';
+import 'package:aninest_flutter/src/models/enums.dart';
 import 'package:aninest_flutter/src/models/library_models.dart';
 import 'package:aninest_flutter/src/models/settings_models.dart';
 import 'package:aninest_flutter/src/services/library_api.dart';
@@ -125,6 +126,14 @@ class AppController extends ChangeNotifier {
     });
   }
 
+  Future<String?> openLibraryFolder(String folderId) async {
+    await _run(() async {
+      await player.openFolder(folderId);
+      await _refreshMetadataForSelectionAsync(force: true);
+    }, showSpinner: false);
+    return lastError;
+  }
+
   Future<void> selectItem(String itemId) async {
     await _run(() async {
       await player.selectItem(itemId);
@@ -148,6 +157,41 @@ class AppController extends ChangeNotifier {
       await player.closeSession();
       await _refreshMetadataForSelectionAsync(force: true);
     }, showSpinner: false);
+  }
+
+  Future<String?> moveFolderToFront(String folderId) async {
+    await _run(() async {
+      await library.moveToFront(folderId);
+      await _refreshMetadataForSelectionAsync(force: true);
+    }, showSpinner: false);
+    return lastError;
+  }
+
+  Future<String?> deleteFolder(String folderId) async {
+    await _run(() async {
+      await library.deleteFolder(folderId);
+      await _refreshMetadataForSelectionAsync(force: true);
+    }, showSpinner: false);
+    return lastError;
+  }
+
+  Future<String?> toggleFolderFavorite(String folderId, bool isFavorite) async {
+    await _run(() async {
+      await library.toggleFavorite(folderId, isFavorite);
+      await _refreshMetadataForSelectionAsync(force: true);
+    }, showSpinner: false);
+    return lastError;
+  }
+
+  Future<String?> setFolderWatchStatus(
+    String folderId,
+    WatchStatus status,
+  ) async {
+    await _run(() async {
+      await library.setWatchStatus(folderId, status);
+      await _refreshMetadataForSelectionAsync(force: true);
+    }, showSpinner: false);
+    return lastError;
   }
 
   void selectFolder(String? folderId) {

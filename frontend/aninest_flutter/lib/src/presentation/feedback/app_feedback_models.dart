@@ -1,7 +1,4 @@
-enum AppFeedbackKind {
-  toastInfo,
-  dialogError,
-}
+enum AppFeedbackKind { toastInfo, dialogError }
 
 class AppFeedbackRequest {
   const AppFeedbackRequest({

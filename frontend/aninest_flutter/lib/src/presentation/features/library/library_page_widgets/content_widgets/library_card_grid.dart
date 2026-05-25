@@ -1,3 +1,4 @@
+import 'package:aninest_flutter/src/models/enums.dart';
 import 'dart:math' as math;
 
 import 'package:animated_containers/animated_containers.dart';
@@ -12,12 +13,22 @@ class LibraryCardGrid extends StatelessWidget {
     required this.selectedFolderId,
     required this.resolveMediaUrl,
     required this.onFolderPressed,
+    required this.onOpen,
+    required this.onToggleFavorite,
+    required this.onSetWatchStatus,
+    required this.onMoveToFront,
+    required this.onDelete,
   });
 
   final List<LibraryFolderDto> folders;
   final String? selectedFolderId;
   final String? Function(String? path) resolveMediaUrl;
   final ValueChanged<String?> onFolderPressed;
+  final ValueChanged<String> onOpen;
+  final void Function(String folderId, bool isFavorite) onToggleFavorite;
+  final void Function(String folderId, WatchStatus status) onSetWatchStatus;
+  final ValueChanged<String> onMoveToFront;
+  final ValueChanged<String> onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +58,15 @@ class LibraryCardGrid extends StatelessWidget {
                       ),
                       isSelected: selectedFolderId == folder.folderId,
                       onPressed: () => onFolderPressed(folder.folderId),
+                      onContextMenuRequested: () =>
+                          onFolderPressed(folder.folderId),
+                      onOpen: () => onOpen(folder.folderId),
+                      onToggleFavorite: (isFavorite) =>
+                          onToggleFavorite(folder.folderId, isFavorite),
+                      onSetWatchStatus: (status) =>
+                          onSetWatchStatus(folder.folderId, status),
+                      onMoveToFront: () => onMoveToFront(folder.folderId),
+                      onDelete: () => onDelete(folder.folderId),
                     ),
                   ),
                 )

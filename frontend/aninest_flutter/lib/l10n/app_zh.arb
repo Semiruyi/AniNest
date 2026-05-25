@@ -1,22 +1,81 @@
 {
   "@@locale": "zh",
   "appTitle": "AniNest",
-  "menuFile": "文件",
-  "menuSettings": "设置",
-  "menuLanguage": "语言",
-  "menuAddFolder": "添加文件夹",
-  "menuScanFolder": "扫描文件夹",
+  "menuFile": "\u6587\u4ef6",
+  "menuSettings": "\u8bbe\u7f6e",
+  "menuLanguage": "\u8bed\u8a00",
+  "menuAddFolder": "\u6dfb\u52a0\u6587\u4ef6\u5939",
+  "menuScanFolder": "\u626b\u63cf\u6587\u4ef6\u5939",
   "languageEnglish": "English",
-  "languageSimplifiedChinese": "简体中文",
-  "sidebarPlaceholder": "侧边栏",
-  "contentPlaceholder": "内容区",
-  "addFolderAlreadyAddedTitle": "文件夹已存在",
-  "addFolderAlreadyAddedMessage": "{name} 已在媒体库中。",
+  "languageSimplifiedChinese": "\u7b80\u4f53\u4e2d\u6587",
+  "sidebarPlaceholder": "\u4fa7\u8fb9\u680f",
+  "contentPlaceholder": "\u5185\u5bb9\u533a",
+  "addFolderAlreadyAddedTitle": "\u6587\u4ef6\u5939\u5df2\u5b58\u5728",
+  "addFolderAlreadyAddedMessage": "{name} \u5df2\u5728\u5a92\u4f53\u5e93\u4e2d\u3002",
   "@addFolderAlreadyAddedMessage": {
     "placeholders": {
       "name": {}
     }
   },
-  "addFolderErrorTitle": "无法添加文件夹",
-  "commonClose": "关闭"
+  "addFolderErrorTitle": "\u65e0\u6cd5\u6dfb\u52a0\u6587\u4ef6\u5939",
+  "commonClose": "\u5173\u95ed",
+  "commonCancel": "\u53d6\u6d88",
+  "commonDelete": "\u5220\u9664",
+  "commonOperationFailed": "\u64cd\u4f5c\u5931\u8d25",
+  "libraryCardMenuOpen": "\u6253\u5f00",
+  "libraryCardMenuFavorite": "\u6536\u85cf",
+  "libraryCardMenuWatchStatus": "\u89c2\u770b\u72b6\u6001",
+  "libraryCardMenuMoveToFront": "\u79fb\u5230\u6700\u524d",
+  "libraryCardMenuDelete": "\u5220\u9664\u5361\u7247",
+  "libraryCardDeleteDialogTitle": "\u5220\u9664\u5361\u7247",
+  "libraryCardDeleteDialogMessage": "\u4ece\u5a92\u4f53\u5e93\u4e2d\u79fb\u9664\u6b64\u6587\u4ef6\u5939\uff1f\u8fd9\u53ea\u4f1a\u5220\u9664 AniNest \u91cc\u7684\u5361\u7247\uff0c\u4e0d\u4f1a\u5220\u9664\u78c1\u76d8\u6587\u4ef6\u3002",
+  "libraryActionOpenTitle": "\u5df2\u6253\u5f00",
+  "libraryActionOpenMessage": "{name} \u5df2\u5728\u64ad\u653e\u5668\u4e2d\u6253\u5f00\u3002",
+  "@libraryActionOpenMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "libraryActionFavoriteAddedTitle": "\u5df2\u52a0\u5165\u6536\u85cf",
+  "libraryActionFavoriteAddedMessage": "{name} \u5df2\u52a0\u5165\u6536\u85cf\u3002",
+  "@libraryActionFavoriteAddedMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "libraryActionFavoriteRemovedTitle": "\u5df2\u53d6\u6d88\u6536\u85cf",
+  "libraryActionFavoriteRemovedMessage": "{name} \u5df2\u4ece\u6536\u85cf\u4e2d\u79fb\u9664\u3002",
+  "@libraryActionFavoriteRemovedMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "libraryActionWatchStatusTitle": "\u89c2\u770b\u72b6\u6001\u5df2\u66f4\u65b0",
+  "libraryActionWatchStatusMessage": "{name} \u5df2\u6807\u8bb0\u4e3a {status}\u3002",
+  "@libraryActionWatchStatusMessage": {
+    "placeholders": {
+      "name": {},
+      "status": {}
+    }
+  },
+  "libraryActionMoveToFrontTitle": "\u5df2\u79fb\u5230\u6700\u524d",
+  "libraryActionMoveToFrontMessage": "{name} \u5df2\u79fb\u5230\u5a92\u4f53\u5e93\u6700\u524d\u3002",
+  "@libraryActionMoveToFrontMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "libraryActionDeleteTitle": "\u5df2\u4ece\u5a92\u4f53\u5e93\u79fb\u9664",
+  "libraryActionDeleteMessage": "{name} \u5df2\u4ece\u5a92\u4f53\u5e93\u79fb\u9664\u3002",
+  "@libraryActionDeleteMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "watchStatusUnknown": "\u672a\u77e5",
+  "watchStatusWatching": "\u5728\u770b",
+  "watchStatusCompleted": "\u5df2\u770b\u5b8c",
+  "watchStatusOnHold": "\u6682\u7f6e",
+  "watchStatusDropped": "\u5f03\u756a",
+  "watchStatusPlanned": "\u8ba1\u5212\u89c2\u770b"
 }
