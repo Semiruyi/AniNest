@@ -19,8 +19,9 @@ public sealed class PlaybackSessionEngineTests
 
         var result = engine.ActivateFolder("sample-folder");
 
-        Assert.Equal("ep-01", result.Session.CurrentItemId);
-        Assert.Equal(93_000, result.PlaybackTarget.StartPositionMs);
+        Assert.Equal("ep-01", result.Result.Session.CurrentItemId);
+        Assert.Equal(93_000, result.Result.PlaybackTarget.StartPositionMs);
+        Assert.True(result.SessionChanged);
     }
 
     [Fact]
@@ -90,7 +91,7 @@ public sealed class PlaybackSessionEngineTests
 
         var result = engine.ActivateFolder("sample-folder");
 
-        Assert.Equal(0, result.PlaybackTarget.StartPositionMs);
+        Assert.Equal(0, result.Result.PlaybackTarget.StartPositionMs);
     }
 
     [Fact]
@@ -102,8 +103,25 @@ public sealed class PlaybackSessionEngineTests
 
         var result = engine.ActivateFolder("sample-folder");
 
-        Assert.Equal("ep-03", result.Session.CurrentItemId);
-        Assert.Equal(2, result.Session.CurrentIndex);
+        Assert.Equal("ep-03", result.Result.Session.CurrentItemId);
+        Assert.Equal(2, result.Result.Session.CurrentIndex);
+    }
+
+    [Fact]
+    public void ActivateFolder_WhenTargetStateMatchesCurrentSession_DoesNotRebuildSession()
+    {
+        var store = new InMemoryPlaybackProgressStore();
+        store.SaveFolderProgress("sample-folder", "ep-01");
+        store.SaveVideoProgress("D:/Media/Sample Anime/01.mp4", 93_000, 1_440_000);
+        var engine = CreateEngine(store);
+
+        var first = engine.ActivateFolder("sample-folder");
+        var second = engine.ActivateFolder("sample-folder");
+
+        Assert.True(first.SessionChanged);
+        Assert.False(second.SessionChanged);
+        Assert.Equal(first.Result.Session, second.Result.Session);
+        Assert.Equal(first.Result.PlaybackTarget, second.Result.PlaybackTarget);
     }
 
     [Fact]

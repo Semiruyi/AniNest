@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
+using System.Collections.Concurrent;
 using AniNest.Application.Library;
 using AniNest.Contracts.Common;
 using AniNest.Contracts.Library;
@@ -10,8 +11,10 @@ using AniNest.Contracts.Session;
 using AniNest.Contracts.Settings;
 using AniNest.Contracts.Thumbnails;
 using AniNest.Host.Modules;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace AniNest.Backend.Tests;
 
@@ -178,6 +181,35 @@ public sealed class HostScaffoldTests
         Assert.NotNull(payload);
         Assert.Equal("sample-folder", payload.Session.FolderId);
         Assert.Equal("ep-01", payload.PlaybackTarget.ItemId);
+    }
+
+    [Fact]
+    public async Task OpenSessionFolder_LogsChangedThenNoOpForRepeatedRequest()
+    {
+        var testRoot = Path.Combine(Path.GetTempPath(), "AniNest.Backend.Tests", $"{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testRoot);
+        var logSink = new ConcurrentQueue<string>();
+
+        using var client = CreateClient(testRoot, logSink: logSink);
+
+        var closeResponse = await client.PostAsync("/api/session/close", content: null);
+        closeResponse.EnsureSuccessStatusCode();
+
+        var openResponse = await client.PostAsJsonAsync(
+            "/api/session/open-folder",
+            new SessionOpenFolderRequest("sample-folder"));
+        openResponse.EnsureSuccessStatusCode();
+
+        var reopenResponse = await client.PostAsJsonAsync(
+            "/api/session/open-folder",
+            new SessionOpenFolderRequest("sample-folder"));
+        reopenResponse.EnsureSuccessStatusCode();
+
+        var logText = await WaitForLogTextAsync(logSink, TimeSpan.FromSeconds(3));
+
+        Assert.Contains("Playback activate requested. FolderId=sample-folder", logText);
+        Assert.Contains("SessionChanged=True", logText);
+        Assert.Contains("SessionChanged=False", logText);
     }
 
     [Fact]
@@ -518,7 +550,9 @@ public sealed class HostScaffoldTests
     private HttpClient CreateClient(
         string? explicitTestRoot = null,
         bool seedFailedMetadata = false,
-        bool seedMissingMetadata = false)
+        bool seedMissingMetadata = false,
+        string? hostLogPath = null,
+        ConcurrentQueue<string>? logSink = null)
         => new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.ConfigureAppConfiguration((_, configBuilder) =>
@@ -624,9 +658,17 @@ public sealed class HostScaffoldTests
                     ["AniNest:MetadataPayloadRootPath"] = Path.Combine(testRoot, "metadata", "payload"),
                     ["AniNest:MetadataPosterRootPath"] = Path.Combine(testRoot, "metadata", "posters"),
                     ["AniNest:MetadataWorkerEnabled"] = "false",
-                    ["AniNest:ThumbnailPath"] = thumbnailPath
+                    ["AniNest:ThumbnailPath"] = thumbnailPath,
+                    ["AniNest:HostLogPath"] = hostLogPath ?? Path.Combine(testRoot, "host.log")
                 });
             });
+            if (logSink is not null)
+            {
+                builder.ConfigureLogging(logging =>
+                {
+                    logging.AddProvider(new TestLoggerProvider(logSink));
+                });
+            }
         }).CreateClient();
 
     private static async Task<string?> ReadNextNonEmptyLineAsync(StreamReader reader)
@@ -638,6 +680,61 @@ public sealed class HostScaffoldTests
             {
                 return line;
             }
+        }
+    }
+
+    private static async Task<string> WaitForLogTextAsync(ConcurrentQueue<string> sink, TimeSpan timeout)
+    {
+        var start = DateTime.UtcNow;
+        while (DateTime.UtcNow - start < timeout)
+        {
+            if (!sink.IsEmpty)
+            {
+                var text = string.Join(Environment.NewLine, sink);
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    return text;
+                }
+            }
+
+            await Task.Delay(100);
+        }
+
+        throw new InvalidOperationException("Timed out waiting for playback log entries.");
+    }
+
+    private sealed class TestLoggerProvider(ConcurrentQueue<string> sink) : ILoggerProvider
+    {
+        public ILogger CreateLogger(string categoryName) => new TestLogger(categoryName, sink);
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class TestLogger(string categoryName, ConcurrentQueue<string> sink) : ILogger
+    {
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull => NullScope.Instance;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            sink.Enqueue($"{categoryName}|{logLevel}|{formatter(state, exception)}");
+        }
+    }
+
+    private sealed class NullScope : IDisposable
+    {
+        public static readonly NullScope Instance = new();
+
+        public void Dispose()
+        {
         }
     }
 }

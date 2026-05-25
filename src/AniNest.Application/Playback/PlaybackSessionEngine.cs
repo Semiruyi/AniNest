@@ -36,12 +36,25 @@ public sealed class PlaybackSessionEngine
     public PlaylistDto GetPlaylist(string folderId)
         => _playlistCatalog.GetPlaylist(folderId);
 
-    public SessionOpenResultDto ActivateFolder(string folderId)
+    public FolderActivationResult ActivateFolder(string folderId)
     {
         var playlist = GetPlaylist(folderId);
         var item = ResolveStartItem(playlist);
         var startPositionMs = ResolveStartPosition(item);
-        return SetCurrent(folderId, item.ItemId, startPositionMs);
+
+        if (_currentSession is not null &&
+            string.Equals(_currentSession.FolderId, folderId, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(_currentSession.CurrentItemId, item.ItemId, StringComparison.OrdinalIgnoreCase) &&
+            _currentSession.SavedProgressMs == startPositionMs)
+        {
+            return new FolderActivationResult(
+                BuildOpenResult(item, startPositionMs, _currentSession),
+                SessionChanged: false);
+        }
+
+        return new FolderActivationResult(
+            SetCurrent(folderId, item.ItemId, startPositionMs),
+            SessionChanged: true);
     }
 
     public SessionOpenResultDto SelectItem(string itemId)
@@ -179,8 +192,16 @@ public sealed class PlaybackSessionEngine
         _playlistCatalog.Save(updatedPlaylist);
 
         _currentSession = BuildSession(updatedPlaylist, item.ItemId, savedProgressMs);
+        return BuildOpenResult(item, savedProgressMs, _currentSession);
+    }
+
+    private static SessionOpenResultDto BuildOpenResult(
+        PlaylistItemDto item,
+        long savedProgressMs,
+        SessionStateDto session)
+    {
         return new SessionOpenResultDto(
-            _currentSession,
+            session,
             new PlaybackTargetDto(item.ItemId, item.Title, item.FilePath, savedProgressMs));
     }
 

@@ -5,6 +5,7 @@ using AniNest.Contracts.Playlist;
 using AniNest.Contracts.Session;
 using AniNest.Contracts.Settings;
 using AniNest.Host.Events;
+using Microsoft.Extensions.Logging;
 
 namespace AniNest.Host.Modules;
 
@@ -12,13 +13,16 @@ internal sealed class PlaybackModule : IPlaylistModule, ISessionModule
 {
     private readonly PlaybackSessionEngine _engine;
     private readonly IHostEventStream _events;
+    private readonly ILogger<PlaybackModule> _logger;
 
     public PlaybackModule(
         IPlaylistCatalogStore playlistStore,
         IPlaybackProgressStore progressStore,
-        IHostEventStream events)
+        IHostEventStream events,
+        ILogger<PlaybackModule> logger)
     {
         _events = events;
+        _logger = logger;
         var playlistCatalog = new PlaylistCatalogService(playlistStore);
 
         _engine = new PlaybackSessionEngine(
@@ -40,9 +44,28 @@ internal sealed class PlaybackModule : IPlaylistModule, ISessionModule
 
     public Task<SessionOpenResultDto> ActivateFolderAsync(string folderId, CancellationToken cancellationToken = default)
     {
-        var result = _engine.ActivateFolder(folderId);
-        PublishSessionChanged("session.changed", result.Session);
-        return Task.FromResult(result);
+        var current = _engine.CurrentSession;
+        _logger.LogInformation(
+            "Playback activate requested. FolderId={FolderId}, CurrentFolderId={CurrentFolderId}, CurrentItemId={CurrentItemId}, CurrentProgressMs={CurrentProgressMs}",
+            folderId,
+            current?.FolderId,
+            current?.CurrentItemId,
+            current?.SavedProgressMs);
+
+        var activation = _engine.ActivateFolder(folderId);
+        _logger.LogInformation(
+            "Playback activate resolved. FolderId={FolderId}, SessionChanged={SessionChanged}, ResultFolderId={ResultFolderId}, ResultItemId={ResultItemId}, ResultProgressMs={ResultProgressMs}",
+            folderId,
+            activation.SessionChanged,
+            activation.Result.Session.FolderId,
+            activation.Result.Session.CurrentItemId,
+            activation.Result.Session.SavedProgressMs);
+
+        if (activation.SessionChanged)
+        {
+            PublishSessionChanged("session.changed", activation.Result.Session);
+        }
+        return Task.FromResult(activation.Result);
     }
 
     public Task<SessionOpenResultDto> SelectItemAsync(string itemId, CancellationToken cancellationToken = default)
