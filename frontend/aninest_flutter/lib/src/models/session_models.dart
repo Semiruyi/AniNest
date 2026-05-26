@@ -87,6 +87,34 @@ class SessionStateDto {
       preferredVolume: json['preferredVolume'] as int? ?? 80,
     );
   }
+
+  SessionStateDto copyWith({
+    String? sessionId,
+    String? folderId,
+    String? folderName,
+    String? currentItemId,
+    int? currentIndex,
+    int? playlistCount,
+    bool? hasPrevious,
+    bool? hasNext,
+    int? savedProgressMs,
+    double? preferredRate,
+    int? preferredVolume,
+  }) {
+    return SessionStateDto(
+      sessionId: sessionId ?? this.sessionId,
+      folderId: folderId ?? this.folderId,
+      folderName: folderName ?? this.folderName,
+      currentItemId: currentItemId ?? this.currentItemId,
+      currentIndex: currentIndex ?? this.currentIndex,
+      playlistCount: playlistCount ?? this.playlistCount,
+      hasPrevious: hasPrevious ?? this.hasPrevious,
+      hasNext: hasNext ?? this.hasNext,
+      savedProgressMs: savedProgressMs ?? this.savedProgressMs,
+      preferredRate: preferredRate ?? this.preferredRate,
+      preferredVolume: preferredVolume ?? this.preferredVolume,
+    );
+  }
 }
 
 class SessionOpenResultDto {
