@@ -4,7 +4,11 @@ namespace AniNest.Host.Modules;
 
 internal sealed class ServerDirectoryBrowser
 {
-    internal const string AllowedRootPath = "/Volumes/WD1T/y-s/anime";
+    internal const string MacAllowedRootPath = "/Volumes/WD1T/y-s/anime";
+    internal const string WindowsAllowedRootPath = @"C:\y-s\anime";
+    internal static string AllowedRootPath => OperatingSystem.IsWindows()
+        ? WindowsAllowedRootPath
+        : MacAllowedRootPath;
 
     private readonly string _allowedRootPath;
 
