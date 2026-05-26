@@ -2,9 +2,15 @@ using AniNest.Host.Composition;
 using AniNest.Host.Endpoints;
 using AniNest.Host.ErrorHandling;
 using AniNest.Host.Logging;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
+
+if (string.IsNullOrWhiteSpace(builder.WebHost.GetSetting(WebHostDefaults.ServerUrlsKey)))
+{
+    builder.WebHost.UseUrls("http://0.0.0.0:5275");
+}
 
 var hostLogPathSetting = builder.Configuration["AniNest:HostLogPath"];
 var hostLogPath = string.IsNullOrWhiteSpace(hostLogPathSetting)
