@@ -2,27 +2,45 @@ class PlaybackTargetDto {
   const PlaybackTargetDto({
     required this.itemId,
     required this.title,
-    required this.filePath,
+    required this.mediaUrl,
     required this.startPositionMs,
-    required this.subtitlePath,
+    required this.subtitleUrl,
     required this.audioTrackHint,
   });
 
   final String itemId;
   final String title;
-  final String filePath;
+  final String mediaUrl;
   final int startPositionMs;
-  final String? subtitlePath;
+  final String? subtitleUrl;
   final String? audioTrackHint;
 
   factory PlaybackTargetDto.fromJson(Map<String, dynamic> json) {
     return PlaybackTargetDto(
       itemId: json['itemId'] as String,
       title: json['title'] as String,
-      filePath: json['filePath'] as String,
+      mediaUrl: json['mediaUrl'] as String,
       startPositionMs: json['startPositionMs'] as int? ?? 0,
-      subtitlePath: json['subtitlePath'] as String?,
+      subtitleUrl: json['subtitleUrl'] as String?,
       audioTrackHint: json['audioTrackHint'] as String?,
+    );
+  }
+
+  PlaybackTargetDto copyWith({
+    String? itemId,
+    String? title,
+    String? mediaUrl,
+    int? startPositionMs,
+    String? subtitleUrl,
+    String? audioTrackHint,
+  }) {
+    return PlaybackTargetDto(
+      itemId: itemId ?? this.itemId,
+      title: title ?? this.title,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
+      startPositionMs: startPositionMs ?? this.startPositionMs,
+      subtitleUrl: subtitleUrl ?? this.subtitleUrl,
+      audioTrackHint: audioTrackHint ?? this.audioTrackHint,
     );
   }
 }

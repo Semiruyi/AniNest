@@ -9,6 +9,7 @@ internal static class ResourceKindCodec
         {
             ResourceKind.LibraryCover => "library-cover",
             ResourceKind.LibraryPoster => "library-poster",
+            ResourceKind.PlaybackMedia => "playback-media",
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
         };
 
@@ -21,6 +22,9 @@ internal static class ResourceKindCodec
                 return true;
             case "library-poster":
                 kind = ResourceKind.LibraryPoster;
+                return true;
+            case "playback-media":
+                kind = ResourceKind.PlaybackMedia;
                 return true;
             default:
                 kind = default;

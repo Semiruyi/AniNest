@@ -102,7 +102,7 @@ class _PlayerVideoViewportState extends State<PlayerVideoViewport> {
     }
 
     final playbackKey =
-        '${target.itemId}|${target.filePath}|${target.startPositionMs}|${session.preferredRate}|${session.preferredVolume}';
+        '${target.itemId}|${target.mediaUrl}|${target.startPositionMs}|${session.preferredRate}|${session.preferredVolume}';
 
     if (_loadedPlaybackKey == playbackKey) {
       return;
@@ -117,7 +117,7 @@ class _PlayerVideoViewportState extends State<PlayerVideoViewport> {
     try {
       await _player.open(
         Media(
-          target.filePath,
+          target.mediaUrl,
           start: Duration(milliseconds: target.startPositionMs),
         ),
       );

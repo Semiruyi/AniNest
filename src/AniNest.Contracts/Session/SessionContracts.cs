@@ -3,9 +3,9 @@ namespace AniNest.Contracts.Session;
 public sealed record PlaybackTargetDto(
     string ItemId,
     string Title,
-    string FilePath,
+    string MediaUrl,
     long StartPositionMs,
-    string? SubtitlePath = null,
+    string? SubtitleUrl = null,
     string? AudioTrackHint = null);
 
 public sealed record SessionStateDto(

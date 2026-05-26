@@ -181,6 +181,18 @@ public sealed class HostScaffoldTests
         Assert.NotNull(payload);
         Assert.Equal("sample-folder", payload.Session.FolderId);
         Assert.Equal("ep-01", payload.PlaybackTarget.ItemId);
+        Assert.Equal("/api/resources/playback-media/sample-folder%3Aep-01", payload.PlaybackTarget.MediaUrl);
+    }
+
+    [Fact]
+    public async Task GetPlaybackMediaResource_ReturnsVideoStream()
+    {
+        using var client = CreateClient();
+
+        var response = await client.GetAsync("/api/resources/playback-media/sample-folder%3Aep-01");
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal("video/mp4", response.Content.Headers.ContentType?.MediaType);
     }
 
     [Fact]

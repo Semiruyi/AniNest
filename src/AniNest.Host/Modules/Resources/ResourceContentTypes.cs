@@ -11,6 +11,17 @@ internal static class ResourceContentTypes
             [".webp"] = "image/webp",
             [".gif"] = "image/gif",
             [".bmp"] = "image/bmp",
+            [".mp4"] = "video/mp4",
+            [".m4v"] = "video/x-m4v",
+            [".mkv"] = "video/x-matroska",
+            [".webm"] = "video/webm",
+            [".avi"] = "video/x-msvideo",
+            [".mov"] = "video/quicktime",
+            [".wmv"] = "video/x-ms-wmv",
+            [".srt"] = "application/x-subrip",
+            [".ass"] = "text/x-ssa",
+            [".ssa"] = "text/x-ssa",
+            [".vtt"] = "text/vtt",
         };
 
     public static string FromPath(string path)

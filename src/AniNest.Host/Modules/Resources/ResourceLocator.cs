@@ -1,5 +1,6 @@
 using AniNest.Application.Library;
 using AniNest.Application.Metadata;
+using AniNest.Application.Playlist;
 using AniNest.Application.Resources;
 
 namespace AniNest.Host.Modules.Resources;
@@ -9,17 +10,20 @@ internal sealed class ResourceLocator : IResourceLocator
     private readonly ILibraryCatalogStore _libraryCatalogStore;
     private readonly ILibraryFileScanner _libraryFileScanner;
     private readonly IMetadataStore _metadataStore;
+    private readonly IPlaylistCatalogStore _playlistCatalogStore;
     private readonly string _metadataPosterRootPath;
 
     public ResourceLocator(
         ILibraryCatalogStore libraryCatalogStore,
         ILibraryFileScanner libraryFileScanner,
         IMetadataStore metadataStore,
+        IPlaylistCatalogStore playlistCatalogStore,
         string metadataPosterRootPath)
     {
         _libraryCatalogStore = libraryCatalogStore;
         _libraryFileScanner = libraryFileScanner;
         _metadataStore = metadataStore;
+        _playlistCatalogStore = playlistCatalogStore;
         _metadataPosterRootPath = metadataPosterRootPath;
     }
 
@@ -35,6 +39,7 @@ internal sealed class ResourceLocator : IResourceLocator
                 key.OwnerId,
                 cancellationToken),
             ResourceKind.LibraryPoster => ResolveLibraryPosterPath(key.OwnerId),
+            ResourceKind.PlaybackMedia => ResolvePlaybackMediaPath(key.OwnerId),
             _ => null
         };
 
@@ -99,6 +104,37 @@ internal sealed class ResourceLocator : IResourceLocator
             ?.MetadataSummary?.PosterPath);
     }
 
+    private string? ResolvePlaybackMediaPath(string ownerId)
+    {
+        if (TryParsePlaybackMediaOwnerId(ownerId, out var folderId, out var itemId))
+        {
+            var playlist = _playlistCatalogStore.GetPlaylists()
+                .FirstOrDefault(candidate =>
+                    string.Equals(
+                        candidate.FolderId,
+                        folderId,
+                        StringComparison.OrdinalIgnoreCase));
+            var playlistItem = playlist?.Items.FirstOrDefault(candidate =>
+                string.Equals(candidate.ItemId, itemId, StringComparison.OrdinalIgnoreCase));
+            if (playlistItem is not null)
+            {
+                return playlistItem.FilePath;
+            }
+        }
+
+        foreach (var playlist in _playlistCatalogStore.GetPlaylists())
+        {
+            var item = playlist.Items.FirstOrDefault(candidate =>
+                string.Equals(candidate.ItemId, ownerId, StringComparison.OrdinalIgnoreCase));
+            if (item is not null)
+            {
+                return item.FilePath;
+            }
+        }
+
+        return null;
+    }
+
     private string? ResolveMetadataPosterPath(string? posterPath)
     {
         if (string.IsNullOrWhiteSpace(posterPath))
@@ -108,5 +144,23 @@ internal sealed class ResourceLocator : IResourceLocator
             return posterPath;
 
         return Path.Combine(_metadataPosterRootPath, posterPath);
+    }
+
+    private static bool TryParsePlaybackMediaOwnerId(
+        string ownerId,
+        out string folderId,
+        out string itemId)
+    {
+        var separatorIndex = ownerId.IndexOf(':');
+        if (separatorIndex <= 0 || separatorIndex >= ownerId.Length - 1)
+        {
+            folderId = string.Empty;
+            itemId = string.Empty;
+            return false;
+        }
+
+        folderId = ownerId[..separatorIndex];
+        itemId = ownerId[(separatorIndex + 1)..];
+        return true;
     }
 }

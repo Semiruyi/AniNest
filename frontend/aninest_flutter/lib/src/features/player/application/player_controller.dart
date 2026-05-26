@@ -20,7 +20,8 @@ class PlayerController extends ChangeNotifier {
   PlaybackTargetDto? get playbackTarget => _playbackTarget;
 
   String? get selectedFolderId => _session?.folderId;
-  String? get selectedItemId => _session?.currentItemId ?? _playlist?.currentItemId;
+  String? get selectedItemId =>
+      _session?.currentItemId ?? _playlist?.currentItemId;
 
   void rebind(SessionApi sessionApi, PlaylistApi playlistApi) {
     _sessionApi = sessionApi;

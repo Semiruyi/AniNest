@@ -1,5 +1,6 @@
 using AniNest.Application.Playback;
 using AniNest.Application.Playlist;
+using AniNest.Application.Resources;
 using AniNest.Contracts.Playlist;
 using AniNest.Contracts.Session;
 using AniNest.Contracts.Settings;
@@ -21,6 +22,9 @@ public sealed class PlaybackSessionEngineTests
 
         Assert.Equal("ep-01", result.Result.Session.CurrentItemId);
         Assert.Equal(93_000, result.Result.PlaybackTarget.StartPositionMs);
+        Assert.Equal(
+            "/api/resources/playback-media/sample-folder:ep-01",
+            result.Result.PlaybackTarget.MediaUrl);
         Assert.True(result.SessionChanged);
     }
 
@@ -165,6 +169,17 @@ public sealed class PlaybackSessionEngineTests
         return new PlaybackSessionEngine(
             playlistCatalog,
             new PlayerSettingsDto(1.0, 80, true),
-            store ?? new InMemoryPlaybackProgressStore());
+            store ?? new InMemoryPlaybackProgressStore(),
+            new FakeResourceUrlService());
+    }
+
+    private sealed class FakeResourceUrlService : IResourceUrlService
+    {
+        public string GetUrl(ResourceKey key)
+            => $"/api/resources/{key.Kind switch
+            {
+                ResourceKind.PlaybackMedia => "playback-media",
+                _ => "unknown"
+            }}/{key.OwnerId}";
     }
 }

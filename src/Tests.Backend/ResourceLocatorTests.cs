@@ -1,5 +1,7 @@
 using AniNest.Application.Library;
+using AniNest.Application.Playlist;
 using AniNest.Application.Resources;
+using AniNest.Contracts.Playlist;
 using AniNest.Contracts.Metadata;
 using AniNest.Host.Modules.Resources;
 
@@ -45,7 +47,12 @@ public sealed class ResourceLocatorTests
                 AniNest.Core.Enums.MetadataState.Ready,
                 AniNest.Core.Enums.MetadataFailureKind.None)
         ]);
-        var locator = new ResourceLocator(store, scanner, metadataStore, root);
+        var locator = new ResourceLocator(
+            store,
+            scanner,
+            metadataStore,
+            new InMemoryPlaylistCatalogStore([]),
+            root);
 
         var resource = await locator.ResolveAsync(new ResourceKey(ResourceKind.LibraryCover, "folder-01"));
 
@@ -94,12 +101,121 @@ public sealed class ResourceLocatorTests
                 AniNest.Core.Enums.MetadataState.Ready,
                 AniNest.Core.Enums.MetadataFailureKind.None)
         ]);
-        var locator = new ResourceLocator(store, scanner, metadataStore, posterRoot);
+        var locator = new ResourceLocator(
+            store,
+            scanner,
+            metadataStore,
+            new InMemoryPlaylistCatalogStore([]),
+            posterRoot);
 
         var resource = await locator.ResolveAsync(new ResourceKey(ResourceKind.LibraryPoster, "folder-01"));
 
         Assert.NotNull(resource);
         Assert.Equal(posterPath, resource!.FilePath);
         Assert.Equal("image/jpeg", resource.ContentType);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ReturnsPlaybackMedia_ForPlaylistItem()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "AniNest.Backend.Tests", $"resource-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        var videoPath = Path.Combine(root, "Episode 01.mp4");
+        await File.WriteAllBytesAsync(videoPath, []);
+
+        var playlistStore = new InMemoryPlaylistCatalogStore(
+        [
+            new PlaylistDto(
+                "folder-01",
+                "Folder 01",
+                "ep-01",
+                0,
+                [
+                    new PlaylistItemDto(
+                        "ep-01",
+                        0,
+                        "Episode 01",
+                        videoPath,
+                        false,
+                        false,
+                        0,
+                        0,
+                        AniNest.Core.Enums.ThumbnailState.Pending)
+                ])
+        ]);
+        var locator = new ResourceLocator(
+            new InMemoryLibraryCatalogStore([]),
+            new FakeLibraryFileScanner(),
+            new InMemoryMetadataStore([]),
+            playlistStore,
+            root);
+
+        var resource = await locator.ResolveAsync(
+            new ResourceKey(ResourceKind.PlaybackMedia, "folder-01:ep-01"));
+
+        Assert.NotNull(resource);
+        Assert.Equal(videoPath, resource!.FilePath);
+        Assert.Equal("video/mp4", resource.ContentType);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ReturnsPlaybackMedia_ForMatchingFolderWhenItemIdsRepeat()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "AniNest.Backend.Tests", $"resource-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        var firstVideoPath = Path.Combine(root, "FolderA-Episode01.mp4");
+        var secondVideoPath = Path.Combine(root, "FolderB-Episode01.mp4");
+        await File.WriteAllBytesAsync(firstVideoPath, []);
+        await File.WriteAllBytesAsync(secondVideoPath, []);
+
+        var playlistStore = new InMemoryPlaylistCatalogStore(
+        [
+            new PlaylistDto(
+                "folder-a",
+                "Folder A",
+                "ep-01",
+                0,
+                [
+                    new PlaylistItemDto(
+                        "ep-01",
+                        0,
+                        "Episode 01",
+                        firstVideoPath,
+                        false,
+                        false,
+                        0,
+                        0,
+                        AniNest.Core.Enums.ThumbnailState.Pending)
+                ]),
+            new PlaylistDto(
+                "folder-b",
+                "Folder B",
+                "ep-01",
+                0,
+                [
+                    new PlaylistItemDto(
+                        "ep-01",
+                        0,
+                        "Episode 01",
+                        secondVideoPath,
+                        false,
+                        false,
+                        0,
+                        0,
+                        AniNest.Core.Enums.ThumbnailState.Pending)
+                ])
+        ]);
+        var locator = new ResourceLocator(
+            new InMemoryLibraryCatalogStore([]),
+            new FakeLibraryFileScanner(),
+            new InMemoryMetadataStore([]),
+            playlistStore,
+            root);
+
+        var resource = await locator.ResolveAsync(
+            new ResourceKey(ResourceKind.PlaybackMedia, "folder-b:ep-01"));
+
+        Assert.NotNull(resource);
+        Assert.Equal(secondVideoPath, resource!.FilePath);
     }
 }

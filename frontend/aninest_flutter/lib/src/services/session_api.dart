@@ -16,7 +16,7 @@ class SessionApi {
       '/api/session/open-folder',
       body: <String, dynamic>{'folderId': folderId},
     );
-    return SessionOpenResultDto.fromJson(
+    return _resolveSessionOpenResult(
       (payload as Map).cast<String, dynamic>(),
     );
   }
@@ -25,26 +25,39 @@ class SessionApi {
     final payload = await _client.post(
       '/api/playlist/current/items/$itemId:select',
     );
-    return SessionOpenResultDto.fromJson(
+    return _resolveSessionOpenResult(
       (payload as Map).cast<String, dynamic>(),
     );
   }
 
   Future<SessionOpenResultDto> moveNext() async {
     final payload = await _client.post('/api/session/next');
-    return SessionOpenResultDto.fromJson(
+    return _resolveSessionOpenResult(
       (payload as Map).cast<String, dynamic>(),
     );
   }
 
   Future<SessionOpenResultDto> movePrevious() async {
     final payload = await _client.post('/api/session/previous');
-    return SessionOpenResultDto.fromJson(
+    return _resolveSessionOpenResult(
       (payload as Map).cast<String, dynamic>(),
     );
   }
 
   Future<void> close() async {
     await _client.post('/api/session/close');
+  }
+
+  SessionOpenResultDto _resolveSessionOpenResult(Map<String, dynamic> json) {
+    final result = SessionOpenResultDto.fromJson(json);
+    final target = result.playbackTarget;
+
+    return SessionOpenResultDto(
+      session: result.session,
+      playbackTarget: target.copyWith(
+        mediaUrl: _client.resolveUrl(target.mediaUrl) ?? target.mediaUrl,
+        subtitleUrl: _client.resolveUrl(target.subtitleUrl),
+      ),
+    );
   }
 }

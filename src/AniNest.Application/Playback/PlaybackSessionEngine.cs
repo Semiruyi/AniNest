@@ -2,6 +2,7 @@ using AniNest.Contracts.Playlist;
 using AniNest.Contracts.Session;
 using AniNest.Contracts.Settings;
 using AniNest.Application.Playlist;
+using AniNest.Application.Resources;
 
 namespace AniNest.Application.Playback;
 
@@ -10,17 +11,20 @@ public sealed class PlaybackSessionEngine
     private const double ResumeCompletionThreshold = 0.9;
     private readonly PlaylistCatalogService _playlistCatalog;
     private readonly IPlaybackProgressStore _progressStore;
+    private readonly IResourceUrlService _resourceUrlService;
     private SessionStateDto? _currentSession;
     private PlayerSettingsDto _playerSettings;
 
     public PlaybackSessionEngine(
         PlaylistCatalogService playlistCatalog,
         PlayerSettingsDto playerSettings,
-        IPlaybackProgressStore progressStore)
+        IPlaybackProgressStore progressStore,
+        IResourceUrlService resourceUrlService)
     {
         _playlistCatalog = playlistCatalog;
         _playerSettings = playerSettings;
         _progressStore = progressStore;
+        _resourceUrlService = resourceUrlService;
     }
 
     public SessionStateDto? CurrentSession => _currentSession;
@@ -195,14 +199,25 @@ public sealed class PlaybackSessionEngine
         return BuildOpenResult(item, savedProgressMs, _currentSession);
     }
 
-    private static SessionOpenResultDto BuildOpenResult(
+    private SessionOpenResultDto BuildOpenResult(
         PlaylistItemDto item,
         long savedProgressMs,
         SessionStateDto session)
     {
+        var playbackMediaOwnerId = BuildPlaybackMediaOwnerId(
+            session.FolderId,
+            item.ItemId);
+
         return new SessionOpenResultDto(
             session,
-            new PlaybackTargetDto(item.ItemId, item.Title, item.FilePath, savedProgressMs));
+            new PlaybackTargetDto(
+                item.ItemId,
+                item.Title,
+                _resourceUrlService.GetUrl(
+                    new ResourceKey(
+                        ResourceKind.PlaybackMedia,
+                        playbackMediaOwnerId)),
+                savedProgressMs));
     }
 
     private void ReplacePlaylistItem(PlaylistDto playlist, PlaylistItemDto item)
@@ -239,4 +254,7 @@ public sealed class PlaybackSessionEngine
 
     private static int IndexOfItem(PlaylistDto playlist, string itemId)
         => Array.FindIndex(playlist.Items.ToArray(), item => string.Equals(item.ItemId, itemId, StringComparison.OrdinalIgnoreCase));
+
+    private static string BuildPlaybackMediaOwnerId(string folderId, string itemId)
+        => $"{folderId}:{itemId}";
 }

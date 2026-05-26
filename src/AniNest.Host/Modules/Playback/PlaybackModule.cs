@@ -6,6 +6,7 @@ using AniNest.Contracts.Session;
 using AniNest.Contracts.Settings;
 using AniNest.Host.Events;
 using Microsoft.Extensions.Logging;
+using AniNest.Application.Resources;
 
 namespace AniNest.Host.Modules;
 
@@ -18,6 +19,7 @@ internal sealed class PlaybackModule : IPlaylistModule, ISessionModule
     public PlaybackModule(
         IPlaylistCatalogStore playlistStore,
         IPlaybackProgressStore progressStore,
+        IResourceUrlService resourceUrlService,
         IHostEventStream events,
         ILogger<PlaybackModule> logger)
     {
@@ -28,7 +30,8 @@ internal sealed class PlaybackModule : IPlaylistModule, ISessionModule
         _engine = new PlaybackSessionEngine(
             playlistCatalog,
             new PlayerSettingsDto(1.0, 80, true),
-            progressStore);
+            progressStore,
+            resourceUrlService);
 
         if (playlistCatalog.GetAll().Count > 0)
         {
