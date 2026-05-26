@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:aninest_flutter/src/core/storage/library_page_preferences.dart';
 import 'package:aninest_flutter/src/core/window/window_state_snapshot.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -7,6 +8,7 @@ class AppPreferences {
   static const String _localeCodeKey = 'app.localeCode';
   static const String _baseUrlKey = 'app.baseUrl';
   static const String _windowStateKey = 'window.state';
+  static const String _libraryPagePreferencesKey = 'library.pagePreferences';
 
   SharedPreferences? _preferences;
 
@@ -52,6 +54,33 @@ class AppPreferences {
   Future<void> saveWindowState(WindowStateSnapshot state) async {
     final preferences = await _getPreferences();
     await preferences.setString(_windowStateKey, jsonEncode(state.toJson()));
+  }
+
+  Future<LibraryPagePreferences?> loadLibraryPagePreferences() async {
+    final preferences = await _getPreferences();
+    final serialized = preferences.getString(_libraryPagePreferencesKey);
+    if (serialized == null || serialized.isEmpty) {
+      return null;
+    }
+
+    try {
+      final decoded = jsonDecode(serialized);
+      if (decoded is! Map<String, dynamic>) {
+        return null;
+      }
+
+      return LibraryPagePreferences.fromJson(decoded);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveLibraryPagePreferences(LibraryPagePreferences value) async {
+    final preferences = await _getPreferences();
+    await preferences.setString(
+      _libraryPagePreferencesKey,
+      jsonEncode(value.toJson()),
+    );
   }
 
   Future<SharedPreferences> _getPreferences() async {
