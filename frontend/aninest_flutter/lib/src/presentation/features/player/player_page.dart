@@ -42,7 +42,7 @@ class PlayerPage extends StatelessWidget {
                   initialSize: 320,
                   minSize: 240,
                   maxSize: 440,
-                  child: const PlayerEpisodePanel(),
+                  child: PlayerEpisodePanel(controller: controller),
                 ),
               ],
             ),

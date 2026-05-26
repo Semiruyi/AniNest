@@ -42,6 +42,50 @@ public sealed class PlaybackSessionEngineTests
     }
 
     [Fact]
+    public void SelectItem_WithDuplicateItemIds_StaysInCurrentPlaylist()
+    {
+        var engine = CreateEngineWithDuplicateItemIds();
+        engine.ActivateFolder("sample-folder");
+
+        var result = engine.SelectItem("ep-02");
+
+        Assert.Equal("sample-folder", result.Session.FolderId);
+        Assert.Equal("ep-02", result.Session.CurrentItemId);
+        Assert.Equal(1, result.Session.CurrentIndex);
+        Assert.Equal(
+            "/api/resources/playback-media/sample-folder:ep-02",
+            result.PlaybackTarget.MediaUrl);
+    }
+
+    [Fact]
+    public void ReportProgress_WithDuplicateItemIds_UpdatesCurrentPlaylist()
+    {
+        var store = new InMemoryPlaybackProgressStore();
+        var engine = CreateEngineWithDuplicateItemIds(store);
+        engine.ActivateFolder("sample-folder");
+
+        engine.ReportProgress(new SessionProgressReportRequest("ep-02", 222_000, 1_440_000, 1.5, 60, false));
+
+        Assert.Equal(222_000, store.GetVideoProgress("D:/Media/Sample Anime/02.mp4")!.Position);
+        Assert.Null(store.GetVideoProgress("D:/Media/Other Anime/02.mp4"));
+        Assert.Equal("ep-02", store.GetFolderProgress("sample-folder")!.LastItemId);
+    }
+
+    [Fact]
+    public void Complete_WithDuplicateItemIds_UpdatesCurrentPlaylist()
+    {
+        var store = new InMemoryPlaybackProgressStore();
+        var engine = CreateEngineWithDuplicateItemIds(store);
+        engine.ActivateFolder("sample-folder");
+
+        engine.Complete(new SessionCompleteRequest("ep-02"));
+
+        Assert.True(store.GetVideoProgress("D:/Media/Sample Anime/02.mp4")!.IsPlayed);
+        Assert.Null(store.GetVideoProgress("D:/Media/Other Anime/02.mp4"));
+        Assert.Equal("ep-02", store.GetFolderProgress("sample-folder")!.LastItemId);
+    }
+
+    [Fact]
     public void ReportProgress_UpdatesPlaylistItemAndSessionPreferences()
     {
         var store = new InMemoryPlaybackProgressStore();
@@ -165,6 +209,45 @@ public sealed class PlaybackSessionEngineTests
 
         var playlistCatalog = new PlaylistCatalogService(
             new InMemoryPlaylistCatalogStore([playlist]));
+
+        return new PlaybackSessionEngine(
+            playlistCatalog,
+            new PlayerSettingsDto(1.0, 80, true),
+            store ?? new InMemoryPlaybackProgressStore(),
+            new FakeResourceUrlService());
+    }
+
+    private static PlaybackSessionEngine CreateEngineWithDuplicateItemIds(InMemoryPlaybackProgressStore? store = null)
+    {
+        static PlaylistDto BuildPlaylist(string folderId, string folderName, string path)
+        {
+            var items = Enumerable.Range(1, 3)
+                .Select(index => new PlaylistItemDto(
+                    $"ep-{index:00}",
+                    index - 1,
+                    $"Episode {index}",
+                    $"{path}/{index:00}.mp4",
+                    false,
+                    false,
+                    0,
+                    1_440_000,
+                    ThumbnailState.Ready))
+                .ToArray();
+
+            return new PlaylistDto(
+                folderId,
+                folderName,
+                items[0].ItemId,
+                0,
+                items);
+        }
+
+        var playlistCatalog = new PlaylistCatalogService(
+            new InMemoryPlaylistCatalogStore(
+                [
+                    BuildPlaylist("other-folder", "Other Anime", "D:/Media/Other Anime"),
+                    BuildPlaylist("sample-folder", "Sample Anime", "D:/Media/Sample Anime")
+                ]));
 
         return new PlaybackSessionEngine(
             playlistCatalog,

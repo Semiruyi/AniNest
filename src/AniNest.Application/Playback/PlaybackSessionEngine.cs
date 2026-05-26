@@ -63,7 +63,7 @@ public sealed class PlaybackSessionEngine
 
     public SessionOpenResultDto SelectItem(string itemId)
     {
-        var (playlist, item) = ResolveItem(itemId);
+        var (playlist, item) = ResolveSessionItem(itemId);
         return SetCurrent(playlist.FolderId, item.ItemId, item.SavedProgressMs);
     }
 
@@ -81,7 +81,7 @@ public sealed class PlaybackSessionEngine
 
     public void ReportProgress(SessionProgressReportRequest request)
     {
-        var (playlist, item) = ResolveItem(request.ItemId);
+        var (playlist, item) = ResolveSessionItem(request.ItemId);
         var updated = item with
         {
             HasSavedProgress = request.PositionMs > 0,
@@ -111,7 +111,7 @@ public sealed class PlaybackSessionEngine
 
     public void Complete(SessionCompleteRequest request)
     {
-        var (playlist, item) = ResolveItem(request.ItemId);
+        var (playlist, item) = ResolveSessionItem(request.ItemId);
         var updated = item with
         {
             IsPlayed = true,
@@ -169,6 +169,20 @@ public sealed class PlaybackSessionEngine
 
     private (PlaylistDto Playlist, PlaylistItemDto Item) ResolveItem(string itemId)
         => _playlistCatalog.ResolveItem(itemId);
+
+    private (PlaylistDto Playlist, PlaylistItemDto Item) ResolveSessionItem(string itemId)
+    {
+        if (_currentSession is not null)
+        {
+            var currentPlaylist = GetPlaylist(_currentSession.FolderId);
+            var currentItem = currentPlaylist.Items.FirstOrDefault(
+                item => string.Equals(item.ItemId, itemId, StringComparison.OrdinalIgnoreCase));
+            if (currentItem is not null)
+                return (currentPlaylist, currentItem);
+        }
+
+        return ResolveItem(itemId);
+    }
 
     private (PlaylistDto Playlist, PlaylistItemDto Item) GetAdjacent(int offset)
     {
