@@ -7,6 +7,7 @@ import 'package:aninest_flutter/src/presentation/feedback/app_feedback_controlle
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_models.dart';
 import 'package:aninest_flutter/src/presentation/window/app_page.dart';
 import 'package:aninest_flutter/src/presentation/window/content_area.dart';
+import 'package:aninest_flutter/src/presentation/window/player_launch_coordinator.dart';
 import 'package:aninest_flutter/src/presentation/window/sidebar.dart';
 import 'package:aninest_flutter/src/presentation/window/title_bar.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -25,6 +26,16 @@ class _AppWindowState extends State<AppWindow> {
   late final AppFeedbackController _feedbackController;
   bool _isPresentingFeedback = false;
   AppPage _currentPage = AppPage.library;
+
+  void _showPage(AppPage page) {
+    if (!mounted || _currentPage == page) {
+      return;
+    }
+
+    setState(() {
+      _currentPage = page;
+    });
+  }
 
   @override
   void initState() {
@@ -145,23 +156,17 @@ class _AppWindowState extends State<AppWindow> {
           Expanded(
             child: Row(
               children: <Widget>[
-                Sidebar(
-                  currentPage: _currentPage,
-                  onPageSelected: (page) {
-                    if (_currentPage == page) {
-                      return;
-                    }
-                    setState(() {
-                      _currentPage = page;
-                    });
-                  },
-                ),
+                Sidebar(currentPage: _currentPage, onPageSelected: _showPage),
                 Expanded(
                   child: Align(
                     alignment: Alignment.center,
                     child: ContentArea(
                       controller: widget.controller,
                       currentPage: _currentPage,
+                      onOpenFolderForPlayback: PlayerLaunchCoordinator(
+                        controller: widget.controller,
+                        showPage: _showPage,
+                      ).openFolderAndPlay,
                     ),
                   ),
                 ),

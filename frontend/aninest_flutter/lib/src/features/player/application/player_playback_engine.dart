@@ -81,6 +81,7 @@ class PlayerPlaybackEngine extends ChangeNotifier {
           target.mediaUrl,
           start: Duration(milliseconds: target.startPositionMs),
         ),
+        play: false,
       );
       if (generation != _loadGeneration) {
         return;
@@ -127,6 +128,22 @@ class PlayerPlaybackEngine extends ChangeNotifier {
     }
 
     await _player.playOrPause();
+  }
+
+  Future<void> play() async {
+    if (!_runtimeState.hasMedia) {
+      return;
+    }
+
+    await _player.play();
+  }
+
+  Future<void> pause() async {
+    if (!_runtimeState.hasMedia) {
+      return;
+    }
+
+    await _player.pause();
   }
 
   Future<void> seek(Duration position) async {

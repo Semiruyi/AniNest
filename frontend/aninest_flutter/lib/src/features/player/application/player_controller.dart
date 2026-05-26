@@ -91,6 +91,11 @@ class PlayerController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> selectItemAndPlay(String itemId) async {
+    await selectItem(itemId);
+    await play();
+  }
+
   Future<void> moveNext() async {
     final result = await _sessionApi.moveNext();
     _session = result.session;
@@ -98,6 +103,11 @@ class PlayerController extends ChangeNotifier {
     await _refreshPlaylist();
     await _syncPlayback();
     notifyListeners();
+  }
+
+  Future<void> moveNextAndPlay() async {
+    await moveNext();
+    await play();
   }
 
   Future<void> movePrevious() async {
@@ -109,8 +119,25 @@ class PlayerController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> movePreviousAndPlay() async {
+    await movePrevious();
+    await play();
+  }
+
   Future<void> togglePlayPause() async {
     await _playbackEngine.togglePlayPause();
+  }
+
+  Future<void> play() async {
+    if (!canTogglePlayback) {
+      return;
+    }
+
+    await _playbackEngine.play();
+  }
+
+  Future<void> pause() async {
+    await _playbackEngine.pause();
   }
 
   Future<void> seekTo(Duration position) async {

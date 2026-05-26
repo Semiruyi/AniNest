@@ -40,7 +40,7 @@ class _PlayerEpisodePanelState extends State<PlayerEpisodePanel> {
           scrollController: _scrollController,
           onItemPressed: (String itemId) {
             if (itemId != selectedItemId) {
-              unawaited(widget.controller.selectItem(itemId));
+              unawaited(widget.controller.selectItemAndPlay(itemId));
             }
           },
         );

@@ -5,10 +5,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'player_transport_button.dart';
 
 class PlayerControlBarButtonRow extends StatelessWidget {
-  const PlayerControlBarButtonRow({
-    super.key,
-    required this.controller,
-  });
+  const PlayerControlBarButtonRow({super.key, required this.controller});
 
   final PlayerController controller;
 
@@ -26,13 +23,11 @@ class PlayerControlBarButtonRow extends StatelessWidget {
         final volumeIcon = runtime.isMuted
             ? BootstrapIcons.volumeMuteFill
             : runtime.volume < 50
-                ? BootstrapIcons.volumeDownFill
-                : BootstrapIcons.volumeUpFill;
+            ? BootstrapIcons.volumeDownFill
+            : BootstrapIcons.volumeUpFill;
 
         return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(6),
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(6)),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           child: Row(
             children: <Widget>[
@@ -43,7 +38,7 @@ class PlayerControlBarButtonRow extends StatelessWidget {
                 buttonSize: 30,
                 enabled: controller.canMovePrevious,
                 onTap: controller.canMovePrevious
-                    ? () => controller.movePrevious()
+                    ? () => controller.movePreviousAndPlay()
                     : null,
               ),
               const SizedBox(width: 2),
@@ -63,7 +58,7 @@ class PlayerControlBarButtonRow extends StatelessWidget {
                 buttonSize: 30,
                 enabled: controller.canMoveNext,
                 onTap: controller.canMoveNext
-                    ? () => controller.moveNext()
+                    ? () => controller.moveNextAndPlay()
                     : null,
               ),
               const Spacer(),
@@ -156,10 +151,10 @@ class _PlayerUtilityButtonState extends State<_PlayerUtilityButton> {
     final backgroundColor = !isInteractive
         ? Colors.transparent
         : _pressed
-            ? colorScheme.foreground.withValues(alpha: 0.18)
-            : _hovered
-                ? colorScheme.foreground.withValues(alpha: 0.12)
-                : Colors.transparent;
+        ? colorScheme.foreground.withValues(alpha: 0.18)
+        : _hovered
+        ? colorScheme.foreground.withValues(alpha: 0.12)
+        : Colors.transparent;
     final foregroundColor = isInteractive
         ? colorScheme.foreground
         : colorScheme.mutedForeground;
@@ -201,10 +196,7 @@ class _PlayerUtilityButtonState extends State<_PlayerUtilityButton> {
             child: Center(
               child: Text(
                 widget.label,
-                style: TextStyle(
-                  color: foregroundColor,
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: foregroundColor, fontSize: 12),
               ).medium(),
             ),
           ),

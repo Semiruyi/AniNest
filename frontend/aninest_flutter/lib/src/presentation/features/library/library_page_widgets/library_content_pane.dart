@@ -6,13 +6,17 @@ import 'package:aninest_flutter/src/presentation/features/library/library_page_w
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class LibraryContentPane extends StatelessWidget {
-  const LibraryContentPane({super.key, required this.controller});
+  const LibraryContentPane({
+    super.key,
+    required this.controller,
+    required this.onOpenFolderForPlayback,
+  });
 
   final AppController controller;
+  final Future<String?> Function(String folderId) onOpenFolderForPlayback;
 
   Future<void> _handleOpen(BuildContext context, String folderId) async {
-    controller.selectFolder(folderId);
-    final error = await controller.openLibraryFolder(folderId);
+    final error = await onOpenFolderForPlayback(folderId);
     if (context.mounted && error != null) {
       await _showOperationError(context, message: error);
     }

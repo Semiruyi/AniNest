@@ -11,9 +11,14 @@ import 'package:aninest_flutter/src/presentation/features/library/library_page_w
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class LibraryPage extends StatefulWidget {
-  const LibraryPage({super.key, required this.controller});
+  const LibraryPage({
+    super.key,
+    required this.controller,
+    required this.onOpenFolderForPlayback,
+  });
 
   final AppController controller;
+  final Future<String?> Function(String folderId) onOpenFolderForPlayback;
 
   @override
   State<LibraryPage> createState() => _LibraryPageState();
@@ -110,7 +115,10 @@ class _LibraryPageState extends State<LibraryPage> {
                 ),
                 ResizablePane.flex(
                   minSize: kLibraryContentPaneMinSize,
-                  child: LibraryContentPane(controller: widget.controller),
+                  child: LibraryContentPane(
+                    controller: widget.controller,
+                    onOpenFolderForPlayback: widget.onOpenFolderForPlayback,
+                  ),
                 ),
                 ResizablePane.controlled(
                   controller: _rightPaneController,

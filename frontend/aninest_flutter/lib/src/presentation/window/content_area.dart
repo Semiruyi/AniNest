@@ -10,20 +10,28 @@ class ContentArea extends StatelessWidget {
     super.key,
     required this.controller,
     required this.currentPage,
+    required this.onOpenFolderForPlayback,
     this.inspectorWidth = 320,
     this.bottomPaneHeight = 220,
   });
 
   final AppController controller;
   final AppPage currentPage;
+  final Future<String?> Function(String folderId) onOpenFolderForPlayback;
   final double inspectorWidth;
   final double bottomPaneHeight;
 
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
-      LibraryPage(controller: controller),
-      PlayerPage(controller: controller.player),
+      LibraryPage(
+        controller: controller,
+        onOpenFolderForPlayback: onOpenFolderForPlayback,
+      ),
+      PlayerPage(
+        controller: controller.player,
+        isActive: currentPage == AppPage.player,
+      ),
     ];
 
     return SizedBox.expand(
