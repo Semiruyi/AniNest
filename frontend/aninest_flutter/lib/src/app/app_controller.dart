@@ -105,6 +105,10 @@ class AppController extends ChangeNotifier {
     return result;
   }
 
+  Future<LibraryBrowserResponse> browseLibraryDirectory(String? path) {
+    return _libraryApi.browse(path);
+  }
+
   Future<String?> testBaseUrl(String nextBaseUrl) async {
     final validationError = _validateBaseUrl(nextBaseUrl);
     if (validationError != null) {

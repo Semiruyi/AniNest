@@ -22,6 +22,14 @@ class LibraryApi {
     return AddLibraryFolderResultDto.fromJson(payload);
   }
 
+  Future<LibraryBrowserResponse> browse(String? path) async {
+    final query = path == null || path.isEmpty
+        ? ''
+        : '?path=${Uri.encodeQueryComponent(path)}';
+    final payload = await _client.getObject('/api/library/browser$query');
+    return LibraryBrowserResponse.fromJson(payload);
+  }
+
   Future<void> addFolderBatch(String rootPath) async {
     await _client.post(
       '/api/library/folders:batch-add',

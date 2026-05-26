@@ -131,3 +131,46 @@ class AddLibraryFolderResultDto {
     );
   }
 }
+
+class LibraryBrowserDirectoryDto {
+  const LibraryBrowserDirectoryDto({required this.name, required this.path});
+
+  final String name;
+  final String path;
+
+  factory LibraryBrowserDirectoryDto.fromJson(Map<String, dynamic> json) {
+    return LibraryBrowserDirectoryDto(
+      name: json['name'] as String? ?? '',
+      path: json['path'] as String? ?? '',
+    );
+  }
+}
+
+class LibraryBrowserResponse {
+  const LibraryBrowserResponse({
+    required this.rootPath,
+    required this.currentPath,
+    required this.parentPath,
+    required this.canSelect,
+    required this.directories,
+  });
+
+  final String rootPath;
+  final String currentPath;
+  final String? parentPath;
+  final bool canSelect;
+  final List<LibraryBrowserDirectoryDto> directories;
+
+  factory LibraryBrowserResponse.fromJson(Map<String, dynamic> json) {
+    return LibraryBrowserResponse(
+      rootPath: json['rootPath'] as String? ?? '',
+      currentPath: json['currentPath'] as String? ?? '',
+      parentPath: json['parentPath'] as String?,
+      canSelect: json['canSelect'] as bool? ?? false,
+      directories: (json['directories'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(LibraryBrowserDirectoryDto.fromJson)
+          .toList(growable: false),
+    );
+  }
+}

@@ -1,14 +1,13 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/app/app_locale.dart';
 import 'package:aninest_flutter/src/core/logging/app_logger.dart';
-import 'package:aninest_flutter/src/core/platform/directory_picker.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_controller.dart';
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_models.dart';
 import 'package:aninest_flutter/src/presentation/window/title_bar/backend_connection_dialog.dart';
+import 'package:aninest_flutter/src/presentation/window/title_bar/server_folder_browser_dialog.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class AniMenubar extends StatelessWidget {
@@ -16,18 +15,19 @@ class AniMenubar extends StatelessWidget {
     super.key,
     required this.controller,
     required this.feedbackController,
-    this.directoryPicker = const DirectoryPicker(),
   });
 
   final AppController controller;
   final AppFeedbackController feedbackController;
-  final DirectoryPicker directoryPicker;
 
   Future<void> _handleAddFolder(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
 
     try {
-      final path = await directoryPicker.pickDirectory();
+      final path = await showDialog<String>(
+        context: context,
+        builder: (context) => ServerFolderBrowserDialog(controller: controller),
+      );
       if (path == null || path.isEmpty) {
         return;
       }
@@ -79,7 +79,8 @@ class AniMenubar extends StatelessWidget {
       return fallbackName;
     }
 
-    final name = path.split(Platform.pathSeparator).last;
+    final normalizedPath = path.replaceAll('\\', '/');
+    final name = normalizedPath.split('/').last;
     return name.isEmpty ? path : name;
   }
 
