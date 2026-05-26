@@ -11,6 +11,7 @@ namespace AniNest.Host.Modules;
 
 internal sealed class LibraryModule : ILibraryModule
 {
+    private readonly ServerDirectoryBrowser _directoryBrowser = new();
     private readonly LibraryCatalogService _catalog;
     private readonly ILibraryFileScanner _scanner;
     private readonly IMetadataRuntimeBootstrapService _metadataBootstrap;
@@ -90,6 +91,9 @@ internal sealed class LibraryModule : ILibraryModule
             });
         }
     }
+
+    public Task<LibraryBrowserResponse> BrowseAsync(string? path, CancellationToken cancellationToken = default)
+        => _directoryBrowser.BrowseAsync(path, cancellationToken);
 
     public Task DeleteFolderAsync(string folderId, CancellationToken cancellationToken = default)
     {

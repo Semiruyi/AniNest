@@ -27,6 +27,12 @@ internal static class LibraryEndpoints
             return Results.Accepted();
         });
 
+        group.MapGet("/browser", async (string? path, ILibraryModule module, CancellationToken cancellationToken) =>
+        {
+            var result = await module.BrowseAsync(path, cancellationToken);
+            return Results.Ok(result);
+        });
+
         group.MapDelete("/folders/{folderId}", async (string folderId, ILibraryModule module, CancellationToken cancellationToken) =>
         {
             await module.DeleteFolderAsync(folderId, cancellationToken);
