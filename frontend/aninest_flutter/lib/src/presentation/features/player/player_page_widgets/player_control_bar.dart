@@ -16,6 +16,7 @@ class PlayerControlBar extends StatelessWidget {
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          Gap(4),
           SizedBox(height: 18, child: PlayerControlBarProgressSection()),
           SizedBox(height: 4),
           Expanded(child: PlayerControlBarButtonRow()),
