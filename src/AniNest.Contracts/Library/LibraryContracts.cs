@@ -34,6 +34,17 @@ public sealed record AddLibraryFolderResult(
 public sealed record BatchAddLibraryFoldersRequest(
     string RootPath);
 
+public sealed record LibraryBrowserDirectoryDto(
+    string Name,
+    string Path);
+
+public sealed record LibraryBrowserResponse(
+    string RootPath,
+    string CurrentPath,
+    string? ParentPath,
+    bool CanSelect,
+    IReadOnlyList<LibraryBrowserDirectoryDto> Directories);
+
 public sealed record SetFavoriteRequest(
     bool IsFavorite);
 
