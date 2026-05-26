@@ -12,7 +12,7 @@ import 'package:aninest_flutter/src/models/enums.dart';
 import 'package:aninest_flutter/src/models/library_models.dart';
 import 'package:aninest_flutter/src/models/settings_models.dart';
 import 'package:aninest_flutter/src/services/library_api.dart';
-import 'package:aninest_flutter/src/core/storage/local_preferences.dart';
+import 'package:aninest_flutter/src/core/storage/app_preferences.dart';
 import 'package:aninest_flutter/src/services/metadata_api.dart';
 import 'package:aninest_flutter/src/services/playlist_api.dart';
 import 'package:aninest_flutter/src/services/session_api.dart';
@@ -23,16 +23,16 @@ import 'package:aninest_flutter/src/models/host_event_models.dart';
 import 'package:flutter/foundation.dart';
 
 class AppController extends ChangeNotifier {
-  AppController({String? launchBaseUrl, LocalPreferences? localPreferences})
+  AppController({String? launchBaseUrl, AppPreferences? appPreferences})
     : _launchBaseUrl = launchBaseUrl?.trim(),
-      _localPreferences = localPreferences ?? LocalPreferences(),
+      _appPreferences = appPreferences ?? AppPreferences(),
       _client = AniNestHttpClient(
         baseUrl: _resolveInitialBaseUrl(launchBaseUrl),
       ) {
     _wireServices();
     library = LibraryController(_libraryApi);
     player = PlayerController(_sessionApi, _playlistApi);
-    settings = SettingsController(_settingsApi, _localPreferences);
+    settings = SettingsController(_settingsApi, _appPreferences);
     metadata = MetadataController(_metadataApi, _thumbnailApi);
     _hostEventService = HostEventService(_client);
     library.addListener(_handleLibrarySelectionChanged);
@@ -41,7 +41,7 @@ class AppController extends ChangeNotifier {
   static const String defaultBaseUrl = 'http://localhost:5275';
 
   final String? _launchBaseUrl;
-  final LocalPreferences _localPreferences;
+  final AppPreferences _appPreferences;
   final AniNestHttpClient _client;
 
   late LibraryApi _libraryApi;
@@ -67,6 +67,7 @@ class AppController extends ChangeNotifier {
   String? lastError;
 
   String get baseUrl => _client.baseUrl;
+  AppPreferences get appPreferences => _appPreferences;
   AppLocaleOption get locale => settings.locale;
 
   List<LibraryFolderDto> get folders => library.folders;
@@ -137,7 +138,7 @@ class AppController extends ChangeNotifier {
 
     final normalizedBaseUrl = AniNestHttpClient.normalizeBaseUrl(nextBaseUrl);
     if (normalizedBaseUrl == baseUrl) {
-      await _localPreferences.saveBaseUrl(normalizedBaseUrl);
+      await _appPreferences.saveBaseUrl(normalizedBaseUrl);
       return null;
     }
 
@@ -146,7 +147,7 @@ class AppController extends ChangeNotifier {
     await _reloadFromBackend(restartHostEvents: true);
 
     if (lastError == null) {
-      await _localPreferences.saveBaseUrl(normalizedBaseUrl);
+      await _appPreferences.saveBaseUrl(normalizedBaseUrl);
       return null;
     }
 
@@ -518,7 +519,7 @@ class AppController extends ChangeNotifier {
       return _normalizeStartupBaseUrl(launchBaseUrl, source: 'launch override');
     }
 
-    final storedBaseUrl = await _localPreferences.loadBaseUrl();
+    final storedBaseUrl = await _appPreferences.loadBaseUrl();
     if (storedBaseUrl == null || storedBaseUrl.trim().isEmpty) {
       return null;
     }

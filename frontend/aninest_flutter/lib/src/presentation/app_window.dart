@@ -29,7 +29,10 @@ class _AppWindowState extends State<AppWindow> {
   @override
   void initState() {
     super.initState();
-    _windowFrameController = WindowFrameController(const WindowService());
+    _windowFrameController = WindowFrameController(
+      const WindowService(),
+      widget.controller.appPreferences,
+    );
     _feedbackController = AppFeedbackController();
     _feedbackController.addListener(_handleFeedbackChanged);
     if (AppPlatform.isDesktop) {

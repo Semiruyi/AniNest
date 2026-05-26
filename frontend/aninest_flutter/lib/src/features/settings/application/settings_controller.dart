@@ -1,14 +1,14 @@
 import 'package:aninest_flutter/src/app/app_locale.dart';
-import 'package:aninest_flutter/src/core/storage/local_preferences.dart';
+import 'package:aninest_flutter/src/core/storage/app_preferences.dart';
 import 'package:aninest_flutter/src/models/settings_models.dart';
 import 'package:aninest_flutter/src/services/settings_api.dart';
 import 'package:flutter/foundation.dart';
 
 class SettingsController extends ChangeNotifier {
-  SettingsController(this._settingsApi, this._localPreferences);
+  SettingsController(this._settingsApi, this._appPreferences);
 
   SettingsApi _settingsApi;
-  final LocalPreferences _localPreferences;
+  final AppPreferences _appPreferences;
 
   AppSettingsDto? _appSettings;
   AppLocaleOption _locale = AppLocaleOption.fallback;
@@ -21,9 +21,7 @@ class SettingsController extends ChangeNotifier {
   }
 
   Future<void> load() async {
-    _locale = AppLocaleOption.fromCode(
-      await _localPreferences.loadLocaleCode(),
-    );
+    _locale = AppLocaleOption.fromCode(await _appPreferences.loadLocaleCode());
     _appSettings = await _settingsApi.getAll();
     notifyListeners();
   }
@@ -34,7 +32,7 @@ class SettingsController extends ChangeNotifier {
     }
 
     _locale = locale;
-    await _localPreferences.saveLocaleCode(locale.code);
+    await _appPreferences.saveLocaleCode(locale.code);
     notifyListeners();
   }
 
