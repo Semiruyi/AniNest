@@ -1,3 +1,4 @@
+import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'player_transport_button.dart';
@@ -7,61 +8,62 @@ class PlayerControlBarButtonRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF881337),
         borderRadius: BorderRadius.circular(6),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      child: Row(
-        children: <Widget>[
-          const PlayerTransportButton(
-            tooltip: 'Previous episode',
+        child: Row(
+          children: <Widget>[
+          PlayerTransportButton(
+            tooltip: l10n.playerTooltipPreviousEpisode,
             icon: BootstrapIcons.skipStartFill,
             iconSize: 25,
             buttonSize: 30,
           ),
           const SizedBox(width: 2),
-          const PlayerTransportButton(
-            tooltip: 'Play',
+          PlayerTransportButton(
+            tooltip: l10n.playerTooltipPlay,
             icon: BootstrapIcons.playFill,
           ),
           const SizedBox(width: 2),
-          const PlayerTransportButton(
-            tooltip: 'Next episode',
+          PlayerTransportButton(
+            tooltip: l10n.playerTooltipNextEpisode,
             icon: BootstrapIcons.skipEndFill,
             iconSize: 25,
             buttonSize: 30,
           ),
           const Spacer(),
-          const _PlayerUtilityButton(
-            tooltip: 'Playback speed',
+          _PlayerUtilityButton(
+            tooltip: l10n.playerTooltipPlaybackSpeed,
             label: '1.0x',
           ),
           const SizedBox(width: 2),
-          const PlayerTransportButton(
-            tooltip: 'Subtitles',
+          PlayerTransportButton(
+            tooltip: l10n.playerTooltipSubtitles,
             icon: BootstrapIcons.badgeCcFill,
             iconSize: 21,
             buttonSize: 30,
           ),
           const SizedBox(width: 2),
-          const PlayerTransportButton(
-            tooltip: 'Volume',
+          PlayerTransportButton(
+            tooltip: l10n.playerTooltipVolume,
             icon: BootstrapIcons.volumeUpFill,
             iconSize: 21,
             buttonSize: 30,
           ),
           const SizedBox(width: 2),
-          const PlayerTransportButton(
-            tooltip: 'Settings',
+          PlayerTransportButton(
+            tooltip: l10n.playerTooltipSettings,
             icon: BootstrapIcons.gearFill,
             iconSize: 19,
             buttonSize: 30,
           ),
           const SizedBox(width: 2),
-          const PlayerTransportButton(
-            tooltip: 'Fullscreen',
+          PlayerTransportButton(
+            tooltip: l10n.playerTooltipFullscreen,
             icon: LucideIcons.fullscreen,
             iconSize: 23,
             buttonSize: 30,
