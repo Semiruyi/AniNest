@@ -4,6 +4,7 @@
   "menuFile": "File",
   "menuSettings": "Settings",
   "menuLanguage": "Language",
+  "menuBackendConnection": "Backend Connection",
   "menuAddFolder": "Add Folder",
   "menuScanFolder": "Scan Folder",
   "languageEnglish": "English",
@@ -22,6 +23,23 @@
   "commonCancel": "Cancel",
   "commonDelete": "Delete",
   "commonOperationFailed": "Operation Failed",
+  "backendConnectionDialogTitle": "Backend Connection",
+  "backendConnectionDialogMessage": "Set the AniNest backend address.",
+  "backendConnectionDialogHint": "Use a full http:// or https:// address.",
+  "backendConnectionUrlPlaceholder": "http://192.168.31.10:5275",
+  "backendConnectionUseDefault": "Use Default",
+  "backendConnectionTest": "Test",
+  "backendConnectionTesting": "Testing...",
+  "backendConnectionTestSuccess": "Connection successful.",
+  "backendConnectionSave": "Save & Switch",
+  "backendConnectionSaving": "Saving...",
+  "backendConnectionUpdatedTitle": "Backend Updated",
+  "backendConnectionUpdatedMessage": "Now connected to {url}.",
+  "@backendConnectionUpdatedMessage": {
+    "placeholders": {
+      "url": {}
+    }
+  },
   "playerTooltipPreviousEpisode": "Previous episode",
   "playerTooltipPlay": "Play",
   "playerTooltipNextEpisode": "Next episode",

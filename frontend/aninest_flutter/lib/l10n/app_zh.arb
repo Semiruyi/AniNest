@@ -4,6 +4,7 @@
   "menuFile": "\u6587\u4ef6",
   "menuSettings": "\u8bbe\u7f6e",
   "menuLanguage": "\u8bed\u8a00",
+  "menuBackendConnection": "\u540e\u7aef\u8fde\u63a5",
   "menuAddFolder": "\u6dfb\u52a0\u6587\u4ef6\u5939",
   "menuScanFolder": "\u626b\u63cf\u6587\u4ef6\u5939",
   "languageEnglish": "English",
@@ -22,6 +23,23 @@
   "commonCancel": "\u53d6\u6d88",
   "commonDelete": "\u5220\u9664",
   "commonOperationFailed": "\u64cd\u4f5c\u5931\u8d25",
+  "backendConnectionDialogTitle": "\u540e\u7aef\u8fde\u63a5",
+  "backendConnectionDialogMessage": "\u8bbe\u7f6e AniNest \u540e\u7aef\u5730\u5740\u3002",
+  "backendConnectionDialogHint": "\u8bf7\u4f7f\u7528\u5b8c\u6574\u7684 http:// \u6216 https:// \u5730\u5740\u3002",
+  "backendConnectionUrlPlaceholder": "http://192.168.31.10:5275",
+  "backendConnectionUseDefault": "\u4f7f\u7528\u9ed8\u8ba4",
+  "backendConnectionTest": "\u6d4b\u8bd5\u8fde\u63a5",
+  "backendConnectionTesting": "\u6d4b\u8bd5\u4e2d...",
+  "backendConnectionTestSuccess": "\u8fde\u63a5\u6210\u529f\u3002",
+  "backendConnectionSave": "\u4fdd\u5b58\u5e76\u5207\u6362",
+  "backendConnectionSaving": "\u5207\u6362\u4e2d...",
+  "backendConnectionUpdatedTitle": "\u540e\u7aef\u5df2\u66f4\u65b0",
+  "backendConnectionUpdatedMessage": "\u5df2\u8fde\u63a5\u5230 {url}\u3002",
+  "@backendConnectionUpdatedMessage": {
+    "placeholders": {
+      "url": {}
+    }
+  },
   "playerTooltipPreviousEpisode": "\u4e0a\u4e00\u96c6",
   "playerTooltipPlay": "\u64ad\u653e",
   "playerTooltipNextEpisode": "\u4e0b\u4e00\u96c6",

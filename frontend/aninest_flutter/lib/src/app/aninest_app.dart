@@ -14,12 +14,18 @@ class AniNestApp extends s.StatefulWidget {
 }
 
 class _AniNestAppState extends s.State<AniNestApp> {
+  static const String _launchBaseUrl = String.fromEnvironment(
+    'ANINEST_BASE_URL',
+  );
+
   late final AppController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = AppController();
+    _controller = AppController(
+      launchBaseUrl: _launchBaseUrl.isEmpty ? null : _launchBaseUrl,
+    );
     _controller.bootstrap();
   }
 

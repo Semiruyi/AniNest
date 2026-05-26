@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 
 class AniNestHttpClient {
   AniNestHttpClient({required String baseUrl, http.Client? httpClient})
-    : _baseUrl = _normalizeBaseUrl(baseUrl),
+    : _baseUrl = normalizeBaseUrl(baseUrl),
       _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
@@ -14,7 +14,7 @@ class AniNestHttpClient {
   String get baseUrl => _baseUrl;
 
   void updateBaseUrl(String nextBaseUrl) {
-    _baseUrl = _normalizeBaseUrl(nextBaseUrl);
+    _baseUrl = normalizeBaseUrl(nextBaseUrl);
   }
 
   String? resolveUrl(String? path) {
@@ -24,6 +24,8 @@ class AniNestHttpClient {
 
     return _resolve(path).toString();
   }
+
+  Future<dynamic> get(String path) => _send('GET', path);
 
   Future<Map<String, dynamic>> getObject(String path) async {
     final payload = await _send('GET', path);
@@ -112,7 +114,21 @@ class AniNestHttpClient {
     return Uri.parse('$_baseUrl/$normalizedPath');
   }
 
-  static String _normalizeBaseUrl(String value) {
+  static bool isValidBaseUrl(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return false;
+    }
+
+    final uri = Uri.tryParse(trimmed);
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+      return false;
+    }
+
+    return uri.scheme == 'http' || uri.scheme == 'https';
+  }
+
+  static String normalizeBaseUrl(String value) {
     final trimmed = value.trim();
     return trimmed.endsWith('/')
         ? trimmed.substring(0, trimmed.length - 1)

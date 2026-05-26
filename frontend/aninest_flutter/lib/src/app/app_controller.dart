@@ -23,17 +23,25 @@ import 'package:aninest_flutter/src/models/host_event_models.dart';
 import 'package:flutter/foundation.dart';
 
 class AppController extends ChangeNotifier {
-  AppController({String baseUrl = 'http://localhost:5275'})
-    : _client = AniNestHttpClient(baseUrl: baseUrl) {
+  AppController({String? launchBaseUrl, LocalPreferences? localPreferences})
+    : _launchBaseUrl = launchBaseUrl?.trim(),
+      _localPreferences = localPreferences ?? LocalPreferences(),
+      _client = AniNestHttpClient(
+        baseUrl: _resolveInitialBaseUrl(launchBaseUrl),
+      ) {
     _wireServices();
     library = LibraryController(_libraryApi);
     player = PlayerController(_sessionApi, _playlistApi);
-    settings = SettingsController(_settingsApi, LocalPreferences());
+    settings = SettingsController(_settingsApi, _localPreferences);
     metadata = MetadataController(_metadataApi, _thumbnailApi);
     _hostEventService = HostEventService(_client);
     library.addListener(_handleLibrarySelectionChanged);
   }
 
+  static const String defaultBaseUrl = 'http://localhost:5275';
+
+  final String? _launchBaseUrl;
+  final LocalPreferences _localPreferences;
   final AniNestHttpClient _client;
 
   late LibraryApi _libraryApi;
@@ -53,6 +61,7 @@ class AppController extends ChangeNotifier {
   String? _lastMetadataFolderId;
   int _selectionRefreshSuspensionCount = 0;
   int? _lastProcessedHostEventSequence;
+  bool _didHydrateBaseUrl = false;
 
   bool isLoading = false;
   String? lastError;
@@ -72,13 +81,8 @@ class AppController extends ChangeNotifier {
   AppSettingsDto? get appSettings => settings.appSettings;
 
   Future<void> bootstrap() async {
-    _startHostEvents();
-    await _run(() async {
-      await settings.load();
-      await _runWithSuspendedLibrarySelectionRefresh(library.refresh);
-      await player.restore();
-      await _refreshMetadataForSelectionAsync(force: true);
-    });
+    await _hydrateBaseUrl();
+    await _reloadFromBackend();
   }
 
   Future<AddLibraryFolderResultDto?> addFolder(String path) async {
@@ -101,15 +105,56 @@ class AppController extends ChangeNotifier {
     return result;
   }
 
-  Future<void> updateBaseUrl(String nextBaseUrl) async {
-    _client.updateBaseUrl(nextBaseUrl);
-    _wireServices();
-    library.rebind(_libraryApi);
-    player.rebind(_sessionApi, _playlistApi);
-    settings.rebind(_settingsApi);
-    metadata.rebind(_metadataApi, _thumbnailApi);
-    await _restartHostEvents();
-    await bootstrap();
+  Future<String?> testBaseUrl(String nextBaseUrl) async {
+    final validationError = _validateBaseUrl(nextBaseUrl);
+    if (validationError != null) {
+      return validationError;
+    }
+
+    final normalizedBaseUrl = AniNestHttpClient.normalizeBaseUrl(nextBaseUrl);
+    final probeClient = AniNestHttpClient(baseUrl: normalizedBaseUrl);
+    try {
+      await probeClient.getObject('/api/settings');
+      return null;
+    } on ApiException catch (error) {
+      return '${error.code}: ${error.message}';
+    } catch (error) {
+      return _buildConnectionFailureMessage(normalizedBaseUrl, error);
+    } finally {
+      probeClient.close();
+    }
+  }
+
+  Future<String?> updateBaseUrl(String nextBaseUrl) async {
+    final validationError = _validateBaseUrl(nextBaseUrl);
+    if (validationError != null) {
+      return validationError;
+    }
+
+    final normalizedBaseUrl = AniNestHttpClient.normalizeBaseUrl(nextBaseUrl);
+    if (normalizedBaseUrl == baseUrl) {
+      await _localPreferences.saveBaseUrl(normalizedBaseUrl);
+      return null;
+    }
+
+    final previousBaseUrl = baseUrl;
+    _client.updateBaseUrl(normalizedBaseUrl);
+    await _reloadFromBackend(restartHostEvents: true);
+
+    if (lastError == null) {
+      await _localPreferences.saveBaseUrl(normalizedBaseUrl);
+      return null;
+    }
+
+    final failureMessage = lastError!;
+    AppLogger.warning(
+      'AppController.UpdateBaseUrl',
+      'Failed to switch backend to $normalizedBaseUrl. Restoring $previousBaseUrl.',
+    );
+
+    _client.updateBaseUrl(previousBaseUrl);
+    await _reloadFromBackend(restartHostEvents: true);
+    return failureMessage;
   }
 
   Future<void> refreshLibrary() async {
@@ -447,6 +492,89 @@ class AppController extends ChangeNotifier {
       reasonCode: 'unexpected_error',
       folder: null,
     );
+  }
+
+  Future<void> _hydrateBaseUrl() async {
+    if (_didHydrateBaseUrl) {
+      return;
+    }
+
+    _didHydrateBaseUrl = true;
+    final resolvedBaseUrl = await _resolveStartupBaseUrl();
+    if (resolvedBaseUrl == null || resolvedBaseUrl == baseUrl) {
+      return;
+    }
+
+    _client.updateBaseUrl(resolvedBaseUrl);
+  }
+
+  Future<String?> _resolveStartupBaseUrl() async {
+    final launchBaseUrl = _launchBaseUrl;
+    if (launchBaseUrl != null && launchBaseUrl.isNotEmpty) {
+      return _normalizeStartupBaseUrl(launchBaseUrl, source: 'launch override');
+    }
+
+    final storedBaseUrl = await _localPreferences.loadBaseUrl();
+    if (storedBaseUrl == null || storedBaseUrl.trim().isEmpty) {
+      return null;
+    }
+
+    return _normalizeStartupBaseUrl(storedBaseUrl, source: 'saved preference');
+  }
+
+  String? _normalizeStartupBaseUrl(String candidate, {required String source}) {
+    if (!AniNestHttpClient.isValidBaseUrl(candidate)) {
+      AppLogger.warning(
+        'AppController.StartupBaseUrl',
+        'Ignoring invalid $source: $candidate',
+      );
+      return null;
+    }
+
+    return AniNestHttpClient.normalizeBaseUrl(candidate);
+  }
+
+  Future<void> _reloadFromBackend({bool restartHostEvents = false}) async {
+    if (restartHostEvents) {
+      await _restartHostEvents();
+    }
+    _startHostEvents();
+
+    await _run(() async {
+      await settings.load();
+      await _runWithSuspendedLibrarySelectionRefresh(library.refresh);
+      await player.restore();
+      await _refreshMetadataForSelectionAsync(force: true);
+    });
+  }
+
+  String? _validateBaseUrl(String candidate) {
+    if (!AniNestHttpClient.isValidBaseUrl(candidate)) {
+      return 'Please enter a full http:// or https:// backend address.';
+    }
+
+    return null;
+  }
+
+  String _buildConnectionFailureMessage(String targetBaseUrl, Object error) {
+    final normalized = error.toString().toLowerCase();
+    if (normalized.contains('socketexception') ||
+        normalized.contains('clientexception')) {
+      return 'Unable to connect to the backend at $targetBaseUrl.';
+    }
+
+    return 'Unable to connect to the backend at $targetBaseUrl. $error';
+  }
+
+  static String _resolveInitialBaseUrl(String? launchBaseUrl) {
+    final trimmed = launchBaseUrl?.trim();
+    if (trimmed != null &&
+        trimmed.isNotEmpty &&
+        AniNestHttpClient.isValidBaseUrl(trimmed)) {
+      return trimmed;
+    }
+
+    return defaultBaseUrl;
   }
 
   Map<String, dynamic>? _coercePayloadMap(Object? payload) {

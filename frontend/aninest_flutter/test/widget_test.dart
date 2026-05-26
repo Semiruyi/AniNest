@@ -1,10 +1,13 @@
 import 'package:aninest_flutter/src/api/aninest_http_client.dart';
+import 'package:aninest_flutter/src/services/session_api.dart';
+import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:aninest_flutter/src/models/enums.dart';
 import 'package:aninest_flutter/src/models/library_models.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/content_widgets/library_folder_card.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/details/library_inspector_title_block.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 void main() {
@@ -16,6 +19,36 @@ void main() {
     client.updateBaseUrl('http://127.0.0.1:5275/');
 
     expect(client.baseUrl, 'http://127.0.0.1:5275');
+  });
+
+  test('AniNestHttpClient validates backend base urls', () {
+    expect(
+      AniNestHttpClient.isValidBaseUrl('http://192.168.31.10:5275'),
+      isTrue,
+    );
+    expect(
+      AniNestHttpClient.isValidBaseUrl('https://aninest.local/api'),
+      isTrue,
+    );
+    expect(AniNestHttpClient.isValidBaseUrl('192.168.31.10:5275'), isFalse);
+    expect(AniNestHttpClient.isValidBaseUrl('ftp://aninest.local'), isFalse);
+  });
+
+  test('SessionApi returns null when backend has no active session', () async {
+    final client = AniNestHttpClient(
+      baseUrl: 'http://localhost:5275',
+      httpClient: _FakeHttpClient((request) async {
+        return http.Response(
+          'null',
+          200,
+          headers: <String, String>{'content-type': 'application/json'},
+        );
+      }),
+    );
+
+    final api = SessionApi(client);
+
+    expect(await api.getCurrent(), isNull);
   });
 
   testWidgets('LibraryFolderCard shows folder name instead of metadata title', (
@@ -40,12 +73,20 @@ void main() {
 
     await tester.pumpWidget(
       ShadcnApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Material(
           child: LibraryFolderCard(
             folder: folder,
             imageUrl: null,
             isSelected: false,
             onPressed: () {},
+            onContextMenuRequested: () {},
+            onOpen: () {},
+            onToggleFavorite: (_) {},
+            onSetWatchStatus: (_) {},
+            onMoveToFront: () {},
+            onDelete: () {},
           ),
         ),
       ),
@@ -77,6 +118,8 @@ void main() {
 
     await tester.pumpWidget(
       ShadcnApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Material(child: LibraryInspectorTitleBlock(folder: folder)),
       ),
     );
@@ -84,4 +127,22 @@ void main() {
     expect(find.text('Bocchi The Rock Folder'), findsOneWidget);
     expect(find.text('Bocchi the Rock!'), findsOneWidget);
   });
+}
+
+class _FakeHttpClient extends http.BaseClient {
+  _FakeHttpClient(this._handler);
+
+  final Future<http.Response> Function(http.BaseRequest request) _handler;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final response = await _handler(request);
+    return http.StreamedResponse(
+      Stream<List<int>>.fromIterable(<List<int>>[response.bodyBytes]),
+      response.statusCode,
+      headers: response.headers,
+      reasonPhrase: response.reasonPhrase,
+      request: request,
+    );
+  }
 }

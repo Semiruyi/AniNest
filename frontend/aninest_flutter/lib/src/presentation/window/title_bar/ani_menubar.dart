@@ -8,6 +8,7 @@ import 'package:aninest_flutter/src/core/platform/directory_picker.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_controller.dart';
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_models.dart';
+import 'package:aninest_flutter/src/presentation/window/title_bar/backend_connection_dialog.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class AniMenubar extends StatelessWidget {
@@ -82,6 +83,25 @@ class AniMenubar extends StatelessWidget {
     return name.isEmpty ? path : name;
   }
 
+  Future<void> _handleBackendConnection(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final updatedBaseUrl = await showDialog<String>(
+      context: context,
+      builder: (context) => BackendConnectionDialog(controller: controller),
+    );
+    if (updatedBaseUrl == null) {
+      return;
+    }
+
+    feedbackController.publish(
+      AppFeedbackRequest(
+        kind: AppFeedbackKind.toastInfo,
+        title: l10n.backendConnectionUpdatedTitle,
+        message: l10n.backendConnectionUpdatedMessage(updatedBaseUrl),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -130,6 +150,14 @@ class AniMenubar extends StatelessWidget {
                   ),
                 ],
                 child: Text(l10n.menuLanguage),
+              ),
+              const MenuDivider(),
+              MenuButton(
+                leading: const Icon(LucideIcons.server),
+                onPressed: (context) {
+                  unawaited(_handleBackendConnection(context));
+                },
+                child: Text(l10n.menuBackendConnection),
               ),
             ],
             child: Text(l10n.menuSettings),

@@ -6,8 +6,12 @@ class PlaylistApi {
 
   final AniNestHttpClient _client;
 
-  Future<PlaylistDto> getCurrent() async {
-    final payload = await _client.getObject('/api/playlist/current');
+  Future<PlaylistDto?> getCurrent() async {
+    final payload = await _client.get('/api/playlist/current');
+    if (payload == null) {
+      return null;
+    }
+
     return PlaylistDto.fromJson(payload);
   }
 }

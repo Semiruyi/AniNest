@@ -203,10 +203,7 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> _syncPlayback() {
-    return _playbackEngine.load(
-      target: _playbackTarget,
-      session: _session,
-    );
+    return _playbackEngine.load(target: _playbackTarget, session: _session);
   }
 
   void _handlePlaybackChanged() {
