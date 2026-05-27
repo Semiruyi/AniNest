@@ -49,7 +49,6 @@ public sealed class ResourceLocatorTests
         ]);
         var locator = new ResourceLocator(
             store,
-            scanner,
             metadataStore,
             new InMemoryPlaylistCatalogStore([]),
             root);
@@ -103,7 +102,6 @@ public sealed class ResourceLocatorTests
         ]);
         var locator = new ResourceLocator(
             store,
-            scanner,
             metadataStore,
             new InMemoryPlaylistCatalogStore([]),
             posterRoot);
@@ -145,7 +143,6 @@ public sealed class ResourceLocatorTests
         ]);
         var locator = new ResourceLocator(
             new InMemoryLibraryCatalogStore([]),
-            new FakeLibraryFileScanner(),
             new InMemoryMetadataStore([]),
             playlistStore,
             root);
@@ -207,7 +204,6 @@ public sealed class ResourceLocatorTests
         ]);
         var locator = new ResourceLocator(
             new InMemoryLibraryCatalogStore([]),
-            new FakeLibraryFileScanner(),
             new InMemoryMetadataStore([]),
             playlistStore,
             root);
@@ -217,5 +213,39 @@ public sealed class ResourceLocatorTests
 
         Assert.NotNull(resource);
         Assert.Equal(secondVideoPath, resource!.FilePath);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_DoesNotRescanOrMutateLibraryCatalog_ForLibraryCover()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "AniNest.Backend.Tests", $"resource-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        var folderPath = Path.Combine(root, "Folder 01");
+        Directory.CreateDirectory(folderPath);
+        var existingCoverPath = Path.Combine(root, "existing-cover.jpg");
+        await File.WriteAllBytesAsync(existingCoverPath, [0xFF, 0xD8, 0xFF, 0xD9]);
+
+        var store = new InMemoryLibraryCatalogStore(
+        [
+            new LibraryFolderRecord(
+                "folder-01",
+                "Folder 01",
+                folderPath,
+                12,
+                existingCoverPath,
+                null,
+                0)
+        ]);
+        var locator = new ResourceLocator(
+            store,
+            new InMemoryMetadataStore([]),
+            new InMemoryPlaylistCatalogStore([]),
+            root);
+
+        var resource = await locator.ResolveAsync(new ResourceKey(ResourceKind.LibraryCover, "folder-01"));
+
+        Assert.NotNull(resource);
+        Assert.Equal(existingCoverPath, resource!.FilePath);
+        Assert.Equal(existingCoverPath, Assert.Single(store.GetFolders()).CoverPath);
     }
 }

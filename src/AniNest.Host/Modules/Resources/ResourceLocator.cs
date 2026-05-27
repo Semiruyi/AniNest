@@ -8,20 +8,17 @@ namespace AniNest.Host.Modules.Resources;
 internal sealed class ResourceLocator : IResourceLocator
 {
     private readonly ILibraryCatalogStore _libraryCatalogStore;
-    private readonly ILibraryFileScanner _libraryFileScanner;
     private readonly IMetadataStore _metadataStore;
     private readonly IPlaylistCatalogStore _playlistCatalogStore;
     private readonly string _metadataPosterRootPath;
 
     public ResourceLocator(
         ILibraryCatalogStore libraryCatalogStore,
-        ILibraryFileScanner libraryFileScanner,
         IMetadataStore metadataStore,
         IPlaylistCatalogStore playlistCatalogStore,
         string metadataPosterRootPath)
     {
         _libraryCatalogStore = libraryCatalogStore;
-        _libraryFileScanner = libraryFileScanner;
         _metadataStore = metadataStore;
         _playlistCatalogStore = playlistCatalogStore;
         _metadataPosterRootPath = metadataPosterRootPath;
@@ -53,41 +50,28 @@ internal sealed class ResourceLocator : IResourceLocator
             ResourceContentTypes.FromPath(path));
     }
 
-    private async Task<string?> ResolveLibraryCoverPathAsync(
+    private Task<string?> ResolveLibraryCoverPathAsync(
         string folderId,
         CancellationToken cancellationToken)
     {
-        var folders = _libraryCatalogStore.GetFolders().ToList();
-        var index = folders.FindIndex(folder =>
+        var folder = _libraryCatalogStore.GetFolders()
+            .FirstOrDefault(folder =>
             string.Equals(folder.FolderId, folderId, StringComparison.OrdinalIgnoreCase));
-        if (index < 0)
+        if (folder is null)
         {
-            return null;
+            return Task.FromResult<string?>(null);
         }
 
-        var folder = folders[index];
-        if (Directory.Exists(folder.Path))
-        {
-            var scanResult = await _libraryFileScanner.ScanFolderAsync(
-                folder.Path,
-                cancellationToken);
-            var updatedFolder = folder with { CoverPath = scanResult.CoverPath };
-            if (updatedFolder != folder)
-            {
-                folders[index] = updatedFolder;
-                _libraryCatalogStore.SaveFolders(folders);
-                folder = updatedFolder;
-            }
-        }
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (!string.IsNullOrWhiteSpace(folder.CoverPath))
-            return folder.CoverPath;
+            return Task.FromResult<string?>(folder.CoverPath);
 
         var metadata = _metadataStore.GetByFolderId(folderId);
         if (!string.IsNullOrWhiteSpace(metadata?.PosterPath))
-            return ResolveMetadataPosterPath(metadata!.PosterPath);
+            return Task.FromResult<string?>(ResolveMetadataPosterPath(metadata!.PosterPath));
 
-        return ResolveMetadataPosterPath(folder.MetadataSummary?.PosterPath);
+        return Task.FromResult<string?>(ResolveMetadataPosterPath(folder.MetadataSummary?.PosterPath));
     }
 
     private string? ResolveLibraryPosterPath(string folderId)

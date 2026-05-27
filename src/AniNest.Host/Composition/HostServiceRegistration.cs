@@ -149,7 +149,6 @@ internal static class HostServiceRegistration
     {
         services.AddSingleton<IResourceLocator>(sp => new ResourceLocator(
             sp.GetRequiredService<ILibraryCatalogStore>(),
-            sp.GetRequiredService<ILibraryFileScanner>(),
             sp.GetRequiredService<IMetadataStore>(),
             sp.GetRequiredService<IPlaylistCatalogStore>(),
             ResolvePath(configuration, "AniNest:MetadataPosterRootPath", Path.Combine("metadata", "posters"))));
