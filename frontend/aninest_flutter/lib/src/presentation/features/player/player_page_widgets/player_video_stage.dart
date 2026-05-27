@@ -1,6 +1,7 @@
 import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
+import 'video_stage_widgets/auto_hide_cursor_region.dart';
 import 'video_stage_widgets/player_video_viewport.dart';
 
 class PlayerVideoStage extends StatelessWidget {
@@ -23,8 +24,8 @@ class PlayerVideoStage extends StatelessWidget {
         final colorScheme = Theme.of(context).colorScheme;
         final canTogglePlayback = controller.canTogglePlayback;
 
-        return MouseRegion(
-          cursor: canTogglePlayback
+        return AutoHideCursorRegion(
+          visibleCursor: canTogglePlayback
               ? SystemMouseCursors.click
               : SystemMouseCursors.basic,
           child: GestureDetector(
