@@ -3,6 +3,8 @@ import 'package:aninest_flutter/src/models/library_models.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/content_widgets/library_folder_card_context_menu.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
+import 'primary_double_click_region.dart';
+
 class LibraryFolderCard extends StatelessWidget {
   const LibraryFolderCard({
     super.key,
@@ -41,39 +43,42 @@ class LibraryFolderCard extends StatelessWidget {
       onSetWatchStatus: onSetWatchStatus,
       onMoveToFront: onMoveToFront,
       onDelete: onDelete,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? colorScheme.primary : colorScheme.border,
-            width: isSelected ? 1.5 : 1,
+      child: PrimaryDoubleClickRegion(
+        onDoubleClick: onOpen,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? colorScheme.primary : colorScheme.border,
+              width: isSelected ? 1.5 : 1,
+            ),
           ),
-        ),
-        child: SurfaceCard(
-          child: SizedBox(
-            height: 312,
-            child: CardImage(
-              direction: Axis.vertical,
-              onPressed: onPressed,
-              gap: 10,
-              image: _LibraryCardArtwork(
-                title: folder.name,
-                imageUrl: imageUrl,
-              ),
-              title: _LibraryCardTitle(
-                title: folder.name,
-                watchStatus: folder.watchStatus,
-                isFavorite: folder.isFavorite,
-              ),
-              subtitle: Text(
-                _subtitleFor(folder),
-                style: TextStyle(
-                  fontSize: 13,
-                  color: colorScheme.mutedForeground,
+          child: SurfaceCard(
+            child: SizedBox(
+              height: 312,
+              child: CardImage(
+                direction: Axis.vertical,
+                onPressed: onPressed,
+                gap: 10,
+                image: _LibraryCardArtwork(
+                  title: folder.name,
+                  imageUrl: imageUrl,
                 ),
+                title: _LibraryCardTitle(
+                  title: folder.name,
+                  watchStatus: folder.watchStatus,
+                  isFavorite: folder.isFavorite,
+                ),
+                subtitle: Text(
+                  _subtitleFor(folder),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.mutedForeground,
+                  ),
+                ),
+                backgroundColor: colorScheme.secondary,
+                borderColor: colorScheme.border,
               ),
-              backgroundColor: colorScheme.secondary,
-              borderColor: colorScheme.border,
             ),
           ),
         ),
