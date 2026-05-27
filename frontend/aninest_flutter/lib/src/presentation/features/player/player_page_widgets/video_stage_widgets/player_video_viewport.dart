@@ -1,5 +1,4 @@
 import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
-import 'package:aninest_flutter/src/features/player/application/player_subtitle_track_option.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -26,10 +25,8 @@ class PlayerVideoViewport extends StatelessWidget {
                 controls: NoVideoControls,
                 fit: BoxFit.contain,
                 fill: colorScheme.background,
-                subtitleViewConfiguration: SubtitleViewConfiguration(
-                  visible:
-                      runtime.selectedSubtitleTrackId !=
-                      PlayerSubtitleTrackOption.offId,
+                subtitleViewConfiguration: const SubtitleViewConfiguration(
+                  visible: false,
                 ),
               ),
             if (runtime.isLoading)

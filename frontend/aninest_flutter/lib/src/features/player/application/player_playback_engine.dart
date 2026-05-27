@@ -31,7 +31,9 @@ class PlayerPlaybackEngine extends ChangeNotifier {
     );
   }
 
-  final Player _player = Player();
+  final Player _player = Player(
+    configuration: const PlayerConfiguration(libass: true),
+  );
   late final VideoController _videoController;
   final List<StreamSubscription<dynamic>> _subscriptions =
       <StreamSubscription<dynamic>>[];
