@@ -1,6 +1,7 @@
 import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
+import 'fullscreen_player_chrome.dart';
 import 'player_control_bar.dart';
 import 'player_episode_panel.dart';
 import 'player_video_stage.dart';
@@ -64,10 +65,17 @@ class PlayerFullscreenPlaybackLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PlayerVideoStage(
-      controller: controller,
-      isFullscreen: true,
-      onToggleFullscreen: onToggleFullscreen,
+    return FullscreenPlayerChrome(
+      video: PlayerVideoStage(
+        controller: controller,
+        isFullscreen: true,
+        onToggleFullscreen: onToggleFullscreen,
+      ),
+      controlBar: PlayerControlBar(
+        controller: controller,
+        isFullscreen: true,
+        onToggleFullscreen: onToggleFullscreen,
+      ),
     );
   }
 }
