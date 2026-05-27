@@ -127,6 +127,7 @@ public sealed class PlaybackSessionEngineTests
         Assert.False(playlist.Items[0].HasSavedProgress);
         Assert.Equal(0, playlist.Items[0].SavedProgressMs);
         Assert.True(store.GetVideoProgress("D:/Media/Sample Anime/01.mp4")!.IsPlayed);
+        Assert.Equal(0, store.GetVideoProgress("D:/Media/Sample Anime/01.mp4")!.Position);
     }
 
     [Fact]

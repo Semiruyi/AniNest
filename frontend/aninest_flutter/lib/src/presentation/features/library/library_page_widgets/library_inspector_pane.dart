@@ -3,7 +3,6 @@ import 'package:aninest_flutter/src/features/metadata/application/metadata_contr
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/library_inspector_details.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/library_inspector_empty_state.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_layout.dart';
-import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_shared.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class LibraryInspectorPane extends StatelessWidget {

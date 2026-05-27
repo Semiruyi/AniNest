@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:aninest_flutter/src/api/api_exception.dart';
+import 'package:aninest_flutter/src/core/logging/app_logger.dart';
 import 'package:aninest_flutter/src/features/player/application/player_playback_engine.dart';
+import 'package:aninest_flutter/src/features/player/application/player_progress_synchronizer.dart';
 import 'package:aninest_flutter/src/features/player/application/player_runtime_state.dart';
 import 'package:aninest_flutter/src/models/playlist_models.dart';
 import 'package:aninest_flutter/src/models/session_models.dart';
@@ -12,6 +14,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 
 class PlayerController extends ChangeNotifier {
   PlayerController(this._sessionApi, this._playlistApi) {
+    _progressSynchronizer = PlayerProgressSynchronizer(_sessionApi);
     _playbackEngine.addListener(_handlePlaybackChanged);
   }
 
@@ -26,11 +29,14 @@ class PlayerController extends ChangeNotifier {
 
   SessionApi _sessionApi;
   PlaylistApi _playlistApi;
+  late final PlayerProgressSynchronizer _progressSynchronizer;
   final PlayerPlaybackEngine _playbackEngine = PlayerPlaybackEngine();
 
   SessionStateDto? _session;
   PlaylistDto? _playlist;
   PlaybackTargetDto? _playbackTarget;
+  String? _completingItemId;
+  bool _isDisposed = false;
 
   SessionStateDto? get session => _session;
   PlaylistDto? get playlist => _playlist;
@@ -51,6 +57,7 @@ class PlayerController extends ChangeNotifier {
   void rebind(SessionApi sessionApi, PlaylistApi playlistApi) {
     _sessionApi = sessionApi;
     _playlistApi = playlistApi;
+    _progressSynchronizer.rebind(sessionApi);
   }
 
   Future<void> restore() async {
@@ -74,6 +81,7 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> openFolder(String folderId) async {
+    await _flushProgress();
     final result = await _sessionApi.openFolder(folderId);
     _session = result.session;
     _playbackTarget = result.playbackTarget;
@@ -83,6 +91,7 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> selectItem(String itemId) async {
+    await _flushProgress();
     final result = await _sessionApi.selectItem(itemId);
     _session = result.session;
     _playbackTarget = result.playbackTarget;
@@ -97,6 +106,7 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> moveNext() async {
+    await _flushProgress();
     final result = await _sessionApi.moveNext();
     _session = result.session;
     _playbackTarget = result.playbackTarget;
@@ -111,6 +121,7 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> movePrevious() async {
+    await _flushProgress();
     final result = await _sessionApi.movePrevious();
     _session = result.session;
     _playbackTarget = result.playbackTarget;
@@ -126,6 +137,7 @@ class PlayerController extends ChangeNotifier {
 
   Future<void> togglePlayPause() async {
     await _playbackEngine.togglePlayPause();
+    await _flushProgress();
   }
 
   Future<void> play() async {
@@ -138,6 +150,7 @@ class PlayerController extends ChangeNotifier {
 
   Future<void> pause() async {
     await _playbackEngine.pause();
+    await _flushProgress();
   }
 
   Future<void> seekTo(Duration position) async {
@@ -148,6 +161,7 @@ class PlayerController extends ChangeNotifier {
 
     final clamped = position > maxPosition ? maxPosition : position;
     await _playbackEngine.seek(clamped);
+    await _flushProgress();
   }
 
   Future<void> seekToFraction(double fraction) async {
@@ -181,6 +195,7 @@ class PlayerController extends ChangeNotifier {
       _session = _session!.copyWith(preferredRate: rate);
       notifyListeners();
     }
+    await _flushProgress();
   }
 
   Future<void> toggleMute() async {
@@ -189,6 +204,7 @@ class PlayerController extends ChangeNotifier {
       _session = _session!.copyWith(preferredVolume: runtime.volume.round());
       notifyListeners();
     }
+    await _flushProgress();
   }
 
   Future<void> setPlaybackVolume(double volume) async {
@@ -197,14 +213,21 @@ class PlayerController extends ChangeNotifier {
       _session = _session!.copyWith(preferredVolume: volume.round());
       notifyListeners();
     }
+    await _flushProgress();
   }
 
   Future<void> closeSession() async {
+    await _flushProgress();
     await _sessionApi.close();
-    clear();
+    clear(flushProgress: false);
   }
 
-  void clear() {
+  void clear({bool flushProgress = true}) {
+    if (flushProgress) {
+      final itemId = _currentProgressItemId;
+      final runtimeSnapshot = runtime;
+      unawaited(_flushProgress(itemId: itemId, runtimeState: runtimeSnapshot));
+    }
     final hadState =
         _session != null || _playlist != null || _playbackTarget != null;
     _session = null;
@@ -230,15 +253,181 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> _syncPlayback() {
+    _progressSynchronizer.resetForItem(_playbackTarget?.itemId);
     return _playbackEngine.load(target: _playbackTarget, session: _session);
   }
 
   void _handlePlaybackChanged() {
+    if (_isDisposed) {
+      return;
+    }
+
+    if (runtime.isCompleted) {
+      unawaited(_completeCurrentItem());
+    } else {
+      unawaited(_reportProgressIfDue());
+    }
     notifyListeners();
   }
 
+  Future<void> _reportProgressIfDue() async {
+    try {
+      final snapshot = await _progressSynchronizer.reportIfDue(
+        itemId: _currentProgressItemId,
+        runtime: runtime,
+      );
+      if (snapshot == null) {
+        return;
+      }
+
+      _applyProgressSnapshot(snapshot);
+      if (!_isDisposed) {
+        notifyListeners();
+      }
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'PlayerController.Progress',
+        'Failed to report playback progress.',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _flushProgress({
+    String? itemId,
+    PlayerRuntimeState? runtimeState,
+    bool notify = true,
+  }) async {
+    try {
+      final snapshot = await _progressSynchronizer.reportNow(
+        itemId: itemId ?? _currentProgressItemId,
+        runtime: runtimeState ?? runtime,
+      );
+      if (snapshot == null) {
+        return;
+      }
+
+      _applyProgressSnapshot(snapshot);
+      if (notify && !_isDisposed) {
+        notifyListeners();
+      }
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'PlayerController.Progress',
+        'Failed to flush playback progress.',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _completeCurrentItem() async {
+    final itemId = _currentProgressItemId;
+    if (itemId == null || _completingItemId == itemId) {
+      return;
+    }
+
+    _completingItemId = itemId;
+    try {
+      final completed = await _progressSynchronizer.completeIfNeeded(itemId);
+      if (!completed) {
+        return;
+      }
+
+      _applyCompletion(itemId);
+      await _refreshPlaylist();
+      if (!_isDisposed) {
+        notifyListeners();
+      }
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'PlayerController.Progress',
+        'Failed to complete playback item.',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    } finally {
+      if (_completingItemId == itemId) {
+        _completingItemId = null;
+      }
+    }
+  }
+
+  void _applyProgressSnapshot(PlayerProgressSnapshot snapshot) {
+    if (_session?.currentItemId == snapshot.itemId) {
+      _session = _session!.copyWith(
+        savedProgressMs: snapshot.positionMs,
+        preferredRate: snapshot.rate,
+        preferredVolume: snapshot.volume,
+      );
+    }
+
+    final playlist = _playlist;
+    if (playlist == null) {
+      return;
+    }
+
+    final itemIndex = playlist.items.indexWhere(
+      (PlaylistItemDto item) => item.itemId == snapshot.itemId,
+    );
+    if (itemIndex < 0) {
+      return;
+    }
+
+    final items = List<PlaylistItemDto>.of(playlist.items);
+    final item = items[itemIndex];
+    items[itemIndex] = item.copyWith(
+      hasSavedProgress: snapshot.positionMs > 0,
+      savedProgressMs: snapshot.positionMs,
+      durationMs: snapshot.durationMs > 0
+          ? snapshot.durationMs
+          : item.durationMs,
+    );
+    _playlist = playlist.copyWith(items: items);
+  }
+
+  void _applyCompletion(String itemId) {
+    if (_session?.currentItemId == itemId) {
+      _session = _session!.copyWith(savedProgressMs: 0);
+    }
+
+    final playlist = _playlist;
+    if (playlist == null) {
+      return;
+    }
+
+    final itemIndex = playlist.items.indexWhere(
+      (PlaylistItemDto item) => item.itemId == itemId,
+    );
+    if (itemIndex < 0) {
+      return;
+    }
+
+    final items = List<PlaylistItemDto>.of(playlist.items);
+    items[itemIndex] = items[itemIndex].copyWith(
+      isPlayed: true,
+      hasSavedProgress: false,
+      savedProgressMs: 0,
+    );
+    _playlist = playlist.copyWith(items: items);
+  }
+
+  String? get _currentProgressItemId =>
+      _playbackTarget?.itemId ?? selectedItemId;
+
   @override
   void dispose() {
+    final itemId = _currentProgressItemId;
+    final runtimeSnapshot = runtime;
+    _isDisposed = true;
+    unawaited(
+      _flushProgress(
+        itemId: itemId,
+        runtimeState: runtimeSnapshot,
+        notify: false,
+      ),
+    );
     _playbackEngine.removeListener(_handlePlaybackChanged);
     _playbackEngine.dispose();
     super.dispose();

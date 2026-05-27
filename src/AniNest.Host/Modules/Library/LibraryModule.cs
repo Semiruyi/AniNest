@@ -1,6 +1,7 @@
 using AniNest.Application.Library;
 using AniNest.Application.Metadata;
 using AniNest.Application.Modules;
+using AniNest.Application.Playback;
 using AniNest.Application.Resources;
 using AniNest.Contracts.Library;
 using AniNest.Core.Enums;
@@ -14,6 +15,7 @@ internal sealed class LibraryModule : ILibraryModule
     private readonly ServerDirectoryBrowser _directoryBrowser = new();
     private readonly LibraryCatalogService _catalog;
     private readonly ILibraryFileScanner _scanner;
+    private readonly PlaybackProgressSummaryService _playbackProgressSummary;
     private readonly IMetadataRuntimeBootstrapService _metadataBootstrap;
     private readonly IMetadataLifecycleService _metadataLifecycle;
     private readonly IMetadataRuntimeStateService _metadataState;
@@ -23,6 +25,7 @@ internal sealed class LibraryModule : ILibraryModule
     public LibraryModule(
         ILibraryCatalogStore store,
         ILibraryFileScanner scanner,
+        PlaybackProgressSummaryService playbackProgressSummary,
         IResourceUrlService resourceUrlService,
         IMetadataRuntimeBootstrapService metadataBootstrap,
         IMetadataLifecycleService metadataLifecycle,
@@ -32,6 +35,7 @@ internal sealed class LibraryModule : ILibraryModule
     {
         _catalog = new LibraryCatalogService(store, scanner, resourceUrlService);
         _scanner = scanner;
+        _playbackProgressSummary = playbackProgressSummary;
         _metadataBootstrap = metadataBootstrap;
         _metadataLifecycle = metadataLifecycle;
         _metadataState = metadataState;
@@ -43,10 +47,11 @@ internal sealed class LibraryModule : ILibraryModule
     {
         var folders = await _catalog.GetFoldersAsync(cancellationToken);
         _logger.LogInformation("Library folders loaded. FolderCount={FolderCount}", folders.Count);
-        var snapshot = await BuildSnapshotAsync(folders, cancellationToken);
+        var foldersWithPlayback = await ApplyPlaybackSummariesAsync(folders, cancellationToken);
+        var snapshot = await BuildSnapshotAsync(foldersWithPlayback, cancellationToken);
         _logger.LogInformation("Library metadata snapshot built. FolderCount={FolderCount}", snapshot.Count);
         await _metadataLifecycle.SyncLibrarySnapshotAsync(snapshot, cancellationToken);
-        return folders.Select(ApplyMetadataSummary).ToArray();
+        return foldersWithPlayback.Select(ApplyMetadataSummary).ToArray();
     }
 
     public async Task<AddLibraryFolderResult> AddFolderAsync(AddLibraryFolderRequest request, CancellationToken cancellationToken = default)
@@ -192,7 +197,36 @@ internal sealed class LibraryModule : ILibraryModule
         var folders = await _catalog.GetFoldersAsync(cancellationToken);
         var folder = folders.FirstOrDefault(item =>
             string.Equals(item.FolderId, folderId, StringComparison.OrdinalIgnoreCase));
-        return folder is null ? null : ApplyMetadataSummary(folder);
+        if (folder is null)
+            return null;
+
+        return ApplyMetadataSummary(await ApplyPlaybackSummaryAsync(folder, cancellationToken));
+    }
+
+    private async Task<IReadOnlyList<LibraryFolderDto>> ApplyPlaybackSummariesAsync(
+        IReadOnlyList<LibraryFolderDto> folders,
+        CancellationToken cancellationToken)
+    {
+        var result = new List<LibraryFolderDto>(folders.Count);
+        foreach (var folder in folders)
+        {
+            result.Add(await ApplyPlaybackSummaryAsync(folder, cancellationToken));
+        }
+
+        return result;
+    }
+
+    private async Task<LibraryFolderDto> ApplyPlaybackSummaryAsync(
+        LibraryFolderDto folder,
+        CancellationToken cancellationToken)
+    {
+        var record = _catalog.GetFolderRecord(folder.FolderId);
+        if (record is null)
+            return folder;
+
+        var videoFiles = await _scanner.GetVideoFilesAsync(record.Path, cancellationToken);
+        var summary = _playbackProgressSummary.SummarizeFolder(videoFiles);
+        return folder with { PlayedCount = summary.PlayedCount };
     }
 
     private static object MergePayload(object payload, object? folder)

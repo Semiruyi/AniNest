@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:aninest_flutter/src/api/aninest_http_client.dart';
 import 'package:aninest_flutter/src/services/session_api.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
@@ -49,6 +51,34 @@ void main() {
     final api = SessionApi(client);
 
     expect(await api.getCurrent(), isNull);
+  });
+
+  test('SessionApi reports progress and completion', () async {
+    final requests = <http.Request>[];
+    final client = AniNestHttpClient(
+      baseUrl: 'http://localhost:5275',
+      httpClient: _FakeHttpClient((request) async {
+        requests.add(request as http.Request);
+        return http.Response('', 202);
+      }),
+    );
+
+    final api = SessionApi(client);
+
+    await api.reportProgress(
+      itemId: 'ep-02',
+      positionMs: 120000,
+      durationMs: 1440000,
+      rate: 1.25,
+      volume: 64,
+      isPaused: false,
+    );
+    await api.complete('ep-02');
+
+    expect(requests[0].url.path, '/api/session/progress');
+    expect(jsonDecode(requests[0].body), containsPair('positionMs', 120000));
+    expect(requests[1].url.path, '/api/session/complete');
+    expect(jsonDecode(requests[1].body), containsPair('itemId', 'ep-02'));
   });
 
   testWidgets('LibraryFolderCard shows folder name instead of metadata title', (

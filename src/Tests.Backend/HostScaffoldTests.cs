@@ -255,6 +255,21 @@ public sealed class HostScaffoldTests
     }
 
     [Fact]
+    public async Task Complete_UpdatesLibraryPlayedCount()
+    {
+        using var client = CreateClient();
+
+        var completeResponse = await client.PostAsJsonAsync("/api/session/complete", new SessionCompleteRequest("ep-01"));
+        completeResponse.EnsureSuccessStatusCode();
+
+        var library = await client.GetFromJsonAsync<LibraryFolderListResponse>("/api/library/folders");
+
+        Assert.NotNull(library);
+        var folder = Assert.Single(library.Items);
+        Assert.Equal(1, folder.PlayedCount);
+    }
+
+    [Fact]
     public async Task SelectPlaylistItem_UpdatesSessionAndPlaybackTarget()
     {
         using var client = CreateClient();

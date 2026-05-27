@@ -1,5 +1,4 @@
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_layout.dart';
-import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_shared.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class LibraryNavigationPane extends StatelessWidget {
@@ -50,10 +49,7 @@ class LibraryNavigationPane extends StatelessWidget {
 }
 
 class _NavGroup extends StatelessWidget {
-  const _NavGroup({
-    required this.title,
-    required this.items,
-  });
+  const _NavGroup({required this.title, required this.items});
 
   final String title;
   final List<_NavItemData> items;
@@ -69,10 +65,7 @@ class _NavGroup extends StatelessWidget {
         children: <Widget>[
           Text(
             title,
-            style: TextStyle(
-              fontSize: 13,
-              color: colorScheme.mutedForeground,
-            ),
+            style: TextStyle(fontSize: 13, color: colorScheme.mutedForeground),
           ),
           const Gap(8),
           for (final item in items) ...<Widget>[

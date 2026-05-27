@@ -20,7 +20,6 @@ class LibraryInspectorMetadataSection extends StatelessWidget {
     final matchedTitle = metadata?.title ?? libraryMetadataTitle;
     final originalTitle =
         metadata?.originalTitle ?? displayOriginalMetadataTitle(folder);
-    final summary = folder.metadataSummary;
 
     return LibraryInspectorSection(
       title: 'Metadata',

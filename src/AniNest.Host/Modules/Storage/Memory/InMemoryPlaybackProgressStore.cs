@@ -16,7 +16,7 @@ internal sealed class InMemoryPlaybackProgressStore : IPlaybackProgressStore
             filePath,
             position,
             duration,
-            true);
+            false);
     }
 
     public void MarkVideoPlayed(string filePath)
@@ -24,7 +24,7 @@ internal sealed class InMemoryPlaybackProgressStore : IPlaybackProgressStore
         var existing = GetVideoProgress(filePath);
         _videoProgress[filePath] = existing is null
             ? new VideoProgressState(filePath, 0, 0, true)
-            : existing with { IsPlayed = true };
+            : existing with { Position = 0, IsPlayed = true };
     }
 
     public FolderProgressState? GetFolderProgress(string folderId)

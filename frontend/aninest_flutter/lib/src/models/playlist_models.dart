@@ -36,6 +36,30 @@ class PlaylistItemDto {
       thumbnailState: ThumbnailState.fromJson(json['thumbnailState']),
     );
   }
+
+  PlaylistItemDto copyWith({
+    String? itemId,
+    int? index,
+    String? title,
+    String? filePath,
+    bool? isPlayed,
+    bool? hasSavedProgress,
+    int? savedProgressMs,
+    int? durationMs,
+    ThumbnailState? thumbnailState,
+  }) {
+    return PlaylistItemDto(
+      itemId: itemId ?? this.itemId,
+      index: index ?? this.index,
+      title: title ?? this.title,
+      filePath: filePath ?? this.filePath,
+      isPlayed: isPlayed ?? this.isPlayed,
+      hasSavedProgress: hasSavedProgress ?? this.hasSavedProgress,
+      savedProgressMs: savedProgressMs ?? this.savedProgressMs,
+      durationMs: durationMs ?? this.durationMs,
+      thumbnailState: thumbnailState ?? this.thumbnailState,
+    );
+  }
 }
 
 class PlaylistDto {
@@ -63,6 +87,22 @@ class PlaylistDto {
           .whereType<Map<String, dynamic>>()
           .map(PlaylistItemDto.fromJson)
           .toList(),
+    );
+  }
+
+  PlaylistDto copyWith({
+    String? folderId,
+    String? folderName,
+    String? currentItemId,
+    int? currentIndex,
+    List<PlaylistItemDto>? items,
+  }) {
+    return PlaylistDto(
+      folderId: folderId ?? this.folderId,
+      folderName: folderName ?? this.folderName,
+      currentItemId: currentItemId ?? this.currentItemId,
+      currentIndex: currentIndex ?? this.currentIndex,
+      items: items ?? this.items,
     );
   }
 }

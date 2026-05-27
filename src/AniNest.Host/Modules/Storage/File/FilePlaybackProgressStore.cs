@@ -37,7 +37,7 @@ internal sealed class FilePlaybackProgressStore : IPlaybackProgressStore
     public void SaveVideoProgress(string filePath, long position, long duration)
     {
         var document = LoadDocument();
-        document.VideoProgress[filePath] = new VideoProgressState(filePath, position, duration, true);
+        document.VideoProgress[filePath] = new VideoProgressState(filePath, position, duration, false);
         SaveDocument(document);
     }
 
@@ -46,7 +46,7 @@ internal sealed class FilePlaybackProgressStore : IPlaybackProgressStore
         var document = LoadDocument();
         if (document.VideoProgress.TryGetValue(filePath, out var existing))
         {
-            document.VideoProgress[filePath] = existing with { IsPlayed = true };
+            document.VideoProgress[filePath] = existing with { Position = 0, IsPlayed = true };
         }
         else
         {

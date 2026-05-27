@@ -32,6 +32,7 @@ internal static class HostServiceRegistration
             ResolvePath(configuration, "AniNest:PlaybackProgressPath", "playback-progress.json"),
             PlaybackProgressDefaults.CreateVideoProgress(),
             PlaybackProgressDefaults.CreateFolderProgress()));
+        services.AddSingleton<PlaybackProgressSummaryService>();
 
         services.AddSingleton<IPlaylistCatalogStore, FileSystemPlaylistCatalogStore>();
         services.AddSingleton<IThumbnailStore>(_ => new FileThumbnailStore(

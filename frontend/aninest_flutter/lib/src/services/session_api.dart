@@ -40,6 +40,34 @@ class SessionApi {
     return _resolveSessionOpenResult((payload as Map).cast<String, dynamic>());
   }
 
+  Future<void> reportProgress({
+    required String itemId,
+    required int positionMs,
+    required int durationMs,
+    required double rate,
+    required int volume,
+    required bool isPaused,
+  }) async {
+    await _client.post(
+      '/api/session/progress',
+      body: <String, dynamic>{
+        'itemId': itemId,
+        'positionMs': positionMs,
+        'durationMs': durationMs,
+        'rate': rate,
+        'volume': volume,
+        'isPaused': isPaused,
+      },
+    );
+  }
+
+  Future<void> complete(String itemId) async {
+    await _client.post(
+      '/api/session/complete',
+      body: <String, dynamic>{'itemId': itemId},
+    );
+  }
+
   Future<void> close() async {
     await _client.post('/api/session/close');
   }
