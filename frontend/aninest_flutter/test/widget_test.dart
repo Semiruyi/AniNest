@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:aninest_flutter/src/api/aninest_http_client.dart';
+import 'package:aninest_flutter/src/features/player/application/player_subtitle_track_mapper.dart';
+import 'package:aninest_flutter/src/features/player/application/player_subtitle_track_option.dart';
 import 'package:aninest_flutter/src/services/session_api.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:aninest_flutter/src/models/enums.dart';
@@ -10,6 +12,7 @@ import 'package:aninest_flutter/src/presentation/features/library/library_page_w
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:media_kit/media_kit.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 void main() {
@@ -79,6 +82,26 @@ void main() {
     expect(jsonDecode(requests[0].body), containsPair('positionMs', 120000));
     expect(requests[1].url.path, '/api/session/complete');
     expect(jsonDecode(requests[1].body), containsPair('itemId', 'ep-02'));
+  });
+
+  test('PlayerSubtitleTrackMapper maps selectable subtitle tracks', () {
+    final options = PlayerSubtitleTrackMapper.fromMediaKitTracks(
+      <SubtitleTrack>[
+        SubtitleTrack.auto(),
+        SubtitleTrack.no(),
+        const SubtitleTrack('1', 'Simplified Chinese', 'zh-Hans', codec: 'ass'),
+        const SubtitleTrack('1', 'Duplicate', 'zh-Hans'),
+        SubtitleTrack.uri('https://example.com/subs.vtt', title: 'External'),
+      ],
+    );
+
+    expect(options, hasLength(4));
+    expect(options[0].kind, PlayerSubtitleTrackKind.automatic);
+    expect(options[1].kind, PlayerSubtitleTrackKind.off);
+    expect(options[2].kind, PlayerSubtitleTrackKind.embedded);
+    expect(options[2].index, 1);
+    expect(options[3].kind, PlayerSubtitleTrackKind.external);
+    expect(options[3].index, 2);
   });
 
   testWidgets('LibraryFolderCard shows folder name instead of metadata title', (

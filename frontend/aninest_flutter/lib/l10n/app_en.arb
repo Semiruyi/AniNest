@@ -53,6 +53,15 @@
   "playerTooltipNextEpisode": "Next episode",
   "playerTooltipPlaybackSpeed": "Playback speed",
   "playerTooltipSubtitles": "Subtitles",
+  "playerSubtitleAutomatic": "Auto",
+  "playerSubtitleOff": "Off",
+  "playerSubtitleNoTracks": "No subtitle tracks",
+  "playerSubtitleTrackFallback": "Track {number}",
+  "@playerSubtitleTrackFallback": {
+    "placeholders": {
+      "number": {}
+    }
+  },
   "playerTooltipVolume": "Volume",
   "playerTooltipSettings": "Settings",
   "playerTooltipFullscreen": "Fullscreen",

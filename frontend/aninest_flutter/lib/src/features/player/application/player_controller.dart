@@ -230,6 +230,10 @@ class PlayerController extends ChangeNotifier {
     await _flushProgress();
   }
 
+  Future<void> selectSubtitleTrack(String trackId) async {
+    await _playbackEngine.setSubtitleTrack(trackId);
+  }
+
   Future<void> closeSession() async {
     await _flushProgress();
     await _sessionApi.close();

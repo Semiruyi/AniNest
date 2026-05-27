@@ -1,3 +1,5 @@
+import 'player_subtitle_track_option.dart';
+
 class PlayerRuntimeState {
   const PlayerRuntimeState({
     required this.hasMedia,
@@ -11,6 +13,8 @@ class PlayerRuntimeState {
     required this.buffer,
     required this.volume,
     required this.rate,
+    required this.subtitleTracks,
+    required this.selectedSubtitleTrackId,
     required this.errorMessage,
   });
 
@@ -26,6 +30,8 @@ class PlayerRuntimeState {
       buffer = Duration.zero,
       volume = 80,
       rate = 1,
+      subtitleTracks = const <PlayerSubtitleTrackOption>[],
+      selectedSubtitleTrackId = PlayerSubtitleTrackOption.automaticId,
       errorMessage = null;
 
   final bool hasMedia;
@@ -39,9 +45,14 @@ class PlayerRuntimeState {
   final Duration buffer;
   final double volume;
   final double rate;
+  final List<PlayerSubtitleTrackOption> subtitleTracks;
+  final String selectedSubtitleTrackId;
   final String? errorMessage;
 
   bool get isMuted => volume <= 0.001;
+  bool get hasSelectableSubtitles => subtitleTracks.any(
+    (PlayerSubtitleTrackOption option) => !option.isAutomatic && !option.isOff,
+  );
 
   double get progressFraction {
     final total = duration.inMicroseconds;
@@ -64,6 +75,8 @@ class PlayerRuntimeState {
     Duration? buffer,
     double? volume,
     double? rate,
+    List<PlayerSubtitleTrackOption>? subtitleTracks,
+    String? selectedSubtitleTrackId,
     Object? errorMessage = _sentinel,
   }) {
     return PlayerRuntimeState(
@@ -78,6 +91,9 @@ class PlayerRuntimeState {
       buffer: buffer ?? this.buffer,
       volume: volume ?? this.volume,
       rate: rate ?? this.rate,
+      subtitleTracks: subtitleTracks ?? this.subtitleTracks,
+      selectedSubtitleTrackId:
+          selectedSubtitleTrackId ?? this.selectedSubtitleTrackId,
       errorMessage: identical(errorMessage, _sentinel)
           ? this.errorMessage
           : errorMessage as String?,

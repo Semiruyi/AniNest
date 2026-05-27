@@ -2,16 +2,19 @@ import 'dart:async';
 
 import 'package:aninest_flutter/src/core/logging/app_logger.dart';
 import 'package:aninest_flutter/src/features/player/application/player_runtime_state.dart';
+import 'package:aninest_flutter/src/features/player/application/player_subtitle_track_mapper.dart';
+import 'package:aninest_flutter/src/features/player/application/player_subtitle_track_option.dart';
 import 'package:aninest_flutter/src/models/session_models.dart';
+import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:flutter/foundation.dart';
 
 class PlayerPlaybackEngine extends ChangeNotifier {
   PlayerPlaybackEngine() {
     _videoController = VideoController(_player);
     _bindStreams();
     final state = _player.state;
+    _availableSubtitleTracks = state.tracks.subtitle;
     _runtimeState = _runtimeState.copyWith(
       isPlaying: state.playing,
       isCompleted: state.completed,
@@ -21,6 +24,10 @@ class PlayerPlaybackEngine extends ChangeNotifier {
       rate: state.rate,
       isBuffering: state.buffering,
       buffer: state.buffer,
+      subtitleTracks: PlayerSubtitleTrackMapper.fromMediaKitTracks(
+        state.tracks.subtitle,
+      ),
+      selectedSubtitleTrackId: state.track.subtitle.id,
     );
   }
 
@@ -31,6 +38,7 @@ class PlayerPlaybackEngine extends ChangeNotifier {
 
   PlayerRuntimeState _runtimeState = const PlayerRuntimeState.initial();
   String? _loadedPlaybackKey;
+  List<SubtitleTrack> _availableSubtitleTracks = const <SubtitleTrack>[];
   double _lastNonZeroVolume = 80;
   int _loadGeneration = 0;
 
@@ -45,6 +53,7 @@ class PlayerPlaybackEngine extends ChangeNotifier {
 
     if (target == null || session == null) {
       _loadedPlaybackKey = null;
+      _availableSubtitleTracks = const <SubtitleTrack>[];
       _setState(
         hasMedia: false,
         isLoading: false,
@@ -55,6 +64,8 @@ class PlayerPlaybackEngine extends ChangeNotifier {
         position: Duration.zero,
         duration: Duration.zero,
         buffer: Duration.zero,
+        subtitleTracks: const <PlayerSubtitleTrackOption>[],
+        selectedSubtitleTrackId: PlayerSubtitleTrackOption.automaticId,
         errorMessage: null,
       );
       await _player.stop();
@@ -89,7 +100,7 @@ class PlayerPlaybackEngine extends ChangeNotifier {
 
       await _player.setRate(session.preferredRate);
       await _player.setVolume(session.preferredVolume.toDouble());
-      await _player.setSubtitleTrack(SubtitleTrack.no());
+      await _player.setSubtitleTrack(SubtitleTrack.auto());
       if (generation != _loadGeneration) {
         return;
       }
@@ -176,6 +187,20 @@ class PlayerPlaybackEngine extends ChangeNotifier {
     await setVolume(0);
   }
 
+  Future<void> setSubtitleTrack(String trackId) async {
+    if (!_runtimeState.hasMedia) {
+      return;
+    }
+
+    final track = _subtitleTrackForId(trackId);
+    if (track == null) {
+      return;
+    }
+
+    await _player.setSubtitleTrack(track);
+    _setState(selectedSubtitleTrackId: track.id);
+  }
+
   void _bindStreams() {
     _subscriptions.addAll(<StreamSubscription<dynamic>>[
       _player.stream.playing.listen((bool value) {
@@ -199,6 +224,17 @@ class PlayerPlaybackEngine extends ChangeNotifier {
       _player.stream.rate.listen((double value) {
         _setState(rate: value);
       }),
+      _player.stream.tracks.listen((Tracks value) {
+        _availableSubtitleTracks = value.subtitle;
+        _setState(
+          subtitleTracks: PlayerSubtitleTrackMapper.fromMediaKitTracks(
+            value.subtitle,
+          ),
+        );
+      }),
+      _player.stream.track.listen((Track value) {
+        _setState(selectedSubtitleTrackId: value.subtitle.id);
+      }),
       _player.stream.buffering.listen((bool value) {
         _setState(isBuffering: value);
       }),
@@ -209,6 +245,24 @@ class PlayerPlaybackEngine extends ChangeNotifier {
         _setState(errorMessage: value, isLoading: false, isReady: false);
       }),
     ]);
+  }
+
+  SubtitleTrack? _subtitleTrackForId(String trackId) {
+    if (trackId == PlayerSubtitleTrackOption.automaticId) {
+      return SubtitleTrack.auto();
+    }
+
+    if (trackId == PlayerSubtitleTrackOption.offId) {
+      return SubtitleTrack.no();
+    }
+
+    for (final track in _availableSubtitleTracks) {
+      if (track.id == trackId) {
+        return track;
+      }
+    }
+
+    return null;
   }
 
   void _setState({
@@ -223,6 +277,8 @@ class PlayerPlaybackEngine extends ChangeNotifier {
     Duration? buffer,
     double? volume,
     double? rate,
+    List<PlayerSubtitleTrackOption>? subtitleTracks,
+    String? selectedSubtitleTrackId,
     Object? errorMessage = _sentinel,
   }) {
     _runtimeState = _runtimeState.copyWith(
@@ -237,6 +293,8 @@ class PlayerPlaybackEngine extends ChangeNotifier {
       buffer: buffer,
       volume: volume,
       rate: rate,
+      subtitleTracks: subtitleTracks,
+      selectedSubtitleTrackId: selectedSubtitleTrackId,
       errorMessage: errorMessage,
     );
     notifyListeners();

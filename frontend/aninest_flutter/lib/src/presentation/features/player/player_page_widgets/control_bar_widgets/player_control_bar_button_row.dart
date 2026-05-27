@@ -2,6 +2,7 @@ import 'package:aninest_flutter/src/features/player/application/player_controlle
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
+import 'player_subtitle_menu_button.dart';
 import 'player_transport_button.dart';
 
 class PlayerControlBarButtonRow extends StatelessWidget {
@@ -78,13 +79,7 @@ class PlayerControlBarButtonRow extends StatelessWidget {
                     : null,
               ),
               const SizedBox(width: 2),
-              PlayerTransportButton(
-                tooltip: l10n.playerTooltipSubtitles,
-                icon: BootstrapIcons.badgeCcFill,
-                iconSize: 21,
-                buttonSize: 30,
-                enabled: false,
-              ),
+              PlayerSubtitleMenuButton(controller: controller),
               const SizedBox(width: 2),
               PlayerTransportButton(
                 tooltip: l10n.playerTooltipVolume,
