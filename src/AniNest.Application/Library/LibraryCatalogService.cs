@@ -39,7 +39,7 @@ public sealed class LibraryCatalogService
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (!Directory.Exists(folder.Path))
+            if (!await _scanner.FolderExistsAsync(folder.Path, cancellationToken))
             {
                 changed = true;
                 continue;
@@ -74,7 +74,7 @@ public sealed class LibraryCatalogService
 
         if (string.IsNullOrWhiteSpace(request.Path))
             return Failed("Library folder path is required.", "path_required");
-        if (!Directory.Exists(request.Path))
+        if (!await _scanner.FolderExistsAsync(request.Path, cancellationToken))
             return Failed($"Library folder '{request.Path}' does not exist.", "path_not_found");
 
         var folders = _store.GetFolders().ToList();
@@ -124,7 +124,7 @@ public sealed class LibraryCatalogService
 
         if (string.IsNullOrWhiteSpace(request.RootPath))
             throw new ArgumentException("Library root path is required.", nameof(request));
-        if (!Directory.Exists(request.RootPath))
+        if (!await _scanner.FolderExistsAsync(request.RootPath, cancellationToken))
             throw new ArgumentException($"Library root path '{request.RootPath}' does not exist.", nameof(request));
 
         var folders = _store.GetFolders().ToList();

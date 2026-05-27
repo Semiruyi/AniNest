@@ -27,6 +27,12 @@ internal sealed class FileSystemLibraryFileScanner : ILibraryFileScanner
         "cover.png"
     ];
 
+    public Task<bool> FolderExistsAsync(string path, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(Directory.Exists(path));
+    }
+
     public Task<LibraryFolderScanResult> ScanFolderAsync(string path, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();

@@ -7,6 +7,13 @@ internal sealed class FakeLibraryFileScanner : ILibraryFileScanner
     public Dictionary<string, LibraryFolderScanResult> ScanResults { get; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, IReadOnlyList<string>> BatchResults { get; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, IReadOnlyList<string>> VideoFilesResults { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public HashSet<string> MissingFolders { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public Task<bool> FolderExistsAsync(string path, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(!MissingFolders.Contains(path) && Directory.Exists(path));
+    }
 
     public Task<LibraryFolderScanResult> ScanFolderAsync(string path, CancellationToken cancellationToken = default)
     {
