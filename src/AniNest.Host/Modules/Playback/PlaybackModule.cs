@@ -35,7 +35,10 @@ internal sealed class PlaybackModule : IPlaylistModule, ISessionModule
 
         if (playlistCatalog.GetAll().Count > 0)
         {
-            _engine.ActivateFolder(playlistCatalog.GetAll()[0].FolderId);
+            if (!_engine.RestoreLastSession())
+            {
+                _engine.ActivateFolder(playlistCatalog.GetAll()[0].FolderId);
+            }
         }
     }
 

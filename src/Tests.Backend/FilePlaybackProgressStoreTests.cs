@@ -22,16 +22,23 @@ public sealed class FilePlaybackProgressStoreTests
 
         store.SaveVideoProgress("D:/Anime/A/ep01.mp4", 123_000, 1_440_000);
         store.SaveFolderProgress("folder-01", "ep-01");
+        store.SaveLastSession(new PlaybackSessionState("folder-01", "ep-01", 1.25, 65));
 
         var reloaded = CreateStore(path);
         var video = reloaded.GetVideoProgress("D:/Anime/A/ep01.mp4");
         var folder = reloaded.GetFolderProgress("folder-01");
+        var session = reloaded.GetLastSession();
 
         Assert.NotNull(video);
         Assert.Equal(123_000, video.Position);
         Assert.False(video.IsPlayed);
         Assert.NotNull(folder);
         Assert.Equal("ep-01", folder.LastItemId);
+        Assert.NotNull(session);
+        Assert.Equal("folder-01", session.FolderId);
+        Assert.Equal("ep-01", session.CurrentItemId);
+        Assert.Equal(1.25, session.PreferredRate);
+        Assert.Equal(65, session.PreferredVolume);
     }
 
     [Fact]
@@ -50,6 +57,20 @@ public sealed class FilePlaybackProgressStoreTests
         Assert.Equal(0, video.Position);
         Assert.Equal(1_440_000, video.Duration);
         Assert.True(video.IsPlayed);
+    }
+
+    [Fact]
+    public void ClearLastSession_RemovesPersistedSession()
+    {
+        var path = CreateTempPath();
+        var store = CreateStore(path);
+
+        store.SaveLastSession(new PlaybackSessionState("folder-01", "ep-01", 1.25, 65));
+        store.ClearLastSession();
+
+        var reloaded = CreateStore(path);
+
+        Assert.Null(reloaded.GetLastSession());
     }
 
     private static FilePlaybackProgressStore CreateStore(string path)

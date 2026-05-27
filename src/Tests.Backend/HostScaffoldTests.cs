@@ -286,6 +286,34 @@ public sealed class HostScaffoldTests
     }
 
     [Fact]
+    public async Task Startup_RestoresLastPlaybackSession()
+    {
+        var testRoot = Path.Combine(Path.GetTempPath(), "AniNest.Backend.Tests", $"{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testRoot);
+
+        using (var firstClient = CreateClient(testRoot))
+        {
+            var selectResponse = await firstClient.PostAsync("/api/playlist/current/items/ep-03:select", content: null);
+            selectResponse.EnsureSuccessStatusCode();
+        }
+
+        using var secondClient = CreateClient(testRoot);
+
+        var current = await secondClient.GetFromJsonAsync<SessionStateDto>("/api/session");
+        var openResponse = await secondClient.PostAsJsonAsync(
+            "/api/session/open-folder",
+            new SessionOpenFolderRequest("sample-folder"));
+        openResponse.EnsureSuccessStatusCode();
+        var openPayload = await openResponse.Content.ReadFromJsonAsync<SessionOpenResultDto>();
+
+        Assert.NotNull(current);
+        Assert.Equal("sample-folder", current.FolderId);
+        Assert.Equal("ep-03", current.CurrentItemId);
+        Assert.NotNull(openPayload);
+        Assert.Equal("ep-03", openPayload.PlaybackTarget.ItemId);
+    }
+
+    [Fact]
     public async Task MissingPlaylistFolder_ReturnsStructuredNotFoundError()
     {
         using var client = CreateClient();

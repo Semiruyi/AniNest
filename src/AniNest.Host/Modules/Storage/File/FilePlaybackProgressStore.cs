@@ -69,6 +69,26 @@ internal sealed class FilePlaybackProgressStore : IPlaybackProgressStore
         SaveDocument(document);
     }
 
+    public PlaybackSessionState? GetLastSession()
+    {
+        var document = LoadDocument();
+        return document.LastSession;
+    }
+
+    public void SaveLastSession(PlaybackSessionState session)
+    {
+        var document = LoadDocument();
+        document.LastSession = session;
+        SaveDocument(document);
+    }
+
+    public void ClearLastSession()
+    {
+        var document = LoadDocument();
+        document.LastSession = null;
+        SaveDocument(document);
+    }
+
     private PlaybackProgressDocument LoadDocument()
     {
         lock (_sync)
@@ -115,7 +135,8 @@ internal sealed class FilePlaybackProgressStore : IPlaybackProgressStore
         return new PlaybackProgressDocument
         {
             VideoProgress = new Dictionary<string, VideoProgressState>(source.VideoProgress, StringComparer.OrdinalIgnoreCase),
-            FolderProgress = new Dictionary<string, FolderProgressState>(source.FolderProgress, StringComparer.OrdinalIgnoreCase)
+            FolderProgress = new Dictionary<string, FolderProgressState>(source.FolderProgress, StringComparer.OrdinalIgnoreCase),
+            LastSession = source.LastSession
         };
     }
 
@@ -123,5 +144,6 @@ internal sealed class FilePlaybackProgressStore : IPlaybackProgressStore
     {
         public Dictionary<string, VideoProgressState> VideoProgress { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, FolderProgressState> FolderProgress { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public PlaybackSessionState? LastSession { get; set; }
     }
 }

@@ -9,3 +9,9 @@ public sealed record VideoProgressState(
 public sealed record FolderProgressState(
     string FolderId,
     string LastItemId);
+
+public sealed record PlaybackSessionState(
+    string FolderId,
+    string CurrentItemId,
+    double PreferredRate,
+    int PreferredVolume);

@@ -61,18 +61,28 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> restore() async {
+    SessionStateDto? restoredSession;
     try {
-      _session = await _sessionApi.getCurrent();
+      restoredSession = await _sessionApi.getCurrent();
     } on ApiException {
-      _session = null;
+      restoredSession = null;
     }
 
-    if (_session == null) {
+    if (restoredSession == null) {
       _playlist = null;
       _playbackTarget = null;
       await _syncPlayback();
       notifyListeners();
       return;
+    }
+
+    try {
+      final result = await _sessionApi.openFolder(restoredSession.folderId);
+      _session = result.session;
+      _playbackTarget = result.playbackTarget;
+    } on ApiException {
+      _session = restoredSession;
+      _playbackTarget = null;
     }
 
     await _refreshPlaylist();

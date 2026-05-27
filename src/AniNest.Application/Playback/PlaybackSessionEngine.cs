@@ -40,6 +40,35 @@ public sealed class PlaybackSessionEngine
     public PlaylistDto GetPlaylist(string folderId)
         => _playlistCatalog.GetPlaylist(folderId);
 
+    public bool RestoreLastSession()
+    {
+        var lastSession = _progressStore.GetLastSession();
+        if (lastSession is null)
+            return false;
+
+        try
+        {
+            var playlist = GetPlaylist(lastSession.FolderId);
+            var item = playlist.Items.FirstOrDefault(item =>
+                string.Equals(item.ItemId, lastSession.CurrentItemId, StringComparison.OrdinalIgnoreCase)) ??
+                ResolveStartItem(playlist);
+            var startPositionMs = ResolveStartPosition(item);
+
+            _playerSettings = _playerSettings with
+            {
+                PreferredRate = lastSession.PreferredRate,
+                PreferredVolume = lastSession.PreferredVolume
+            };
+            SetCurrent(playlist.FolderId, item.ItemId, startPositionMs);
+            return true;
+        }
+        catch (Exception error) when (error is KeyNotFoundException or InvalidOperationException)
+        {
+            _progressStore.ClearLastSession();
+            return false;
+        }
+    }
+
     public FolderActivationResult ActivateFolder(string folderId)
     {
         var playlist = GetPlaylist(folderId);
@@ -106,6 +135,7 @@ public sealed class PlaybackSessionEngine
                 PreferredRate = _playerSettings.PreferredRate,
                 PreferredVolume = _playerSettings.PreferredVolume
             };
+            PersistCurrentSession();
         }
     }
 
@@ -124,7 +154,10 @@ public sealed class PlaybackSessionEngine
         _progressStore.SaveFolderProgress(playlist.FolderId, item.ItemId);
 
         if (_currentSession is not null && string.Equals(_currentSession.CurrentItemId, request.ItemId, StringComparison.OrdinalIgnoreCase))
+        {
             _currentSession = _currentSession with { SavedProgressMs = 0 };
+            PersistCurrentSession();
+        }
     }
 
     public void Close()
@@ -132,6 +165,7 @@ public sealed class PlaybackSessionEngine
         if (_currentSession is not null)
             _progressStore.SaveFolderProgress(_currentSession.FolderId, _currentSession.CurrentItemId);
 
+        _progressStore.ClearLastSession();
         _currentSession = null;
     }
 
@@ -210,7 +244,21 @@ public sealed class PlaybackSessionEngine
         _playlistCatalog.Save(updatedPlaylist);
 
         _currentSession = BuildSession(updatedPlaylist, item.ItemId, savedProgressMs);
+        PersistCurrentSession();
         return BuildOpenResult(item, savedProgressMs, _currentSession);
+    }
+
+    private void PersistCurrentSession()
+    {
+        if (_currentSession is null)
+            return;
+
+        _progressStore.SaveFolderProgress(_currentSession.FolderId, _currentSession.CurrentItemId);
+        _progressStore.SaveLastSession(new PlaybackSessionState(
+            _currentSession.FolderId,
+            _currentSession.CurrentItemId,
+            _currentSession.PreferredRate,
+            _currentSession.PreferredVolume));
     }
 
     private SessionOpenResultDto BuildOpenResult(

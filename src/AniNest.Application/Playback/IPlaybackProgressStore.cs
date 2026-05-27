@@ -7,4 +7,7 @@ public interface IPlaybackProgressStore
     void MarkVideoPlayed(string filePath);
     FolderProgressState? GetFolderProgress(string folderId);
     void SaveFolderProgress(string folderId, string lastItemId);
+    PlaybackSessionState? GetLastSession();
+    void SaveLastSession(PlaybackSessionState session);
+    void ClearLastSession();
 }

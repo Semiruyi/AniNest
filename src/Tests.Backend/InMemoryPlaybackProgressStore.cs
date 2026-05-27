@@ -6,6 +6,7 @@ internal sealed class InMemoryPlaybackProgressStore : IPlaybackProgressStore
 {
     private readonly Dictionary<string, VideoProgressState> _videoProgress = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, FolderProgressState> _folderProgress = new(StringComparer.OrdinalIgnoreCase);
+    private PlaybackSessionState? _lastSession;
 
     public VideoProgressState? GetVideoProgress(string filePath)
         => _videoProgress.TryGetValue(filePath, out var progress) ? progress : null;
@@ -29,5 +30,18 @@ internal sealed class InMemoryPlaybackProgressStore : IPlaybackProgressStore
     public void SaveFolderProgress(string folderId, string lastItemId)
     {
         _folderProgress[folderId] = new FolderProgressState(folderId, lastItemId);
+    }
+
+    public PlaybackSessionState? GetLastSession()
+        => _lastSession;
+
+    public void SaveLastSession(PlaybackSessionState session)
+    {
+        _lastSession = session;
+    }
+
+    public void ClearLastSession()
+    {
+        _lastSession = null;
     }
 }

@@ -186,6 +186,28 @@ public sealed class PlaybackSessionEngineTests
         Assert.Equal("ep-02", store.GetFolderProgress("sample-folder")!.LastItemId);
     }
 
+    [Fact]
+    public void RestoreLastSession_UsesPersistedFolderAndItem()
+    {
+        var store = new InMemoryPlaybackProgressStore();
+        var engine = CreateEngineWithDuplicateItemIds(store);
+        engine.ActivateFolder("sample-folder");
+        engine.MoveNext();
+        engine.ReportProgress(new SessionProgressReportRequest("ep-02", 222_000, 1_440_000, 1.5, 60, false));
+
+        var restored = CreateEngineWithDuplicateItemIds(store);
+        var didRestore = restored.RestoreLastSession();
+        var current = restored.CurrentSession;
+
+        Assert.True(didRestore);
+        Assert.NotNull(current);
+        Assert.Equal("sample-folder", current.FolderId);
+        Assert.Equal("ep-02", current.CurrentItemId);
+        Assert.Equal(222_000, current.SavedProgressMs);
+        Assert.Equal(1.5, current.PreferredRate);
+        Assert.Equal(60, current.PreferredVolume);
+    }
+
     private static PlaybackSessionEngine CreateEngine(InMemoryPlaybackProgressStore? store = null)
     {
         var items = Enumerable.Range(1, 3)
