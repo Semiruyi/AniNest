@@ -11,6 +11,8 @@ class ContentArea extends StatelessWidget {
     required this.controller,
     required this.currentPage,
     required this.onOpenFolderForPlayback,
+    required this.isPlayerFullscreen,
+    required this.onTogglePlayerFullscreen,
     this.inspectorWidth = 320,
     this.bottomPaneHeight = 220,
   });
@@ -18,6 +20,8 @@ class ContentArea extends StatelessWidget {
   final AppController controller;
   final AppPage currentPage;
   final Future<String?> Function(String folderId) onOpenFolderForPlayback;
+  final bool isPlayerFullscreen;
+  final VoidCallback onTogglePlayerFullscreen;
   final double inspectorWidth;
   final double bottomPaneHeight;
 
@@ -31,6 +35,8 @@ class ContentArea extends StatelessWidget {
       PlayerPage(
         controller: controller.player,
         isActive: currentPage == AppPage.player,
+        isFullscreen: isPlayerFullscreen,
+        onToggleFullscreen: onTogglePlayerFullscreen,
       ),
     ];
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/core/platform/app_platform.dart';
 import 'package:aninest_flutter/src/core/window/window_frame_controller.dart';
@@ -7,6 +9,7 @@ import 'package:aninest_flutter/src/presentation/feedback/app_feedback_controlle
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_models.dart';
 import 'package:aninest_flutter/src/presentation/window/app_page.dart';
 import 'package:aninest_flutter/src/presentation/window/content_area.dart';
+import 'package:aninest_flutter/src/presentation/window/player_fullscreen_controller.dart';
 import 'package:aninest_flutter/src/presentation/window/player_launch_coordinator.dart';
 import 'package:aninest_flutter/src/presentation/window/sidebar.dart';
 import 'package:aninest_flutter/src/presentation/window/title_bar.dart';
@@ -23,6 +26,7 @@ class AppWindow extends StatefulWidget {
 
 class _AppWindowState extends State<AppWindow> {
   late final WindowFrameController _windowFrameController;
+  late final PlayerFullscreenController _playerFullscreenController;
   late final AppFeedbackController _feedbackController;
   bool _isPresentingFeedback = false;
   AppPage _currentPage = AppPage.library;
@@ -40,23 +44,41 @@ class _AppWindowState extends State<AppWindow> {
   @override
   void initState() {
     super.initState();
+    const windowService = WindowService();
     _windowFrameController = WindowFrameController(
-      const WindowService(),
+      windowService,
       widget.controller.appPreferences,
     );
+    _playerFullscreenController = PlayerFullscreenController(windowService);
     _feedbackController = AppFeedbackController();
     _feedbackController.addListener(_handleFeedbackChanged);
+    _playerFullscreenController.addListener(_handlePlayerFullscreenChanged);
     if (AppPlatform.isDesktop) {
       _windowFrameController.attach();
+      _playerFullscreenController.attach();
     }
   }
 
   @override
   void dispose() {
+    _playerFullscreenController.removeListener(_handlePlayerFullscreenChanged);
     _feedbackController.removeListener(_handleFeedbackChanged);
     _feedbackController.dispose();
+    _playerFullscreenController.dispose();
     _windowFrameController.dispose();
     super.dispose();
+  }
+
+  void _handlePlayerFullscreenChanged() {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {});
+  }
+
+  void _togglePlayerFullscreen() {
+    unawaited(_playerFullscreenController.toggleFullscreen());
   }
 
   Future<void> _handleFeedbackChanged() async {
@@ -141,28 +163,35 @@ class _AppWindowState extends State<AppWindow> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isPlayerFullscreen =
+        _currentPage == AppPage.player &&
+        _playerFullscreenController.isFullscreen;
 
     return Scaffold(
       backgroundColor: colorScheme.background,
       child: Column(
         children: <Widget>[
-          if (AppPlatform.isDesktop)
+          if (AppPlatform.isDesktop && !isPlayerFullscreen)
             TitleBar(
               controller: _windowFrameController,
               appController: widget.controller,
               feedbackController: _feedbackController,
             ),
-          Container(height: 1, color: colorScheme.border),
+          if (!isPlayerFullscreen)
+            Container(height: 1, color: colorScheme.border),
           Expanded(
             child: Row(
               children: <Widget>[
-                Sidebar(currentPage: _currentPage, onPageSelected: _showPage),
+                if (!isPlayerFullscreen)
+                  Sidebar(currentPage: _currentPage, onPageSelected: _showPage),
                 Expanded(
                   child: Align(
                     alignment: Alignment.center,
                     child: ContentArea(
                       controller: widget.controller,
                       currentPage: _currentPage,
+                      isPlayerFullscreen: isPlayerFullscreen,
+                      onTogglePlayerFullscreen: _togglePlayerFullscreen,
                       onOpenFolderForPlayback: PlayerLaunchCoordinator(
                         controller: widget.controller,
                         showPage: _showPage,

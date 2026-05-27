@@ -136,6 +136,10 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> togglePlayPause() async {
+    if (!canTogglePlayback) {
+      return;
+    }
+
     await _playbackEngine.togglePlayPause();
     await _flushProgress();
   }

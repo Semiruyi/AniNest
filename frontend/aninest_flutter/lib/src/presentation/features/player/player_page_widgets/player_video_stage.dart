@@ -4,20 +4,43 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'video_stage_widgets/player_video_viewport.dart';
 
 class PlayerVideoStage extends StatelessWidget {
-  const PlayerVideoStage({super.key, required this.controller});
+  const PlayerVideoStage({
+    super.key,
+    required this.controller,
+    required this.onToggleFullscreen,
+    this.isFullscreen = false,
+  });
 
   final PlayerController controller;
+  final bool isFullscreen;
+  final VoidCallback onToggleFullscreen;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (BuildContext context, Widget? child) {
+        final colorScheme = Theme.of(context).colorScheme;
+        final canTogglePlayback = controller.canTogglePlayback;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: ColoredBox(
-        color: colorScheme.background,
-        child: PlayerVideoViewport(controller: controller),
-      ),
+        return MouseRegion(
+          cursor: canTogglePlayback
+              ? SystemMouseCursors.click
+              : SystemMouseCursors.basic,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: canTogglePlayback ? controller.togglePlayPause : null,
+            onDoubleTap: onToggleFullscreen,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(isFullscreen ? 0 : 8),
+              child: ColoredBox(
+                color: colorScheme.background,
+                child: PlayerVideoViewport(controller: controller),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

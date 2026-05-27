@@ -5,9 +5,16 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'player_transport_button.dart';
 
 class PlayerControlBarButtonRow extends StatelessWidget {
-  const PlayerControlBarButtonRow({super.key, required this.controller});
+  const PlayerControlBarButtonRow({
+    super.key,
+    required this.controller,
+    required this.isFullscreen,
+    required this.onToggleFullscreen,
+  });
 
   final PlayerController controller;
+  final bool isFullscreen;
+  final VoidCallback onToggleFullscreen;
 
   @override
   Widget build(BuildContext context) {
@@ -100,10 +107,13 @@ class PlayerControlBarButtonRow extends StatelessWidget {
               const SizedBox(width: 2),
               PlayerTransportButton(
                 tooltip: l10n.playerTooltipFullscreen,
-                icon: LucideIcons.fullscreen,
+                icon: isFullscreen
+                    ? LucideIcons.minimize2
+                    : LucideIcons.fullscreen,
                 iconSize: 23,
                 buttonSize: 30,
-                enabled: false,
+                enabled: true,
+                onTap: onToggleFullscreen,
               ),
             ],
           ),

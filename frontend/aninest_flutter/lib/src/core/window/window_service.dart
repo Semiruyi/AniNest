@@ -41,6 +41,8 @@ class WindowService {
 
   Future<bool> isMaximized() => windowManager.isMaximized();
 
+  Future<bool> isFullScreen() => windowManager.isFullScreen();
+
   Future<Rect> getBounds() => windowManager.getBounds();
 
   Future<void> minimize() => windowManager.minimize();
@@ -48,6 +50,9 @@ class WindowService {
   Future<void> maximize() => windowManager.maximize();
 
   Future<void> unmaximize() => windowManager.unmaximize();
+
+  Future<void> setFullScreen(bool isFullScreen) =>
+      windowManager.setFullScreen(isFullScreen);
 
   Future<void> close() => windowManager.close();
 

@@ -8,16 +8,18 @@ class PlayerControlBar extends StatelessWidget {
   const PlayerControlBar({
     super.key,
     required this.controller,
+    required this.onToggleFullscreen,
+    this.isFullscreen = false,
   });
 
   final PlayerController controller;
+  final bool isFullscreen;
+  final VoidCallback onToggleFullscreen;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
       padding: const EdgeInsets.all(4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -28,7 +30,13 @@ class PlayerControlBar extends StatelessWidget {
             child: PlayerControlBarProgressSection(controller: controller),
           ),
           const SizedBox(height: 4),
-          Expanded(child: PlayerControlBarButtonRow(controller: controller)),
+          Expanded(
+            child: PlayerControlBarButtonRow(
+              controller: controller,
+              isFullscreen: isFullscreen,
+              onToggleFullscreen: onToggleFullscreen,
+            ),
+          ),
         ],
       ),
     );
