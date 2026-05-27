@@ -73,7 +73,10 @@ class _PlayerPageState extends State<PlayerPage> {
             child: Column(
               children: <Widget>[
                 if (!widget.isFullscreen)
-                  const SizedBox(height: 38, child: PlayerTopBar()),
+                  SizedBox(
+                    height: 38,
+                    child: PlayerTopBar(controller: widget.controller),
+                  ),
                 Expanded(
                   child: widget.isFullscreen
                       ? PlayerFullscreenPlaybackLayout(
