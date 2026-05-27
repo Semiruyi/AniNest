@@ -36,6 +36,8 @@ class PlayerTopBarFrame extends StatelessWidget {
               const Gap(10),
               Expanded(
                 child: Tooltip(
+                  alignment: Alignment.topLeft,
+                  anchorAlignment: Alignment.bottomLeft,
                   tooltip: (BuildContext context) => TooltipContainer(
                     child: Text(info.filePath ?? 'No media selected'),
                   ),
