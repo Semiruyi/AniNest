@@ -45,7 +45,9 @@ internal static class HostServiceRegistration
             LibraryCatalogDefaults.CreateWatchStatuses(),
             LibraryCatalogDefaults.CreateFavorites()));
         services.AddSingleton<LibraryCatalogService>();
+        services.AddSingleton<LibraryMetadataSyncService>();
         services.AddSingleton<LibraryFolderProjection>();
+        services.AddHostedService<LibraryMetadataSyncStartupService>();
         services.AddSingleton<ILibraryModule, LibraryModule>();
         return services;
     }

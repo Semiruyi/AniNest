@@ -11,7 +11,6 @@ internal sealed class LibraryFolderProjection
     private readonly ILibraryFileScanner _scanner;
     private readonly PlaybackProgressSummaryService _playbackProgressSummary;
     private readonly IMetadataRuntimeBootstrapService _metadataBootstrap;
-    private readonly IMetadataLifecycleService _metadataLifecycle;
     private readonly IMetadataRuntimeStateService _metadataState;
 
     public LibraryFolderProjection(
@@ -19,14 +18,12 @@ internal sealed class LibraryFolderProjection
         ILibraryFileScanner scanner,
         PlaybackProgressSummaryService playbackProgressSummary,
         IMetadataRuntimeBootstrapService metadataBootstrap,
-        IMetadataLifecycleService metadataLifecycle,
         IMetadataRuntimeStateService metadataState)
     {
         _catalog = catalog;
         _scanner = scanner;
         _playbackProgressSummary = playbackProgressSummary;
         _metadataBootstrap = metadataBootstrap;
-        _metadataLifecycle = metadataLifecycle;
         _metadataState = metadataState;
     }
 
@@ -34,7 +31,6 @@ internal sealed class LibraryFolderProjection
         CancellationToken cancellationToken)
     {
         var folders = await LoadFoldersWithPlaybackAsync(cancellationToken);
-        await SyncMetadataSnapshotAsync(folders, cancellationToken);
         return folders.Select(ApplyMetadataSummary).ToArray();
     }
 
@@ -61,14 +57,6 @@ internal sealed class LibraryFolderProjection
         return result;
     }
 
-    private async Task SyncMetadataSnapshotAsync(
-        IReadOnlyList<LibraryFolderDto> folders,
-        CancellationToken cancellationToken)
-    {
-        var snapshot = await BuildMetadataSnapshotAsync(folders, cancellationToken);
-        await _metadataLifecycle.SyncLibrarySnapshotAsync(snapshot, cancellationToken);
-    }
-
     private LibraryFolderDto ApplyMetadataSummary(LibraryFolderDto folder)
     {
         _metadataBootstrap.EnsureInitialized();
@@ -81,34 +69,6 @@ internal sealed class LibraryFolderProjection
             summary.PosterPath,
             summary.State.ToString(),
             summary.HasMetadata);
-    }
-
-    private async Task<IReadOnlyList<MetadataFolderRef>> BuildMetadataSnapshotAsync(
-        IReadOnlyList<LibraryFolderDto> folders,
-        CancellationToken cancellationToken)
-    {
-        var result = new List<MetadataFolderRef>(folders.Count);
-        foreach (var folder in folders)
-        {
-            var record = _catalog.GetFolderRecord(folder.FolderId);
-            if (record is null)
-                continue;
-
-            var videoFiles = await _scanner.GetVideoFilesAsync(record.Path, cancellationToken);
-            var parentName = Path.GetDirectoryName(record.Path) is { } parentPath
-                ? Path.GetFileName(parentPath)
-                : null;
-
-            result.Add(new MetadataFolderRef(
-                folder.FolderId,
-                record.Path,
-                record.Name,
-                parentName,
-                videoFiles,
-                record.VideoCount));
-        }
-
-        return result;
     }
 
     private async Task<LibraryFolderDto> ApplyPlaybackSummaryAsync(

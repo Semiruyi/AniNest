@@ -340,6 +340,46 @@ public sealed class HostScaffoldTests
     }
 
     [Fact]
+    public async Task Startup_SyncsLibrarySnapshotIntoMetadataRuntime_WhenLegacyMetadataMissing()
+    {
+        using var client = CreateClient(seedSampleMetadata: false);
+
+        var metadata = await client.GetFromJsonAsync<MetadataDto>("/api/metadata/folders/sample-folder");
+        var library = await client.GetFromJsonAsync<LibraryFolderListResponse>("/api/library/folders");
+
+        Assert.NotNull(metadata);
+        Assert.Equal("sample-folder", metadata.FolderId);
+        Assert.NotNull(library);
+        var folder = Assert.Single(library.Items);
+        Assert.NotNull(folder.MetadataSummary);
+        Assert.Equal(metadata.State.ToString(), folder.MetadataSummary.State);
+    }
+
+    [Fact]
+    public async Task AddLibraryFolder_SyncsMetadataRecordForNewFolder()
+    {
+        var testRoot = Path.Combine(Path.GetTempPath(), "AniNest.Backend.Tests", $"{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testRoot);
+        var addedFolder = Path.Combine(testRoot, "New Folder");
+        Directory.CreateDirectory(addedFolder);
+        File.WriteAllText(Path.Combine(addedFolder, "Episode 01.mkv"), string.Empty);
+
+        using var client = CreateClient(testRoot, seedSampleMetadata: false);
+
+        var addResponse = await client.PostAsJsonAsync("/api/library/folders", new AddLibraryFolderRequest(addedFolder));
+        addResponse.EnsureSuccessStatusCode();
+        var addPayload = await addResponse.Content.ReadFromJsonAsync<AddLibraryFolderResult>();
+
+        Assert.NotNull(addPayload);
+        Assert.NotNull(addPayload.Folder);
+
+        var metadata = await client.GetFromJsonAsync<MetadataDto>($"/api/metadata/folders/{addPayload.Folder.FolderId}");
+
+        Assert.NotNull(metadata);
+        Assert.Equal(addPayload.Folder.FolderId, metadata.FolderId);
+    }
+
+    [Fact]
     public async Task MissingPlaylistFolder_ReturnsStructuredNotFoundError()
     {
         using var client = CreateClient();
@@ -634,6 +674,7 @@ public sealed class HostScaffoldTests
         string? explicitTestRoot = null,
         bool seedFailedMetadata = false,
         bool seedMissingMetadata = false,
+        bool seedSampleMetadata = true,
         string? hostLogPath = null,
         ConcurrentQueue<string>? logSink = null)
         => new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
@@ -685,19 +726,24 @@ public sealed class HostScaffoldTests
                 progressStore.SaveVideoProgress(Path.Combine(sampleFolderPath, "Episode 01.mp4"), 93_000, 1_440_000);
 
                 var metadataPath = Path.Combine(testRoot, "metadata.json");
-                var metadataStore = new FileMetadataStore(metadataPath, MetadataDefaults.Create());
-                metadataStore.Save(new AniNest.Contracts.Metadata.MetadataDto(
-                    "sample-folder",
-                    "Sample Anime",
-                    "Sample Anime",
-                    "A sample metadata record used by the backend scaffold.",
-                    ["slice-of-life"],
-                    null,
-                    "S1",
-                    12,
-                    "local",
-                    AniNest.Core.Enums.MetadataState.Ready,
-                    AniNest.Core.Enums.MetadataFailureKind.None));
+                var metadataStore = new FileMetadataStore(
+                    metadataPath,
+                    seedSampleMetadata ? MetadataDefaults.Create() : []);
+                if (seedSampleMetadata)
+                {
+                    metadataStore.Save(new AniNest.Contracts.Metadata.MetadataDto(
+                        "sample-folder",
+                        "Sample Anime",
+                        "Sample Anime",
+                        "A sample metadata record used by the backend scaffold.",
+                        ["slice-of-life"],
+                        null,
+                        "S1",
+                        12,
+                        "local",
+                        AniNest.Core.Enums.MetadataState.Ready,
+                        AniNest.Core.Enums.MetadataFailureKind.None));
+                }
                 if (seedFailedMetadata)
                 {
                     metadataStore.Save(new AniNest.Contracts.Metadata.MetadataDto(

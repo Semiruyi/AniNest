@@ -15,17 +15,20 @@ internal sealed class LibraryModule : ILibraryModule
     private readonly ServerDirectoryBrowser _directoryBrowser = new();
     private readonly LibraryCatalogService _catalog;
     private readonly LibraryFolderProjection _projection;
+    private readonly LibraryMetadataSyncService _metadataSync;
     private readonly IHostEventStream _events;
     private readonly ILogger<LibraryModule> _logger;
 
     public LibraryModule(
         LibraryCatalogService catalog,
         LibraryFolderProjection projection,
+        LibraryMetadataSyncService metadataSync,
         IHostEventStream events,
         ILogger<LibraryModule> logger)
     {
         _catalog = catalog;
         _projection = projection;
+        _metadataSync = metadataSync;
         _events = events;
         _logger = logger;
     }
@@ -43,6 +46,7 @@ internal sealed class LibraryModule : ILibraryModule
         _logger.LogInformation("Library add folder processed. Status={Status}, Path={Path}", result.Status, request.Path);
         if (string.Equals(result.Status, "added", StringComparison.OrdinalIgnoreCase))
         {
+            await _metadataSync.SyncAsync(cancellationToken);
             var folders = await _projection.LoadProjectedFoldersAsync(cancellationToken);
             var addedFolder = folders
                 .FirstOrDefault(folder => string.Equals(folder.FolderId, result.Folder?.FolderId, StringComparison.OrdinalIgnoreCase));
@@ -62,6 +66,7 @@ internal sealed class LibraryModule : ILibraryModule
     {
         var before = await _catalog.GetFoldersAsync(cancellationToken);
         await _catalog.AddFolderBatchAsync(request, cancellationToken);
+        await _metadataSync.SyncAsync(cancellationToken);
         var after = await _projection.LoadProjectedFoldersAsync(cancellationToken);
         _logger.LogInformation("Library batch add processed. BeforeCount={BeforeCount}, AfterCount={AfterCount}, RootPath={RootPath}", before.Count, after.Count, request.RootPath);
         var existingIds = before.Select(folder => folder.FolderId).ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -78,12 +83,12 @@ internal sealed class LibraryModule : ILibraryModule
     public Task<LibraryBrowserResponse> BrowseAsync(string? path, CancellationToken cancellationToken = default)
         => _directoryBrowser.BrowseAsync(path, cancellationToken);
 
-    public Task DeleteFolderAsync(string folderId, CancellationToken cancellationToken = default)
+    public async Task DeleteFolderAsync(string folderId, CancellationToken cancellationToken = default)
     {
         _catalog.DeleteFolder(folderId);
+        await _metadataSync.SyncAsync(cancellationToken);
         _logger.LogInformation("Library folder deleted. FolderId={FolderId}", folderId);
         _events.Publish("library.folder_removed", new { folderId });
-        return Task.CompletedTask;
     }
 
     public async Task SetFavoriteAsync(string folderId, bool isFavorite, CancellationToken cancellationToken = default)
