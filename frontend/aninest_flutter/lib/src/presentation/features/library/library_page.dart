@@ -111,7 +111,9 @@ class _LibraryPageState extends State<LibraryPage> {
                   onSizeChangeEnd: (_) {
                     unawaited(_persistPaneWidths());
                   },
-                  child: const LibraryNavigationPane(),
+                  child: LibraryNavigationPane(
+                    controller: widget.controller.library,
+                  ),
                 ),
                 ResizablePane.flex(
                   minSize: kLibraryContentPaneMinSize,

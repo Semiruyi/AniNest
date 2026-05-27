@@ -249,6 +249,7 @@ internal sealed class LibraryModule : ILibraryModule
             playedCount = folder.PlayedCount,
             watchStatus = folder.WatchStatus.ToString(),
             isFavorite = folder.IsFavorite,
+            addedAtUtc = folder.AddedAtUtc,
             metadataSummary = folder.MetadataSummary is null
                 ? null
                 : new

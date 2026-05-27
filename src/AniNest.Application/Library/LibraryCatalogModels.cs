@@ -7,4 +7,5 @@ public sealed record LibraryFolderRecord(
     int VideoCount,
     string? CoverPath,
     LibraryFolderMetadataSummary? MetadataSummary,
-    int Order);
+    int Order,
+    DateTimeOffset AddedAtUtc = default);

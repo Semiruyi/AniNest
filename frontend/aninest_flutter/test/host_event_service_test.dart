@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:aninest_flutter/src/api/aninest_http_client.dart';
 import 'package:aninest_flutter/src/features/library/application/library_controller.dart';
+import 'package:aninest_flutter/src/features/library/application/library_view.dart';
 import 'package:aninest_flutter/src/models/enums.dart';
 import 'package:aninest_flutter/src/models/host_event_models.dart';
 import 'package:aninest_flutter/src/models/library_models.dart';
@@ -351,6 +352,55 @@ void main() {
       final second = controller.folders.single;
       expect(second.isFavorite, isTrue);
       expect(second.watchStatus, WatchStatus.completed);
+
+      client.close();
+    },
+  );
+
+  test(
+    'LibraryController sorts recently added folders by added time',
+    () async {
+      final client = AniNestHttpClient(
+        baseUrl: 'http://localhost:5275',
+        httpClient: _JsonHttpClient({
+          '/api/library/folders': {
+            'items': [
+              {
+                'folderId': 'older',
+                'name': 'Older',
+                'videoCount': 12,
+                'coverUrl': null,
+                'playedCount': 0,
+                'watchStatus': 'planned',
+                'isFavorite': false,
+                'addedAtUtc': '2026-05-20T00:00:00Z',
+                'metadataSummary': null,
+              },
+              {
+                'folderId': 'newer',
+                'name': 'Newer',
+                'videoCount': 8,
+                'coverUrl': null,
+                'playedCount': 0,
+                'watchStatus': 'planned',
+                'isFavorite': false,
+                'addedAtUtc': '2026-05-27T00:00:00Z',
+                'metadataSummary': null,
+              },
+            ],
+          },
+        }),
+      );
+      final controller = LibraryController(LibraryApi(client));
+
+      await controller.refresh();
+      controller.selectView(LibraryView.recentlyAdded);
+
+      expect(controller.visibleFolders.map((folder) => folder.folderId), [
+        'newer',
+        'older',
+      ]);
+      expect(controller.selectedFolderId, 'older');
 
       client.close();
     },

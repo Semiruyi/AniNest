@@ -14,7 +14,12 @@ public sealed class LibraryCatalogServiceTests
         var scanner = new FakeLibraryFileScanner();
         var path = CreateChildFolder(root, "Bocchi The Rock");
         scanner.ScanResults[path] = new LibraryFolderScanResult(12, Path.Combine(path, "poster.jpg"));
-        var service = new LibraryCatalogService(store, scanner, new FakeResourceUrlService());
+        var addedAtUtc = new DateTimeOffset(2026, 5, 27, 8, 30, 0, TimeSpan.Zero);
+        var service = new LibraryCatalogService(
+            store,
+            scanner,
+            new FakeResourceUrlService(),
+            new FakeTimeProvider(addedAtUtc));
 
         var result = await service.AddFolderAsync(new AddLibraryFolderRequest(path));
 
@@ -26,6 +31,7 @@ public sealed class LibraryCatalogServiceTests
         var folder = Assert.Single(folders, item => item.FolderId == "bocchi-the-rock");
         Assert.Equal(12, folder.VideoCount);
         Assert.Equal("/api/resources/library-cover/bocchi-the-rock", folder.CoverUrl);
+        Assert.Equal(addedAtUtc, folder.AddedAtUtc);
     }
 
     [Fact]
@@ -193,6 +199,7 @@ public sealed class LibraryCatalogServiceTests
             0,
             WatchStatus.Unknown,
             false,
+            DateTimeOffset.UnixEpoch,
             null);
 
         var updated = service.ApplyMetadataSummary(
@@ -251,5 +258,11 @@ public sealed class LibraryCatalogServiceTests
                 ResourceKind.LibraryPoster => "library-poster",
                 _ => "unknown"
             }}/{key.OwnerId}";
+    }
+
+    private sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow()
+            => utcNow;
     }
 }

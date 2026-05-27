@@ -17,6 +17,7 @@ public sealed record LibraryFolderDto(
     int PlayedCount,
     WatchStatus WatchStatus,
     bool IsFavorite,
+    DateTimeOffset AddedAtUtc,
     LibraryMetadataSummaryDto? MetadataSummary);
 
 public sealed record LibraryFolderListResponse(

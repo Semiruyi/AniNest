@@ -3,6 +3,7 @@ import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:aninest_flutter/src/models/enums.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/content_widgets/library_card_grid.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/content_widgets/library_empty_state.dart';
+import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/content_widgets/library_filtered_empty_state.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class LibraryContentPane extends StatelessWidget {
@@ -122,8 +123,15 @@ class LibraryContentPane extends StatelessWidget {
                   return const LibraryEmptyState();
                 }
 
+                final folders = controller.library.visibleFolders;
+                if (folders.isEmpty) {
+                  return LibraryFilteredEmptyState(
+                    view: controller.library.selectedView,
+                  );
+                }
+
                 return LibraryCardGrid(
-                  folders: controller.library.folders,
+                  folders: folders,
                   selectedFolderId: controller.library.selectedFolderId,
                   resolveMediaUrl: controller.library.resolveMediaUrl,
                   onFolderPressed: controller.selectFolder,

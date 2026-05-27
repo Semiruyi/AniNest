@@ -1,3 +1,4 @@
+import 'package:aninest_flutter/src/features/library/application/library_view.dart';
 import 'package:aninest_flutter/src/models/enums.dart';
 import 'package:aninest_flutter/src/models/host_event_models.dart';
 import 'package:aninest_flutter/src/models/library_models.dart';
@@ -11,22 +12,29 @@ class LibraryController extends ChangeNotifier {
 
   List<LibraryFolderDto> _folders = const [];
   String? _selectedFolderId;
+  LibraryView _selectedView = LibraryView.allMedia;
+
+  final LibraryViewFilter _viewFilter = const LibraryViewFilter();
 
   List<LibraryFolderDto> get folders => _folders;
+  List<LibraryFolderDto> get visibleFolders =>
+      _viewFilter.apply(_selectedView, _folders);
+  LibraryView get selectedView => _selectedView;
   String? get selectedFolderId => _selectedFolderId;
   LibraryFolderDto? get selectedFolder {
+    final visible = visibleFolders;
     final selectedId = _selectedFolderId;
     if (selectedId == null) {
-      return _folders.isEmpty ? null : _folders.first;
+      return visible.isEmpty ? null : visible.first;
     }
 
-    for (final folder in _folders) {
+    for (final folder in visible) {
       if (folder.folderId == selectedId) {
         return folder;
       }
     }
 
-    return _folders.isEmpty ? null : _folders.first;
+    return visible.isEmpty ? null : visible.first;
   }
 
   void rebind(LibraryApi libraryApi) {
@@ -67,6 +75,7 @@ class LibraryController extends ChangeNotifier {
         playedCount: folder.playedCount,
         watchStatus: folder.watchStatus,
         isFavorite: isFavorite,
+        addedAtUtc: folder.addedAtUtc,
         metadataSummary: folder.metadataSummary,
       ),
     );
@@ -84,6 +93,7 @@ class LibraryController extends ChangeNotifier {
         playedCount: folder.playedCount,
         watchStatus: status,
         isFavorite: folder.isFavorite,
+        addedAtUtc: folder.addedAtUtc,
         metadataSummary: folder.metadataSummary,
       ),
     );
@@ -107,6 +117,16 @@ class LibraryController extends ChangeNotifier {
     }
 
     _selectedFolderId = nextSelectedId;
+    notifyListeners();
+  }
+
+  void selectView(LibraryView view) {
+    if (view == _selectedView) {
+      return;
+    }
+
+    _selectedView = view;
+    _selectedFolderId = _resolveSelectedFolderId(_selectedFolderId);
     notifyListeners();
   }
 
@@ -157,6 +177,7 @@ class LibraryController extends ChangeNotifier {
             playedCount: folder.playedCount,
             watchStatus: folder.watchStatus,
             isFavorite: folder.isFavorite,
+            addedAtUtc: folder.addedAtUtc,
             metadataSummary: nextMetadata,
           );
         })
@@ -178,11 +199,13 @@ class LibraryController extends ChangeNotifier {
       final nextFolders = _folders.toList(growable: false);
       nextFolders[index] = _mergeFolder(_folders[index], folder);
       _folders = nextFolders;
+      _selectedFolderId = _resolveSelectedFolderId(_selectedFolderId);
       notifyListeners();
       return;
     }
 
     _folders = [..._folders, folder];
+    _selectedFolderId = _resolveSelectedFolderId(_selectedFolderId);
     notifyListeners();
   }
 
@@ -203,6 +226,7 @@ class LibraryController extends ChangeNotifier {
     final nextFolders = _folders.toList(growable: false);
     nextFolders[index] = merged;
     _folders = nextFolders;
+    _selectedFolderId = _resolveSelectedFolderId(_selectedFolderId);
     notifyListeners();
   }
 
@@ -218,6 +242,7 @@ class LibraryController extends ChangeNotifier {
     final nextFolders = _folders.toList(growable: false);
     nextFolders[index] = update(nextFolders[index]);
     _folders = nextFolders;
+    _selectedFolderId = _resolveSelectedFolderId(_selectedFolderId);
     notifyListeners();
   }
 
@@ -256,20 +281,22 @@ class LibraryController extends ChangeNotifier {
     final targetIndex = position.clamp(0, nextFolders.length);
     nextFolders.insert(targetIndex, item);
     _folders = nextFolders.toList(growable: false);
+    _selectedFolderId = _resolveSelectedFolderId(_selectedFolderId);
     notifyListeners();
   }
 
   String? _resolveSelectedFolderId(String? candidateFolderId) {
-    if (_folders.isEmpty) {
+    final visible = visibleFolders;
+    if (visible.isEmpty) {
       return null;
     }
 
     if (candidateFolderId != null &&
-        _folders.any((folder) => folder.folderId == candidateFolderId)) {
+        visible.any((folder) => folder.folderId == candidateFolderId)) {
       return candidateFolderId;
     }
 
-    return _folders.first.folderId;
+    return visible.first.folderId;
   }
 
   String _encodeWatchStatus(WatchStatus status) {
@@ -308,8 +335,11 @@ class LibraryController extends ChangeNotifier {
       next.metadataSummary,
     );
     final coverUrl = _preferNonEmpty(next.coverUrl, previous.coverUrl);
+    final addedAtUtc = next.addedAtUtc ?? previous.addedAtUtc;
 
-    if (coverUrl == next.coverUrl && nextMetadata == next.metadataSummary) {
+    if (coverUrl == next.coverUrl &&
+        nextMetadata == next.metadataSummary &&
+        addedAtUtc == next.addedAtUtc) {
       return next;
     }
 
@@ -321,6 +351,7 @@ class LibraryController extends ChangeNotifier {
       playedCount: next.playedCount,
       watchStatus: next.watchStatus,
       isFavorite: next.isFavorite,
+      addedAtUtc: addedAtUtc,
       metadataSummary: nextMetadata,
     );
   }

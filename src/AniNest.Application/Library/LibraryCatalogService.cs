@@ -11,15 +11,18 @@ public sealed class LibraryCatalogService
     private readonly ILibraryCatalogStore _store;
     private readonly ILibraryFileScanner _scanner;
     private readonly IResourceUrlService _resourceUrlService;
+    private readonly TimeProvider _timeProvider;
 
     public LibraryCatalogService(
         ILibraryCatalogStore store,
         ILibraryFileScanner scanner,
-        IResourceUrlService resourceUrlService)
+        IResourceUrlService resourceUrlService,
+        TimeProvider? timeProvider = null)
     {
         _store = store;
         _scanner = scanner;
         _resourceUrlService = resourceUrlService;
+        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     public async Task<IReadOnlyList<LibraryFolderDto>> GetFoldersAsync(CancellationToken cancellationToken = default)
@@ -103,7 +106,8 @@ public sealed class LibraryCatalogService
             scanResult.VideoCount,
             scanResult.CoverPath,
             null,
-            order);
+            order,
+            _timeProvider.GetUtcNow());
         folders.Add(addedRecord);
 
         _store.SaveFolders(folders);
@@ -154,7 +158,8 @@ public sealed class LibraryCatalogService
                 scanResult.VideoCount,
                 scanResult.CoverPath,
                 null,
-                order));
+                order,
+                _timeProvider.GetUtcNow()));
             knownFolderIds.Add(folderId);
         }
 
@@ -244,8 +249,14 @@ public sealed class LibraryCatalogService
             0,
             watchStatus,
             isFavorite,
+            ResolveAddedAtUtc(folder),
             MapMetadataSummary(folder));
     }
+
+    private static DateTimeOffset ResolveAddedAtUtc(LibraryFolderRecord folder)
+        => folder.AddedAtUtc == default
+            ? DateTimeOffset.UnixEpoch.AddTicks(Math.Max(0, folder.Order))
+            : folder.AddedAtUtc;
 
     private LibraryMetadataSummaryDto? MapMetadataSummary(
         LibraryFolderRecord folder)

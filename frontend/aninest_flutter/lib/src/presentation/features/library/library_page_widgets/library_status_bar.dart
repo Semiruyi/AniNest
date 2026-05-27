@@ -20,23 +20,33 @@ class LibraryStatusBar extends StatelessWidget {
       ),
       child: AnimatedBuilder(
         animation: controller,
-        builder: (context, _) => Row(
-          children: <Widget>[
-            Text('${controller.folders.length} items'),
-            const Gap(16),
-            Text(
-              controller.selectedFolderId == null ? '0 selected' : '1 selected',
-              style: TextStyle(color: colorScheme.mutedForeground),
-            ),
-            const Spacer(),
-            Text(
-              controller.selectedFolder == null
-                  ? 'Library idle'
-                  : 'Selected ${controller.selectedFolder!.name}',
-              style: TextStyle(color: colorScheme.mutedForeground),
-            ),
-          ],
-        ),
+        builder: (context, _) {
+          final visibleCount = controller.visibleFolders.length;
+          final totalCount = controller.folders.length;
+          final countLabel = visibleCount == totalCount
+              ? '$totalCount items'
+              : '$visibleCount of $totalCount items';
+
+          return Row(
+            children: <Widget>[
+              Text(countLabel),
+              const Gap(16),
+              Text(
+                controller.selectedFolderId == null
+                    ? '0 selected'
+                    : '1 selected',
+                style: TextStyle(color: colorScheme.mutedForeground),
+              ),
+              const Spacer(),
+              Text(
+                controller.selectedFolder == null
+                    ? 'Library idle'
+                    : 'Selected ${controller.selectedFolder!.name}',
+                style: TextStyle(color: colorScheme.mutedForeground),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

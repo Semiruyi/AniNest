@@ -109,6 +109,11 @@ internal sealed class FileLibraryCatalogStore : ILibraryCatalogStore
         document.WatchStatuses ??= new Dictionary<string, WatchStatus>(StringComparer.OrdinalIgnoreCase);
         document.Favorites ??= new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         document.Folders ??= [];
+        document.Folders = document.Folders
+            .Select((folder, index) => folder.AddedAtUtc == default
+                ? folder with { AddedAtUtc = DateTimeOffset.UnixEpoch.AddTicks(index) }
+                : folder)
+            .ToList();
     }
 
     private static LibraryCatalogDocument Clone(LibraryCatalogDocument source)

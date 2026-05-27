@@ -115,6 +115,7 @@ void main() {
       playedCount: 0,
       watchStatus: WatchStatus.planned,
       isFavorite: false,
+      addedAtUtc: null,
       metadataSummary: LibraryMetadataSummaryDto(
         matchedTitle: 'Bocchi the Rock!',
         originalTitle: 'Bocchi the Rock!',
@@ -160,6 +161,7 @@ void main() {
       playedCount: 0,
       watchStatus: WatchStatus.planned,
       isFavorite: false,
+      addedAtUtc: null,
       metadataSummary: LibraryMetadataSummaryDto(
         matchedTitle: 'Bocchi the Rock!',
         originalTitle: 'Bocchi the Rock!',

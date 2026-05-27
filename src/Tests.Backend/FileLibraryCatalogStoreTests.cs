@@ -42,6 +42,37 @@ public sealed class FileLibraryCatalogStoreTests
         Assert.True(reloaded.GetIsFavorite("folder-02"));
     }
 
+    [Fact]
+    public void Load_WhenAddedAtMissing_BackfillsStableTimestamp()
+    {
+        var path = CreateTempPath();
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(
+            path,
+            """
+            {
+              "Folders": [
+                {
+                  "FolderId": "folder-01",
+                  "Name": "Folder 01",
+                  "Path": "D:/Anime/Folder 01",
+                  "VideoCount": 12,
+                  "CoverPath": null,
+                  "MetadataSummary": null,
+                  "Order": 0
+                }
+              ],
+              "WatchStatuses": {},
+              "Favorites": {}
+            }
+            """);
+
+        var store = CreateStore(path);
+        var folder = Assert.Single(store.GetFolders());
+
+        Assert.Equal(DateTimeOffset.UnixEpoch, folder.AddedAtUtc);
+    }
+
     private static FileLibraryCatalogStore CreateStore(string path)
         => new(
             path,

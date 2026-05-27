@@ -51,6 +51,7 @@ class LibraryFolderDto {
     required this.playedCount,
     required this.watchStatus,
     required this.isFavorite,
+    required this.addedAtUtc,
     required this.metadataSummary,
   });
 
@@ -61,6 +62,7 @@ class LibraryFolderDto {
   final int playedCount;
   final WatchStatus watchStatus;
   final bool isFavorite;
+  final DateTime? addedAtUtc;
   final LibraryMetadataSummaryDto? metadataSummary;
 
   factory LibraryFolderDto.fromJson(Map<String, dynamic> json) {
@@ -72,6 +74,7 @@ class LibraryFolderDto {
       playedCount: json['playedCount'] as int? ?? 0,
       watchStatus: WatchStatus.fromJson(json['watchStatus']),
       isFavorite: json['isFavorite'] as bool? ?? false,
+      addedAtUtc: _parseDateTime(json['addedAtUtc']),
       metadataSummary: json['metadataSummary'] is Map<String, dynamic>
           ? LibraryMetadataSummaryDto.fromJson(
               json['metadataSummary'] as Map<String, dynamic>,
@@ -88,6 +91,7 @@ class LibraryFolderDto {
     int? playedCount,
     WatchStatus? watchStatus,
     bool? isFavorite,
+    DateTime? addedAtUtc,
     LibraryMetadataSummaryDto? metadataSummary,
   }) {
     return LibraryFolderDto(
@@ -98,8 +102,17 @@ class LibraryFolderDto {
       playedCount: playedCount ?? this.playedCount,
       watchStatus: watchStatus ?? this.watchStatus,
       isFavorite: isFavorite ?? this.isFavorite,
+      addedAtUtc: addedAtUtc ?? this.addedAtUtc,
       metadataSummary: metadataSummary ?? this.metadataSummary,
     );
+  }
+
+  static DateTime? _parseDateTime(Object? value) {
+    if (value is! String || value.isEmpty) {
+      return null;
+    }
+
+    return DateTime.tryParse(value)?.toUtc();
   }
 }
 
