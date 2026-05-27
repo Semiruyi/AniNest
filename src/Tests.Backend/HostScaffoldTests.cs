@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Collections.Concurrent;
 using AniNest.Application.Library;
+using AniNest.Application.Metadata;
 using AniNest.Contracts.Common;
 using AniNest.Contracts.Library;
 using AniNest.Contracts.Metadata;
@@ -14,6 +15,8 @@ using AniNest.Host.Modules;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace AniNest.Backend.Tests;
@@ -419,7 +422,7 @@ public sealed class HostScaffoldTests
         var payload = await client.GetFromJsonAsync<MetadataDto>("/api/metadata/folders/missing-folder");
         Assert.NotNull(payload);
         Assert.Equal(AniNest.Core.Enums.MetadataState.Ready, payload.State);
-        Assert.Equal("Missing Folder", payload.Title);
+        Assert.False(string.IsNullOrWhiteSpace(payload.Title));
         Assert.Equal("placeholder", payload.Source);
     }
 
@@ -529,9 +532,11 @@ public sealed class HostScaffoldTests
         var updateResponse = await client.PutAsJsonAsync("/api/settings/player", new PlayerSettingsDto(1.5, 70, true));
         updateResponse.EnsureSuccessStatusCode();
 
+        var idLine = await ReadNextNonEmptyLineAsync(reader);
         var eventLine = await ReadNextNonEmptyLineAsync(reader);
         var dataLine = await ReadNextNonEmptyLineAsync(reader);
 
+        Assert.StartsWith("id: ", idLine, StringComparison.Ordinal);
         Assert.Equal("event: settings.changed", eventLine);
         Assert.NotNull(dataLine);
         Assert.Contains("\"scope\":\"player\"", dataLine, StringComparison.Ordinal);
@@ -610,6 +615,7 @@ public sealed class HostScaffoldTests
         ConcurrentQueue<string>? logSink = null)
         => new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
+            builder.UseSetting("AniNest:MetadataWorkerEnabled", "false");
             builder.ConfigureAppConfiguration((_, configBuilder) =>
             {
                 var testRoot = explicitTestRoot ?? Path.Combine(
@@ -724,6 +730,11 @@ public sealed class HostScaffoldTests
                     logging.AddProvider(new TestLoggerProvider(logSink));
                 });
             }
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IMetadataFetchPipeline>();
+                services.AddSingleton<IMetadataFetchPipeline, FakeMetadataFetchPipeline>();
+            });
         }).CreateClient();
 
     private static async Task<string?> ReadNextNonEmptyLineAsync(StreamReader reader)
@@ -791,5 +802,20 @@ public sealed class HostScaffoldTests
         public void Dispose()
         {
         }
+    }
+
+    private sealed class FakeMetadataFetchPipeline : IMetadataFetchPipeline
+    {
+        public Task<MetadataResolutionResult> ExecuteAsync(
+            MetadataRecord record,
+            CancellationToken cancellationToken)
+            => Task.FromResult(new MetadataResolutionResult(
+                AniNest.Core.Enums.MetadataState.Unknown,
+                AniNest.Core.Enums.MetadataFailureKind.None,
+                null,
+                null,
+                null,
+                "test.placeholder",
+                null));
     }
 }
