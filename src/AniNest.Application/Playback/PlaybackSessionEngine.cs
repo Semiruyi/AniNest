@@ -139,6 +139,21 @@ public sealed class PlaybackSessionEngine
         }
     }
 
+    public void UpdatePlayerSettings(PlayerSettingsDto settings)
+    {
+        _playerSettings = settings;
+
+        if (_currentSession is null)
+            return;
+
+        _currentSession = _currentSession with
+        {
+            PreferredRate = settings.PreferredRate,
+            PreferredVolume = settings.PreferredVolume
+        };
+        PersistCurrentSession();
+    }
+
     public void Complete(SessionCompleteRequest request)
     {
         var (playlist, item) = ResolveSessionItem(request.ItemId);

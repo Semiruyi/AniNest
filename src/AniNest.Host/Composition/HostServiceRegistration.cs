@@ -38,13 +38,15 @@ internal static class HostServiceRegistration
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddSingleton<ILibraryModule, LibraryModule>();
         services.AddSingleton<ILibraryFileScanner, FileSystemLibraryFileScanner>();
         services.AddSingleton<ILibraryCatalogStore>(_ => new FileLibraryCatalogStore(
             ResolvePath(configuration, "AniNest:LibraryCatalogPath", "library-catalog.json"),
             LibraryCatalogDefaults.CreateFolders(),
             LibraryCatalogDefaults.CreateWatchStatuses(),
             LibraryCatalogDefaults.CreateFavorites()));
+        services.AddSingleton<LibraryCatalogService>();
+        services.AddSingleton<LibraryFolderProjection>();
+        services.AddSingleton<ILibraryModule, LibraryModule>();
         return services;
     }
 
@@ -57,8 +59,17 @@ internal static class HostServiceRegistration
             PlaybackProgressDefaults.CreateVideoProgress(),
             PlaybackProgressDefaults.CreateFolderProgress()));
         services.AddSingleton<PlaybackProgressSummaryService>();
-
         services.AddSingleton<IPlaylistCatalogStore, FileSystemPlaylistCatalogStore>();
+        services.AddSingleton<PlaylistCatalogService>();
+        services.AddSingleton(sp =>
+        {
+            var settings = sp.GetRequiredService<ISettingsStore>().Load().Player;
+            return new PlaybackSessionEngine(
+                sp.GetRequiredService<PlaylistCatalogService>(),
+                settings,
+                sp.GetRequiredService<IPlaybackProgressStore>(),
+                sp.GetRequiredService<IResourceUrlService>());
+        });
         services.AddSingleton<PlaybackModule>();
         services.AddSingleton<IPlaylistModule>(sp => sp.GetRequiredService<PlaybackModule>());
         services.AddSingleton<ISessionModule>(sp => sp.GetRequiredService<PlaybackModule>());
@@ -72,6 +83,8 @@ internal static class HostServiceRegistration
         services.AddSingleton<IThumbnailStore>(_ => new FileThumbnailStore(
             ResolvePath(configuration, "AniNest:ThumbnailPath", "thumbnails.json"),
             ThumbnailDefaults.Create()));
+        services.AddSingleton<ThumbnailService>();
+        services.AddSingleton<ThumbnailFolderProjection>();
         services.AddSingleton<IThumbnailModule, ThumbnailModule>();
         return services;
     }
@@ -83,6 +96,7 @@ internal static class HostServiceRegistration
         services.AddSingleton<ISettingsStore>(_ => new FileSettingsStore(
             ResolvePath(configuration, "AniNest:SettingsPath", "host-settings.json"),
             SettingsDefaults.Create()));
+        services.AddSingleton<SettingsService>();
         services.AddSingleton<ISettingsModule, SettingsModule>();
         return services;
     }

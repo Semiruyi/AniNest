@@ -317,6 +317,29 @@ public sealed class HostScaffoldTests
     }
 
     [Fact]
+    public async Task Startup_RestoresUpdatedPlayerSettingsIntoSession()
+    {
+        var testRoot = Path.Combine(Path.GetTempPath(), "AniNest.Backend.Tests", $"{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testRoot);
+
+        using (var firstClient = CreateClient(testRoot))
+        {
+            var updateResponse = await firstClient.PutAsJsonAsync(
+                "/api/settings/player",
+                new PlayerSettingsDto(1.75, 55, false));
+            updateResponse.EnsureSuccessStatusCode();
+        }
+
+        using var secondClient = CreateClient(testRoot);
+
+        var current = await secondClient.GetFromJsonAsync<SessionStateDto>("/api/session");
+
+        Assert.NotNull(current);
+        Assert.Equal(1.75, current.PreferredRate);
+        Assert.Equal(55, current.PreferredVolume);
+    }
+
+    [Fact]
     public async Task MissingPlaylistFolder_ReturnsStructuredNotFoundError()
     {
         using var client = CreateClient();

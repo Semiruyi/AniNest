@@ -19,24 +19,13 @@ internal sealed class LibraryModule : ILibraryModule
     private readonly ILogger<LibraryModule> _logger;
 
     public LibraryModule(
-        ILibraryCatalogStore store,
-        ILibraryFileScanner scanner,
-        PlaybackProgressSummaryService playbackProgressSummary,
-        IResourceUrlService resourceUrlService,
-        IMetadataRuntimeBootstrapService metadataBootstrap,
-        IMetadataLifecycleService metadataLifecycle,
-        IMetadataRuntimeStateService metadataState,
+        LibraryCatalogService catalog,
+        LibraryFolderProjection projection,
         IHostEventStream events,
         ILogger<LibraryModule> logger)
     {
-        _catalog = new LibraryCatalogService(store, scanner, resourceUrlService);
-        _projection = new LibraryFolderProjection(
-            _catalog,
-            scanner,
-            playbackProgressSummary,
-            metadataBootstrap,
-            metadataLifecycle,
-            metadataState);
+        _catalog = catalog;
+        _projection = projection;
         _events = events;
         _logger = logger;
     }

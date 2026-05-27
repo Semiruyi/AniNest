@@ -1,4 +1,5 @@
 using AniNest.Application.Modules;
+using AniNest.Application.Playback;
 using AniNest.Application.Settings;
 using AniNest.Contracts.Settings;
 using AniNest.Host.Events;
@@ -8,11 +9,16 @@ namespace AniNest.Host.Modules;
 internal sealed class SettingsModule : ISettingsModule
 {
     private readonly SettingsService _settings;
+    private readonly PlaybackSessionEngine _playback;
     private readonly IHostEventStream _events;
 
-    public SettingsModule(ISettingsStore store, IHostEventStream events)
+    public SettingsModule(
+        SettingsService settings,
+        PlaybackSessionEngine playback,
+        IHostEventStream events)
     {
-        _settings = new SettingsService(store);
+        _settings = settings;
+        _playback = playback;
         _events = events;
     }
 
@@ -32,6 +38,7 @@ internal sealed class SettingsModule : ISettingsModule
     public Task SavePlayerAsync(PlayerSettingsDto settings, CancellationToken cancellationToken = default)
     {
         _settings.SavePlayer(settings);
+        _playback.UpdatePlayerSettings(_settings.GetPlayer());
         _events.Publish("settings.changed", new { scope = "player" });
         return Task.CompletedTask;
     }

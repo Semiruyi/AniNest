@@ -15,12 +15,17 @@ internal sealed class ThumbnailModule : IThumbnailModule
     private readonly ThumbnailFolderProjection _projection;
     private readonly IHostEventStream _events;
 
-    public ThumbnailModule(IThumbnailStore store, IPlaylistCatalogStore playlistStore, IHostEventStream events)
+    public ThumbnailModule(
+        IThumbnailStore store,
+        ThumbnailService thumbnails,
+        PlaylistCatalogService playlists,
+        ThumbnailFolderProjection projection,
+        IHostEventStream events)
     {
         _store = store;
-        _thumbnails = new ThumbnailService(store);
-        _playlists = new PlaylistCatalogService(playlistStore);
-        _projection = new ThumbnailFolderProjection(_thumbnails, _playlists);
+        _thumbnails = thumbnails;
+        _playlists = playlists;
+        _projection = projection;
         _events = events;
     }
 
