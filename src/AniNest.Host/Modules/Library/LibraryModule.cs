@@ -100,50 +100,64 @@ internal sealed class LibraryModule : ILibraryModule
     public async Task SetFavoriteAsync(string folderId, bool isFavorite, CancellationToken cancellationToken = default)
     {
         _catalog.SetFavorite(folderId, isFavorite);
-        await PublishLibraryFolderSnapshotEventAsync("library.folder_updated", folderId, cancellationToken, new
-        {
+        await PublishLibraryFolderSnapshotEventAsync(
+            "library.folder_updated",
             folderId,
-            isFavorite
-        });
+            cancellationToken,
+            isFavorite: isFavorite);
     }
 
     public async Task SetWatchStatusAsync(string folderId, WatchStatus status, CancellationToken cancellationToken = default)
     {
         _catalog.SetWatchStatus(folderId, status);
-        await PublishLibraryFolderSnapshotEventAsync("library.folder_updated", folderId, cancellationToken, new
-        {
+        await PublishLibraryFolderSnapshotEventAsync(
+            "library.folder_updated",
             folderId,
-            watchStatus = status.ToString()
-        });
+            cancellationToken,
+            watchStatus: status.ToString());
     }
 
     public async Task MoveFolderToFrontAsync(string folderId, CancellationToken cancellationToken = default)
     {
         _catalog.MoveFolderToFront(folderId);
-        await PublishLibraryFolderSnapshotEventAsync("library.folder_reordered", folderId, cancellationToken, new
-        {
+        await PublishLibraryFolderSnapshotEventAsync(
+            "library.folder_reordered",
             folderId,
-            position = 0
-        });
+            cancellationToken,
+            position: 0);
     }
 
     private async Task PublishLibraryFolderSnapshotEventAsync(
         string type,
         string folderId,
         CancellationToken cancellationToken,
-        object payload)
+        bool? isFavorite = null,
+        string? watchStatus = null,
+        int? position = null)
     {
         var folder = await _projection.LoadProjectedFolderAsync(folderId, cancellationToken);
-        _events.Publish(type, MergePayload(payload, folder is null ? null : MapFolderEventPayload(folder)));
+        _events.Publish(
+            type,
+            BuildFolderEventPayload(
+                folderId,
+                isFavorite,
+                watchStatus,
+                position,
+                folder is null ? null : MapFolderEventPayload(folder)));
     }
 
-    private static object MergePayload(object payload, object? folder)
+    private static object BuildFolderEventPayload(
+        string folderId,
+        bool? isFavorite,
+        string? watchStatus,
+        int? position,
+        object? folder)
         => new
         {
-            folderId = payload.GetType().GetProperty("folderId")?.GetValue(payload) as string,
-            isFavorite = payload.GetType().GetProperty("isFavorite")?.GetValue(payload) as bool?,
-            watchStatus = payload.GetType().GetProperty("watchStatus")?.GetValue(payload) as string,
-            position = payload.GetType().GetProperty("position")?.GetValue(payload) as int?,
+            folderId,
+            isFavorite,
+            watchStatus,
+            position,
             folder
         };
 

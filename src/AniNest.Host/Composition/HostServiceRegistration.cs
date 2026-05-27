@@ -6,7 +6,6 @@ using AniNest.Application.Playlist;
 using AniNest.Application.Resources;
 using AniNest.Application.Settings;
 using AniNest.Application.Thumbnail;
-using AniNest.Contracts.Settings;
 using AniNest.Host.Events;
 using AniNest.Host.Modules;
 using AniNest.Host.Modules.Resources;
@@ -17,9 +16,28 @@ internal static class HostServiceRegistration
 {
     public static IServiceCollection AddAniNestHostServices(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddSharedServices();
+        services.AddLibraryServices(configuration);
+        services.AddPlaybackServices(configuration);
+        services.AddThumbnailServices(configuration);
+        services.AddSettingsServices(configuration);
+        services.AddMetadataServices(configuration);
+        services.AddResourceServices(configuration);
+
+        return services;
+    }
+
+    private static IServiceCollection AddSharedServices(this IServiceCollection services)
+    {
         services.AddSingleton<IHostEventStream, InMemoryHostEventStream>();
         services.AddSingleton<IResourceUrlService, ResourceUrlService>();
+        return services;
+    }
 
+    private static IServiceCollection AddLibraryServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
         services.AddSingleton<ILibraryModule, LibraryModule>();
         services.AddSingleton<ILibraryFileScanner, FileSystemLibraryFileScanner>();
         services.AddSingleton<ILibraryCatalogStore>(_ => new FileLibraryCatalogStore(
@@ -27,7 +45,13 @@ internal static class HostServiceRegistration
             LibraryCatalogDefaults.CreateFolders(),
             LibraryCatalogDefaults.CreateWatchStatuses(),
             LibraryCatalogDefaults.CreateFavorites()));
+        return services;
+    }
 
+    private static IServiceCollection AddPlaybackServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
         services.AddSingleton<IPlaybackProgressStore>(_ => new FilePlaybackProgressStore(
             ResolvePath(configuration, "AniNest:PlaybackProgressPath", "playback-progress.json"),
             PlaybackProgressDefaults.CreateVideoProgress(),
@@ -35,14 +59,38 @@ internal static class HostServiceRegistration
         services.AddSingleton<PlaybackProgressSummaryService>();
 
         services.AddSingleton<IPlaylistCatalogStore, FileSystemPlaylistCatalogStore>();
-        services.AddSingleton<IThumbnailStore>(_ => new FileThumbnailStore(
-            ResolvePath(configuration, "AniNest:ThumbnailPath", "thumbnails.json"),
-            ThumbnailDefaults.Create()));
-
         services.AddSingleton<PlaybackModule>();
         services.AddSingleton<IPlaylistModule>(sp => sp.GetRequiredService<PlaybackModule>());
         services.AddSingleton<ISessionModule>(sp => sp.GetRequiredService<PlaybackModule>());
+        return services;
+    }
 
+    private static IServiceCollection AddThumbnailServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.AddSingleton<IThumbnailStore>(_ => new FileThumbnailStore(
+            ResolvePath(configuration, "AniNest:ThumbnailPath", "thumbnails.json"),
+            ThumbnailDefaults.Create()));
+        services.AddSingleton<IThumbnailModule, ThumbnailModule>();
+        return services;
+    }
+
+    private static IServiceCollection AddSettingsServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.AddSingleton<ISettingsStore>(_ => new FileSettingsStore(
+            ResolvePath(configuration, "AniNest:SettingsPath", "host-settings.json"),
+            SettingsDefaults.Create()));
+        services.AddSingleton<ISettingsModule, SettingsModule>();
+        return services;
+    }
+
+    private static IServiceCollection AddMetadataServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
         services.AddSingleton<IMetadataStore>(_ => new FileMetadataStore(
             ResolvePath(configuration, "AniNest:MetadataPath", "metadata.json"),
             MetadataDefaults.Create()));
@@ -70,20 +118,7 @@ internal static class HostServiceRegistration
         services.AddSingleton<IMetadataTaskScheduler, MetadataTaskScheduler>();
         services.AddSingleton<IMetadataRuntimeStateService, MetadataRuntimeStateService>();
         services.AddSingleton<IMetadataLifecycleService, MetadataLifecycleService>();
-        services.AddSingleton<IResourceLocator>(sp => new ResourceLocator(
-            sp.GetRequiredService<ILibraryCatalogStore>(),
-            sp.GetRequiredService<ILibraryFileScanner>(),
-            sp.GetRequiredService<IMetadataStore>(),
-            sp.GetRequiredService<IPlaylistCatalogStore>(),
-            ResolvePath(configuration, "AniNest:MetadataPosterRootPath", Path.Combine("metadata", "posters"))));
-
-        services.AddSingleton<ISettingsStore>(_ => new FileSettingsStore(
-            ResolvePath(configuration, "AniNest:SettingsPath", "host-settings.json"),
-            SettingsDefaults.Create()));
-
-        services.AddSingleton<ISettingsModule, SettingsModule>();
         services.AddSingleton<IMetadataModule, MetadataModule>();
-        services.AddSingleton<IThumbnailModule, ThumbnailModule>();
         if (configuration.GetValue("AniNest:MetadataWorkerEnabled", true))
             services.AddHostedService<MetadataBackgroundService>();
         services.AddHttpClient<IAnimeMetadataProvider, BangumiMetadataProvider>(client =>
@@ -91,12 +126,19 @@ internal static class HostServiceRegistration
             client.BaseAddress = new Uri("https://api.bgm.tv/");
             client.Timeout = TimeSpan.FromSeconds(15);
         });
-        services.AddSingleton<Func<MetadataSettingsDto>>(sp =>
-        {
-            var module = sp.GetRequiredService<ISettingsModule>();
-            return () => module.GetMetadataAsync().GetAwaiter().GetResult();
-        });
+        return services;
+    }
 
+    private static IServiceCollection AddResourceServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.AddSingleton<IResourceLocator>(sp => new ResourceLocator(
+            sp.GetRequiredService<ILibraryCatalogStore>(),
+            sp.GetRequiredService<ILibraryFileScanner>(),
+            sp.GetRequiredService<IMetadataStore>(),
+            sp.GetRequiredService<IPlaylistCatalogStore>(),
+            ResolvePath(configuration, "AniNest:MetadataPosterRootPath", Path.Combine("metadata", "posters"))));
         return services;
     }
 

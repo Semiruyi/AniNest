@@ -2,7 +2,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using AniNest.Application.Metadata;
-using AniNest.Contracts.Settings;
+using AniNest.Application.Modules;
 
 namespace AniNest.Host.Modules;
 
@@ -10,12 +10,12 @@ internal sealed class BangumiMetadataProvider : IAnimeMetadataProvider
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
     private readonly HttpClient _httpClient;
-    private readonly Func<MetadataSettingsDto> _settingsAccessor;
+    private readonly ISettingsModule _settings;
 
-    public BangumiMetadataProvider(HttpClient httpClient, Func<MetadataSettingsDto> settingsAccessor)
+    public BangumiMetadataProvider(HttpClient httpClient, ISettingsModule settings)
     {
         _httpClient = httpClient;
-        _settingsAccessor = settingsAccessor;
+        _settings = settings;
     }
 
     public async Task<IReadOnlyList<ProviderSearchResult>> SearchAsync(
@@ -27,7 +27,7 @@ internal sealed class BangumiMetadataProvider : IAnimeMetadataProvider
         if (string.IsNullOrWhiteSpace(keyword))
             return [];
 
-        using var request = CreateRequest(HttpMethod.Post, "v0/search/subjects");
+        using var request = await CreateRequestAsync(HttpMethod.Post, "v0/search/subjects", cancellationToken);
         var body = JsonSerializer.Serialize(new
         {
             keyword,
@@ -58,7 +58,7 @@ internal sealed class BangumiMetadataProvider : IAnimeMetadataProvider
 
     public async Task<ProviderSubjectDetail> GetSubjectAsync(string sourceId, CancellationToken cancellationToken)
     {
-        using var request = CreateRequest(HttpMethod.Get, $"v0/subjects/{sourceId}");
+        using var request = await CreateRequestAsync(HttpMethod.Get, $"v0/subjects/{sourceId}", cancellationToken);
         using var response = await _httpClient.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
@@ -89,19 +89,24 @@ internal sealed class BangumiMetadataProvider : IAnimeMetadataProvider
 
     public async Task<Stream> DownloadPosterAsync(string imageUrl, CancellationToken cancellationToken)
     {
-        using var request = CreateRequest(HttpMethod.Get, imageUrl, allowAbsolute: true);
+        using var request = await CreateRequestAsync(HttpMethod.Get, imageUrl, cancellationToken, allowAbsolute: true);
         var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStreamAsync(cancellationToken);
     }
 
-    private HttpRequestMessage CreateRequest(HttpMethod method, string path, bool allowAbsolute = false)
+    private async Task<HttpRequestMessage> CreateRequestAsync(
+        HttpMethod method,
+        string path,
+        CancellationToken cancellationToken,
+        bool allowAbsolute = false)
     {
         var requestUri = allowAbsolute ? new Uri(path, UriKind.Absolute) : new Uri(_httpClient.BaseAddress!, path);
         var request = new HttpRequestMessage(method, requestUri);
         request.Headers.UserAgent.Add(new ProductInfoHeaderValue("AniNest", "0.1"));
 
-        var token = _settingsAccessor().BangumiAccessToken;
+        var settings = await _settings.GetMetadataAsync(cancellationToken);
+        var token = settings.BangumiAccessToken;
         if (!string.IsNullOrWhiteSpace(token))
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
