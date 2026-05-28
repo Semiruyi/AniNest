@@ -1,5 +1,6 @@
 import 'package:aninest_flutter/src/features/library/application/library_view.dart';
 import 'package:aninest_flutter/src/features/library/application/library_batch_add_result.dart';
+import 'package:aninest_flutter/src/core/logging/app_performance_logger.dart';
 import 'package:aninest_flutter/src/models/enums.dart';
 import 'package:aninest_flutter/src/models/host_event_models.dart';
 import 'package:aninest_flutter/src/models/library_models.dart';
@@ -44,7 +45,11 @@ class LibraryController extends ChangeNotifier {
 
   Future<void> refresh() async {
     final previousSelectedId = _selectedFolderId;
-    final nextFolders = await _libraryApi.getFolders();
+    final nextFolders = await AppPerformanceLogger.measure(
+      'Startup.Library',
+      'libraryApi.getFolders',
+      _libraryApi.getFolders,
+    );
     _folders = _mergeRefreshedFolders(nextFolders);
     _selectedFolderId = _resolveSelectedFolderId(previousSelectedId);
     notifyListeners();

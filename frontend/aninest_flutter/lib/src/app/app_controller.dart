@@ -5,6 +5,7 @@ import 'package:aninest_flutter/src/app/composition/app_runtime_assembler.dart';
 import 'package:aninest_flutter/src/app/app_locale.dart';
 import 'package:aninest_flutter/src/api/aninest_http_client.dart';
 import 'package:aninest_flutter/src/core/logging/app_logger.dart';
+import 'package:aninest_flutter/src/core/logging/app_performance_logger.dart';
 import 'package:aninest_flutter/src/core/storage/app_preferences.dart';
 import 'package:aninest_flutter/src/features/library/application/library_batch_add_result.dart';
 import 'package:aninest_flutter/src/features/library/application/library_controller.dart';
@@ -98,8 +99,16 @@ class AppController extends ChangeNotifier {
   String? resolveMediaUrl(String? path) => library.resolveMediaUrl(path);
 
   Future<void> bootstrap() async {
-    await _runtime.backendConnectionCoordinator.hydrateBaseUrl();
-    await _runtime.appBootstrapWorkflow.reloadFromBackend();
+    await AppPerformanceLogger.measure(
+      'Startup.Bootstrap',
+      'backendConnectionCoordinator.hydrateBaseUrl',
+      _runtime.backendConnectionCoordinator.hydrateBaseUrl,
+    );
+    await AppPerformanceLogger.measure(
+      'Startup.Bootstrap',
+      'appBootstrapWorkflow.reloadFromBackend',
+      _runtime.appBootstrapWorkflow.reloadFromBackend,
+    );
   }
 
   Future<AddLibraryFolderResultDto?> addFolder(String path) async {

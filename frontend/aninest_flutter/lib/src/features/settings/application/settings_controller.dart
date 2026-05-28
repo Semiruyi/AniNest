@@ -1,4 +1,5 @@
 import 'package:aninest_flutter/src/app/app_locale.dart';
+import 'package:aninest_flutter/src/core/logging/app_performance_logger.dart';
 import 'package:aninest_flutter/src/core/storage/app_preferences.dart';
 import 'package:aninest_flutter/src/models/settings_models.dart';
 import 'package:aninest_flutter/src/services/settings_api.dart';
@@ -21,8 +22,17 @@ class SettingsController extends ChangeNotifier {
   }
 
   Future<void> load() async {
-    _locale = AppLocaleOption.fromCode(await _appPreferences.loadLocaleCode());
-    _appSettings = await _settingsApi.getAll();
+    final localeCode = await AppPerformanceLogger.measure(
+      'Startup.Settings',
+      'appPreferences.loadLocaleCode',
+      _appPreferences.loadLocaleCode,
+    );
+    _locale = AppLocaleOption.fromCode(localeCode);
+    _appSettings = await AppPerformanceLogger.measure(
+      'Startup.Settings',
+      'settingsApi.getAll',
+      _settingsApi.getAll,
+    );
     notifyListeners();
   }
 

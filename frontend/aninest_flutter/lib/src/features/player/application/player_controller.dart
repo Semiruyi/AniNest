@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:aninest_flutter/src/api/api_exception.dart';
 import 'package:aninest_flutter/src/core/logging/app_logger.dart';
+import 'package:aninest_flutter/src/core/logging/app_performance_logger.dart';
 import 'package:aninest_flutter/src/core/storage/app_preferences.dart';
 import 'package:aninest_flutter/src/features/player/application/player_anime4k_mode.dart';
 import 'package:aninest_flutter/src/features/player/application/player_playback_engine.dart';
@@ -65,10 +66,18 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> restore() async {
-    await _hydrateAnime4kMode();
+    await AppPerformanceLogger.measure(
+      'Startup.Player',
+      'hydrateAnime4kMode',
+      _hydrateAnime4kMode,
+    );
     SessionStateDto? restoredSession;
     try {
-      restoredSession = await _sessionApi.getCurrent();
+      restoredSession = await AppPerformanceLogger.measure(
+        'Startup.Player',
+        'sessionApi.getCurrent',
+        _sessionApi.getCurrent,
+      );
     } on ApiException {
       restoredSession = null;
     }
@@ -82,7 +91,11 @@ class PlayerController extends ChangeNotifier {
     }
 
     try {
-      final result = await _sessionApi.openFolder(restoredSession.folderId);
+      final result = await AppPerformanceLogger.measure(
+        'Startup.Player',
+        'sessionApi.openFolder',
+        () => _sessionApi.openFolder(restoredSession!.folderId),
+      );
       _session = result.session;
       _playbackTarget = result.playbackTarget;
     } on ApiException {
@@ -90,8 +103,16 @@ class PlayerController extends ChangeNotifier {
       _playbackTarget = null;
     }
 
-    await _refreshPlaylist();
-    await _syncPlayback();
+    await AppPerformanceLogger.measure(
+      'Startup.Player',
+      'refreshPlaylist',
+      _refreshPlaylist,
+    );
+    await AppPerformanceLogger.measure(
+      'Startup.Player',
+      'syncPlayback',
+      _syncPlayback,
+    );
     notifyListeners();
   }
 

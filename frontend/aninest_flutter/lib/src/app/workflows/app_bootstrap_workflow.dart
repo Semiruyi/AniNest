@@ -1,5 +1,7 @@
 import 'package:aninest_flutter/src/app/coordination/host_event_coordinator.dart';
 import 'package:aninest_flutter/src/app/coordination/library_metadata_selection_sync.dart';
+import 'package:aninest_flutter/src/core/logging/app_performance_logger.dart';
+import 'dart:async';
 
 typedef RunBootstrapOperation =
     Future<void> Function(
@@ -38,21 +40,47 @@ class AppBootstrapWorkflow {
 
   Future<String?> reloadFromBackend({bool restartHostEvents = false}) async {
     if (restartHostEvents) {
-      await _hostEventCoordinator.restart();
+      await AppPerformanceLogger.measure(
+        'Startup.Workflow',
+        'hostEventCoordinator.restart',
+        _hostEventCoordinator.restart,
+      );
     } else {
+      AppPerformanceLogger.mark(
+        'Startup.Workflow',
+        'hostEventCoordinator.start triggered',
+      );
       _hostEventCoordinator.start();
     }
 
     await _runOperation(() async {
-      await _loadSettings();
-      await _libraryMetadataSelectionSync.runWithSelectionRefreshSuspended(
-        _refreshLibrary,
+      await AppPerformanceLogger.measure(
+        'Startup.Workflow',
+        'loadSettings',
+        _loadSettings,
       );
-      await _restorePlayer();
-      await _libraryMetadataSelectionSync.refreshForCurrentSelection(
-        force: true,
+      await AppPerformanceLogger.measure(
+        'Startup.Workflow',
+        'refreshLibrary',
+        () => _libraryMetadataSelectionSync.runWithSelectionRefreshSuspended(
+          _refreshLibrary,
+        ),
+      );
+      await AppPerformanceLogger.measure(
+        'Startup.Workflow',
+        'refreshForCurrentSelection',
+        () => _libraryMetadataSelectionSync.refreshForCurrentSelection(
+          force: true,
+        ),
       );
     });
+    unawaited(
+      AppPerformanceLogger.measure(
+        'Startup.Workflow',
+        'restorePlayer',
+        _restorePlayer,
+      ),
+    );
     return _readLastError();
   }
 }

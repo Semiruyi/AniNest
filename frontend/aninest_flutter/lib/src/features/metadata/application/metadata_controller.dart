@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:aninest_flutter/src/api/api_exception.dart';
 import 'package:aninest_flutter/src/models/host_event_models.dart';
 import 'package:aninest_flutter/src/models/metadata_models.dart';
@@ -28,9 +30,10 @@ class MetadataController extends ChangeNotifier {
   }
 
   Future<void> refresh(String? folderId) async {
-    _metadataSummary = await _metadataApi.getSummary();
+    final summaryFuture = _metadataApi.getSummary();
 
     if (folderId == null) {
+      _metadataSummary = await summaryFuture;
       _metadata = null;
       _thumbnailSummary = null;
       _thumbnails = const [];
@@ -38,21 +41,42 @@ class MetadataController extends ChangeNotifier {
       return;
     }
 
-    try {
-      _metadata = await _metadataApi.getFolder(folderId);
-    } on ApiException {
-      _metadata = null;
-    }
+    final metadataFuture = _loadFolderMetadata(folderId);
+    final thumbnailsFuture = _loadFolderThumbnails(folderId);
 
-    try {
-      _thumbnailSummary = await _thumbnailApi.getFolderSummary(folderId);
-      _thumbnails = await _thumbnailApi.getFolder(folderId);
-    } on ApiException {
-      _thumbnailSummary = null;
-      _thumbnails = const [];
-    }
-
+    _metadataSummary = await summaryFuture;
+    final metadataResult = await metadataFuture;
+    final thumbnailsResult = await thumbnailsFuture;
+    _metadata = metadataResult;
+    _thumbnailSummary = thumbnailsResult.summary;
+    _thumbnails = thumbnailsResult.thumbnails;
     notifyListeners();
+  }
+
+  Future<MetadataDto?> _loadFolderMetadata(String folderId) async {
+    try {
+      return await _metadataApi.getFolder(folderId);
+    } on ApiException {
+      return null;
+    }
+  }
+
+  Future<_ThumbnailRefreshResult> _loadFolderThumbnails(String folderId) async {
+    try {
+      final results = await Future.wait<Object?>(<Future<Object?>>[
+        _thumbnailApi.getFolderSummary(folderId),
+        _thumbnailApi.getFolder(folderId),
+      ]);
+      return _ThumbnailRefreshResult(
+        summary: results[0] as ThumbnailFolderSummaryDto,
+        thumbnails: results[1] as List<ThumbnailStatusDto>,
+      );
+    } on ApiException {
+      return const _ThumbnailRefreshResult(
+        summary: null,
+        thumbnails: <ThumbnailStatusDto>[],
+      );
+    }
   }
 
   void clear() {
@@ -80,19 +104,12 @@ class MetadataController extends ChangeNotifier {
       return;
     }
 
-    try {
-      _metadata = await _metadataApi.getFolder(folderId);
-    } on ApiException {
-      _metadata = null;
-    }
-
-    try {
-      _thumbnailSummary = await _thumbnailApi.getFolderSummary(folderId);
-      _thumbnails = await _thumbnailApi.getFolder(folderId);
-    } on ApiException {
-      _thumbnailSummary = null;
-      _thumbnails = const [];
-    }
+    final metadataFuture = _loadFolderMetadata(folderId);
+    final thumbnailsFuture = _loadFolderThumbnails(folderId);
+    _metadata = await metadataFuture;
+    final thumbnailsResult = await thumbnailsFuture;
+    _thumbnailSummary = thumbnailsResult.summary;
+    _thumbnails = thumbnailsResult.thumbnails;
 
     notifyListeners();
   }
@@ -123,4 +140,14 @@ class MetadataController extends ChangeNotifier {
     );
     notifyListeners();
   }
+}
+
+class _ThumbnailRefreshResult {
+  const _ThumbnailRefreshResult({
+    required this.summary,
+    required this.thumbnails,
+  });
+
+  final ThumbnailFolderSummaryDto? summary;
+  final List<ThumbnailStatusDto> thumbnails;
 }

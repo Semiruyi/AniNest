@@ -228,7 +228,9 @@ class PlayerPlaybackEngine extends ChangeNotifier {
     }
 
     _anime4kMode = mode;
-    await _applyAnime4kConfiguration();
+    if (_runtimeState.hasMedia) {
+      await _applyAnime4kConfiguration();
+    }
     _setState(anime4kMode: mode);
   }
 

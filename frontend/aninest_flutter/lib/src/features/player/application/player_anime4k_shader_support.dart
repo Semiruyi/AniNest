@@ -73,6 +73,9 @@ final class PlayerAnime4kShaderSupport {
         final target = File(
           '${shaderDirectory.path}${Platform.pathSeparator}${entry.key}',
         );
+        if (target.existsSync()) {
+          continue;
+        }
         final sourceBytes = (await rootBundle.load(
           entry.value,
         )).buffer.asUint8List();
