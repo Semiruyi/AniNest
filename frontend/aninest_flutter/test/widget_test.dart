@@ -110,6 +110,7 @@ void main() {
     const folder = LibraryFolderDto(
       folderId: 'bocchi-the-rock',
       name: 'Bocchi The Rock Folder',
+      path: '/anime/Bocchi The Rock Folder',
       videoCount: 12,
       coverUrl: null,
       playedCount: 0,
@@ -156,6 +157,7 @@ void main() {
     const folder = LibraryFolderDto(
       folderId: 'bocchi-the-rock',
       name: 'Bocchi The Rock Folder',
+      path: '/anime/Bocchi The Rock Folder',
       videoCount: 12,
       coverUrl: null,
       playedCount: 0,

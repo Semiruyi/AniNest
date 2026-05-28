@@ -1,7 +1,8 @@
 import 'package:aninest_flutter/src/api/api_exception.dart';
 import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
-import 'package:aninest_flutter/src/models/library_models.dart';
+import 'package:aninest_flutter/src/presentation/window/title_bar/server_folder_browser/server_folder_browser_tree_state.dart';
+import 'package:aninest_flutter/src/presentation/window/title_bar/server_folder_browser/server_folder_browser_tree_view.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class ServerFolderBrowserDialog extends StatefulWidget {
@@ -20,30 +21,65 @@ class ServerFolderBrowserDialog extends StatefulWidget {
 }
 
 class _ServerFolderBrowserDialogState extends State<ServerFolderBrowserDialog> {
-  LibraryBrowserResponse? _browser;
+  ServerFolderBrowserTreeState? _treeState;
   String? _errorMessage;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _load(widget.initialPath);
+    _loadInitialTree(widget.initialPath);
   }
 
-  Future<void> _load(String? path) async {
+  Future<void> _loadInitialTree(String? path) async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      final browser = await widget.controller.browseLibraryDirectory(path);
+      final initialBrowser = await widget.controller.browseLibraryDirectory(
+        path,
+      );
       if (!mounted) {
         return;
       }
 
+      final rootBrowser = initialBrowser.currentPath == initialBrowser.rootPath
+          ? initialBrowser
+          : await widget.controller.browseLibraryDirectory(
+              initialBrowser.rootPath,
+            );
+      if (!mounted) {
+        return;
+      }
+
+      var treeState = ServerFolderBrowserTreeState.fromRootResponse(
+        rootBrowser,
+      );
+      if (initialBrowser.currentPath != initialBrowser.rootPath) {
+        final ancestorPaths = _buildAncestorPaths(
+          initialBrowser.rootPath,
+          initialBrowser.currentPath,
+        );
+        for (final ancestorPath in ancestorPaths) {
+          final browser = ancestorPath == initialBrowser.currentPath
+              ? initialBrowser
+              : await widget.controller.browseLibraryDirectory(ancestorPath);
+          if (!mounted) {
+            return;
+          }
+
+          treeState = treeState
+              .replaceNodeChildren(ancestorPath, browser.directories)
+              .setNodeExpanded(ancestorPath, true);
+        }
+
+        treeState = treeState.selectPath(initialBrowser.currentPath);
+      }
+
       setState(() {
-        _browser = browser;
+        _treeState = treeState;
         _isLoading = false;
       });
     } on ApiException catch (error) {
@@ -52,7 +88,7 @@ class _ServerFolderBrowserDialogState extends State<ServerFolderBrowserDialog> {
       }
 
       setState(() {
-        _browser = null;
+        _treeState = null;
         _isLoading = false;
         _errorMessage = '${error.code}: ${error.message}';
       });
@@ -62,18 +98,142 @@ class _ServerFolderBrowserDialogState extends State<ServerFolderBrowserDialog> {
       }
 
       setState(() {
-        _browser = null;
+        _treeState = null;
         _isLoading = false;
         _errorMessage = error.toString();
       });
     }
   }
 
+  void _handleSelectPath(String path) {
+    final treeState = _treeState;
+    if (treeState == null || treeState.selectedPath == path) {
+      return;
+    }
+
+    setState(() {
+      _treeState = treeState.selectPath(path);
+      _errorMessage = null;
+    });
+  }
+
+  Future<void> _handleToggleExpanded(String path, bool expanded) async {
+    final treeState = _treeState;
+    if (treeState == null) {
+      return;
+    }
+
+    setState(() {
+      _treeState = treeState.setNodeExpanded(path, expanded);
+      _errorMessage = null;
+    });
+
+    final nextState = _treeState;
+    if (!expanded || nextState == null || !nextState.shouldLoadChildren(path)) {
+      return;
+    }
+
+    setState(() {
+      _treeState = nextState.setNodeLoading(path, true);
+    });
+
+    try {
+      final browser = await widget.controller.browseLibraryDirectory(path);
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _treeState = _treeState?.replaceNodeChildren(path, browser.directories);
+      });
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _treeState = _treeState?.setNodeLoading(path, false);
+        _errorMessage = '${error.code}: ${error.message}';
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _treeState = _treeState?.setNodeLoading(path, false);
+        _errorMessage = error.toString();
+      });
+    }
+  }
+
+  void _selectRoot() {
+    final treeState = _treeState;
+    if (treeState == null) {
+      return;
+    }
+
+    setState(() {
+      _treeState = treeState.selectPath(treeState.rootPath);
+      _errorMessage = null;
+    });
+  }
+
+  void _selectParent() {
+    final treeState = _treeState;
+    if (treeState == null) {
+      return;
+    }
+
+    final parentPath = treeState.parentOf(treeState.selectedPath);
+    if (parentPath == null || parentPath.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _treeState = treeState.selectPath(parentPath);
+      _errorMessage = null;
+    });
+  }
+
+  List<String> _buildAncestorPaths(String rootPath, String targetPath) {
+    if (targetPath == rootPath || !targetPath.startsWith(rootPath)) {
+      return const <String>[];
+    }
+
+    final separator = targetPath.contains('\\') ? '\\' : '/';
+    final relativePath = targetPath
+        .substring(rootPath.length)
+        .replaceFirst(RegExp(r'^[\\/]'), '');
+    if (relativePath.isEmpty) {
+      return const <String>[];
+    }
+
+    final segments = relativePath
+        .split(RegExp(r'[\\/]'))
+        .where((segment) => segment.isNotEmpty);
+    final ancestorPaths = <String>[];
+    var currentPath = rootPath;
+    for (final segment in segments) {
+      currentPath = '$currentPath$separator$segment';
+      ancestorPaths.add(currentPath);
+    }
+
+    return ancestorPaths;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
-    final browser = _browser;
+    final treeState = _treeState;
+    final selectedPath = treeState?.selectedPath;
+    final canSelectCurrent =
+        !_isLoading && selectedPath != null && selectedPath.isNotEmpty;
+    final canNavigateUp =
+        !_isLoading &&
+        treeState != null &&
+        treeState.parentOf(treeState.selectedPath) != null;
 
     return AlertDialog(
       title: Text(l10n.serverFolderBrowserDialogTitle),
@@ -94,7 +254,7 @@ class _ServerFolderBrowserDialogState extends State<ServerFolderBrowserDialog> {
                 border: Border.all(color: colorScheme.border),
               ),
               child: Text(
-                browser?.currentPath ?? l10n.serverFolderBrowserLoading,
+                selectedPath ?? l10n.serverFolderBrowserLoading,
                 style: TextStyle(
                   fontSize: 12,
                   color: colorScheme.mutedForeground,
@@ -105,16 +265,14 @@ class _ServerFolderBrowserDialogState extends State<ServerFolderBrowserDialog> {
             Row(
               children: <Widget>[
                 SecondaryButton(
-                  onPressed: _isLoading
+                  onPressed: _isLoading || treeState == null
                       ? null
-                      : () => _load(browser?.rootPath ?? widget.initialPath),
+                      : _selectRoot,
                   child: Text(l10n.serverFolderBrowserRoot),
                 ),
                 const SizedBox(width: 8),
                 SecondaryButton(
-                  onPressed: _isLoading || browser?.parentPath == null
-                      ? null
-                      : () => _load(browser!.parentPath),
+                  onPressed: canNavigateUp ? _selectParent : null,
                   child: Text(l10n.serverFolderBrowserUp),
                 ),
               ],
@@ -146,9 +304,9 @@ class _ServerFolderBrowserDialogState extends State<ServerFolderBrowserDialog> {
           child: Text(l10n.commonCancel),
         ),
         PrimaryButton(
-          onPressed: _isLoading || browser == null || !browser.canSelect
+          onPressed: !canSelectCurrent
               ? null
-              : () => Navigator.of(context).pop(browser.currentPath),
+              : () => Navigator.of(context).pop(selectedPath),
           child: Text(l10n.serverFolderBrowserSelectCurrent),
         ),
       ],
@@ -157,9 +315,9 @@ class _ServerFolderBrowserDialogState extends State<ServerFolderBrowserDialog> {
 
   Widget _buildBody(BuildContext context, ColorScheme colorScheme) {
     final l10n = AppLocalizations.of(context);
-    final browser = _browser;
+    final treeState = _treeState;
 
-    if (_isLoading && browser == null) {
+    if (_isLoading && treeState == null) {
       return Center(
         child: Text(
           l10n.serverFolderBrowserLoading,
@@ -168,7 +326,7 @@ class _ServerFolderBrowserDialogState extends State<ServerFolderBrowserDialog> {
       );
     }
 
-    if (browser == null) {
+    if (treeState == null) {
       return Center(
         child: Text(
           l10n.serverFolderBrowserUnavailable,
@@ -177,69 +335,10 @@ class _ServerFolderBrowserDialogState extends State<ServerFolderBrowserDialog> {
       );
     }
 
-    if (browser.directories.isEmpty) {
-      return Center(
-        child: Text(
-          l10n.serverFolderBrowserEmpty,
-          style: TextStyle(color: colorScheme.mutedForeground),
-        ),
-      );
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(8),
-      itemCount: browser.directories.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 6),
-      itemBuilder: (context, index) {
-        final directory = browser.directories[index];
-        return _DirectoryRow(
-          directory: directory,
-          onOpen: _isLoading ? null : () => _load(directory.path),
-        );
-      },
-    );
-  }
-}
-
-class _DirectoryRow extends StatelessWidget {
-  const _DirectoryRow({required this.directory, required this.onOpen});
-
-  final LibraryBrowserDirectoryDto directory;
-  final VoidCallback? onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return GestureDetector(
-      onTap: onOpen,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: colorScheme.card,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: colorScheme.border),
-        ),
-        child: Row(
-          children: <Widget>[
-            const Icon(BootstrapIcons.folder2Open, size: 16),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                directory.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              BootstrapIcons.chevronRight,
-              size: 14,
-              color: colorScheme.mutedForeground,
-            ),
-          ],
-        ),
-      ),
+    return ServerFolderBrowserTreeView(
+      state: treeState,
+      onSelectPath: _handleSelectPath,
+      onToggleExpanded: _handleToggleExpanded,
     );
   }
 }

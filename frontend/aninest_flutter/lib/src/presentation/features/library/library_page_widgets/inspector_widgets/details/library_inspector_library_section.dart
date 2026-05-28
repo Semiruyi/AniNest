@@ -3,10 +3,7 @@ import 'package:aninest_flutter/src/presentation/features/library/library_page_w
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class LibraryInspectorLibrarySection extends StatelessWidget {
-  const LibraryInspectorLibrarySection({
-    super.key,
-    required this.folder,
-  });
+  const LibraryInspectorLibrarySection({super.key, required this.folder});
 
   final LibraryFolderDto folder;
 
@@ -16,6 +13,8 @@ class LibraryInspectorLibrarySection extends StatelessWidget {
       title: 'Library',
       children: <Widget>[
         LibraryInspectorField(label: 'Folder name', value: folder.name),
+        if (folder.path.isNotEmpty)
+          LibraryInspectorField(label: 'Path', value: folder.path),
         LibraryInspectorField(
           label: 'Episodes',
           value: folder.videoCount <= 0

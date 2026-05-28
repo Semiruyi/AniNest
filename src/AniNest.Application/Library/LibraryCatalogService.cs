@@ -241,6 +241,7 @@ public sealed class LibraryCatalogService
         return new LibraryFolderDto(
             folder.FolderId,
             folder.Name,
+            folder.Path,
             folder.VideoCount,
             string.IsNullOrWhiteSpace(folder.CoverPath)
                 ? null

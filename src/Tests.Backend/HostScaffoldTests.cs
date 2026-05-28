@@ -63,6 +63,7 @@ public sealed class HostScaffoldTests
         Assert.NotNull(payload);
         Assert.Single(payload.Items);
         Assert.Equal("sample-folder", payload.Items[0].FolderId);
+        Assert.EndsWith("Sample Anime", payload.Items[0].Path, StringComparison.Ordinal);
         Assert.Equal("/api/resources/library-cover/sample-folder", payload.Items[0].CoverUrl);
     }
 

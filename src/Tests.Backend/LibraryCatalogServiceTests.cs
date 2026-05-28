@@ -194,6 +194,7 @@ public sealed class LibraryCatalogServiceTests
         var folder = new LibraryFolderDto(
             "folder-01",
             "Folder 01",
+            "D:/Anime/Folder 01",
             12,
             null,
             0,

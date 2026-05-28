@@ -65,38 +65,12 @@ class LibraryController extends ChangeNotifier {
 
   Future<void> toggleFavorite(String folderId, bool isFavorite) async {
     await _libraryApi.setFavorite(folderId, isFavorite);
-    _patchFolder(
-      folderId,
-      (folder) => LibraryFolderDto(
-        folderId: folder.folderId,
-        name: folder.name,
-        videoCount: folder.videoCount,
-        coverUrl: folder.coverUrl,
-        playedCount: folder.playedCount,
-        watchStatus: folder.watchStatus,
-        isFavorite: isFavorite,
-        addedAtUtc: folder.addedAtUtc,
-        metadataSummary: folder.metadataSummary,
-      ),
-    );
+    _patchFolder(folderId, (folder) => folder.copyWith(isFavorite: isFavorite));
   }
 
   Future<void> setWatchStatus(String folderId, WatchStatus status) async {
     await _libraryApi.setWatchStatus(folderId, _encodeWatchStatus(status));
-    _patchFolder(
-      folderId,
-      (folder) => LibraryFolderDto(
-        folderId: folder.folderId,
-        name: folder.name,
-        videoCount: folder.videoCount,
-        coverUrl: folder.coverUrl,
-        playedCount: folder.playedCount,
-        watchStatus: status,
-        isFavorite: folder.isFavorite,
-        addedAtUtc: folder.addedAtUtc,
-        metadataSummary: folder.metadataSummary,
-      ),
-    );
+    _patchFolder(folderId, (folder) => folder.copyWith(watchStatus: status));
   }
 
   Future<void> moveToFront(String folderId) async {
@@ -172,6 +146,7 @@ class LibraryController extends ChangeNotifier {
           return LibraryFolderDto(
             folderId: folder.folderId,
             name: folder.name,
+            path: folder.path,
             videoCount: folder.videoCount,
             coverUrl: update.coverUrl,
             playedCount: folder.playedCount,
@@ -334,23 +309,20 @@ class LibraryController extends ChangeNotifier {
       previous.metadataSummary,
       next.metadataSummary,
     );
+    final path = _preferNonEmpty(next.path, previous.path) ?? '';
     final coverUrl = _preferNonEmpty(next.coverUrl, previous.coverUrl);
     final addedAtUtc = next.addedAtUtc ?? previous.addedAtUtc;
 
-    if (coverUrl == next.coverUrl &&
+    if (path == next.path &&
+        coverUrl == next.coverUrl &&
         nextMetadata == next.metadataSummary &&
         addedAtUtc == next.addedAtUtc) {
       return next;
     }
 
-    return LibraryFolderDto(
-      folderId: next.folderId,
-      name: next.name,
-      videoCount: next.videoCount,
+    return next.copyWith(
+      path: path,
       coverUrl: coverUrl,
-      playedCount: next.playedCount,
-      watchStatus: next.watchStatus,
-      isFavorite: next.isFavorite,
       addedAtUtc: addedAtUtc,
       metadataSummary: nextMetadata,
     );
