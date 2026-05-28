@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:aninest_flutter/src/api/api_exception.dart';
 import 'package:aninest_flutter/src/core/logging/app_logger.dart';
+import 'package:aninest_flutter/src/features/player/application/player_anime4k_mode.dart';
 import 'package:aninest_flutter/src/features/player/application/player_playback_engine.dart';
 import 'package:aninest_flutter/src/features/player/application/player_progress_synchronizer.dart';
 import 'package:aninest_flutter/src/features/player/application/player_runtime_state.dart';
@@ -232,6 +233,10 @@ class PlayerController extends ChangeNotifier {
 
   Future<void> selectSubtitleTrack(String trackId) async {
     await _playbackEngine.setSubtitleTrack(trackId);
+  }
+
+  Future<void> setAnime4kMode(PlayerAnime4kMode mode) async {
+    await _playbackEngine.setAnime4kMode(mode);
   }
 
   Future<void> closeSession() async {

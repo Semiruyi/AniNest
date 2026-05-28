@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:aninest_flutter/src/core/logging/app_logger.dart';
+import 'package:aninest_flutter/src/features/player/application/player_anime4k_mode.dart';
+import 'package:aninest_flutter/src/features/player/application/player_anime4k_shader_support.dart';
 import 'package:aninest_flutter/src/features/player/application/player_runtime_state.dart';
 import 'package:aninest_flutter/src/features/player/application/player_subtitle_track_mapper.dart';
 import 'package:aninest_flutter/src/features/player/application/player_subtitle_track_option.dart';
@@ -10,6 +12,12 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 class PlayerPlaybackEngine extends ChangeNotifier {
+  static const List<String> _ignoredMpvLogSnippets = <String>[
+    'property not found _setProperty(osc, 1)',
+    'Failed to create EGL surface',
+    'Failed to create file cache.',
+  ];
+
   PlayerPlaybackEngine() {
     _videoController = VideoController(_player);
     _bindStreams();
@@ -28,6 +36,7 @@ class PlayerPlaybackEngine extends ChangeNotifier {
         state.tracks.subtitle,
       ),
       selectedSubtitleTrackId: state.track.subtitle.id,
+      anime4kMode: _anime4kMode,
     );
   }
 
@@ -43,6 +52,7 @@ class PlayerPlaybackEngine extends ChangeNotifier {
   List<SubtitleTrack> _availableSubtitleTracks = const <SubtitleTrack>[];
   double _lastNonZeroVolume = 80;
   int _loadGeneration = 0;
+  PlayerAnime4kMode _anime4kMode = PlayerAnime4kMode.off;
 
   PlayerRuntimeState get runtimeState => _runtimeState;
   VideoController get videoController => _videoController;
@@ -89,6 +99,10 @@ class PlayerPlaybackEngine extends ChangeNotifier {
     );
 
     try {
+      AppLogger.info(
+        'PlayerPlaybackEngine',
+        'Opening media item=${target.itemId}',
+      );
       await _player.open(
         Media(
           target.mediaUrl,
@@ -103,6 +117,11 @@ class PlayerPlaybackEngine extends ChangeNotifier {
       await _player.setRate(session.preferredRate);
       await _player.setVolume(session.preferredVolume.toDouble());
       await _player.setSubtitleTrack(SubtitleTrack.auto());
+      await _applyAnime4kConfiguration();
+      AppLogger.info(
+        'PlayerPlaybackEngine',
+        'Opened media item=${target.itemId}',
+      );
       if (generation != _loadGeneration) {
         return;
       }
@@ -203,6 +222,16 @@ class PlayerPlaybackEngine extends ChangeNotifier {
     _setState(selectedSubtitleTrackId: track.id);
   }
 
+  Future<void> setAnime4kMode(PlayerAnime4kMode mode) async {
+    if (_anime4kMode == mode) {
+      return;
+    }
+
+    _anime4kMode = mode;
+    await _applyAnime4kConfiguration();
+    _setState(anime4kMode: mode);
+  }
+
   void _bindStreams() {
     _subscriptions.addAll(<StreamSubscription<dynamic>>[
       _player.stream.playing.listen((bool value) {
@@ -243,7 +272,12 @@ class PlayerPlaybackEngine extends ChangeNotifier {
       _player.stream.buffer.listen((Duration value) {
         _setState(buffer: value);
       }),
+      _player.stream.log.listen(_handleMpvLog),
       _player.stream.error.listen((String value) {
+        AppLogger.error(
+          'PlayerPlaybackEngine.MPV',
+          'Player stream error: $value',
+        );
         _setState(errorMessage: value, isLoading: false, isReady: false);
       }),
     ]);
@@ -281,6 +315,7 @@ class PlayerPlaybackEngine extends ChangeNotifier {
     double? rate,
     List<PlayerSubtitleTrackOption>? subtitleTracks,
     String? selectedSubtitleTrackId,
+    PlayerAnime4kMode? anime4kMode,
     Object? errorMessage = _sentinel,
   }) {
     _runtimeState = _runtimeState.copyWith(
@@ -297,9 +332,79 @@ class PlayerPlaybackEngine extends ChangeNotifier {
       rate: rate,
       subtitleTracks: subtitleTracks,
       selectedSubtitleTrackId: selectedSubtitleTrackId,
+      anime4kMode: anime4kMode,
       errorMessage: errorMessage,
     );
     notifyListeners();
+  }
+
+  void _handleMpvLog(PlayerLog log) {
+    final message = '${log.prefix}[${log.level}] ${log.text}';
+    if (_ignoredMpvLogSnippets.any(message.contains)) {
+      return;
+    }
+
+    switch (log.level) {
+      case 'fatal':
+      case 'error':
+        AppLogger.error('PlayerPlaybackEngine.MPV', message);
+        break;
+      case 'warn':
+        AppLogger.warning('PlayerPlaybackEngine.MPV', message);
+        break;
+      default:
+        break;
+    }
+  }
+
+  Future<void> _applyAnime4kConfiguration() async {
+    final nativePlayer = _player.platform;
+    if (!PlayerAnime4kShaderSupport.isSupported || nativePlayer == null) {
+      return;
+    }
+
+    try {
+      final shaderChain = await PlayerAnime4kShaderSupport.shaderChainFor(
+        _anime4kMode,
+      );
+      final player = nativePlayer as dynamic;
+      if (shaderChain == null || shaderChain.isEmpty) {
+        await player.command(<String>[
+          'change-list',
+          'glsl-shaders',
+          'clr',
+          '',
+        ]);
+      } else {
+        await player.command(<String>[
+          'change-list',
+          'glsl-shaders',
+          'set',
+          shaderChain,
+        ]);
+      }
+
+      final activeShaderChain = await player.getProperty('glsl-shaders');
+      final isApplied = _anime4kMode == PlayerAnime4kMode.off
+          ? activeShaderChain.trim().isEmpty
+          : activeShaderChain.trim().isNotEmpty;
+      if (!isApplied) {
+        AppLogger.warning(
+          'PlayerPlaybackEngine',
+          'Anime4K mode verification mismatch for mode=${_anime4kMode.id}',
+        );
+        return;
+      }
+
+      AppLogger.info('PlayerPlaybackEngine', 'Anime4K mode=${_anime4kMode.id}');
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'PlayerPlaybackEngine',
+        'Failed to apply Anime4K configuration.',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   @override

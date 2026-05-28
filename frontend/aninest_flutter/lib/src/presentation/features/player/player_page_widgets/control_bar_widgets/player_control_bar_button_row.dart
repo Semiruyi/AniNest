@@ -2,6 +2,7 @@ import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
+import 'player_anime4k_menu_button.dart';
 import 'player_subtitle_menu_button.dart';
 import 'player_transport_button.dart';
 
@@ -78,6 +79,8 @@ class PlayerControlBarButtonRow extends StatelessWidget {
                     ? () => controller.cyclePlaybackRate()
                     : null,
               ),
+              const SizedBox(width: 2),
+              PlayerAnime4kMenuButton(controller: controller),
               const SizedBox(width: 2),
               PlayerSubtitleMenuButton(controller: controller),
               const SizedBox(width: 2),

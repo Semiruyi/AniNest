@@ -11,6 +11,7 @@ import 'package:aninest_flutter/src/features/library/application/library_control
 import 'package:aninest_flutter/src/features/library/application/library_view.dart';
 import 'package:aninest_flutter/src/features/metadata/application/metadata_controller.dart';
 import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
+import 'package:aninest_flutter/src/features/player/application/player_anime4k_mode.dart';
 import 'package:aninest_flutter/src/features/player/application/player_runtime_state.dart';
 import 'package:aninest_flutter/src/features/settings/application/settings_controller.dart';
 import 'package:aninest_flutter/src/models/enums.dart';
@@ -226,6 +227,10 @@ class AppController extends ChangeNotifier {
 
   Future<void> selectSubtitleTrack(String trackId) async {
     await player.selectSubtitleTrack(trackId);
+  }
+
+  Future<void> setAnime4kMode(PlayerAnime4kMode mode) async {
+    await player.setAnime4kMode(mode);
   }
 
   Future<void> selectItemAndPlay(String itemId) async {

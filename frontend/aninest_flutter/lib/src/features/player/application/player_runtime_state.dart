@@ -1,4 +1,5 @@
 import 'player_subtitle_track_option.dart';
+import 'player_anime4k_mode.dart';
 
 class PlayerRuntimeState {
   const PlayerRuntimeState({
@@ -15,6 +16,7 @@ class PlayerRuntimeState {
     required this.rate,
     required this.subtitleTracks,
     required this.selectedSubtitleTrackId,
+    required this.anime4kMode,
     required this.errorMessage,
   });
 
@@ -32,6 +34,7 @@ class PlayerRuntimeState {
       rate = 1,
       subtitleTracks = const <PlayerSubtitleTrackOption>[],
       selectedSubtitleTrackId = PlayerSubtitleTrackOption.automaticId,
+      anime4kMode = PlayerAnime4kMode.off,
       errorMessage = null;
 
   final bool hasMedia;
@@ -47,6 +50,7 @@ class PlayerRuntimeState {
   final double rate;
   final List<PlayerSubtitleTrackOption> subtitleTracks;
   final String selectedSubtitleTrackId;
+  final PlayerAnime4kMode anime4kMode;
   final String? errorMessage;
 
   bool get isMuted => volume <= 0.001;
@@ -77,6 +81,7 @@ class PlayerRuntimeState {
     double? rate,
     List<PlayerSubtitleTrackOption>? subtitleTracks,
     String? selectedSubtitleTrackId,
+    PlayerAnime4kMode? anime4kMode,
     Object? errorMessage = _sentinel,
   }) {
     return PlayerRuntimeState(
@@ -94,6 +99,7 @@ class PlayerRuntimeState {
       subtitleTracks: subtitleTracks ?? this.subtitleTracks,
       selectedSubtitleTrackId:
           selectedSubtitleTrackId ?? this.selectedSubtitleTrackId,
+      anime4kMode: anime4kMode ?? this.anime4kMode,
       errorMessage: identical(errorMessage, _sentinel)
           ? this.errorMessage
           : errorMessage as String?,
