@@ -1,11 +1,11 @@
-import 'package:aninest_flutter/src/features/library/application/library_controller.dart';
+import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_layout.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class LibraryStatusBar extends StatelessWidget {
   const LibraryStatusBar({super.key, required this.controller});
 
-  final LibraryController controller;
+  final AppController controller;
 
   @override
   Widget build(BuildContext context) {

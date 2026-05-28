@@ -5,6 +5,7 @@ import 'package:aninest_flutter/src/core/storage/app_preferences.dart';
 
 typedef ReloadBackendCallback =
     Future<String?> Function({bool restartHostEvents});
+typedef CreateProbeClient = AniNestHttpClient Function(String baseUrl);
 
 class BackendConnectionCoordinator {
   BackendConnectionCoordinator({
@@ -12,10 +13,14 @@ class BackendConnectionCoordinator {
     required AppPreferences appPreferences,
     required AniNestHttpClient client,
     required ReloadBackendCallback reloadFromBackend,
+    CreateProbeClient? createProbeClient,
   }) : _launchBaseUrl = launchBaseUrl?.trim(),
        _appPreferences = appPreferences,
        _client = client,
-       _reloadFromBackend = reloadFromBackend;
+       _reloadFromBackend = reloadFromBackend,
+       _createProbeClient =
+           createProbeClient ??
+           ((baseUrl) => AniNestHttpClient(baseUrl: baseUrl));
 
   static const String defaultBaseUrl = 'http://localhost:5275';
 
@@ -23,6 +28,7 @@ class BackendConnectionCoordinator {
   final AppPreferences _appPreferences;
   final AniNestHttpClient _client;
   final ReloadBackendCallback _reloadFromBackend;
+  final CreateProbeClient _createProbeClient;
 
   bool _didHydrateBaseUrl = false;
 
@@ -49,7 +55,7 @@ class BackendConnectionCoordinator {
     }
 
     final normalizedBaseUrl = AniNestHttpClient.normalizeBaseUrl(nextBaseUrl);
-    final probeClient = AniNestHttpClient(baseUrl: normalizedBaseUrl);
+    final probeClient = _createProbeClient(normalizedBaseUrl);
     try {
       await probeClient.getObject('/api/settings');
       return null;

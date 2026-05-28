@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
+import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -10,7 +10,7 @@ import 'player_transport_button.dart';
 class PlayerSubtitleMenuButton extends StatefulWidget {
   const PlayerSubtitleMenuButton({super.key, required this.controller});
 
-  final PlayerController controller;
+  final AppController controller;
 
   @override
   State<PlayerSubtitleMenuButton> createState() =>
@@ -32,7 +32,7 @@ class _PlayerSubtitleMenuButtonState extends State<PlayerSubtitleMenuButton> {
       return;
     }
 
-    final runtime = widget.controller.runtime;
+    final runtime = widget.controller.playerRuntime;
     unawaited(
       _popoverController.show<void>(
         context: context,
@@ -59,7 +59,7 @@ class _PlayerSubtitleMenuButtonState extends State<PlayerSubtitleMenuButton> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final runtime = widget.controller.runtime;
+    final runtime = widget.controller.playerRuntime;
     final isEnabled =
         widget.controller.canTogglePlayback && runtime.hasSelectableSubtitles;
 

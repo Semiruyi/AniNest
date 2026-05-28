@@ -1,4 +1,4 @@
-import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
+import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'fullscreen_player_chrome.dart';
@@ -13,7 +13,7 @@ class PlayerStandardPlaybackLayout extends StatelessWidget {
     required this.onToggleFullscreen,
   });
 
-  final PlayerController controller;
+  final AppController controller;
   final VoidCallback onToggleFullscreen;
 
   @override
@@ -60,7 +60,7 @@ class PlayerFullscreenPlaybackLayout extends StatelessWidget {
     required this.onToggleFullscreen,
   });
 
-  final PlayerController controller;
+  final AppController controller;
   final VoidCallback onToggleFullscreen;
 
   @override

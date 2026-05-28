@@ -1,4 +1,4 @@
-import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
+import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'control_bar_widgets/player_control_bar_button_row.dart';
@@ -12,7 +12,7 @@ class PlayerControlBar extends StatelessWidget {
     this.isFullscreen = false,
   });
 
-  final PlayerController controller;
+  final AppController controller;
   final bool isFullscreen;
   final VoidCallback onToggleFullscreen;
 

@@ -117,23 +117,23 @@ class LibraryContentPane extends StatelessWidget {
         children: <Widget>[
           Expanded(
             child: AnimatedBuilder(
-              animation: controller.library,
+              animation: controller,
               builder: (context, _) {
-                if (controller.library.folders.isEmpty) {
+                if (controller.folders.isEmpty) {
                   return const LibraryEmptyState();
                 }
 
-                final folders = controller.library.visibleFolders;
+                final folders = controller.visibleFolders;
                 if (folders.isEmpty) {
                   return LibraryFilteredEmptyState(
-                    view: controller.library.selectedView,
+                    view: controller.libraryView,
                   );
                 }
 
                 return LibraryCardGrid(
                   folders: folders,
-                  selectedFolderId: controller.library.selectedFolderId,
-                  resolveMediaUrl: controller.library.resolveMediaUrl,
+                  selectedFolderId: controller.selectedFolderId,
+                  resolveMediaUrl: controller.resolveMediaUrl,
                   onFolderPressed: controller.selectFolder,
                   onOpen: (folderId) => _handleOpen(context, folderId),
                   onToggleFavorite: (folderId, isFavorite) =>

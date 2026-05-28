@@ -1,4 +1,4 @@
-import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
+import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -13,7 +13,7 @@ class PlayerControlBarButtonRow extends StatelessWidget {
     required this.onToggleFullscreen,
   });
 
-  final PlayerController controller;
+  final AppController controller;
   final bool isFullscreen;
   final VoidCallback onToggleFullscreen;
 
@@ -24,7 +24,7 @@ class PlayerControlBarButtonRow extends StatelessWidget {
     return AnimatedBuilder(
       animation: controller,
       builder: (BuildContext context, Widget? child) {
-        final runtime = controller.runtime;
+        final runtime = controller.playerRuntime;
         final playIcon = runtime.isPlaying
             ? BootstrapIcons.pauseFill
             : BootstrapIcons.playFill;

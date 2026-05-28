@@ -19,7 +19,7 @@ class PlayerLaunchCoordinator {
     }
 
     showPage(AppPage.player);
-    await controller.player.play();
+    await controller.play();
     return null;
   }
 }

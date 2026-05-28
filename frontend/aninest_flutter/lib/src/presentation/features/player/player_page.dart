@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
+import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:flutter/services.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -16,7 +16,7 @@ class PlayerPage extends StatefulWidget {
     required this.onToggleFullscreen,
   });
 
-  final PlayerController controller;
+  final AppController controller;
   final bool isActive;
   final bool isFullscreen;
   final VoidCallback onToggleFullscreen;

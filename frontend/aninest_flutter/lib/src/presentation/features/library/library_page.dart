@@ -111,9 +111,7 @@ class _LibraryPageState extends State<LibraryPage> {
                   onSizeChangeEnd: (_) {
                     unawaited(_persistPaneWidths());
                   },
-                  child: LibraryNavigationPane(
-                    controller: widget.controller.library,
-                  ),
+                  child: LibraryNavigationPane(controller: widget.controller),
                 ),
                 ResizablePane.flex(
                   minSize: kLibraryContentPaneMinSize,
@@ -129,15 +127,12 @@ class _LibraryPageState extends State<LibraryPage> {
                   onSizeChangeEnd: (_) {
                     unawaited(_persistPaneWidths());
                   },
-                  child: LibraryInspectorPane(
-                    libraryController: widget.controller.library,
-                    metadataController: widget.controller.metadata,
-                  ),
+                  child: LibraryInspectorPane(controller: widget.controller),
                 ),
               ],
             ),
           ),
-          LibraryStatusBar(controller: widget.controller.library),
+          LibraryStatusBar(controller: widget.controller),
         ],
       ),
     );

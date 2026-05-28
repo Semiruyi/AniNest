@@ -1,4 +1,4 @@
-import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
+import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/models/playlist_models.dart';
 
 class PlayerTopBarPlaybackInfo {
@@ -32,7 +32,7 @@ class PlayerTopBarPlaybackInfo {
     return '${current.toString().padLeft(width, '0')} / $totalEpisodeCount';
   }
 
-  factory PlayerTopBarPlaybackInfo.fromController(PlayerController controller) {
+  factory PlayerTopBarPlaybackInfo.fromController(AppController controller) {
     final playlist = controller.playlist;
     final items = playlist?.items ?? const <PlaylistItemDto>[];
     final selectedItemId = controller.selectedItemId;

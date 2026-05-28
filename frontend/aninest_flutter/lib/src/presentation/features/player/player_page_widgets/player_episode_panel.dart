@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
+import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/models/playlist_models.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -9,7 +9,7 @@ import 'episode_panel_widgets/player_episode_panel_frame.dart';
 class PlayerEpisodePanel extends StatefulWidget {
   const PlayerEpisodePanel({super.key, required this.controller});
 
-  final PlayerController controller;
+  final AppController controller;
 
   @override
   State<PlayerEpisodePanel> createState() => _PlayerEpisodePanelState();

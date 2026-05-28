@@ -1,13 +1,10 @@
-import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
+import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class PlayerControlBarProgressSection extends StatefulWidget {
-  const PlayerControlBarProgressSection({
-    super.key,
-    required this.controller,
-  });
+  const PlayerControlBarProgressSection({super.key, required this.controller});
 
-  final PlayerController controller;
+  final AppController controller;
 
   @override
   State<PlayerControlBarProgressSection> createState() =>
@@ -24,7 +21,7 @@ class _PlayerControlBarProgressSectionState
     return AnimatedBuilder(
       animation: widget.controller,
       builder: (BuildContext context, Widget? child) {
-        final runtime = widget.controller.runtime;
+        final runtime = widget.controller.playerRuntime;
         final duration = runtime.duration;
         final isEnabled = runtime.hasMedia && duration > Duration.zero;
         final fraction = _isDragging
@@ -37,9 +34,7 @@ class _PlayerControlBarProgressSectionState
             : runtime.position;
 
         return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(6),
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(6)),
           padding: const EdgeInsets.symmetric(horizontal: 12),
           alignment: Alignment.center,
           child: Row(

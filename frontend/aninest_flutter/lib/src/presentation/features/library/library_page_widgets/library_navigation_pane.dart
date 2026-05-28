@@ -1,4 +1,4 @@
-import 'package:aninest_flutter/src/features/library/application/library_controller.dart';
+import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/features/library/application/library_view.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_layout.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -6,7 +6,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 class LibraryNavigationPane extends StatelessWidget {
   const LibraryNavigationPane({super.key, required this.controller});
 
-  final LibraryController controller;
+  final AppController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -24,8 +24,8 @@ class LibraryNavigationPane extends StatelessWidget {
               children: <Widget>[
                 _NavGroup(
                   title: 'Library',
-                  selectedView: controller.selectedView,
-                  onViewSelected: controller.selectView,
+                  selectedView: controller.libraryView,
+                  onViewSelected: controller.selectLibraryView,
                   items: const <_NavItemData>[
                     _NavItemData(
                       'All Media',
@@ -52,8 +52,8 @@ class LibraryNavigationPane extends StatelessWidget {
                 const Gap(12),
                 _NavGroup(
                   title: 'Type',
-                  selectedView: controller.selectedView,
-                  onViewSelected: controller.selectView,
+                  selectedView: controller.libraryView,
+                  onViewSelected: controller.selectLibraryView,
                   items: const <_NavItemData>[
                     _NavItemData('Series', BootstrapIcons.tv),
                     _NavItemData('Movies', BootstrapIcons.film),

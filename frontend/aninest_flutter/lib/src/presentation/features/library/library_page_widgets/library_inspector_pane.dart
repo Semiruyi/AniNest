@@ -1,19 +1,13 @@
-import 'package:aninest_flutter/src/features/library/application/library_controller.dart';
-import 'package:aninest_flutter/src/features/metadata/application/metadata_controller.dart';
+import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/library_inspector_details.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/inspector_widgets/library_inspector_empty_state.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_layout.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class LibraryInspectorPane extends StatelessWidget {
-  const LibraryInspectorPane({
-    super.key,
-    required this.libraryController,
-    required this.metadataController,
-  });
+  const LibraryInspectorPane({super.key, required this.controller});
 
-  final LibraryController libraryController;
-  final MetadataController metadataController;
+  final AppController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -24,9 +18,9 @@ class LibraryInspectorPane extends StatelessWidget {
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(kLibraryPanePadding),
         child: ListenableBuilder(
-          listenable: Listenable.merge([libraryController, metadataController]),
+          listenable: controller,
           builder: (context, _) {
-            final folder = libraryController.selectedFolder;
+            final folder = controller.selectedFolder;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,8 +30,8 @@ class LibraryInspectorPane extends StatelessWidget {
                 else
                   LibraryInspectorDetails(
                     folder: folder,
-                    metadata: metadataController.metadata,
-                    imageUrl: libraryController.resolveMediaUrl(
+                    metadata: controller.selectedMetadata,
+                    imageUrl: controller.resolveMediaUrl(
                       folder.coverUrl ?? folder.metadataSummary?.posterUrl,
                     ),
                   ),

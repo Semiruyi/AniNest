@@ -1,11 +1,11 @@
-import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
+import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class PlayerVideoViewport extends StatelessWidget {
   const PlayerVideoViewport({super.key, required this.controller});
 
-  final PlayerController controller;
+  final AppController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +13,7 @@ class PlayerVideoViewport extends StatelessWidget {
       animation: controller,
       builder: (BuildContext context, Widget? child) {
         final colorScheme = Theme.of(context).colorScheme;
-        final runtime = controller.runtime;
+        final runtime = controller.playerRuntime;
         final showVideo = controller.playbackTarget != null || runtime.hasMedia;
 
         return Stack(
@@ -21,7 +21,7 @@ class PlayerVideoViewport extends StatelessWidget {
           children: <Widget>[
             if (showVideo)
               Video(
-                controller: controller.videoController,
+                controller: controller.playerVideoController,
                 controls: NoVideoControls,
                 fit: BoxFit.contain,
                 fill: colorScheme.background,

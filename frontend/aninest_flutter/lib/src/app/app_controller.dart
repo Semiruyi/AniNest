@@ -1,19 +1,26 @@
 import 'package:aninest_flutter/src/app/coordination/backend_connection_coordinator.dart';
 import 'package:aninest_flutter/src/app/composition/app_dependencies.dart';
 import 'package:aninest_flutter/src/app/composition/app_runtime.dart';
+import 'package:aninest_flutter/src/app/composition/app_runtime_assembler.dart';
 import 'package:aninest_flutter/src/app/app_locale.dart';
 import 'package:aninest_flutter/src/api/aninest_http_client.dart';
 import 'package:aninest_flutter/src/core/logging/app_logger.dart';
 import 'package:aninest_flutter/src/core/storage/app_preferences.dart';
 import 'package:aninest_flutter/src/features/library/application/library_batch_add_result.dart';
 import 'package:aninest_flutter/src/features/library/application/library_controller.dart';
+import 'package:aninest_flutter/src/features/library/application/library_view.dart';
 import 'package:aninest_flutter/src/features/metadata/application/metadata_controller.dart';
 import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
+import 'package:aninest_flutter/src/features/player/application/player_runtime_state.dart';
 import 'package:aninest_flutter/src/features/settings/application/settings_controller.dart';
 import 'package:aninest_flutter/src/models/enums.dart';
 import 'package:aninest_flutter/src/models/library_models.dart';
+import 'package:aninest_flutter/src/models/metadata_models.dart';
+import 'package:aninest_flutter/src/models/playlist_models.dart';
 import 'package:aninest_flutter/src/models/settings_models.dart';
+import 'package:aninest_flutter/src/models/session_models.dart';
 import 'package:flutter/foundation.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 
 class AppController extends ChangeNotifier {
   factory AppController({
@@ -27,7 +34,7 @@ class AppController extends ChangeNotifier {
     );
     return AppController._(
       dependencies: dependencies,
-      runtime: AppRuntime.create(
+      runtime: const AppRuntimeAssembler().assemble(
         launchBaseUrl: launchBaseUrl,
         appPreferences: resolvedAppPreferences,
         dependencies: dependencies,
@@ -41,6 +48,10 @@ class AppController extends ChangeNotifier {
   }) : _dependencies = dependencies,
        _runtime = runtime {
     _runtime.actionState.addListener(notifyListeners);
+    library.addListener(notifyListeners);
+    player.addListener(notifyListeners);
+    settings.addListener(notifyListeners);
+    metadata.addListener(notifyListeners);
   }
 
   static const String defaultBaseUrl =
@@ -61,15 +72,29 @@ class AppController extends ChangeNotifier {
   MetadataController get metadata => _dependencies.metadata;
 
   List<LibraryFolderDto> get folders => library.folders;
+  List<LibraryFolderDto> get visibleFolders => library.visibleFolders;
+  LibraryView get libraryView => library.selectedView;
 
   String? get selectedFolderId =>
-      library.selectedFolderId ??
-      player.selectedFolderId ??
-      (library.folders.isNotEmpty ? library.folders.first.folderId : null);
+      _runtime.selectionResolver.resolveSelectedFolderId();
 
-  String? get selectedItemId => player.selectedItemId;
+  String? get selectedItemId =>
+      _runtime.selectionResolver.resolveSelectedItemId();
 
+  LibraryFolderDto? get selectedFolder => library.selectedFolder;
+  MetadataDto? get selectedMetadata => metadata.metadata;
   AppSettingsDto? get appSettings => settings.appSettings;
+  PlaylistDto? get playlist => player.playlist;
+  PlaybackTargetDto? get playbackTarget => player.playbackTarget;
+  PlayerRuntimeState get playerRuntime => player.runtime;
+  VideoController get playerVideoController => player.videoController;
+  bool get canMovePrevious => player.canMovePrevious;
+  bool get canMoveNext => player.canMoveNext;
+  bool get canTogglePlayback => player.canTogglePlayback;
+  double get playbackRate => player.playbackRate;
+  double get playbackVolume => player.playbackVolume;
+
+  String? resolveMediaUrl(String? path) => library.resolveMediaUrl(path);
 
   Future<void> bootstrap() async {
     await _runtime.backendConnectionCoordinator.hydrateBaseUrl();
@@ -155,12 +180,56 @@ class AppController extends ChangeNotifier {
     _runtime.libraryWorkflow.selectFolder(folderId);
   }
 
+  void selectLibraryView(LibraryView view) {
+    library.selectView(view);
+  }
+
   Future<void> savePlayerSettings(PlayerSettingsDto settings) async {
     await _runtime.settingsWorkflow.savePlayerSettings(settings);
   }
 
   Future<void> saveLocale(AppLocaleOption locale) async {
     await _runtime.settingsWorkflow.saveLocale(locale);
+  }
+
+  Future<void> play() async {
+    await player.play();
+  }
+
+  Future<void> pause() async {
+    await player.pause();
+  }
+
+  Future<void> togglePlayPause() async {
+    await player.togglePlayPause();
+  }
+
+  Future<void> seekToFraction(double fraction) async {
+    await player.seekToFraction(fraction);
+  }
+
+  Future<void> moveNextAndPlay() async {
+    await player.moveNextAndPlay();
+  }
+
+  Future<void> movePreviousAndPlay() async {
+    await player.movePreviousAndPlay();
+  }
+
+  Future<void> cyclePlaybackRate() async {
+    await player.cyclePlaybackRate();
+  }
+
+  Future<void> toggleMute() async {
+    await player.toggleMute();
+  }
+
+  Future<void> selectSubtitleTrack(String trackId) async {
+    await player.selectSubtitleTrack(trackId);
+  }
+
+  Future<void> selectItemAndPlay(String itemId) async {
+    await player.selectItemAndPlay(itemId);
   }
 
   static String _resolveInitialBaseUrl(String? launchBaseUrl) {
@@ -177,6 +246,10 @@ class AppController extends ChangeNotifier {
   @override
   void dispose() {
     _runtime.actionState.removeListener(notifyListeners);
+    library.removeListener(notifyListeners);
+    player.removeListener(notifyListeners);
+    settings.removeListener(notifyListeners);
+    metadata.removeListener(notifyListeners);
     _runtime.dispose();
     _dependencies.dispose();
     super.dispose();
