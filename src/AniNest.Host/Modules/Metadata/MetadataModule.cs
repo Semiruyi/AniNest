@@ -6,43 +6,50 @@ namespace AniNest.Host.Modules;
 
 internal sealed class MetadataModule : IMetadataModule
 {
-    private readonly IMetadataLifecycleService _lifecycle;
+    private readonly IMetadataRuntimeStateService _state;
+    private readonly IMetadataReviewService _reviews;
+    private readonly IMetadataOrchestrationService _orchestration;
 
-    public MetadataModule(IMetadataLifecycleService lifecycle)
+    public MetadataModule(
+        IMetadataRuntimeStateService state,
+        IMetadataReviewService reviews,
+        IMetadataOrchestrationService orchestration)
     {
-        _lifecycle = lifecycle;
+        _state = state;
+        _reviews = reviews;
+        _orchestration = orchestration;
     }
 
     public Task<MetadataDto?> GetByFolderAsync(string folderId, CancellationToken cancellationToken = default)
-        => _lifecycle.GetByFolderAsync(folderId, cancellationToken);
+        => Task.FromResult(_state.GetMetadata(folderId));
 
     public Task<IReadOnlyList<MetadataReviewDto>> GetReviewQueueAsync(CancellationToken cancellationToken = default)
-        => _lifecycle.GetReviewQueueAsync(cancellationToken);
+        => _reviews.GetReviewQueueAsync(cancellationToken);
 
     public Task<MetadataReviewDto?> GetReviewByFolderAsync(string folderId, CancellationToken cancellationToken = default)
-        => _lifecycle.GetReviewByFolderAsync(folderId, cancellationToken);
+        => _reviews.GetReviewByFolderAsync(folderId, cancellationToken);
 
     public Task ConfirmReviewAsync(string folderId, string sourceId, CancellationToken cancellationToken = default)
-        => _lifecycle.ConfirmReviewAsync(folderId, sourceId, cancellationToken);
+        => _reviews.ConfirmReviewAsync(folderId, sourceId, cancellationToken);
 
     public Task RejectReviewCandidateAsync(string folderId, string sourceId, CancellationToken cancellationToken = default)
-        => _lifecycle.RejectReviewCandidateAsync(folderId, sourceId, cancellationToken);
+        => _reviews.RejectReviewCandidateAsync(folderId, sourceId, cancellationToken);
 
     public Task RefreshFolderAsync(string folderId, CancellationToken cancellationToken = default)
-        => _lifecycle.RefreshFolderAsync(folderId, cancellationToken);
+        => _orchestration.RefreshFolderAsync(folderId, cancellationToken);
 
     public Task RetryFolderAsync(string folderId, CancellationToken cancellationToken = default)
-        => _lifecycle.RetryFolderAsync(folderId, cancellationToken);
+        => _orchestration.RetryFolderAsync(folderId, cancellationToken);
 
     public Task EnqueueMissingAsync(CancellationToken cancellationToken = default)
-        => _lifecycle.EnqueueMissingAsync(cancellationToken);
+        => _orchestration.EnqueueMissingAsync(cancellationToken);
 
     public Task RetryFailedAsync(bool includeNoMatch, CancellationToken cancellationToken = default)
-        => _lifecycle.RetryFailedAsync(includeNoMatch, cancellationToken);
+        => _orchestration.RetryFailedAsync(includeNoMatch, cancellationToken);
 
     public Task<MetadataStatusSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default)
-        => _lifecycle.GetSummaryAsync(cancellationToken);
+        => Task.FromResult(_state.BuildSummary());
 
     public Task<MetadataProcessingResultDto> ProcessQueueAsync(int maxItems, CancellationToken cancellationToken = default)
-        => _lifecycle.ProcessQueueAsync(maxItems, cancellationToken);
+        => _orchestration.ProcessQueueAsync(maxItems, cancellationToken);
 }

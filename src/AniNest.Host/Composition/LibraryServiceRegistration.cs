@@ -23,6 +23,7 @@ internal static class LibraryServiceRegistration
         services.AddSingleton<LibraryMetadataSyncService>();
         services.AddSingleton<LibraryFolderProjection>();
         services.AddSingleton<LibraryMetadataProjection>();
+        services.AddSingleton<LibraryFolderViewService>();
         services.AddHostedService<LibraryMetadataSyncStartupService>();
         services.AddSingleton<ILibraryModule, LibraryModule>();
         return services;

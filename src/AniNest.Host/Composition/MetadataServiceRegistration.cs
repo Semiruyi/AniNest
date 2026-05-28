@@ -34,7 +34,6 @@ internal static class MetadataServiceRegistration
         services.AddSingleton<IMetadataTaskQueue, MetadataTaskQueue>();
         services.AddSingleton<IMetadataTaskScheduler, MetadataTaskScheduler>();
         services.AddSingleton<IMetadataRuntimeStateService, MetadataRuntimeStateService>();
-        services.AddSingleton<IMetadataLifecycleService, MetadataLifecycleService>();
         services.AddSingleton<IMetadataModule, MetadataModule>();
         if (configuration.GetValue("AniNest:MetadataWorkerEnabled", true))
             services.AddHostedService<MetadataBackgroundService>();
