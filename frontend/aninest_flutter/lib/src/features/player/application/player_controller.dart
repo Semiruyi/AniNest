@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:aninest_flutter/src/api/api_exception.dart';
 import 'package:aninest_flutter/src/core/logging/app_logger.dart';
+import 'package:aninest_flutter/src/core/storage/app_preferences.dart';
 import 'package:aninest_flutter/src/features/player/application/player_anime4k_mode.dart';
 import 'package:aninest_flutter/src/features/player/application/player_playback_engine.dart';
 import 'package:aninest_flutter/src/features/player/application/player_progress_synchronizer.dart';
@@ -14,7 +15,7 @@ import 'package:flutter/foundation.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 class PlayerController extends ChangeNotifier {
-  PlayerController(this._sessionApi, this._playlistApi) {
+  PlayerController(this._sessionApi, this._playlistApi, this._appPreferences) {
     _progressSynchronizer = PlayerProgressSynchronizer(_sessionApi);
     _playbackEngine.addListener(_handlePlaybackChanged);
   }
@@ -30,6 +31,7 @@ class PlayerController extends ChangeNotifier {
 
   SessionApi _sessionApi;
   PlaylistApi _playlistApi;
+  final AppPreferences _appPreferences;
   late final PlayerProgressSynchronizer _progressSynchronizer;
   final PlayerPlaybackEngine _playbackEngine = PlayerPlaybackEngine();
 
@@ -38,6 +40,7 @@ class PlayerController extends ChangeNotifier {
   PlaybackTargetDto? _playbackTarget;
   String? _completingItemId;
   bool _isDisposed = false;
+  bool _anime4kModeHydrated = false;
 
   SessionStateDto? get session => _session;
   PlaylistDto? get playlist => _playlist;
@@ -62,6 +65,7 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> restore() async {
+    await _hydrateAnime4kMode();
     SessionStateDto? restoredSession;
     try {
       restoredSession = await _sessionApi.getCurrent();
@@ -236,7 +240,9 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> setAnime4kMode(PlayerAnime4kMode mode) async {
+    _anime4kModeHydrated = true;
     await _playbackEngine.setAnime4kMode(mode);
+    await _appPreferences.savePlayerAnime4kMode(mode);
   }
 
   Future<void> closeSession() async {
@@ -278,6 +284,17 @@ class PlayerController extends ChangeNotifier {
   Future<void> _syncPlayback() {
     _progressSynchronizer.resetForItem(_playbackTarget?.itemId);
     return _playbackEngine.load(target: _playbackTarget, session: _session);
+  }
+
+  Future<void> _hydrateAnime4kMode() async {
+    if (_anime4kModeHydrated) {
+      return;
+    }
+
+    _anime4kModeHydrated = true;
+    await _playbackEngine.setAnime4kMode(
+      await _appPreferences.loadPlayerAnime4kMode(),
+    );
   }
 
   void _handlePlaybackChanged() {

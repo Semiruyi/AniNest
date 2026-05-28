@@ -52,7 +52,7 @@ class AppDependencies {
       thumbnailApi: thumbnailApi,
       hostEventService: HostEventService(client),
       library: LibraryController(libraryApi),
-      player: PlayerController(sessionApi, playlistApi),
+      player: PlayerController(sessionApi, playlistApi, appPreferences),
       settings: SettingsController(settingsApi, appPreferences),
       metadata: MetadataController(metadataApi, thumbnailApi),
     );

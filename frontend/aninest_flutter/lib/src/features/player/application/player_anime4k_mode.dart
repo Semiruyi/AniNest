@@ -3,6 +3,13 @@ enum PlayerAnime4kMode {
   fast,
   highQuality;
 
+  static PlayerAnime4kMode fromId(String? value) {
+    return PlayerAnime4kMode.values.firstWhere(
+      (PlayerAnime4kMode mode) => mode.id == value,
+      orElse: () => PlayerAnime4kMode.off,
+    );
+  }
+
   bool get isEnabled => this != PlayerAnime4kMode.off;
 
   String get id => switch (this) {
