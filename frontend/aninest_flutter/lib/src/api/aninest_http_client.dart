@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:aninest_flutter/src/api/api_exception.dart';
+import 'package:aninest_flutter/src/core/logging/app_logger.dart';
 import 'package:http/http.dart' as http;
 
 class AniNestHttpClient {
@@ -61,6 +62,7 @@ class AniNestHttpClient {
   }
 
   Future<dynamic> _send(String method, String path, {Object? body}) async {
+    final requestStopwatch = Stopwatch()..start();
     final request = http.Request(method, _resolve(path));
     request.headers['Accept'] = 'application/json';
     if (body != null) {
@@ -68,28 +70,53 @@ class AniNestHttpClient {
       request.body = jsonEncode(body);
     }
 
-    final streamed = await _httpClient.send(request);
-    final response = await http.Response.fromStream(streamed);
-    final decoded = _decode(response);
+    try {
+      final sendStopwatch = Stopwatch()..start();
+      final streamed = await _httpClient.send(request);
+      sendStopwatch.stop();
 
-    if (response.statusCode >= 400) {
-      if (decoded is Map<String, dynamic>) {
+      final responseStopwatch = Stopwatch()..start();
+      final response = await http.Response.fromStream(streamed);
+      responseStopwatch.stop();
+
+      final decodeStopwatch = Stopwatch()..start();
+      final decoded = _decode(response);
+      decodeStopwatch.stop();
+      requestStopwatch.stop();
+
+      AppLogger.info(
+        'HttpClient',
+        '$method $path status=${response.statusCode} send=${sendStopwatch.elapsedMilliseconds}ms receive=${responseStopwatch.elapsedMilliseconds}ms decode=${decodeStopwatch.elapsedMilliseconds}ms total=${requestStopwatch.elapsedMilliseconds}ms',
+      );
+
+      if (response.statusCode >= 400) {
+        if (decoded is Map<String, dynamic>) {
+          throw ApiException(
+            statusCode: response.statusCode,
+            code: decoded['code'] as String? ?? 'api.error',
+            message: decoded['message'] as String? ?? 'Unknown API error.',
+            details: decoded['details'] as Map<String, dynamic>?,
+          );
+        }
+
         throw ApiException(
           statusCode: response.statusCode,
-          code: decoded['code'] as String? ?? 'api.error',
-          message: decoded['message'] as String? ?? 'Unknown API error.',
-          details: decoded['details'] as Map<String, dynamic>?,
+          code: 'api.error',
+          message: decoded?.toString() ?? 'Unknown API error.',
         );
       }
 
-      throw ApiException(
-        statusCode: response.statusCode,
-        code: 'api.error',
-        message: decoded?.toString() ?? 'Unknown API error.',
+      return decoded;
+    } catch (error, stackTrace) {
+      requestStopwatch.stop();
+      AppLogger.error(
+        'HttpClient',
+        '$method $path failed after ${requestStopwatch.elapsedMilliseconds}ms',
+        error: error,
+        stackTrace: stackTrace,
       );
+      rethrow;
     }
-
-    return decoded;
   }
 
   dynamic _decode(http.Response response) {
