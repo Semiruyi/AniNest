@@ -38,10 +38,11 @@ internal sealed class FakeLibraryFileScanner : ILibraryFileScanner
     public Task<IReadOnlyList<string>> GetVideoFilesAsync(string path, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-
-        if (VideoFilesResults.TryGetValue(path, out var result))
-            return Task.FromResult(result);
-
-        return Task.FromResult<IReadOnlyList<string>>([]);
+        return Task.FromResult(GetVideoFiles(path));
     }
+
+    public IReadOnlyList<string> GetVideoFiles(string path)
+        => VideoFilesResults.TryGetValue(path, out var result)
+            ? result
+            : [];
 }

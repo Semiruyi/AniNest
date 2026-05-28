@@ -9,55 +9,35 @@ internal sealed class LibraryFolderProjection
 {
     private readonly LibraryCatalogService _catalog;
     private readonly ILibraryFileScanner _scanner;
-    private readonly PlaybackProgressSummaryService _playbackProgressSummary;
     private readonly IMetadataRuntimeBootstrapService _metadataBootstrap;
     private readonly IMetadataRuntimeStateService _metadataState;
 
     public LibraryFolderProjection(
         LibraryCatalogService catalog,
         ILibraryFileScanner scanner,
-        PlaybackProgressSummaryService playbackProgressSummary,
         IMetadataRuntimeBootstrapService metadataBootstrap,
         IMetadataRuntimeStateService metadataState)
     {
         _catalog = catalog;
         _scanner = scanner;
-        _playbackProgressSummary = playbackProgressSummary;
         _metadataBootstrap = metadataBootstrap;
         _metadataState = metadataState;
     }
 
-    public async Task<IReadOnlyList<LibraryFolderDto>> LoadProjectedFoldersAsync(
-        CancellationToken cancellationToken)
-    {
-        var folders = await LoadFoldersWithPlaybackAsync(cancellationToken);
-        return folders.Select(ApplyMetadataSummary).ToArray();
-    }
-
-    public async Task<LibraryFolderDto?> LoadProjectedFolderAsync(
-        string folderId,
-        CancellationToken cancellationToken)
-    {
-        var folders = await LoadFoldersWithPlaybackAsync(cancellationToken);
-        var folder = folders.FirstOrDefault(folder =>
-            string.Equals(folder.FolderId, folderId, StringComparison.OrdinalIgnoreCase));
-        return folder is null ? null : ApplyMetadataSummary(folder);
-    }
-
-    private async Task<IReadOnlyList<LibraryFolderDto>> LoadFoldersWithPlaybackAsync(
+    public async Task<IReadOnlyList<LibraryFolderSnapshot>> LoadFolderSnapshotsAsync(
         CancellationToken cancellationToken)
     {
         var folders = await _catalog.GetFoldersAsync(cancellationToken);
-        var result = new List<LibraryFolderDto>(folders.Count);
+        var result = new List<LibraryFolderSnapshot>(folders.Count);
         foreach (var folder in folders)
         {
-            result.Add(await ApplyPlaybackSummaryAsync(folder, cancellationToken));
+            result.Add(await CreateSnapshotAsync(folder, cancellationToken));
         }
 
         return result;
     }
 
-    private LibraryFolderDto ApplyMetadataSummary(LibraryFolderDto folder)
+    internal LibraryFolderDto ApplyMetadataSummaryForModule(LibraryFolderDto folder)
     {
         _metadataBootstrap.EnsureInitialized();
         var metadata = _metadataState.GetMetadata(folder.FolderId);
@@ -71,16 +51,33 @@ internal sealed class LibraryFolderProjection
             summary.HasMetadata);
     }
 
-    private async Task<LibraryFolderDto> ApplyPlaybackSummaryAsync(
+    private async Task<LibraryFolderSnapshot> CreateSnapshotAsync(
         LibraryFolderDto folder,
         CancellationToken cancellationToken)
     {
         var record = _catalog.GetFolderRecord(folder.FolderId);
         if (record is null)
-            return folder;
+        {
+            return new LibraryFolderSnapshot(
+                folder,
+                string.Empty,
+                folder.Name,
+                null,
+                [],
+                folder.VideoCount);
+        }
 
         var videoFiles = await _scanner.GetVideoFilesAsync(record.Path, cancellationToken);
-        var summary = _playbackProgressSummary.SummarizeFolder(videoFiles);
-        return folder with { PlayedCount = summary.PlayedCount };
+        var parentName = Path.GetDirectoryName(record.Path) is { } parentPath
+            ? Path.GetFileName(parentPath)
+            : null;
+
+        return new LibraryFolderSnapshot(
+            folder,
+            record.Path,
+            record.Name,
+            parentName,
+            videoFiles,
+            folder.VideoCount);
     }
 }

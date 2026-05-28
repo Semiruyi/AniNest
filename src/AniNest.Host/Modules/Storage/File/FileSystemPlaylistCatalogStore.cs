@@ -8,18 +8,19 @@ namespace AniNest.Host.Modules;
 
 internal sealed class FileSystemPlaylistCatalogStore : IPlaylistCatalogStore
 {
-    private static readonly string[] VideoExtensions = [".mp4", ".mkv", ".avi", ".mov", ".wmv"];
-
     private readonly ILibraryCatalogStore _libraryCatalogStore;
+    private readonly ILibraryFileScanner _libraryFileScanner;
     private readonly IPlaybackProgressStore _progressStore;
     private readonly object _sync = new();
     private readonly Dictionary<string, PlaylistDto> _snapshots = new(StringComparer.OrdinalIgnoreCase);
 
     public FileSystemPlaylistCatalogStore(
         ILibraryCatalogStore libraryCatalogStore,
+        ILibraryFileScanner libraryFileScanner,
         IPlaybackProgressStore progressStore)
     {
         _libraryCatalogStore = libraryCatalogStore;
+        _libraryFileScanner = libraryFileScanner;
         _progressStore = progressStore;
     }
 
@@ -46,12 +47,7 @@ internal sealed class FileSystemPlaylistCatalogStore : IPlaylistCatalogStore
 
     private PlaylistDto BuildPlaylist(LibraryFolderRecord folder)
     {
-        var files = Directory.Exists(folder.Path)
-            ? Directory.EnumerateFiles(folder.Path)
-                .Where(path => VideoExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
-                .OrderBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase)
-                .ToArray()
-            : Array.Empty<string>();
+        var files = _libraryFileScanner.GetVideoFiles(folder.Path);
 
         var items = files
             .Select((filePath, index) =>

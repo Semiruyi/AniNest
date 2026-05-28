@@ -1,5 +1,6 @@
 using AniNest.Application.Metadata;
 using AniNest.Contracts.Metadata;
+using AniNest.Core.Enums;
 using Microsoft.Extensions.Logging;
 
 namespace AniNest.Host.Modules;
@@ -142,6 +143,7 @@ internal sealed class MetadataOrchestrationService : IMetadataOrchestrationServi
 
     private void EnqueuePlan(MetadataTaskPlan plan)
     {
+        MarkRecordQueued(plan.FolderId);
         _logger.LogInformation(
             "Metadata task plan created. FolderId={FolderId}, Reason={Reason}, Priority={Priority}, BypassCooldown={BypassCooldown}",
             plan.FolderId,
@@ -149,5 +151,18 @@ internal sealed class MetadataOrchestrationService : IMetadataOrchestrationServi
             plan.Priority,
             plan.BypassCooldown);
         _queue.Enqueue(plan);
+    }
+
+    private void MarkRecordQueued(string folderId)
+    {
+        var record = _state.GetRecord(folderId);
+        if (record is null || record.State is MetadataState.Queued or MetadataState.Scraping)
+            return;
+
+        _state.SaveRecord(record with
+        {
+            State = MetadataState.Queued,
+            FailureKind = MetadataFailureKind.None
+        });
     }
 }

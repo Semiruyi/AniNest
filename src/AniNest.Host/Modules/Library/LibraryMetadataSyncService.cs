@@ -6,45 +6,36 @@ namespace AniNest.Host.Modules;
 
 internal sealed class LibraryMetadataSyncService
 {
-    private readonly LibraryCatalogService _catalog;
-    private readonly ILibraryFileScanner _scanner;
+    private readonly LibraryFolderProjection _projection;
     private readonly IMetadataLifecycleService _metadataLifecycle;
     private readonly ILogger<LibraryMetadataSyncService> _logger;
 
     public LibraryMetadataSyncService(
-        LibraryCatalogService catalog,
-        ILibraryFileScanner scanner,
+        LibraryFolderProjection projection,
         IMetadataLifecycleService metadataLifecycle,
         ILogger<LibraryMetadataSyncService> logger)
     {
-        _catalog = catalog;
-        _scanner = scanner;
+        _projection = projection;
         _metadataLifecycle = metadataLifecycle;
         _logger = logger;
     }
 
     public async Task SyncAsync(CancellationToken cancellationToken = default)
     {
-        var folders = await _catalog.GetFoldersAsync(cancellationToken);
+        var folders = await _projection.LoadFolderSnapshotsAsync(cancellationToken);
         var snapshot = new List<MetadataFolderRef>(folders.Count);
         foreach (var folder in folders)
         {
-            var record = _catalog.GetFolderRecord(folder.FolderId);
-            if (record is null)
+            if (string.IsNullOrWhiteSpace(folder.FolderPath))
                 continue;
 
-            var videoFiles = await _scanner.GetVideoFilesAsync(record.Path, cancellationToken);
-            var parentName = Path.GetDirectoryName(record.Path) is { } parentPath
-                ? Path.GetFileName(parentPath)
-                : null;
-
             snapshot.Add(new MetadataFolderRef(
-                folder.FolderId,
-                record.Path,
-                record.Name,
-                parentName,
-                videoFiles,
-                record.VideoCount));
+                folder.Folder.FolderId,
+                folder.FolderPath,
+                folder.FolderName,
+                folder.ParentFolderName,
+                folder.VideoFiles,
+                folder.VideoCount));
         }
 
         _logger.LogInformation(

@@ -62,16 +62,16 @@ internal sealed class FileSystemLibraryFileScanner : ILibraryFileScanner
     public Task<IReadOnlyList<string>> GetVideoFilesAsync(string path, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(GetVideoFiles(path));
+    }
 
-        var files = Directory.Exists(path)
+    public IReadOnlyList<string> GetVideoFiles(string path)
+        => Directory.Exists(path)
             ? Directory.EnumerateFiles(path)
                 .Where(IsSupportedVideoFile)
                 .OrderBy(file => file, StringComparer.OrdinalIgnoreCase)
                 .ToArray()
             : [];
-
-        return Task.FromResult<IReadOnlyList<string>>(files);
-    }
 
     private static bool ContainsSupportedVideoFile(string path)
         => Directory.EnumerateFiles(path).Any(IsSupportedVideoFile);

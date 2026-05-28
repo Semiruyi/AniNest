@@ -93,3 +93,4 @@ frontend/**/android/app/release/
 !frontend/**/windows/**
 !frontend/**/web/**
 
+.artifacts/

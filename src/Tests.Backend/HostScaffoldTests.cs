@@ -173,6 +173,32 @@ public sealed class HostScaffoldTests
     }
 
     [Fact]
+    public async Task AddLibraryFolder_WithWebmFile_AppearsInPlaylist()
+    {
+        var testRoot = Path.Combine(Path.GetTempPath(), "AniNest.Backend.Tests", $"{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testRoot);
+        var addedFolder = Path.Combine(testRoot, "Webm Folder");
+        Directory.CreateDirectory(addedFolder);
+        File.WriteAllText(Path.Combine(addedFolder, "Episode 01.webm"), string.Empty);
+
+        using var client = CreateClient(testRoot);
+
+        var addResponse = await client.PostAsJsonAsync("/api/library/folders", new AddLibraryFolderRequest(addedFolder));
+        addResponse.EnsureSuccessStatusCode();
+        var addPayload = await addResponse.Content.ReadFromJsonAsync<AddLibraryFolderResult>();
+
+        Assert.NotNull(addPayload);
+        Assert.NotNull(addPayload.Folder);
+
+        var playlist = await client.GetFromJsonAsync<PlaylistDto>($"/api/playlist/by-folder/{addPayload.Folder.FolderId}");
+
+        Assert.NotNull(playlist);
+        Assert.Single(playlist.Items);
+        Assert.Equal("Episode 01", playlist.Items[0].Title);
+        Assert.EndsWith(".webm", playlist.Items[0].FilePath, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task OpenSessionFolder_ReturnsPlaybackTarget()
     {
         using var client = CreateClient();
@@ -694,19 +720,52 @@ public sealed class HostScaffoldTests
                 }
                 File.WriteAllBytes(Path.Combine(sampleFolderPath, "poster.jpg"), [0xFF, 0xD8, 0xFF, 0xD9]);
 
+                var seededFolders = new List<AniNest.Application.Library.LibraryFolderRecord>
+                {
+                    new(
+                        "sample-folder",
+                        "Sample Anime",
+                        sampleFolderPath,
+                        12,
+                        Path.Combine(sampleFolderPath, "poster.jpg"),
+                        new LibraryFolderMetadataSummary("Sample Anime", null, AniNest.Core.Enums.MetadataState.Ready.ToString(), true),
+                        0)
+                };
+
+                if (seedFailedMetadata)
+                {
+                    var failedFolderPath = Path.Combine(testRoot, "Failed Folder");
+                    Directory.CreateDirectory(failedFolderPath);
+                    File.WriteAllText(Path.Combine(failedFolderPath, "Episode 01.mp4"), string.Empty);
+                    seededFolders.Add(new AniNest.Application.Library.LibraryFolderRecord(
+                        "failed-folder",
+                        "Failed Folder",
+                        failedFolderPath,
+                        1,
+                        null,
+                        new LibraryFolderMetadataSummary(null, null, AniNest.Core.Enums.MetadataState.NeedsReview.ToString(), false),
+                        0));
+                }
+
+                if (seedMissingMetadata)
+                {
+                    var missingFolderPath = Path.Combine(testRoot, "Missing Folder");
+                    Directory.CreateDirectory(missingFolderPath);
+                    File.WriteAllText(Path.Combine(missingFolderPath, "Episode 01.mp4"), string.Empty);
+                    seededFolders.Add(new AniNest.Application.Library.LibraryFolderRecord(
+                        "missing-folder",
+                        "Missing Folder",
+                        missingFolderPath,
+                        1,
+                        null,
+                        new LibraryFolderMetadataSummary(null, null, AniNest.Core.Enums.MetadataState.NeedsMetadata.ToString(), false),
+                        0));
+                }
+
                 var libraryCatalogPath = Path.Combine(testRoot, "library-catalog.json");
                 var libraryStore = new FileLibraryCatalogStore(
                     libraryCatalogPath,
-                    [
-                        new AniNest.Application.Library.LibraryFolderRecord(
-                            "sample-folder",
-                            "Sample Anime",
-                            sampleFolderPath,
-                            12,
-                            Path.Combine(sampleFolderPath, "poster.jpg"),
-                            new LibraryFolderMetadataSummary("Sample Anime", null, AniNest.Core.Enums.MetadataState.Ready.ToString(), true),
-                            0)
-                    ],
+                    seededFolders,
                     new Dictionary<string, AniNest.Core.Enums.WatchStatus>(StringComparer.OrdinalIgnoreCase)
                     {
                         ["sample-folder"] = AniNest.Core.Enums.WatchStatus.Watching

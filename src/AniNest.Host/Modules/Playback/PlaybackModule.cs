@@ -16,21 +16,12 @@ internal sealed class PlaybackModule : IPlaylistModule, ISessionModule
 
     public PlaybackModule(
         PlaybackSessionEngine engine,
-        PlaylistCatalogService playlistCatalog,
         IHostEventStream events,
         ILogger<PlaybackModule> logger)
     {
         _engine = engine;
         _events = events;
         _logger = logger;
-
-        if (playlistCatalog.GetAll().Count > 0)
-        {
-            if (!_engine.RestoreLastSession())
-            {
-                _engine.ActivateFolder(playlistCatalog.GetAll()[0].FolderId);
-            }
-        }
     }
 
     public Task<PlaylistDto> GetByFolderAsync(string folderId, CancellationToken cancellationToken = default)
