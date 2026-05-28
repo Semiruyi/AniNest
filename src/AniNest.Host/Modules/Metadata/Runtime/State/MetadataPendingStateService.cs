@@ -7,18 +7,15 @@ internal sealed class MetadataPendingStateService : IMetadataPendingStateService
     private readonly IMetadataRecordStore _recordStore;
     private readonly IMetadataReviewStore _reviewStore;
     private readonly IMetadataAssetService _assets;
-    private readonly IMetadataLegacySyncService _legacySync;
 
     public MetadataPendingStateService(
         IMetadataRecordStore recordStore,
         IMetadataReviewStore reviewStore,
-        IMetadataAssetService assets,
-        IMetadataLegacySyncService legacySync)
+        IMetadataAssetService assets)
     {
         _recordStore = recordStore;
         _reviewStore = reviewStore;
         _assets = assets;
-        _legacySync = legacySync;
     }
 
     public MetadataRecord SavePending(
@@ -42,7 +39,6 @@ internal sealed class MetadataPendingStateService : IMetadataPendingStateService
         };
 
         _recordStore.Save(pendingRecord);
-        _legacySync.SaveState(pendingRecord, resolution.Reason);
         return pendingRecord;
     }
 }

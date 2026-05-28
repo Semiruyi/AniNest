@@ -32,24 +32,22 @@ public sealed class ResourceLocatorTests
         ]);
         var scanner = new FakeLibraryFileScanner();
         scanner.ScanResults[folderPath] = new LibraryFolderScanResult(12, null);
-        var metadataStore = new InMemoryMetadataStore(
-        [
-            new MetadataDto(
-                "folder-01",
-                "Bocchi",
-                null,
-                null,
-                [],
-                posterPath,
-                null,
-                12,
-                "bangumi",
-                AniNest.Core.Enums.MetadataState.Ready,
-                AniNest.Core.Enums.MetadataFailureKind.None)
-        ]);
+        var metadataState = new FakeMetadataRuntimeStateService();
+        metadataState.MetadataByFolderId["folder-01"] = new MetadataDto(
+            "folder-01",
+            "Bocchi",
+            null,
+            null,
+            [],
+            posterPath,
+            null,
+            12,
+            "bangumi",
+            AniNest.Core.Enums.MetadataState.Ready,
+            AniNest.Core.Enums.MetadataFailureKind.None);
         var locator = new ResourceLocator(
             store,
-            metadataStore,
+            metadataState,
             new InMemoryPlaylistCatalogStore([]),
             root);
 
@@ -85,24 +83,22 @@ public sealed class ResourceLocatorTests
         ]);
         var scanner = new FakeLibraryFileScanner();
         scanner.ScanResults[folderPath] = new LibraryFolderScanResult(12, null);
-        var metadataStore = new InMemoryMetadataStore(
-        [
-            new MetadataDto(
-                "folder-01",
-                "Bocchi",
-                null,
-                null,
-                [],
-                posterFileName,
-                null,
-                12,
-                "bangumi",
-                AniNest.Core.Enums.MetadataState.Ready,
-                AniNest.Core.Enums.MetadataFailureKind.None)
-        ]);
+        var metadataState = new FakeMetadataRuntimeStateService();
+        metadataState.MetadataByFolderId["folder-01"] = new MetadataDto(
+            "folder-01",
+            "Bocchi",
+            null,
+            null,
+            [],
+            posterFileName,
+            null,
+            12,
+            "bangumi",
+            AniNest.Core.Enums.MetadataState.Ready,
+            AniNest.Core.Enums.MetadataFailureKind.None);
         var locator = new ResourceLocator(
             store,
-            metadataStore,
+            metadataState,
             new InMemoryPlaylistCatalogStore([]),
             posterRoot);
 
@@ -143,7 +139,7 @@ public sealed class ResourceLocatorTests
         ]);
         var locator = new ResourceLocator(
             new InMemoryLibraryCatalogStore([]),
-            new InMemoryMetadataStore([]),
+            new FakeMetadataRuntimeStateService(),
             playlistStore,
             root);
 
@@ -204,7 +200,7 @@ public sealed class ResourceLocatorTests
         ]);
         var locator = new ResourceLocator(
             new InMemoryLibraryCatalogStore([]),
-            new InMemoryMetadataStore([]),
+            new FakeMetadataRuntimeStateService(),
             playlistStore,
             root);
 
@@ -238,7 +234,7 @@ public sealed class ResourceLocatorTests
         ]);
         var locator = new ResourceLocator(
             store,
-            new InMemoryMetadataStore([]),
+            new FakeMetadataRuntimeStateService(),
             new InMemoryPlaylistCatalogStore([]),
             root);
 

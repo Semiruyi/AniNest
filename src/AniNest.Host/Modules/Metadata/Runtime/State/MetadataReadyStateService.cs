@@ -6,14 +6,10 @@ namespace AniNest.Host.Modules;
 internal sealed class MetadataReadyStateService : IMetadataReadyStateService
 {
     private readonly IMetadataRecordStore _recordStore;
-    private readonly IMetadataLegacySyncService _legacySync;
 
-    public MetadataReadyStateService(
-        IMetadataRecordStore recordStore,
-        IMetadataLegacySyncService legacySync)
+    public MetadataReadyStateService(IMetadataRecordStore recordStore)
     {
         _recordStore = recordStore;
-        _legacySync = legacySync;
     }
 
     public MetadataRecord SaveReady(
@@ -32,7 +28,6 @@ internal sealed class MetadataReadyStateService : IMetadataReadyStateService
         };
 
         _recordStore.Save(completedRecord);
-        _legacySync.SaveResolved(completedRecord, assets.Payload);
         return completedRecord;
     }
 }

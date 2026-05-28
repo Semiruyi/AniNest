@@ -13,6 +13,7 @@ internal interface IMetadataRuntimeStateService
     MetadataDto? GetMetadata(string folderId);
     MetadataStatusSummaryDto BuildSummary();
     MetadataFolderStateSummary GetFolderStateSummary(string folderId);
+    void NormalizeTransientStates();
     void PublishFolderState(string folderId);
     void PublishSummaryChanged();
     Task ExecuteAsync(MetadataRecord record, CancellationToken cancellationToken);

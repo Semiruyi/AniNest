@@ -1,5 +1,4 @@
 using AniNest.Application.Library;
-using AniNest.Application.Metadata;
 using AniNest.Application.Playlist;
 using AniNest.Application.Resources;
 
@@ -8,18 +7,18 @@ namespace AniNest.Host.Modules.Resources;
 internal sealed class ResourceLocator : IResourceLocator
 {
     private readonly ILibraryCatalogStore _libraryCatalogStore;
-    private readonly IMetadataStore _metadataStore;
+    private readonly IMetadataRuntimeStateService _metadataState;
     private readonly IPlaylistCatalogStore _playlistCatalogStore;
     private readonly string _metadataPosterRootPath;
 
     public ResourceLocator(
         ILibraryCatalogStore libraryCatalogStore,
-        IMetadataStore metadataStore,
+        IMetadataRuntimeStateService metadataState,
         IPlaylistCatalogStore playlistCatalogStore,
         string metadataPosterRootPath)
     {
         _libraryCatalogStore = libraryCatalogStore;
-        _metadataStore = metadataStore;
+        _metadataState = metadataState;
         _playlistCatalogStore = playlistCatalogStore;
         _metadataPosterRootPath = metadataPosterRootPath;
     }
@@ -67,7 +66,7 @@ internal sealed class ResourceLocator : IResourceLocator
         if (!string.IsNullOrWhiteSpace(folder.CoverPath))
             return Task.FromResult<string?>(folder.CoverPath);
 
-        var metadata = _metadataStore.GetByFolderId(folderId);
+        var metadata = _metadataState.GetMetadata(folderId);
         if (!string.IsNullOrWhiteSpace(metadata?.PosterPath))
             return Task.FromResult<string?>(ResolveMetadataPosterPath(metadata!.PosterPath));
 
@@ -76,7 +75,7 @@ internal sealed class ResourceLocator : IResourceLocator
 
     private string? ResolveLibraryPosterPath(string folderId)
     {
-        var metadata = _metadataStore.GetByFolderId(folderId);
+        var metadata = _metadataState.GetMetadata(folderId);
         if (!string.IsNullOrWhiteSpace(metadata?.PosterPath))
         {
             return ResolveMetadataPosterPath(metadata!.PosterPath);

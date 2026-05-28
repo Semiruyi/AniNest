@@ -7,20 +7,17 @@ namespace AniNest.Host.Modules;
 
 internal sealed class MetadataOrchestrationService : IMetadataOrchestrationService
 {
-    private readonly IMetadataRuntimeBootstrapService _bootstrap;
     private readonly IMetadataRuntimeStateService _state;
     private readonly IMetadataTaskPlanner _planner;
     private readonly IMetadataTaskQueue _queue;
     private readonly ILogger<MetadataOrchestrationService> _logger;
 
     public MetadataOrchestrationService(
-        IMetadataRuntimeBootstrapService bootstrap,
         IMetadataRuntimeStateService state,
         IMetadataTaskPlanner planner,
         IMetadataTaskQueue queue,
         ILogger<MetadataOrchestrationService> logger)
     {
-        _bootstrap = bootstrap;
         _state = state;
         _planner = planner;
         _queue = queue;
@@ -29,12 +26,11 @@ internal sealed class MetadataOrchestrationService : IMetadataOrchestrationServi
 
     public Task SyncLibrarySnapshotAsync(IReadOnlyList<MetadataFolderRef> folders, CancellationToken cancellationToken = default)
     {
-        _bootstrap.EnsureInitialized();
         _logger.LogInformation(
             "Metadata snapshot sync started. FolderCount={FolderCount}, RecordCount={RecordCount}",
             folders.Count,
             _state.GetAllRecords().Count);
-        _bootstrap.NormalizeTransientStates();
+        _state.NormalizeTransientStates();
         var currentRecords = _state.GetAllRecords();
         var plan = _planner.BuildLibrarySyncPlan(currentRecords, folders);
 
@@ -74,7 +70,6 @@ internal sealed class MetadataOrchestrationService : IMetadataOrchestrationServi
 
     public Task RefreshFolderAsync(string folderId, CancellationToken cancellationToken = default)
     {
-        _bootstrap.EnsureInitialized();
         _logger.LogInformation("Metadata refresh requested. FolderId={FolderId}", folderId);
         var plan = _planner.BuildRefreshPlan(_state.RequireRecord(folderId));
         _state.SaveRecord(plan.Record);
@@ -89,7 +84,6 @@ internal sealed class MetadataOrchestrationService : IMetadataOrchestrationServi
 
     public Task EnqueueMissingAsync(CancellationToken cancellationToken = default)
     {
-        _bootstrap.EnsureInitialized();
         _logger.LogInformation("Metadata enqueue missing requested.");
         var plan = _planner.BuildEnqueueMissingPlan(_state.GetAllRecords());
         foreach (var item in plan)
@@ -102,7 +96,6 @@ internal sealed class MetadataOrchestrationService : IMetadataOrchestrationServi
 
     public Task RetryFailedAsync(bool includeNoMatch, CancellationToken cancellationToken = default)
     {
-        _bootstrap.EnsureInitialized();
         _logger.LogInformation("Metadata retry failed requested. IncludeNoMatch={IncludeNoMatch}", includeNoMatch);
         var plan = _planner.BuildRetryFailedPlan(_state.GetAllRecords(), includeNoMatch);
         foreach (var item in plan)
@@ -115,7 +108,6 @@ internal sealed class MetadataOrchestrationService : IMetadataOrchestrationServi
 
     public async Task<MetadataProcessingResultDto> ProcessQueueAsync(int maxItems, CancellationToken cancellationToken = default)
     {
-        _bootstrap.EnsureInitialized();
         _logger.LogInformation("Metadata manual process queue requested. MaxItems={MaxItems}", maxItems);
         var processed = new List<string>();
         var count = Math.Max(1, maxItems);

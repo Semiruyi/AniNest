@@ -7,7 +7,6 @@ namespace AniNest.Host.Modules;
 
 internal sealed class MetadataReviewService : IMetadataReviewService
 {
-    private readonly IMetadataRuntimeBootstrapService _bootstrap;
     private readonly IMetadataRuntimeStateService _state;
     private readonly IMetadataReviewStore _reviewStore;
     private readonly IMetadataAssetService _assets;
@@ -16,7 +15,6 @@ internal sealed class MetadataReviewService : IMetadataReviewService
     private readonly ILogger<MetadataReviewService> _logger;
 
     public MetadataReviewService(
-        IMetadataRuntimeBootstrapService bootstrap,
         IMetadataRuntimeStateService state,
         IMetadataReviewStore reviewStore,
         IMetadataAssetService assets,
@@ -24,7 +22,6 @@ internal sealed class MetadataReviewService : IMetadataReviewService
         IAnimeMetadataProvider provider,
         ILogger<MetadataReviewService> logger)
     {
-        _bootstrap = bootstrap;
         _state = state;
         _reviewStore = reviewStore;
         _assets = assets;
@@ -35,7 +32,6 @@ internal sealed class MetadataReviewService : IMetadataReviewService
 
     public Task<IReadOnlyList<MetadataReviewDto>> GetReviewQueueAsync(CancellationToken cancellationToken = default)
     {
-        _bootstrap.EnsureInitialized();
         return Task.FromResult<IReadOnlyList<MetadataReviewDto>>(
             _reviewStore.GetAll()
                 .OrderByDescending(item => item.UpdatedAtUtc)
@@ -45,13 +41,11 @@ internal sealed class MetadataReviewService : IMetadataReviewService
 
     public Task<MetadataReviewDto?> GetReviewByFolderAsync(string folderId, CancellationToken cancellationToken = default)
     {
-        _bootstrap.EnsureInitialized();
         return Task.FromResult(_reviewStore.GetByFolderId(folderId) is { } review ? MapReview(review) : null);
     }
 
     public async Task ConfirmReviewAsync(string folderId, string sourceId, CancellationToken cancellationToken = default)
     {
-        _bootstrap.EnsureInitialized();
         var record = _state.RequireRecord(folderId);
         var review = _reviewStore.GetByFolderId(folderId)
             ?? throw new KeyNotFoundException($"Metadata review for folder '{folderId}' was not found.");
@@ -94,7 +88,6 @@ internal sealed class MetadataReviewService : IMetadataReviewService
 
     public Task RejectReviewCandidateAsync(string folderId, string sourceId, CancellationToken cancellationToken = default)
     {
-        _bootstrap.EnsureInitialized();
         var review = _reviewStore.GetByFolderId(folderId)
             ?? throw new KeyNotFoundException($"Metadata review for folder '{folderId}' was not found.");
 

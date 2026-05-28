@@ -1,5 +1,4 @@
 using AniNest.Application.Metadata;
-using AniNest.Contracts.Metadata;
 using Microsoft.Extensions.Logging;
 
 namespace AniNest.Host.Modules;
@@ -21,35 +20,6 @@ internal sealed class MetadataAssetService : IMetadataAssetService
         _posterCache = posterCache;
         _provider = provider;
         _logger = logger;
-    }
-
-    public string? CreateLegacyPayload(MetadataDto metadata)
-    {
-        var shouldPersist = !string.IsNullOrWhiteSpace(metadata.Title) ||
-                            !string.IsNullOrWhiteSpace(metadata.OriginalTitle) ||
-                            !string.IsNullOrWhiteSpace(metadata.Summary) ||
-                            metadata.Tags.Count > 0 ||
-                            !string.IsNullOrWhiteSpace(metadata.Source);
-        if (!shouldPersist)
-            return null;
-
-        var payloadPath = MetadataStoragePathCodec.GetPayloadPath(metadata.FolderId);
-        _payloadRepository.Save(payloadPath, new FolderMetadataPayload(
-            metadata.FolderId,
-            null,
-            metadata.Title,
-            metadata.OriginalTitle,
-            metadata.Summary,
-            null,
-            metadata.PosterPath,
-            null,
-            null,
-            null,
-            metadata.EpisodeCount,
-            metadata.Tags,
-            metadata.Source,
-            DateTime.UtcNow));
-        return payloadPath;
     }
 
     public async Task<MetadataAssetSnapshot> SaveResolvedPayloadAsync(

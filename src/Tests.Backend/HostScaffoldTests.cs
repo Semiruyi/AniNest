@@ -784,55 +784,75 @@ public sealed class HostScaffoldTests
                 progressStore.SaveFolderProgress("sample-folder", "ep-01");
                 progressStore.SaveVideoProgress(Path.Combine(sampleFolderPath, "Episode 01.mp4"), 93_000, 1_440_000);
 
-                var metadataPath = Path.Combine(testRoot, "metadata.json");
-                var metadataStore = new FileMetadataStore(
-                    metadataPath,
-                    seedSampleMetadata ? MetadataDefaults.Create() : []);
+                var metadataIndexPath = Path.Combine(testRoot, "metadata", "index.json");
+                var metadataPayloadRootPath = Path.Combine(testRoot, "metadata", "payload");
+                var metadataReviewPath = Path.Combine(testRoot, "metadata", "review.json");
+                var metadataRecordStore = new FileMetadataRecordStore(
+                    metadataIndexPath,
+                    MetadataStorageDefaults.CreateRecords());
+                var metadataPayloadRepository = new FileMetadataPayloadRepository(metadataPayloadRootPath);
+                var metadataReviewStore = new FileMetadataReviewStore(metadataReviewPath);
+
                 if (seedSampleMetadata)
                 {
-                    metadataStore.Save(new AniNest.Contracts.Metadata.MetadataDto(
-                        "sample-folder",
-                        "Sample Anime",
-                        "Sample Anime",
-                        "A sample metadata record used by the backend scaffold.",
-                        ["slice-of-life"],
-                        null,
-                        "S1",
-                        12,
-                        "local",
-                        AniNest.Core.Enums.MetadataState.Ready,
-                        AniNest.Core.Enums.MetadataFailureKind.None));
+                    SeedRuntimeMetadata(
+                        metadataRecordStore,
+                        metadataPayloadRepository,
+                        folderId: "sample-folder",
+                        folderPath: sampleFolderPath,
+                        folderName: "Sample Anime",
+                        state: AniNest.Core.Enums.MetadataState.Ready,
+                        failureKind: AniNest.Core.Enums.MetadataFailureKind.None,
+                        payload: new FolderMetadataPayload(
+                            "sample-folder",
+                            null,
+                            "Sample Anime",
+                            "Sample Anime",
+                            "A sample metadata record used by the backend scaffold.",
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            12,
+                            ["slice-of-life"],
+                            "local",
+                            DateTime.UtcNow));
                 }
+
                 if (seedFailedMetadata)
                 {
-                    metadataStore.Save(new AniNest.Contracts.Metadata.MetadataDto(
+                    SeedRuntimeMetadata(
+                        metadataRecordStore,
+                        metadataPayloadRepository,
+                        folderId: "failed-folder",
+                        folderPath: Path.Combine(testRoot, "Failed Folder"),
+                        folderName: "Failed Folder",
+                        state: AniNest.Core.Enums.MetadataState.NeedsReview,
+                        failureKind: AniNest.Core.Enums.MetadataFailureKind.NetworkError);
+                    metadataReviewStore.Save(new MetadataReviewRecord(
                         "failed-folder",
                         "Failed Folder",
-                        null,
-                        null,
-                        [],
-                        null,
-                        null,
-                        null,
-                        "local",
                         AniNest.Core.Enums.MetadataState.NeedsReview,
-                        AniNest.Core.Enums.MetadataFailureKind.NetworkError));
+                        AniNest.Core.Enums.MetadataFailureKind.NetworkError,
+                        null,
+                        null,
+                        "test.seeded_review",
+                        [],
+                        [],
+                        DateTime.UtcNow));
                 }
 
                 if (seedMissingMetadata)
                 {
-                    metadataStore.Save(new AniNest.Contracts.Metadata.MetadataDto(
-                        "missing-folder",
-                        null,
-                        null,
-                        null,
-                        [],
-                        null,
-                        null,
-                        null,
-                        null,
-                        AniNest.Core.Enums.MetadataState.NeedsMetadata,
-                        AniNest.Core.Enums.MetadataFailureKind.None));
+                    SeedRuntimeMetadata(
+                        metadataRecordStore,
+                        metadataPayloadRepository,
+                        folderId: "missing-folder",
+                        folderPath: Path.Combine(testRoot, "Missing Folder"),
+                        folderName: "Missing Folder",
+                        state: AniNest.Core.Enums.MetadataState.NeedsMetadata,
+                        failureKind: AniNest.Core.Enums.MetadataFailureKind.None);
                 }
 
                 var thumbnailPath = Path.Combine(testRoot, "thumbnails.json");
@@ -842,9 +862,9 @@ public sealed class HostScaffoldTests
                     ["AniNest:SettingsPath"] = Path.Combine(testRoot, "host-settings.json"),
                     ["AniNest:LibraryCatalogPath"] = libraryCatalogPath,
                     ["AniNest:PlaybackProgressPath"] = playbackProgressPath,
-                    ["AniNest:MetadataPath"] = metadataPath,
-                    ["AniNest:MetadataIndexPath"] = Path.Combine(testRoot, "metadata", "index.json"),
-                    ["AniNest:MetadataPayloadRootPath"] = Path.Combine(testRoot, "metadata", "payload"),
+                    ["AniNest:MetadataIndexPath"] = metadataIndexPath,
+                    ["AniNest:MetadataReviewPath"] = metadataReviewPath,
+                    ["AniNest:MetadataPayloadRootPath"] = metadataPayloadRootPath,
                     ["AniNest:MetadataPosterRootPath"] = Path.Combine(testRoot, "metadata", "posters"),
                     ["AniNest:MetadataWorkerEnabled"] = "false",
                     ["AniNest:ThumbnailPath"] = thumbnailPath,
@@ -864,6 +884,38 @@ public sealed class HostScaffoldTests
                 services.AddSingleton<IMetadataFetchPipeline, FakeMetadataFetchPipeline>();
             });
         }).CreateClient();
+
+    private static void SeedRuntimeMetadata(
+        FileMetadataRecordStore recordStore,
+        FileMetadataPayloadRepository payloadRepository,
+        string folderId,
+        string folderPath,
+        string folderName,
+        AniNest.Core.Enums.MetadataState state,
+        AniNest.Core.Enums.MetadataFailureKind failureKind,
+        FolderMetadataPayload? payload = null)
+    {
+        string? payloadPath = null;
+        if (payload is not null)
+        {
+            payloadPath = MetadataStoragePathCodec.GetPayloadPath(folderId);
+            payloadRepository.Save(payloadPath, payload);
+        }
+
+        recordStore.Save(new MetadataRecord(
+            folderId,
+            folderPath,
+            folderName,
+            string.Empty,
+            state,
+            failureKind,
+            payload?.SourceId,
+            null,
+            state == AniNest.Core.Enums.MetadataState.Ready ? DateTime.UtcNow : null,
+            null,
+            payloadPath,
+            payload?.LocalPosterPath));
+    }
 
     private static async Task<string?> ReadNextNonEmptyLineAsync(StreamReader reader)
     {

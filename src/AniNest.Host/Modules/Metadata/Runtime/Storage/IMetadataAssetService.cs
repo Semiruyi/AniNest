@@ -1,11 +1,9 @@
 using AniNest.Application.Metadata;
-using AniNest.Contracts.Metadata;
 
 namespace AniNest.Host.Modules;
 
 internal interface IMetadataAssetService
 {
-    string? CreateLegacyPayload(MetadataDto metadata);
     Task<MetadataAssetSnapshot> SaveResolvedPayloadAsync(
         string folderId,
         FolderMetadataPayload payload,

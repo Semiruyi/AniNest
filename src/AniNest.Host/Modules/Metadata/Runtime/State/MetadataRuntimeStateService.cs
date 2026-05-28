@@ -12,7 +12,6 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
     private readonly IMetadataRecordStore _recordStore;
     private readonly IMetadataReviewStore _reviewStore;
     private readonly IMetadataAssetService _assets;
-    private readonly IMetadataLegacySyncService _legacySync;
     private readonly IMetadataReadyStateService _readyState;
     private readonly IMetadataPendingStateService _pendingState;
     private readonly IMetadataProjectionService _projection;
@@ -25,7 +24,6 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
         IMetadataRecordStore recordStore,
         IMetadataReviewStore reviewStore,
         IMetadataAssetService assets,
-        IMetadataLegacySyncService legacySync,
         IMetadataReadyStateService readyState,
         IMetadataPendingStateService pendingState,
         IMetadataProjectionService projection,
@@ -37,7 +35,6 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
         _recordStore = recordStore;
         _reviewStore = reviewStore;
         _assets = assets;
-        _legacySync = legacySync;
         _readyState = readyState;
         _pendingState = pendingState;
         _projection = projection;
@@ -73,6 +70,25 @@ internal sealed class MetadataRuntimeStateService : IMetadataRuntimeStateService
 
     public MetadataFolderStateSummary GetFolderStateSummary(string folderId)
         => _projection.BuildFolderStateSummary(GetMetadata(folderId));
+
+    public void NormalizeTransientStates()
+    {
+        foreach (var record in _recordStore.GetAll())
+        {
+            if (record.State is not (MetadataState.Queued or MetadataState.Scraping))
+                continue;
+
+            _logger.LogInformation(
+                "Metadata stale runtime state normalized. FolderId={FolderId}, PreviousState={PreviousState}",
+                record.FolderId,
+                record.State);
+            _recordStore.Save(record with
+            {
+                State = MetadataState.NeedsMetadata,
+                FailureKind = MetadataFailureKind.None
+            });
+        }
+    }
 
     public void PublishFolderState(string folderId)
     {

@@ -10,9 +10,6 @@ internal static class MetadataServiceRegistration
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddSingleton<IMetadataStore>(_ => new FileMetadataStore(
-            configuration.ResolveAniNestPath("AniNest:MetadataPath", "metadata.json"),
-            MetadataDefaults.Create()));
         services.AddSingleton<IMetadataRecordStore>(_ => new FileMetadataRecordStore(
             configuration.ResolveAniNestPath("AniNest:MetadataIndexPath", Path.Combine("metadata", "index.json")),
             MetadataStorageDefaults.CreateRecords()));
@@ -22,12 +19,10 @@ internal static class MetadataServiceRegistration
             configuration.ResolveAniNestPath("AniNest:MetadataPayloadRootPath", Path.Combine("metadata", "payload"))));
         services.AddSingleton<IMetadataPosterCache>(_ => new FileMetadataPosterCache(
             configuration.ResolveAniNestPath("AniNest:MetadataPosterRootPath", Path.Combine("metadata", "posters"))));
-        services.AddSingleton<IMetadataLegacySyncService, MetadataLegacySyncService>();
         services.AddSingleton<IMetadataReadyStateService, MetadataReadyStateService>();
         services.AddSingleton<IMetadataPendingStateService, MetadataPendingStateService>();
         services.AddSingleton<IMetadataAssetService, MetadataAssetService>();
         services.AddSingleton<IMetadataProjectionService, MetadataProjectionService>();
-        services.AddSingleton<IMetadataRuntimeBootstrapService, MetadataRuntimeBootstrapService>();
         services.AddSingleton<IMetadataReviewService, MetadataReviewService>();
         services.AddSingleton<IMetadataOrchestrationService, MetadataOrchestrationService>();
         services.AddSingleton<IMetadataPreparationService, MetadataPreparationService>();

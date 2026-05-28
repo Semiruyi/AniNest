@@ -1,5 +1,4 @@
 using AniNest.Application.Library;
-using AniNest.Application.Metadata;
 using AniNest.Application.Playback;
 using AniNest.Contracts.Library;
 
@@ -9,19 +8,13 @@ internal sealed class LibraryFolderProjection
 {
     private readonly LibraryCatalogService _catalog;
     private readonly ILibraryFileScanner _scanner;
-    private readonly IMetadataRuntimeBootstrapService _metadataBootstrap;
-    private readonly IMetadataRuntimeStateService _metadataState;
 
     public LibraryFolderProjection(
         LibraryCatalogService catalog,
-        ILibraryFileScanner scanner,
-        IMetadataRuntimeBootstrapService metadataBootstrap,
-        IMetadataRuntimeStateService metadataState)
+        ILibraryFileScanner scanner)
     {
         _catalog = catalog;
         _scanner = scanner;
-        _metadataBootstrap = metadataBootstrap;
-        _metadataState = metadataState;
     }
 
     public async Task<IReadOnlyList<LibraryFolderSnapshot>> LoadFolderSnapshotsAsync(
@@ -35,20 +28,6 @@ internal sealed class LibraryFolderProjection
         }
 
         return result;
-    }
-
-    internal LibraryFolderDto ApplyMetadataSummaryForModule(LibraryFolderDto folder)
-    {
-        _metadataBootstrap.EnsureInitialized();
-        var metadata = _metadataState.GetMetadata(folder.FolderId);
-        var summary = _metadataState.GetFolderStateSummary(folder.FolderId);
-        return _catalog.ApplyMetadataSummary(
-            folder,
-            metadata?.Title ?? summary.Title,
-            metadata?.OriginalTitle,
-            summary.PosterPath,
-            summary.State.ToString(),
-            summary.HasMetadata);
     }
 
     private async Task<LibraryFolderSnapshot> CreateSnapshotAsync(

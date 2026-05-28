@@ -14,6 +14,7 @@ internal sealed class LibraryModule : ILibraryModule
 {
     private readonly ServerDirectoryBrowser _directoryBrowser;
     private readonly LibraryFolderProjection _projection;
+    private readonly LibraryMetadataProjection _metadataProjection;
     private readonly LibraryMetadataSyncService _metadataSync;
     private readonly PlaybackProgressSummaryService _playbackProgressSummary;
     private readonly LibraryCatalogService _catalog;
@@ -24,6 +25,7 @@ internal sealed class LibraryModule : ILibraryModule
         LibraryCatalogService catalog,
         ServerDirectoryBrowser directoryBrowser,
         LibraryFolderProjection projection,
+        LibraryMetadataProjection metadataProjection,
         LibraryMetadataSyncService metadataSync,
         PlaybackProgressSummaryService playbackProgressSummary,
         IHostEventStream events,
@@ -32,6 +34,7 @@ internal sealed class LibraryModule : ILibraryModule
         _catalog = catalog;
         _directoryBrowser = directoryBrowser;
         _projection = projection;
+        _metadataProjection = metadataProjection;
         _metadataSync = metadataSync;
         _playbackProgressSummary = playbackProgressSummary;
         _events = events;
@@ -151,7 +154,7 @@ internal sealed class LibraryModule : ILibraryModule
         var snapshots = await _projection.LoadFolderSnapshotsAsync(cancellationToken);
         return snapshots
             .Select(ApplyPlaybackSummary)
-            .Select(_projection.ApplyMetadataSummaryForModule)
+            .Select(_metadataProjection.Apply)
             .ToArray();
     }
 
@@ -160,7 +163,7 @@ internal sealed class LibraryModule : ILibraryModule
         var snapshots = await _projection.LoadFolderSnapshotsAsync(cancellationToken);
         var snapshot = snapshots.FirstOrDefault(item =>
             string.Equals(item.Folder.FolderId, folderId, StringComparison.OrdinalIgnoreCase));
-        return snapshot is null ? null : _projection.ApplyMetadataSummaryForModule(ApplyPlaybackSummary(snapshot));
+        return snapshot is null ? null : _metadataProjection.Apply(ApplyPlaybackSummary(snapshot));
     }
 
     private LibraryFolderDto ApplyPlaybackSummary(LibraryFolderSnapshot snapshot)

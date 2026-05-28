@@ -6,21 +6,17 @@ namespace AniNest.Host.Modules;
 
 internal sealed class MetadataProjectionService : IMetadataProjectionService
 {
-    private readonly IMetadataStore _legacyStore;
     private readonly IMetadataPayloadRepository _payloadRepository;
 
-    public MetadataProjectionService(
-        IMetadataStore legacyStore,
-        IMetadataPayloadRepository payloadRepository)
+    public MetadataProjectionService(IMetadataPayloadRepository payloadRepository)
     {
-        _legacyStore = legacyStore;
         _payloadRepository = payloadRepository;
     }
 
     public MetadataDto? GetMetadata(string folderId, MetadataRecord? record)
     {
         if (record is null)
-            return _legacyStore.GetByFolderId(folderId);
+            return null;
 
         FolderMetadataPayload? payload = null;
         if (!string.IsNullOrWhiteSpace(record.MetadataFilePath))

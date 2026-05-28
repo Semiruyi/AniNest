@@ -7,18 +7,15 @@ namespace AniNest.Host.Modules;
 internal sealed class MetadataBackgroundService : BackgroundService
 {
     private readonly IMetadataTaskQueue _queue;
-    private readonly IMetadataRuntimeBootstrapService _bootstrap;
     private readonly IMetadataRuntimeStateService _state;
     private readonly ILogger<MetadataBackgroundService> _logger;
 
     public MetadataBackgroundService(
         IMetadataTaskQueue queue,
-        IMetadataRuntimeBootstrapService bootstrap,
         IMetadataRuntimeStateService state,
         ILogger<MetadataBackgroundService> logger)
     {
         _queue = queue;
-        _bootstrap = bootstrap;
         _state = state;
         _logger = logger;
     }
@@ -26,8 +23,7 @@ internal sealed class MetadataBackgroundService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("Metadata background service starting.");
-        _bootstrap.EnsureInitialized();
-        _bootstrap.NormalizeTransientStates();
+        _state.NormalizeTransientStates();
 
         while (!stoppingToken.IsCancellationRequested)
         {
