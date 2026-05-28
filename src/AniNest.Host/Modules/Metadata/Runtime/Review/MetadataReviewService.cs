@@ -11,7 +11,7 @@ internal sealed class MetadataReviewService : IMetadataReviewService
     private readonly IMetadataRuntimeStateService _state;
     private readonly IMetadataReviewStore _reviewStore;
     private readonly IMetadataAssetService _assets;
-    private readonly IMetadataStore _legacyStore;
+    private readonly IMetadataReadyStateService _readyState;
     private readonly IAnimeMetadataProvider _provider;
     private readonly ILogger<MetadataReviewService> _logger;
 
@@ -20,7 +20,7 @@ internal sealed class MetadataReviewService : IMetadataReviewService
         IMetadataRuntimeStateService state,
         IMetadataReviewStore reviewStore,
         IMetadataAssetService assets,
-        IMetadataStore legacyStore,
+        IMetadataReadyStateService readyState,
         IAnimeMetadataProvider provider,
         ILogger<MetadataReviewService> logger)
     {
@@ -28,7 +28,7 @@ internal sealed class MetadataReviewService : IMetadataReviewService
         _state = state;
         _reviewStore = reviewStore;
         _assets = assets;
-        _legacyStore = legacyStore;
+        _readyState = readyState;
         _provider = provider;
         _logger = logger;
     }
@@ -81,32 +81,8 @@ internal sealed class MetadataReviewService : IMetadataReviewService
             record.PosterFilePath,
             cancellationToken);
 
-        var completedRecord = record with
-        {
-            State = MetadataState.Ready,
-            FailureKind = MetadataFailureKind.None,
-            SourceId = sourceId,
-            MetadataFilePath = assets.PayloadPath,
-            PosterFilePath = assets.PosterFilePath,
-            LastSucceededAtUtc = DateTime.UtcNow
-        };
-        _state.SaveRecord(completedRecord);
+        var completedRecord = _readyState.SaveReady(record, sourceId, assets);
         _reviewStore.Delete(folderId);
-        _legacyStore.Save(new MetadataDto(
-            folderId,
-            assets.Payload.Title,
-            assets.Payload.OriginalTitle,
-            assets.Payload.Summary,
-            assets.Payload.Tags,
-            assets.Payload.LocalPosterPath,
-            null,
-            assets.Payload.EpisodeCount,
-            assets.Payload.Source,
-            completedRecord.State,
-            completedRecord.FailureKind,
-            assets.Payload.AirDate,
-            assets.Payload.Year,
-            assets.Payload.Rating));
         _logger.LogInformation(
             "Metadata review confirmed manually. FolderId={FolderId}, SourceId={SourceId}, SuggestedSourceId={SuggestedSourceId}, PosterFilePath={PosterFilePath}",
             folderId,

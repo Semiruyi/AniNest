@@ -56,12 +56,12 @@ internal sealed class LibraryModule : ILibraryModule
             var addedFolder = folders
                 .FirstOrDefault(folder => string.Equals(folder.FolderId, result.Folder?.FolderId, StringComparison.OrdinalIgnoreCase));
 
-            _events.Publish("library.folder_added", new
-            {
-                folderId = result.Folder?.FolderId,
-                path = request.Path,
-                folder = addedFolder is null ? null : MapFolderEventPayload(addedFolder)
-            });
+            _events.Publish(
+                "library.folder_added",
+                LibraryEventPayloadMapper.BuildFolderAdded(
+                    result.Folder?.FolderId,
+                    request.Path,
+                    addedFolder));
         }
 
         return result;
@@ -77,11 +77,12 @@ internal sealed class LibraryModule : ILibraryModule
         var existingIds = before.Select(folder => folder.FolderId).ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var folder in after.Where(folder => !existingIds.Contains(folder.FolderId)))
         {
-            _events.Publish("library.folder_added", new
-            {
-                folderId = folder.FolderId,
-                folder = MapFolderEventPayload(folder)
-            });
+            _events.Publish(
+                "library.folder_added",
+                LibraryEventPayloadMapper.BuildFolderAdded(
+                    folder.FolderId,
+                    null,
+                    folder));
         }
     }
 
@@ -137,12 +138,12 @@ internal sealed class LibraryModule : ILibraryModule
         var folder = await LoadProjectedFolderAsync(folderId, cancellationToken);
         _events.Publish(
             type,
-            BuildFolderEventPayload(
+            LibraryEventPayloadMapper.BuildFolderChanged(
                 folderId,
                 isFavorite,
                 watchStatus,
                 position,
-                folder is null ? null : MapFolderEventPayload(folder)));
+                folder));
     }
 
     private async Task<IReadOnlyList<LibraryFolderDto>> LoadProjectedFoldersAsync(CancellationToken cancellationToken)
@@ -168,41 +169,4 @@ internal sealed class LibraryModule : ILibraryModule
         return snapshot.Folder with { PlayedCount = summary.PlayedCount };
     }
 
-    private static object BuildFolderEventPayload(
-        string folderId,
-        bool? isFavorite,
-        string? watchStatus,
-        int? position,
-        object? folder)
-        => new
-        {
-            folderId,
-            isFavorite,
-            watchStatus,
-            position,
-            folder
-        };
-
-    private static object MapFolderEventPayload(LibraryFolderDto folder)
-        => new
-        {
-            folderId = folder.FolderId,
-            name = folder.Name,
-            videoCount = folder.VideoCount,
-            coverUrl = folder.CoverUrl,
-            playedCount = folder.PlayedCount,
-            watchStatus = folder.WatchStatus.ToString(),
-            isFavorite = folder.IsFavorite,
-            addedAtUtc = folder.AddedAtUtc,
-            metadataSummary = folder.MetadataSummary is null
-                ? null
-                : new
-                {
-                    matchedTitle = folder.MetadataSummary.MatchedTitle,
-                    originalTitle = folder.MetadataSummary.OriginalTitle,
-                    posterUrl = folder.MetadataSummary.PosterUrl,
-                    state = folder.MetadataSummary.State,
-                    hasMetadata = folder.MetadataSummary.HasMetadata
-                }
-        };
 }

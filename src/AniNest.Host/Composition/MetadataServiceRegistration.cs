@@ -22,6 +22,9 @@ internal static class MetadataServiceRegistration
             configuration.ResolveAniNestPath("AniNest:MetadataPayloadRootPath", Path.Combine("metadata", "payload"))));
         services.AddSingleton<IMetadataPosterCache>(_ => new FileMetadataPosterCache(
             configuration.ResolveAniNestPath("AniNest:MetadataPosterRootPath", Path.Combine("metadata", "posters"))));
+        services.AddSingleton<IMetadataLegacySyncService, MetadataLegacySyncService>();
+        services.AddSingleton<IMetadataReadyStateService, MetadataReadyStateService>();
+        services.AddSingleton<IMetadataPendingStateService, MetadataPendingStateService>();
         services.AddSingleton<IMetadataAssetService, MetadataAssetService>();
         services.AddSingleton<IMetadataProjectionService, MetadataProjectionService>();
         services.AddSingleton<IMetadataRuntimeBootstrapService, MetadataRuntimeBootstrapService>();
