@@ -1,29 +1,38 @@
 # aninest_flutter
 
-A new Flutter project.
+AniNest 的 Flutter 桌面端壳层，负责消费 `AniNest.Host` 暴露的 REST API 与 SSE 事件流。
 
-## Getting Started
+当前前端主线包括：
 
-This project is a starting point for a Flutter application.
+- 媒体库页
+- 播放页
+- 后端连接切换
+- 设置加载与保存
+- 元数据与缩略图信息展示
 
-A few resources to get you started if this is your first Flutter project:
+## 运行方式
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+先启动后端：
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```powershell
+dotnet run --project .\src\AniNest.Host\AniNest.Host.csproj
+```
 
-## Windows media_kit fix
+然后在当前目录运行：
 
-If Windows builds start failing again after switching commits or refreshing the
-pub cache, rerun:
+```powershell
+flutter pub get
+flutter run -d windows
+```
+
+默认后端地址是 `http://localhost:5275`。
+
+## Windows media_kit 修复
+
+如果 Windows 构建在切换提交或刷新 pub cache 后再次失败，可重新执行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\fix-media-kit-windows-cache.ps1 -SeedCache -Proxy http://127.0.0.1:7890
 ```
 
-`-Proxy` is optional. The script reapplies the local `media_kit` Windows CMake
-patch and preloads the stable native cache under `%LOCALAPPDATA%\media_kit_libs_windows_video`.
+`-Proxy` 可选。脚本会重新应用本地 `media_kit` Windows CMake 补丁，并预热 `%LOCALAPPDATA%\media_kit_libs_windows_video` 缓存。

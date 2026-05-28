@@ -1,120 +1,83 @@
 # AniNest
 
-AniNest 是一个基于 WPF + LibVLC 的 Windows 本地动漫播放器，面向本地番剧收藏和连续观看体验。项目的核心亮点是库记忆、丝滑动画，以及基于 ffmpeg 的缩略图预览。
+AniNest 现在的主线是一个以后端为中心的本地番剧库项目：
 
-![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
-![WPF](https://img.shields.io/badge/WPF-Windows-0078D4)
-![License](https://img.shields.io/badge/License-MIT-green)
+- `src/AniNest.Host`：ASP.NET Core Host，负责 API、SSE 事件流、文件存储与模块装配
+- `src/AniNest.Application`：应用服务与模块边界
+- `src/AniNest.Contracts`：前后端共享 DTO
+- `src/AniNest.Core`：核心枚举与基础模型
+- `frontend/aninest_flutter`：Flutter 桌面端壳层，消费 Host API
+- `src/Tests.Backend`：后端测试
 
-## 功能
+旧的 `WPF + LibVLC` 方案文档已经移除；当前仓库以 `Host + Flutter` 结构为准。
 
-- 海报墙式媒体库浏览，支持封面自动识别和目录拖拽排序
-- 库记忆，自动保存单集进度、目录顺序、已看状态和最后播放项
-- 丝滑动画，包括页面转场、全屏切换和控件显隐
-- 缩略图预览，支持后台预生成、缓存和进度条悬停预览
-- 倍速播放与右键长按临时 3x 加速
-- 可自定义键盘/鼠标输入绑定，支持冲突检测和恢复默认
-- 便携式数据布局，设置、进度和缩略图都保存在应用目录
-- 离线补丁启动器，支持应用更新包后再启动主程序
+## 当前能力
 
-## 支持格式
-
-| 类型 | 格式 |
-|---|---|
-| 视频 | MP4, MKV, AVI, MOV, WMV, FLV, WEBM, M4V, MPG, MPEG, TS, M2TS, RMVB |
-| 封面 | JPG, JPEG, PNG, BMP, GIF |
-
-## 默认输入绑定
-
-| 输入 | 功能 |
-|---|---|
-| `Space` | 播放 / 暂停 |
-| `Left` / `Right` | 后退 / 前进 5 秒 |
-| `J` / `L` | 后退 / 前进 5 秒 |
-| `F` | 切换全屏 |
-| `Esc` | 退出全屏 / 返回媒体库 |
-| `N` | 下一项 |
-| `P` | 上一项 |
-| 鼠标后退键 | 返回媒体库 |
-| 双击视频区域 | 切换全屏 |
-| 右键长按 | 临时 3x 加速 |
+- 媒体库目录管理、批量导入、服务端目录浏览
+- 播放列表与播放会话恢复
+- 设置读写
+- 元数据状态、评审队列与刷新流程
+- 缩略图状态、摘要、重建与清理
+- SSE 事件流，用于驱动前端增量刷新
 
 ## 快速开始
 
-环境要求：
-
-- Windows 10/11 x64
-- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
-- 可选：`ffmpeg.exe`，用于缩略图预生成与进度条预览
-
-构建与运行：
+### 运行后端
 
 ```powershell
-dotnet build AniNest.sln
-dotnet run --project .\src\AniNest\AniNest.csproj
+dotnet run --project .\src\AniNest.Host\AniNest.Host.csproj
 ```
 
-发布：
+默认地址：
+
+- `http://localhost:5275`
+- 调试页：`http://localhost:5275/debug/index.html`
+
+### 运行后端测试
 
 ```powershell
-dotnet publish .\src\AniNest\AniNest.csproj -c Release -r win-x64 --self-contained true -o .\artifacts\publish
+dotnet test .\src\Tests.Backend\AniNest.Backend.Tests.csproj -m:1
 ```
 
-或使用脚本：
+### 运行 Flutter 前端
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\publish.ps1 -Runtime win-x64 -Configuration Release -Zip
+cd .\frontend\aninest_flutter
+flutter pub get
+flutter run -d windows
 ```
+
+Flutter 默认连接 `http://localhost:5275`，也可以在应用内切换后端地址。
 
 ## 项目结构
 
 ```text
 AniNest/
-├─ src/
-│  ├─ AniNest/
-│  │  ├─ CompositionRoot/
-│  │  ├─ Core/
-│  │  ├─ Data/
-│  │  ├─ Features/
-│  │  ├─ Infrastructure/
-│  │  ├─ Presentation/
-│  │  ├─ Resources/
-│  │  └─ View/
-│  ├─ Launcher/
-│  └─ Tests/
 ├─ docs/
-├─ tools/
-└─ AniNest.sln
-```
-
-## 数据目录
-
-应用按便携模式运行，主要数据位于程序目录下：
-
-- `Data/settings.json`：目录列表、窗口状态、播放进度、输入绑定、语言等配置
-- `Data/Languages/*.json`：界面语言资源
-- `thumbnails/`：按视频路径哈希组织的缩略图缓存和索引
-- `player.log`：应用日志
-
-## 测试
-
-```powershell
-dotnet test .\src\Tests\AniNest.Tests.csproj
+├─ frontend/
+│  └─ aninest_flutter/
+└─ src/
+   ├─ AniNest.Application/
+   ├─ AniNest.Contracts/
+   ├─ AniNest.Core/
+   ├─ AniNest.Host/
+   └─ Tests.Backend/
 ```
 
 ## 文档
 
-- [docs/README.md](docs/README.md)：文档索引
-- [docs/architecture/overview.md](docs/architecture/overview.md)：架构、依赖方向、运行时主链路和关键模块
-- [docs/operations/offline-update.md](docs/operations/offline-update.md)：离线更新与补丁流程
+- [docs/README.md](docs/README.md)：当前文档索引
+- [docs/zh/architecture/backend-modules-and-api.md](docs/zh/architecture/backend-modules-and-api.md)：后端模块与 API 总览
+- [docs/zh/architecture/metadata-bangumi-design.md](docs/zh/architecture/metadata-bangumi-design.md)：Bangumi 元数据设计
+- [docs/zh/frontend/flutter-backend-client-contract.md](docs/zh/frontend/flutter-backend-client-contract.md)：Flutter 对接契约
+- [docs/zh/testing/backend-test-workflow.md](docs/zh/testing/backend-test-workflow.md)：后端测试工作流
 
 ## 技术栈
 
 - .NET 9
-- WPF
-- CommunityToolkit.Mvvm
-- LibVLCSharp
-- ffmpeg
+- ASP.NET Core Minimal API
+- Flutter
+- `media_kit`
 
 ## License
 

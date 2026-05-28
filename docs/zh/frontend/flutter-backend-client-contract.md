@@ -1,240 +1,185 @@
 # Flutter 与后端对接契约
 
-本文面向即将开始的 Flutter 前端实现，目标是把当前 AniNest 后端的 REST + SSE 能力收敛成一套稳定的客户端接入方式。
+本文档面向当前仓库里的 Flutter 客户端，对齐 `AniNest.Host` 已落地的 REST API 与 SSE 事件流。
 
-当前约定基于现有后端实现，而不是未来设想。
-
-## 目标
-
-Flutter 端负责：
-
-- UI
-- 路由与页面状态
-- `media_kit` 播放器实例
-- 本地播放控制
-- 将播放进度、播放完成等事件上报给后端
+## 边界
 
 后端负责：
 
-- Library
-- Playlist
-- Session
-- Metadata
-- Thumbnail
-- Settings
+- 媒体库
+- 播放列表
+- 会话状态
+- 元数据
+- 缩略图
+- 设置
 - 事件流
 
-一句话说清边界：
+Flutter 负责：
 
-> 后端决定“应该播放什么”；Flutter 决定“怎么播放这个目标”。
+- 窗口与页面 UI
+- `media_kit` 播放器实例
+- 本地播放控制
+- 通过 API 上报进度与完成事件
 
-## 推荐的 Flutter 分层
+一句话说清：
 
-推荐先按 4 层拆：
+> 后端决定播什么，Flutter 决定怎么播。
+
+## 默认连接地址
+
+- Host：`http://localhost:5275`
+- 调试页：`http://localhost:5275/debug/index.html`
+
+当前 Flutter 代码里的默认地址也是 `http://localhost:5275`。
+
+## 建议的客户端分层
+
+当前仓库已经在沿这个方向组织：
 
 ```text
 lib/
   src/
     api/
-      aninest_http_client.dart
-      aninest_event_stream.dart
-      dto/
+    models/
     services/
-      library_api.dart
-      session_api.dart
-      metadata_api.dart
-      thumbnail_api.dart
-      settings_api.dart
     features/
-      library/
-      player/
-      metadata/
-      settings/
+    presentation/
     app/
-      app_state.dart
-      event_router.dart
 ```
 
-职责建议：
+建议职责：
 
-- `api/`
-  - 只处理 HTTP、JSON、SSE
-  - 不承担业务拼装
-- `services/`
-  - 按后端模块封装调用
-  - 例如 `SessionApi.openFolder()`、`ThumbnailApi.processFolder()`
-- `features/`
-  - 页面级状态
-  - 控制器、view model、notifier、bloc 都放这里
-- `app/event_router.dart`
-  - 统一消费 SSE
-  - 按事件类型刷新对应 feature 状态
+- `api/`：HTTP 与 SSE 基础能力
+- `models/`：Dart DTO
+- `services/`：按后端模块封装请求
+- `features/`：状态与控制器
+- `app/`：全局装配、事件分发、后端切换
 
-## 后端基地址
+## 当前 Host API
 
-开发期默认：
-
-```text
-http://localhost:5275
-```
-
-调试页地址：
-
-```text
-http://localhost:5275/debug/index.html
-```
-
-## 推荐的客户端对象
-
-建议至少有这几个 service：
-
-### `LibraryApi`
-
-- `Future<List<LibraryFolderDto>> getFolders()`
-- `Future<void> addFolder(String path)`
-- `Future<void> addFolderBatch(String rootPath)`
-- `Future<void> setFavorite(String folderId, bool isFavorite)`
-- `Future<void> setWatchStatus(String folderId, String status)`
-- `Future<void> moveToFront(String folderId)`
-- `Future<void> deleteFolder(String folderId)`
-
-### `SessionApi`
-
-- `Future<SessionStateDto?> getCurrent()`
-- `Future<SessionOpenResultDto> openFolder(String folderId)`
-- `Future<SessionOpenResultDto> selectItem(String itemId)`
-- `Future<SessionOpenResultDto> moveNext()`
-- `Future<SessionOpenResultDto> movePrevious()`
-- `Future<void> reportProgress(...)`
-- `Future<void> complete(String itemId)`
-- `Future<void> close()`
-
-### `PlaylistApi`
-
-- `Future<PlaylistDto?> getCurrent()`
-- `Future<PlaylistDto> getByFolder(String folderId)`
-
-### `MetadataApi`
-
-- `Future<MetadataStatusSummaryDto> getSummary()`
-- `Future<MetadataDto?> getFolder(String folderId)`
-- `Future<void> refreshFolder(String folderId)`
-- `Future<void> retryFolder(String folderId)`
-- `Future<void> enqueueMissing()`
-- `Future<void> retryFailed({required bool includeNoMatch})`
-- `Future<MetadataProcessingResultDto> processQueue({int maxItems = 1})`
-
-### `ThumbnailApi`
-
-- `Future<List<ThumbnailStatusDto>> getFolder(String folderId)`
-- `Future<ThumbnailFolderSummaryDto> getFolderSummary(String folderId)`
-- `Future<ThumbnailStatusDto?> getVideo(String videoId)`
-- `Future<void> prioritizeFolder(String folderId)`
-- `Future<void> regenerateFolder(String folderId)`
-- `Future<ThumbnailProcessingResultDto> processFolder(String folderId, {int maxItems = 1})`
-- `Future<void> clearFolderCache(String folderId)`
-
-### `SettingsApi`
-
-- `Future<AppSettingsDto> getAll()`
-- `Future<PlayerSettingsDto> getPlayer()`
-- `Future<void> savePlayer(PlayerSettingsDto dto)`
-- `Future<MetadataSettingsDto> getMetadata()`
-- `Future<void> saveMetadata(MetadataSettingsDto dto)`
-- `Future<ThumbnailSettingsDto> getThumbnails()`
-- `Future<void> saveThumbnails(ThumbnailSettingsDto dto)`
-
-## REST 接口如何使用
-
-推荐把接口分成 3 类：
-
-### 1. 查询接口
-
-特点：
-
-- `GET`
-- 返回当前快照
-- 适合页面首屏加载、手动刷新、重连后重建状态
-
-典型接口：
+### Library
 
 - `GET /api/library/folders`
+- `POST /api/library/folders`
+- `POST /api/library/folders:batch-add`
+- `GET /api/library/browser`
+- `DELETE /api/library/folders/{folderId}`
+- `POST /api/library/folders/{folderId}:favorite`
+- `POST /api/library/folders/{folderId}:watch-status`
+- `POST /api/library/folders/{folderId}:move-to-front`
+
+### Playlist
+
 - `GET /api/playlist/current`
+- `GET /api/playlist/by-folder/{folderId}`
+- `POST /api/playlist/by-folder/{folderId}:activate`
+- `POST /api/playlist/current/items/{itemId}:select`
+- `POST /api/playlist/current:next`
+- `POST /api/playlist/current:previous`
+
+### Session
+
 - `GET /api/session`
+- `POST /api/session/open-folder`
+- `POST /api/session/select-item`
+- `POST /api/session/next`
+- `POST /api/session/previous`
+- `POST /api/session/progress`
+- `POST /api/session/complete`
+- `POST /api/session/close`
+
+### Metadata
+
 - `GET /api/metadata/status-summary`
 - `GET /api/metadata/folders/{folderId}`
+- `GET /api/metadata/reviews`
+- `GET /api/metadata/reviews/{folderId}`
+- `POST /api/metadata/reviews/{folderId}:confirm`
+- `POST /api/metadata/reviews/{folderId}:reject-candidate`
+- `POST /api/metadata/folders/{folderId}:refresh`
+- `POST /api/metadata/folders/{folderId}:retry`
+- `POST /api/metadata:enqueue-missing`
+- `POST /api/metadata:retry-failed`
+- `POST /api/metadata:process-queue`
+
+### Thumbnail
+
 - `GET /api/thumbnails/folders/{folderId}`
 - `GET /api/thumbnails/folders/{folderId}/summary`
 - `GET /api/thumbnails/videos/{videoId}`
-- `GET /api/settings/*`
-
-### 2. 命令接口
-
-特点：
-
-- `POST` / `PUT` / `DELETE`
-- 用于发起状态变更
-- 成功后通常不要只信返回值，最好再等 SSE 或主动刷新一次相关查询
-
-典型接口：
-
-- `POST /api/session/open-folder`
-- `POST /api/session/progress`
-- `POST /api/metadata:process-queue`
+- `POST /api/thumbnails/folders/{folderId}:prioritize`
+- `POST /api/thumbnails/folders/{folderId}:regenerate`
 - `POST /api/thumbnails/folders/{folderId}:process`
+- `DELETE /api/thumbnails/folders/{folderId}/cache`
 
-### 3. 事件接口
+### Settings
 
-特点：
+- `GET /api/settings`
+- `PUT /api/settings`
+- `GET /api/settings/player`
+- `PUT /api/settings/player`
+- `GET /api/settings/metadata`
+- `PUT /api/settings/metadata`
+- `GET /api/settings/thumbnails`
+- `PUT /api/settings/thumbnails`
 
-- `GET /api/events`
-- SSE
-- 用来驱动列表、详情、播放器状态联动刷新
+## 资源 URL 约定
 
-## 播放器对接建议
+前端应优先直接消费 DTO 中提供的 URL：
 
-### 打开播放
+- `LibraryFolderDto.coverUrl`
+- `LibraryMetadataSummaryDto.posterUrl`
+- `PlaybackTargetDto.mediaUrl`
+- `PlaybackTargetDto.subtitleUrl`
 
-流程建议：
+这些 URL 最终都落在：
 
-1. Flutter 调 `POST /api/session/open-folder`
-2. 后端返回 `SessionOpenResultDto`
-3. Flutter 取 `playbackTarget.filePath`
-4. 交给 `media_kit` 打开
-5. 如果 `startPositionMs > 0`，在播放器 ready 后 seek
+```text
+/api/resources/{kind}/{ownerId}
+```
 
-### 切换集数
+前端不应该自行推导资源路径。
 
-两种入口：
+## 播放对接
 
-- 用户从播放列表点选某一集
-- 当前播放结束后自动下一集
+### 打开目录并开始播放
 
-统一流程：
+推荐流程：
 
-1. 先调后端：
-   - `POST /api/playlist/current/items/{itemId}:select`
-   - 或 `POST /api/session/next`
-   - 或 `POST /api/session/previous`
-2. 后端返回新的 `SessionOpenResultDto`
-3. Flutter 用新的 `playbackTarget` 重开播放器目标
+1. `POST /api/session/open-folder`
+2. 读取 `SessionOpenResultDto.playbackTarget`
+3. 用 `playbackTarget.mediaUrl` 打开 `media_kit`
+4. 如果 `startPositionMs > 0`，在播放器 ready 后 seek
+
+### 切集
+
+当前代码里有两条入口都能工作：
+
+- 会话风格
+  - `POST /api/session/next`
+  - `POST /api/session/previous`
+- 播放列表风格
+  - `POST /api/playlist/current/items/{itemId}:select`
+  - `POST /api/playlist/current:next`
+  - `POST /api/playlist/current:previous`
+
+当前 Flutter 已经在 `SessionApi.selectItem()` 中直接调用：
+
+```text
+POST /api/playlist/current/items/{itemId}:select
+```
+
+这没有问题，返回值同样是 `SessionOpenResultDto`。
 
 ### 进度上报
 
-建议播放器层定时上报，不要每一帧都打接口。
-
-推荐节奏：
-
-- 每 5 秒上报一次
-- 暂停时立即上报一次
-- 切换集数前上报一次
-- 页面关闭或应用挂起前上报一次
-
 当前接口：
 
-`POST /api/session/progress`
+```text
+POST /api/session/progress
+```
 
-请求 DTO 对应字段：
+请求字段：
 
 ```json
 {
@@ -247,33 +192,36 @@ http://localhost:5275/debug/index.html
 }
 ```
 
-注意：
+建议节奏：
 
-- 这里字段名是 `rate` 和 `volume`
-- 不是 settings 里的 `preferredRate` / `preferredVolume`
+- 每 5 秒一次
+- 暂停时补一次
+- 切集前补一次
+- 页面关闭前补一次
 
 ### 播放完成
 
-播放器判断“本集播放完成”后：
+当前接口：
 
-1. 调 `POST /api/session/complete`
-2. 再决定是否自动调用 `POST /api/session/next`
+```text
+POST /api/session/complete
+```
 
-建议不要让播放器本地私自推进业务状态，还是让后端记账。
+建议先通知后端，再决定是否自动下一集，不要在播放器本地直接推进业务状态。
 
-## SSE 接入建议
+## SSE 事件流
 
-后端事件入口：
+入口：
 
 ```text
 GET /api/events
 ```
 
-当前第一页连接时会先收到：
+首条事件通常是：
 
 - `host.connected`
 
-当前事件类型包括：
+当前 Host 会发出的事件：
 
 - `settings.changed`
 - `library.folder_added`
@@ -288,16 +236,17 @@ GET /api/events
 - `metadata.summary_changed`
 - `thumbnail.folder_updated`
 
-### Flutter 端推荐策略
+注意：
 
-不要把 SSE payload 当成唯一真相。
+- 事件名使用下划线风格
+- `metadata.summary_changed` 的 payload 直接就是 summary DTO
+- `settings.changed` 的 payload 当前形如 `{ "scope": "player" }`
 
-推荐规则：
+### 前端处理建议
 
-- 事件先做“轻量提示”
-- 再按需刷新对应查询接口
+不要把 SSE payload 当唯一真相，推荐“事件触发，查询回填”。
 
-例如：
+当前最实用的刷新策略：
 
 - 收到 `library.*`
   - 刷新 `GET /api/library/folders`
@@ -307,47 +256,85 @@ GET /api/events
 - 收到 `metadata.summary_changed`
   - 刷新 `GET /api/metadata/status-summary`
 - 收到 `metadata.folder_updated`
-  - 如果当前正在看这个 folder，刷新 `GET /api/metadata/folders/{folderId}`
+  - 如果当前选中了对应 folder，刷新 `GET /api/metadata/folders/{folderId}`
 - 收到 `thumbnail.folder_updated`
-  - 如果当前正在看这个 folder，刷新：
+  - 如果当前选中了对应 folder，刷新：
     - `GET /api/thumbnails/folders/{folderId}`
     - `GET /api/thumbnails/folders/{folderId}/summary`
-
-这样做的好处：
-
-- Flutter 端逻辑简单
-- 不依赖事件 payload 的细节稳定性
-- 后端后续扩充字段时前端更稳
 
 ## 首屏加载建议
 
 ### Library 页
 
-首次进入建议拉：
+建议先拉：
 
 1. `GET /api/library/folders`
 2. `GET /api/metadata/status-summary`
 
 ### Player 页
 
-首次进入建议拉：
+建议先拉：
 
 1. `GET /api/session`
-2. 如果有 session，再拉 `GET /api/playlist/current`
-3. 如果有 `currentItemId`，播放器再按需恢复
+2. 如果存在 session，再拉 `GET /api/playlist/current`
 
-### Folder 详情页
+### 目录详情
 
-进入某个 folder 时建议拉：
+建议先拉：
 
 1. `GET /api/playlist/by-folder/{folderId}`
 2. `GET /api/metadata/folders/{folderId}`
 3. `GET /api/thumbnails/folders/{folderId}/summary`
 4. `GET /api/thumbnails/folders/{folderId}`
 
-## 错误处理约定
+## 当前 DTO 重点
 
-当前统一错误模型：
+### `PlaybackTargetDto`
+
+当前字段是：
+
+```text
+itemId
+title
+mediaUrl
+startPositionMs
+subtitleUrl?
+audioTrackHint?
+```
+
+不是早期草案里的 `filePath`。
+
+### `LibraryFolderDto`
+
+当前字段里是：
+
+```text
+coverUrl
+addedAtUtc
+metadataSummary
+```
+
+不是 `coverPath`。
+
+### `MetadataFolderUpdatedEventDto`
+
+当前 Flutter 模型已兼容这些字段：
+
+```text
+folderId
+state
+failureKind
+hasMetadata
+matchedTitle
+originalTitle
+posterUrl
+coverUrl
+updatedAtUtc
+```
+
+## 错误处理
+
+统一错误模型：
 
 ```json
 {
@@ -359,126 +346,23 @@ GET /api/events
 }
 ```
 
-Flutter 端建议统一转成：
-
-- `NotFound`
-- `Conflict`
-- `ValidationError`
-- `UnknownApiError`
-
-至少保留：
+建议前端至少保留：
 
 - `statusCode`
 - `code`
 - `message`
 - `details`
 
-## DTO 使用建议
+## 当前客户端实现状态
 
-当前后端已经有 `AniNest.Contracts` 的 C# DTO，但 Flutter 不应手写照抄业务逻辑。
+当前 Flutter 仓库里已经有这些 service：
 
-建议做法：
+- `LibraryApi`
+- `SessionApi`
+- `PlaylistApi`
+- `MetadataApi`
+- `ThumbnailApi`
+- `SettingsApi`
+- `HostEventService`
 
-1. 在 Dart 侧按当前 JSON 字段名定义模型
-2. 所有字段名保持和后端 JSON 一致
-3. 页面只依赖 Dart model，不直接依赖原始 map
-
-建议优先建这些 Dart model：
-
-- `LibraryFolderDto`
-- `LibraryFolderListResponse`
-- `PlaylistDto`
-- `PlaylistItemDto`
-- `SessionStateDto`
-- `PlaybackTargetDto`
-- `SessionOpenResultDto`
-- `MetadataDto`
-- `MetadataStatusSummaryDto`
-- `MetadataProcessingResultDto`
-- `ThumbnailStatusDto`
-- `ThumbnailFolderSummaryDto`
-- `ThumbnailProcessingResultDto`
-- `PlayerSettingsDto`
-- `MetadataSettingsDto`
-- `ThumbnailSettingsDto`
-- `AppSettingsDto`
-- `ErrorResponse`
-- `EventEnvelopeDto`
-
-## 推荐的页面状态拆分
-
-建议不要做一个巨大的全局 store。
-
-先按 feature 拆：
-
-### `LibraryState`
-
-- `folders`
-- `isLoading`
-- `selectedFolderId`
-
-### `PlayerState`
-
-- `session`
-- `playlist`
-- `currentPlaybackTarget`
-- `playerRuntimeState`
-
-注意：
-
-- `playerRuntimeState` 是 Flutter 本地状态
-- `session` / `playlist` 是后端状态
-
-### `MetadataState`
-
-- `summary`
-- `currentFolderMetadata`
-- `isProcessing`
-
-### `ThumbnailState`
-
-- `folderSummary`
-- `folderItems`
-- `selectedVideoThumbnail`
-
-### `SettingsState`
-
-- `appSettings`
-- `playerSettings`
-
-## 第一版 Flutter 接入顺序
-
-建议按这个顺序落地：
-
-1. `SettingsApi`
-2. `LibraryApi`
-3. `SessionApi + PlaylistApi`
-4. `media_kit` 打开 `PlaybackTargetDto`
-5. `session/progress` 上报
-6. `MetadataApi`
-7. `ThumbnailApi`
-8. `SSE event router`
-
-理由很简单：
-
-- 先把“能播”跑通
-- 再把“信息补全”和“异步刷新”补上
-
-## 当前最值得保持的约束
-
-前端实现时尽量不要破坏这几条：
-
-- 不让 Flutter 自己决定业务上的“下一集是谁”
-- 不让 Flutter 自己持久化核心播放进度作为唯一来源
-- 不让页面直接消费 SSE payload 去手改复杂状态
-- 不把 `media_kit` 状态和后端 session 状态揉成一个对象
-
-## 下一步建议
-
-这份契约文档之后，最适合继续做的是：
-
-1. 建一个最小 Dart client 目录结构
-2. 先实现 `SessionApi + Player bridge`
-3. 再补 SSE event router
-
-如果你愿意下一步直接开 Flutter 脚手架，我建议先做“库页 + 播放页”两屏，不急着上 metadata 和 thumbnail 页面。
+但它们并没有把 Host 的全部接口都包完，文档中的接口列表描述的是当前后端能力，不等于前端已经全部接入。
