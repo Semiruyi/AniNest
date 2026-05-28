@@ -19,6 +19,30 @@
     }
   },
   "addFolderErrorTitle": "\u65e0\u6cd5\u6dfb\u52a0\u6587\u4ef6\u5939",
+  "scanFolderSuccessTitle": "\u626b\u63cf\u5b8c\u6210",
+  "scanFolderSuccessMessage": "{count, plural, =1{\u5df2\u4ece {name} \u6dfb\u52a0 1 \u4e2a\u65b0\u6587\u4ef6\u5939\u3002} other{\u5df2\u4ece {name} \u6dfb\u52a0 {count} \u4e2a\u65b0\u6587\u4ef6\u5939\u3002}}",
+  "@scanFolderSuccessMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {}
+    }
+  },
+  "scanFolderNoNewFoldersTitle": "\u672a\u627e\u5230\u65b0\u6587\u4ef6\u5939",
+  "scanFolderNoNewFoldersMessage": "AniNest \u672a\u5728 {name} \u4e2d\u627e\u5230\u65b0\u7684\u89c6\u9891\u6587\u4ef6\u5939\u3002",
+  "@scanFolderNoNewFoldersMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "scanFolderErrorTitle": "\u65e0\u6cd5\u626b\u63cf\u6587\u4ef6\u5939",
+  "scanFolderFallbackErrorMessage": "\u65e0\u6cd5\u626b\u63cf {name}\u3002",
+  "@scanFolderFallbackErrorMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
   "serverFolderBrowserDialogTitle": "\u6d4f\u89c8\u670d\u52a1\u5668\u6587\u4ef6\u5939",
   "serverFolderBrowserDialogMessage": "\u4ece\u5f53\u524d\u8fde\u63a5\u7684 AniNest \u540e\u7aef\u4e2d\u9009\u62e9\u6587\u4ef6\u5939\u3002",
   "serverFolderBrowserLoading": "\u6b63\u5728\u52a0\u8f7d\u6587\u4ef6\u5939...",
@@ -26,7 +50,7 @@
   "serverFolderBrowserEmpty": "\u8fd9\u91cc\u6682\u65f6\u6ca1\u6709\u5b50\u6587\u4ef6\u5939\u3002",
   "serverFolderBrowserRoot": "\u6839\u76ee\u5f55",
   "serverFolderBrowserUp": "\u4e0a\u4e00\u7ea7",
-  "serverFolderBrowserSelectCurrent": "\u6dfb\u52a0\u5f53\u524d\u6587\u4ef6\u5939",
+  "serverFolderBrowserSelectCurrent": "\u4f7f\u7528\u5f53\u524d\u6587\u4ef6\u5939",
   "commonClose": "\u5173\u95ed",
   "commonCancel": "\u53d6\u6d88",
   "commonDelete": "\u5220\u9664",

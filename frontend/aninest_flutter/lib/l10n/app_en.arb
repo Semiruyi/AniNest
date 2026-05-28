@@ -19,6 +19,30 @@
     }
   },
   "addFolderErrorTitle": "Unable to add folder",
+  "scanFolderSuccessTitle": "Scan complete",
+  "scanFolderSuccessMessage": "{count, plural, =1{Added 1 new folder from {name}.} other{Added {count} new folders from {name}.}}",
+  "@scanFolderSuccessMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {}
+    }
+  },
+  "scanFolderNoNewFoldersTitle": "No new folders found",
+  "scanFolderNoNewFoldersMessage": "AniNest did not find any new video folders in {name}.",
+  "@scanFolderNoNewFoldersMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "scanFolderErrorTitle": "Unable to scan folder",
+  "scanFolderFallbackErrorMessage": "Unable to scan {name}.",
+  "@scanFolderFallbackErrorMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
   "serverFolderBrowserDialogTitle": "Browse Server Folders",
   "serverFolderBrowserDialogMessage": "Choose a folder from the connected AniNest backend.",
   "serverFolderBrowserLoading": "Loading folders...",
@@ -26,7 +50,7 @@
   "serverFolderBrowserEmpty": "No subfolders here.",
   "serverFolderBrowserRoot": "Root",
   "serverFolderBrowserUp": "Up",
-  "serverFolderBrowserSelectCurrent": "Add Current Folder",
+  "serverFolderBrowserSelectCurrent": "Use Selected Folder",
   "commonClose": "Close",
   "commonCancel": "Cancel",
   "commonDelete": "Delete",

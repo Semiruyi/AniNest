@@ -1,4 +1,5 @@
 import 'package:aninest_flutter/src/features/library/application/library_view.dart';
+import 'package:aninest_flutter/src/features/library/application/library_batch_add_result.dart';
 import 'package:aninest_flutter/src/models/enums.dart';
 import 'package:aninest_flutter/src/models/host_event_models.dart';
 import 'package:aninest_flutter/src/models/library_models.dart';
@@ -61,6 +62,31 @@ class LibraryController extends ChangeNotifier {
       }
     }
     return result;
+  }
+
+  Future<LibraryBatchAddResult> addFolderBatch(String rootPath) async {
+    final previousById = <String, LibraryFolderDto>{
+      for (final folder in _folders) folder.folderId: folder,
+    };
+
+    await _libraryApi.addFolderBatch(rootPath);
+
+    final nextFolders = await _libraryApi.getFolders();
+    _folders = _mergeRefreshedFolders(nextFolders);
+
+    final addedFolders = _folders
+        .where((folder) => !previousById.containsKey(folder.folderId))
+        .toList(growable: false);
+    final preferredSelectedId =
+        _selectedFolderId ??
+        (addedFolders.isEmpty ? null : addedFolders.first.folderId);
+    _selectedFolderId = _resolveSelectedFolderId(preferredSelectedId);
+    notifyListeners();
+
+    return LibraryBatchAddResult(
+      rootPath: rootPath,
+      addedFolders: addedFolders,
+    );
   }
 
   Future<void> toggleFavorite(String folderId, bool isFavorite) async {

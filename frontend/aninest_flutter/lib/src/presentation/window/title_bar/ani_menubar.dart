@@ -2,12 +2,11 @@ import 'dart:async';
 
 import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/app/app_locale.dart';
-import 'package:aninest_flutter/src/core/logging/app_logger.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_controller.dart';
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_models.dart';
 import 'package:aninest_flutter/src/presentation/window/title_bar/backend_connection_dialog.dart';
-import 'package:aninest_flutter/src/presentation/window/title_bar/server_folder_browser_dialog.dart';
+import 'package:aninest_flutter/src/presentation/window/title_bar/library_folder_menu_actions.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class AniMenubar extends StatelessWidget {
@@ -19,70 +18,6 @@ class AniMenubar extends StatelessWidget {
 
   final AppController controller;
   final AppFeedbackController feedbackController;
-
-  Future<void> _handleAddFolder(BuildContext context) async {
-    final l10n = AppLocalizations.of(context);
-
-    try {
-      final path = await showDialog<String>(
-        context: context,
-        builder: (context) => ServerFolderBrowserDialog(controller: controller),
-      );
-      if (path == null || path.isEmpty) {
-        return;
-      }
-
-      final result = await controller.addFolder(path);
-      if (result == null) {
-        AppLogger.warning(
-          'AniMenubar.AddFolder',
-          'Received null addFolder result.',
-        );
-        return;
-      }
-
-      if (result.isAdded) {
-        return;
-      }
-
-      final folderName = _folderDisplayName(path, result.folder?.name);
-      if (result.isAlreadyExists) {
-        feedbackController.publish(
-          AppFeedbackRequest(
-            kind: AppFeedbackKind.toastInfo,
-            title: l10n.addFolderAlreadyAddedTitle,
-            message: l10n.addFolderAlreadyAddedMessage(folderName),
-          ),
-        );
-        return;
-      }
-
-      feedbackController.publish(
-        AppFeedbackRequest(
-          kind: AppFeedbackKind.dialogError,
-          title: l10n.addFolderErrorTitle,
-          message: result.message,
-        ),
-      );
-    } catch (error, stackTrace) {
-      AppLogger.error(
-        'AniMenubar.AddFolder',
-        'Unhandled exception while processing addFolder.',
-        error: error,
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
-  String _folderDisplayName(String path, String? fallbackName) {
-    if (fallbackName != null && fallbackName.isNotEmpty) {
-      return fallbackName;
-    }
-
-    final normalizedPath = path.replaceAll('\\', '/');
-    final name = normalizedPath.split('/').last;
-    return name.isEmpty ? path : name;
-  }
 
   Future<void> _handleBackendConnection(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
@@ -106,6 +41,10 @@ class AniMenubar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final folderActions = LibraryFolderMenuActions(
+      controller: controller,
+      feedbackController: feedbackController,
+    );
 
     return AnimatedBuilder(
       animation: controller,
@@ -116,12 +55,15 @@ class AniMenubar extends StatelessWidget {
               MenuButton(
                 leading: const Icon(BootstrapIcons.folder2Open),
                 onPressed: (context) {
-                  unawaited(_handleAddFolder(context));
+                  unawaited(folderActions.handleAddFolder(context));
                 },
                 child: Text(l10n.menuAddFolder),
               ),
               MenuButton(
                 leading: const Icon(BootstrapIcons.folderPlus),
+                onPressed: (context) {
+                  unawaited(folderActions.handleScanFolder(context));
+                },
                 child: Text(l10n.menuScanFolder),
               ),
             ],

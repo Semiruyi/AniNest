@@ -4,6 +4,7 @@ import 'package:aninest_flutter/src/app/app_locale.dart';
 import 'package:aninest_flutter/src/api/api_exception.dart';
 import 'package:aninest_flutter/src/api/aninest_http_client.dart';
 import 'package:aninest_flutter/src/core/logging/app_logger.dart';
+import 'package:aninest_flutter/src/features/library/application/library_batch_add_result.dart';
 import 'package:aninest_flutter/src/features/library/application/library_controller.dart';
 import 'package:aninest_flutter/src/features/metadata/application/metadata_controller.dart';
 import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
@@ -108,6 +109,17 @@ class AppController extends ChangeNotifier {
 
   Future<LibraryBrowserResponse> browseLibraryDirectory(String? path) {
     return _libraryApi.browse(path);
+  }
+
+  Future<LibraryBatchAddResult?> scanFolder(String rootPath) async {
+    LibraryBatchAddResult? result;
+    await _run(() async {
+      result = await _runWithSuspendedLibrarySelectionRefresh(
+        () => library.addFolderBatch(rootPath),
+      );
+      await _refreshMetadataForSelectionAsync(force: true);
+    });
+    return result;
   }
 
   Future<String?> testBaseUrl(String nextBaseUrl) async {
