@@ -11,6 +11,7 @@ internal static class LibraryServiceRegistration
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.AddSingleton<FileSystemVideoFolderDiscovery>();
         services.AddSingleton<ILibraryFileScanner, FileSystemLibraryFileScanner>();
         services.AddSingleton(_ => new ServerDirectoryBrowser(configuration["AniNest:LibraryBrowserRootPath"]));
         services.AddSingleton<ILibraryCatalogStore>(_ => new FileLibraryCatalogStore(

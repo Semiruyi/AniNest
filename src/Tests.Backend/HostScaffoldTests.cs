@@ -174,6 +174,37 @@ public sealed class HostScaffoldTests
     }
 
     [Fact]
+    public async Task BatchAddLibraryFolders_ImportsNestedFoldersRecursively()
+    {
+        var testRoot = Path.Combine(Path.GetTempPath(), "AniNest.Backend.Tests", $"{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testRoot);
+        var importRoot = Path.Combine(testRoot, "Import");
+        Directory.CreateDirectory(importRoot);
+
+        var nestedParent = Path.Combine(importRoot, "Franchise");
+        var nestedSeason = Path.Combine(nestedParent, "Season C");
+        var deeperParent = Path.Combine(importRoot, "Archive");
+        var deeperSeason = Path.Combine(deeperParent, "Collection", "OVA");
+        Directory.CreateDirectory(nestedSeason);
+        Directory.CreateDirectory(deeperSeason);
+
+        File.WriteAllText(Path.Combine(nestedSeason, "Episode 01.mkv"), string.Empty);
+        File.WriteAllText(Path.Combine(deeperSeason, "Episode 01.mp4"), string.Empty);
+
+        using var client = CreateClient(testRoot);
+
+        var response = await client.PostAsJsonAsync(
+            "/api/library/folders:batch-add",
+            new BatchAddLibraryFoldersRequest(importRoot));
+        response.EnsureSuccessStatusCode();
+
+        var payload = await client.GetFromJsonAsync<LibraryFolderListResponse>("/api/library/folders");
+        Assert.NotNull(payload);
+        Assert.Contains(payload.Items, item => item.FolderId == "season-c");
+        Assert.Contains(payload.Items, item => item.FolderId == "ova");
+    }
+
+    [Fact]
     public async Task AddLibraryFolder_WithWebmFile_AppearsInPlaylist()
     {
         var testRoot = Path.Combine(Path.GetTempPath(), "AniNest.Backend.Tests", $"{Guid.NewGuid():N}");
