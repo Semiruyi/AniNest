@@ -1,16 +1,17 @@
 import 'dart:async';
 
+import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-import 'player_control_bar_state_controller.dart';
+import '../player_selector.dart';
 import 'player_subtitle_track_menu.dart';
 import 'player_transport_button.dart';
 
 class PlayerSubtitleMenuButton extends StatefulWidget {
   const PlayerSubtitleMenuButton({super.key, required this.controller});
 
-  final PlayerControlBarStateController controller;
+  final PlayerController controller;
 
   @override
   State<PlayerSubtitleMenuButton> createState() =>
@@ -32,8 +33,9 @@ class _PlayerSubtitleMenuButtonState extends State<PlayerSubtitleMenuButton> {
       return;
     }
 
-    final tracks = widget.controller.subtitleTracks;
-    final selectedTrackId = widget.controller.selectedSubtitleTrackId;
+    final state = widget.controller.state;
+    final tracks = state.runtime.subtitleTracks;
+    final selectedTrackId = state.runtime.selectedSubtitleTrackId;
     unawaited(
       _popoverController.show<void>(
         context: context,
@@ -48,7 +50,7 @@ class _PlayerSubtitleMenuButtonState extends State<PlayerSubtitleMenuButton> {
             tracks: tracks,
             selectedTrackId: selectedTrackId,
             onTrackSelected: (String trackId) {
-              unawaited(widget.controller.appController.selectSubtitleTrack(trackId));
+              unawaited(widget.controller.selectSubtitleTrack(trackId));
             },
             onDismissRequested: _popoverController.close,
           );
@@ -61,12 +63,17 @@ class _PlayerSubtitleMenuButtonState extends State<PlayerSubtitleMenuButton> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return AnimatedBuilder(
-      animation: widget.controller,
-      builder: (BuildContext context, Widget? child) {
+    return PlayerSelector<
+      ({bool canTogglePlayback, bool hasSelectableSubtitles})
+    >(
+      controller: widget.controller,
+      selector: (state) => (
+        canTogglePlayback: state.canTogglePlayback,
+        hasSelectableSubtitles: state.runtime.hasSelectableSubtitles,
+      ),
+      builder: (BuildContext context, value) {
         final isEnabled =
-            widget.controller.canTogglePlayback &&
-            widget.controller.hasSelectableSubtitles;
+            value.canTogglePlayback && value.hasSelectableSubtitles;
 
         return PlayerTransportButton(
           tooltip: l10n.playerTooltipSubtitles,

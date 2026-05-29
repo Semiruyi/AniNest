@@ -1,10 +1,11 @@
+import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'player_anime4k_menu_button.dart';
-import 'player_control_bar_state_controller.dart';
 import 'player_subtitle_menu_button.dart';
 import 'player_transport_button.dart';
+import '../player_selector.dart';
 
 class PlayerControlBarButtonRow extends StatelessWidget {
   const PlayerControlBarButtonRow({
@@ -14,7 +15,7 @@ class PlayerControlBarButtonRow extends StatelessWidget {
     required this.onToggleFullscreen,
   });
 
-  final PlayerControlBarStateController controller;
+  final PlayerController controller;
   final bool isFullscreen;
   final VoidCallback onToggleFullscreen;
 
@@ -22,15 +23,32 @@ class PlayerControlBarButtonRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (BuildContext context, Widget? child) {
-        final playIcon = controller.isPlaying
+    return PlayerSelector<
+      ({
+        bool canMovePrevious,
+        bool canMoveNext,
+        bool canTogglePlayback,
+        bool isPlaying,
+        double playbackRate,
+        double playbackVolume,
+      })
+    >(
+      controller: controller,
+      selector: (state) => (
+        canMovePrevious: state.canMovePrevious,
+        canMoveNext: state.canMoveNext,
+        canTogglePlayback: state.canTogglePlayback,
+        isPlaying: state.runtime.isPlaying,
+        playbackRate: state.runtime.rate,
+        playbackVolume: state.runtime.volume,
+      ),
+      builder: (BuildContext context, value) {
+        final playIcon = value.isPlaying
             ? BootstrapIcons.pauseFill
             : BootstrapIcons.playFill;
-        final volumeIcon = controller.isMuted
+        final volumeIcon = value.playbackVolume <= 0.001
             ? BootstrapIcons.volumeMuteFill
-            : controller.playbackVolume < 50
+            : value.playbackVolume < 50
             ? BootstrapIcons.volumeDownFill
             : BootstrapIcons.volumeUpFill;
 
@@ -44,18 +62,18 @@ class PlayerControlBarButtonRow extends StatelessWidget {
                 icon: BootstrapIcons.skipStartFill,
                 iconSize: 25,
                 buttonSize: 30,
-                enabled: controller.canMovePrevious,
-                onTap: controller.canMovePrevious
-                    ? () => controller.appController.movePreviousAndPlay()
+                enabled: value.canMovePrevious,
+                onTap: value.canMovePrevious
+                    ? controller.movePreviousAndPlay
                     : null,
               ),
               const SizedBox(width: 2),
               PlayerTransportButton(
                 tooltip: l10n.playerTooltipPlay,
                 icon: playIcon,
-                enabled: controller.canTogglePlayback,
-                onTap: controller.canTogglePlayback
-                    ? () => controller.appController.togglePlayPause()
+                enabled: value.canTogglePlayback,
+                onTap: value.canTogglePlayback
+                    ? controller.togglePlayPause
                     : null,
               ),
               const SizedBox(width: 2),
@@ -64,18 +82,16 @@ class PlayerControlBarButtonRow extends StatelessWidget {
                 icon: BootstrapIcons.skipEndFill,
                 iconSize: 25,
                 buttonSize: 30,
-                enabled: controller.canMoveNext,
-                onTap: controller.canMoveNext
-                    ? () => controller.appController.moveNextAndPlay()
-                    : null,
+                enabled: value.canMoveNext,
+                onTap: value.canMoveNext ? controller.moveNextAndPlay : null,
               ),
               const Spacer(),
               _PlayerUtilityButton(
                 tooltip: l10n.playerTooltipPlaybackSpeed,
-                label: _formatRate(controller.playbackRate),
-                enabled: controller.canTogglePlayback,
-                onTap: controller.canTogglePlayback
-                    ? () => controller.appController.cyclePlaybackRate()
+                label: _formatRate(value.playbackRate),
+                enabled: value.canTogglePlayback,
+                onTap: value.canTogglePlayback
+                    ? controller.cyclePlaybackRate
                     : null,
               ),
               const SizedBox(width: 2),
@@ -88,10 +104,8 @@ class PlayerControlBarButtonRow extends StatelessWidget {
                 icon: volumeIcon,
                 iconSize: 21,
                 buttonSize: 30,
-                enabled: controller.canTogglePlayback,
-                onTap: controller.canTogglePlayback
-                    ? () => controller.appController.toggleMute()
-                    : null,
+                enabled: value.canTogglePlayback,
+                onTap: value.canTogglePlayback ? controller.toggleMute : null,
               ),
               const SizedBox(width: 2),
               PlayerTransportButton(

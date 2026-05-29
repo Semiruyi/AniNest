@@ -1,7 +1,5 @@
 import 'package:aninest_flutter/src/models/playlist_models.dart';
 
-import '../player_view_state_controller.dart';
-
 class PlayerTopBarPlaybackInfo {
   const PlayerTopBarPlaybackInfo({
     required this.currentEpisodeNumber,
@@ -16,6 +14,28 @@ class PlayerTopBarPlaybackInfo {
   final String videoFormat;
   final String? fileName;
   final String? filePath;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is PlayerTopBarPlaybackInfo &&
+        other.currentEpisodeNumber == currentEpisodeNumber &&
+        other.totalEpisodeCount == totalEpisodeCount &&
+        other.videoFormat == videoFormat &&
+        other.fileName == fileName &&
+        other.filePath == filePath;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    currentEpisodeNumber,
+    totalEpisodeCount,
+    videoFormat,
+    fileName,
+    filePath,
+  );
 
   bool get hasSelectedMedia => fileName != null;
 
@@ -33,12 +53,11 @@ class PlayerTopBarPlaybackInfo {
     return '${current.toString().padLeft(width, '0')} / $totalEpisodeCount';
   }
 
-  factory PlayerTopBarPlaybackInfo.fromController(
-    PlayerViewStateController controller,
-  ) {
-    final playlist = controller.playlist;
+  factory PlayerTopBarPlaybackInfo.fromSelection({
+    required PlaylistDto? playlist,
+    required String? selectedItemId,
+  }) {
     final items = playlist?.items ?? const <PlaylistItemDto>[];
-    final selectedItemId = controller.selectedItemId;
     final selectedIndex = _selectedIndex(
       items: items,
       selectedItemId: selectedItemId,

@@ -1,4 +1,4 @@
-import 'package:aninest_flutter/src/app/app_controller.dart';
+import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
 import 'package:flutter/widgets.dart';
 
 import 'focus_context.dart';
@@ -15,7 +15,7 @@ class PlayerShortcutScope extends StatefulWidget {
     required this.child,
   });
 
-  final AppController controller;
+  final PlayerController controller;
   final bool isActive;
   final bool isFullscreen;
   final VoidCallback onToggleFullscreen;

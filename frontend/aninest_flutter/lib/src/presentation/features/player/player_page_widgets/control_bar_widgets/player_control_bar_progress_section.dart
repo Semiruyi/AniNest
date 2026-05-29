@@ -1,10 +1,12 @@
-import 'package:aninest_flutter/src/app/app_controller.dart';
+import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
+
+import '../player_selector.dart';
 
 class PlayerControlBarProgressSection extends StatefulWidget {
   const PlayerControlBarProgressSection({super.key, required this.controller});
 
-  final AppController controller;
+  final PlayerController controller;
 
   @override
   State<PlayerControlBarProgressSection> createState() =>
@@ -18,20 +20,32 @@ class _PlayerControlBarProgressSectionState
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: widget.controller,
-      builder: (BuildContext context, Widget? child) {
-        final runtime = widget.controller.playerRuntime;
-        final duration = runtime.duration;
-        final isEnabled = runtime.hasMedia && duration > Duration.zero;
+    return PlayerSelector<
+      ({bool hasMedia, Duration duration, Duration position})
+    >(
+      controller: widget.controller,
+      selector: (state) => (
+        hasMedia: state.runtime.hasMedia,
+        duration: state.runtime.duration,
+        position: state.runtime.position,
+      ),
+      builder: (BuildContext context, value) {
+        final duration = value.duration;
+        final isEnabled = value.hasMedia && duration > Duration.zero;
+        final runtimeProgressFraction = duration <= Duration.zero
+            ? 0.0
+            : (value.position.inMicroseconds / duration.inMicroseconds).clamp(
+                0.0,
+                1.0,
+              );
         final fraction = _isDragging
-            ? _dragFraction ?? runtime.progressFraction
-            : runtime.progressFraction;
+            ? _dragFraction ?? runtimeProgressFraction
+            : runtimeProgressFraction;
         final previewPosition = _isDragging
             ? Duration(
                 microseconds: (duration.inMicroseconds * fraction).round(),
               )
-            : runtime.position;
+            : value.position;
 
         return Container(
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(6)),

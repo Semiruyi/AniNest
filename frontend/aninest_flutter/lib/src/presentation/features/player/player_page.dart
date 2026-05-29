@@ -1,11 +1,10 @@
 import 'dart:async';
 
-import 'package:aninest_flutter/src/app/app_controller.dart';
+import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'player_page_widgets/player_playback_layout.dart';
 import 'player_page_widgets/player_top_bar.dart';
-import 'player_page_widgets/player_view_state_controller.dart';
 
 class PlayerPage extends StatefulWidget {
   const PlayerPage({
@@ -16,7 +15,7 @@ class PlayerPage extends StatefulWidget {
     required this.onToggleFullscreen,
   });
 
-  final AppController controller;
+  final PlayerController controller;
   final bool isActive;
   final bool isFullscreen;
   final VoidCallback onToggleFullscreen;
@@ -26,16 +25,6 @@ class PlayerPage extends StatefulWidget {
 }
 
 class _PlayerPageState extends State<PlayerPage> {
-  late final PlayerViewStateController _viewStateController;
-
-  @override
-  void initState() {
-    super.initState();
-    _viewStateController = PlayerViewStateController(
-      appController: widget.controller,
-    );
-  }
-
   @override
   void didUpdateWidget(PlayerPage oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -50,7 +39,6 @@ class _PlayerPageState extends State<PlayerPage> {
     if (widget.isActive) {
       unawaited(widget.controller.pause());
     }
-    _viewStateController.dispose();
     super.dispose();
   }
 
@@ -69,19 +57,17 @@ class _PlayerPageState extends State<PlayerPage> {
           if (!widget.isFullscreen)
             SizedBox(
               height: 38,
-              child: PlayerTopBar(controller: _viewStateController),
+              child: PlayerTopBar(controller: widget.controller),
             ),
           Expanded(
             child: widget.isFullscreen
                 ? PlayerFullscreenPlaybackLayout(
                     controller: widget.controller,
-                    viewStateController: _viewStateController,
                     isActive: widget.isActive,
                     onToggleFullscreen: widget.onToggleFullscreen,
                   )
                 : PlayerStandardPlaybackLayout(
                     controller: widget.controller,
-                    viewStateController: _viewStateController,
                     isActive: widget.isActive,
                     onToggleFullscreen: widget.onToggleFullscreen,
                   ),

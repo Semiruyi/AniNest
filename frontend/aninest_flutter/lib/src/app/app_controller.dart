@@ -14,6 +14,7 @@ import 'package:aninest_flutter/src/features/metadata/application/metadata_contr
 import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
 import 'package:aninest_flutter/src/features/player/application/player_anime4k_mode.dart';
 import 'package:aninest_flutter/src/features/player/application/player_runtime_state.dart';
+import 'package:aninest_flutter/src/features/player/application/player_state.dart';
 import 'package:aninest_flutter/src/features/settings/application/settings_controller.dart';
 import 'package:aninest_flutter/src/models/enums.dart';
 import 'package:aninest_flutter/src/models/library_models.dart';
@@ -51,7 +52,6 @@ class AppController extends ChangeNotifier {
        _runtime = runtime {
     _runtime.actionState.addListener(notifyListeners);
     library.addListener(notifyListeners);
-    player.addListener(notifyListeners);
     settings.addListener(notifyListeners);
     metadata.addListener(notifyListeners);
   }
@@ -86,6 +86,7 @@ class AppController extends ChangeNotifier {
   LibraryFolderDto? get selectedFolder => library.selectedFolder;
   MetadataDto? get selectedMetadata => metadata.metadata;
   AppSettingsDto? get appSettings => settings.appSettings;
+  PlayerState get playerState => player.state;
   PlaylistDto? get playlist => player.playlist;
   PlaybackTargetDto? get playbackTarget => player.playbackTarget;
   PlayerRuntimeState get playerRuntime => player.runtime;
@@ -269,7 +270,6 @@ class AppController extends ChangeNotifier {
   void dispose() {
     _runtime.actionState.removeListener(notifyListeners);
     library.removeListener(notifyListeners);
-    player.removeListener(notifyListeners);
     settings.removeListener(notifyListeners);
     metadata.removeListener(notifyListeners);
     _runtime.dispose();

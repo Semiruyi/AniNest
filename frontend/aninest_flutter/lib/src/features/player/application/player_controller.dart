@@ -8,6 +8,7 @@ import 'package:aninest_flutter/src/features/player/application/player_anime4k_m
 import 'package:aninest_flutter/src/features/player/application/player_playback_engine.dart';
 import 'package:aninest_flutter/src/features/player/application/player_progress_synchronizer.dart';
 import 'package:aninest_flutter/src/features/player/application/player_runtime_state.dart';
+import 'package:aninest_flutter/src/features/player/application/player_state.dart';
 import 'package:aninest_flutter/src/models/playlist_models.dart';
 import 'package:aninest_flutter/src/models/session_models.dart';
 import 'package:aninest_flutter/src/services/playlist_api.dart';
@@ -18,8 +19,8 @@ import 'package:media_kit_video/media_kit_video.dart';
 class PlayerController extends ChangeNotifier {
   PlayerController(this._sessionApi, this._playlistApi, this._appPreferences) {
     _progressSynchronizer = PlayerProgressSynchronizer(_sessionApi);
-    _playbackEngine.addListener(_handlePlaybackTick);
-    _playbackEngine.visualStateListenable.addListener(_handleVisualStateChanged);
+    _playbackEngine.addListener(_handlePlaybackChanged);
+    _syncRuntimeState();
   }
 
   static const List<double> _supportedRates = <double>[
@@ -37,28 +38,26 @@ class PlayerController extends ChangeNotifier {
   late final PlayerProgressSynchronizer _progressSynchronizer;
   final PlayerPlaybackEngine _playbackEngine = PlayerPlaybackEngine();
 
-  SessionStateDto? _session;
-  PlaylistDto? _playlist;
-  PlaybackTargetDto? _playbackTarget;
+  PlayerState _state = const PlayerState.initial();
   String? _completingItemId;
   bool _isDisposed = false;
   bool _anime4kModeHydrated = false;
 
-  SessionStateDto? get session => _session;
-  PlaylistDto? get playlist => _playlist;
-  PlaybackTargetDto? get playbackTarget => _playbackTarget;
-  PlayerRuntimeState get runtime => _playbackEngine.runtimeState;
+  PlayerState get state => _state;
+  SessionStateDto? get session => _state.session;
+  PlaylistDto? get playlist => _state.playlist;
+  PlaybackTargetDto? get playbackTarget => _state.playbackTarget;
+  PlayerRuntimeState get runtime => _state.runtime;
   VideoController get videoController => _playbackEngine.videoController;
 
-  String? get selectedFolderId => _session?.folderId;
-  String? get selectedItemId =>
-      _session?.currentItemId ?? _playlist?.currentItemId;
+  String? get selectedFolderId => _state.selectedFolderId;
+  String? get selectedItemId => _state.selectedItemId;
 
-  bool get canMovePrevious => _session?.hasPrevious ?? false;
-  bool get canMoveNext => _session?.hasNext ?? false;
-  bool get canTogglePlayback => _playbackTarget != null;
-  double get playbackRate => runtime.rate;
-  double get playbackVolume => runtime.volume;
+  bool get canMovePrevious => _state.canMovePrevious;
+  bool get canMoveNext => _state.canMoveNext;
+  bool get canTogglePlayback => _state.canTogglePlayback;
+  double get playbackRate => _state.playbackRate;
+  double get playbackVolume => _state.playbackVolume;
 
   void rebind(SessionApi sessionApi, PlaylistApi playlistApi) {
     _sessionApi = sessionApi;
@@ -84,8 +83,7 @@ class PlayerController extends ChangeNotifier {
     }
 
     if (restoredSession == null) {
-      _playlist = null;
-      _playbackTarget = null;
+      _updateState(session: null, playlist: null, playbackTarget: null);
       await _syncPlayback();
       notifyListeners();
       return;
@@ -97,11 +95,12 @@ class PlayerController extends ChangeNotifier {
         'sessionApi.openFolder',
         () => _sessionApi.openFolder(restoredSession!.folderId),
       );
-      _session = result.session;
-      _playbackTarget = result.playbackTarget;
+      _updateState(
+        session: result.session,
+        playbackTarget: result.playbackTarget,
+      );
     } on ApiException {
-      _session = restoredSession;
-      _playbackTarget = null;
+      _updateState(session: restoredSession, playbackTarget: null);
     }
 
     await AppPerformanceLogger.measure(
@@ -120,8 +119,10 @@ class PlayerController extends ChangeNotifier {
   Future<void> openFolder(String folderId) async {
     await _flushProgress();
     final result = await _sessionApi.openFolder(folderId);
-    _session = result.session;
-    _playbackTarget = result.playbackTarget;
+    _updateState(
+      session: result.session,
+      playbackTarget: result.playbackTarget,
+    );
     await _refreshPlaylist();
     await _syncPlayback();
     notifyListeners();
@@ -130,8 +131,10 @@ class PlayerController extends ChangeNotifier {
   Future<void> selectItem(String itemId) async {
     await _flushProgress();
     final result = await _sessionApi.selectItem(itemId);
-    _session = result.session;
-    _playbackTarget = result.playbackTarget;
+    _updateState(
+      session: result.session,
+      playbackTarget: result.playbackTarget,
+    );
     await _refreshPlaylist();
     await _syncPlayback();
     notifyListeners();
@@ -145,8 +148,10 @@ class PlayerController extends ChangeNotifier {
   Future<void> moveNext() async {
     await _flushProgress();
     final result = await _sessionApi.moveNext();
-    _session = result.session;
-    _playbackTarget = result.playbackTarget;
+    _updateState(
+      session: result.session,
+      playbackTarget: result.playbackTarget,
+    );
     await _refreshPlaylist();
     await _syncPlayback();
     notifyListeners();
@@ -160,8 +165,10 @@ class PlayerController extends ChangeNotifier {
   Future<void> movePrevious() async {
     await _flushProgress();
     final result = await _sessionApi.movePrevious();
-    _session = result.session;
-    _playbackTarget = result.playbackTarget;
+    _updateState(
+      session: result.session,
+      playbackTarget: result.playbackTarget,
+    );
     await _refreshPlaylist();
     await _syncPlayback();
     notifyListeners();
@@ -238,8 +245,8 @@ class PlayerController extends ChangeNotifier {
 
   Future<void> setPlaybackRate(double rate) async {
     await _playbackEngine.setRate(rate);
-    if (_session != null) {
-      _session = _session!.copyWith(preferredRate: rate);
+    if (session != null) {
+      _updateState(session: session!.copyWith(preferredRate: rate));
       notifyListeners();
     }
     await _flushProgress();
@@ -247,8 +254,10 @@ class PlayerController extends ChangeNotifier {
 
   Future<void> toggleMute() async {
     await _playbackEngine.toggleMute();
-    if (_session != null) {
-      _session = _session!.copyWith(preferredVolume: runtime.volume.round());
+    if (session != null) {
+      _updateState(
+        session: session!.copyWith(preferredVolume: runtime.volume.round()),
+      );
       notifyListeners();
     }
     await _flushProgress();
@@ -256,8 +265,8 @@ class PlayerController extends ChangeNotifier {
 
   Future<void> setPlaybackVolume(double volume) async {
     await _playbackEngine.setVolume(volume);
-    if (_session != null) {
-      _session = _session!.copyWith(preferredVolume: volume.round());
+    if (session != null) {
+      _updateState(session: session!.copyWith(preferredVolume: volume.round()));
       notifyListeners();
     }
     await _flushProgress();
@@ -291,10 +300,8 @@ class PlayerController extends ChangeNotifier {
       unawaited(_flushProgress(itemId: itemId, runtimeState: runtimeSnapshot));
     }
     final hadState =
-        _session != null || _playlist != null || _playbackTarget != null;
-    _session = null;
-    _playlist = null;
-    _playbackTarget = null;
+        session != null || playlist != null || playbackTarget != null;
+    _updateState(session: null, playlist: null, playbackTarget: null);
     unawaited(_syncPlayback());
     if (hadState) {
       notifyListeners();
@@ -302,21 +309,21 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> _refreshPlaylist() async {
-    if (_session == null) {
-      _playlist = null;
+    if (session == null) {
+      _updateState(playlist: null);
       return;
     }
 
     try {
-      _playlist = await _playlistApi.getCurrent();
+      _updateState(playlist: await _playlistApi.getCurrent());
     } on ApiException {
-      _playlist = null;
+      _updateState(playlist: null);
     }
   }
 
   Future<void> _syncPlayback() {
-    _progressSynchronizer.resetForItem(_playbackTarget?.itemId);
-    return _playbackEngine.load(target: _playbackTarget, session: _session);
+    _progressSynchronizer.resetForItem(playbackTarget?.itemId);
+    return _playbackEngine.load(target: playbackTarget, session: session);
   }
 
   Future<void> _hydrateAnime4kMode() async {
@@ -330,7 +337,8 @@ class PlayerController extends ChangeNotifier {
     );
   }
 
-  void _handlePlaybackTick() {
+  void _handlePlaybackChanged() {
+    _syncRuntimeState();
     if (_isDisposed) {
       return;
     }
@@ -339,12 +347,6 @@ class PlayerController extends ChangeNotifier {
       unawaited(_completeCurrentItem());
     } else {
       unawaited(_reportProgressIfDue());
-    }
-  }
-
-  void _handleVisualStateChanged() {
-    if (_isDisposed) {
-      return;
     }
     notifyListeners();
   }
@@ -434,15 +436,17 @@ class PlayerController extends ChangeNotifier {
   }
 
   void _applyProgressSnapshot(PlayerProgressSnapshot snapshot) {
-    if (_session?.currentItemId == snapshot.itemId) {
-      _session = _session!.copyWith(
-        savedProgressMs: snapshot.positionMs,
-        preferredRate: snapshot.rate,
-        preferredVolume: snapshot.volume,
+    if (session?.currentItemId == snapshot.itemId) {
+      _updateState(
+        session: session!.copyWith(
+          savedProgressMs: snapshot.positionMs,
+          preferredRate: snapshot.rate,
+          preferredVolume: snapshot.volume,
+        ),
       );
     }
 
-    final playlist = _playlist;
+    final playlist = this.playlist;
     if (playlist == null) {
       return;
     }
@@ -463,15 +467,15 @@ class PlayerController extends ChangeNotifier {
           ? snapshot.durationMs
           : item.durationMs,
     );
-    _playlist = playlist.copyWith(items: items);
+    _updateState(playlist: playlist.copyWith(items: items));
   }
 
   void _applyCompletion(String itemId) {
-    if (_session?.currentItemId == itemId) {
-      _session = _session!.copyWith(savedProgressMs: 0);
+    if (session?.currentItemId == itemId) {
+      _updateState(session: session!.copyWith(savedProgressMs: 0));
     }
 
-    final playlist = _playlist;
+    final playlist = this.playlist;
     if (playlist == null) {
       return;
     }
@@ -489,11 +493,32 @@ class PlayerController extends ChangeNotifier {
       hasSavedProgress: false,
       savedProgressMs: 0,
     );
-    _playlist = playlist.copyWith(items: items);
+    _updateState(playlist: playlist.copyWith(items: items));
   }
 
   String? get _currentProgressItemId =>
-      _playbackTarget?.itemId ?? selectedItemId;
+      playbackTarget?.itemId ?? selectedItemId;
+
+  void _syncRuntimeState() {
+    final nextRuntime = _playbackEngine.runtimeState;
+    if (!identical(nextRuntime, _state.runtime)) {
+      _state = _state.copyWith(runtime: nextRuntime);
+    }
+  }
+
+  void _updateState({
+    Object? session = _playerStateSentinel,
+    Object? playlist = _playerStateSentinel,
+    Object? playbackTarget = _playerStateSentinel,
+    PlayerRuntimeState? runtime,
+  }) {
+    _state = _state.copyWith(
+      session: session,
+      playlist: playlist,
+      playbackTarget: playbackTarget,
+      runtime: runtime,
+    );
+  }
 
   @override
   void dispose() {
@@ -507,11 +532,10 @@ class PlayerController extends ChangeNotifier {
         notify: false,
       ),
     );
-    _playbackEngine.removeListener(_handlePlaybackTick);
-    _playbackEngine.visualStateListenable.removeListener(
-      _handleVisualStateChanged,
-    );
+    _playbackEngine.removeListener(_handlePlaybackChanged);
     _playbackEngine.dispose();
     super.dispose();
   }
 }
+
+const Object _playerStateSentinel = Object();

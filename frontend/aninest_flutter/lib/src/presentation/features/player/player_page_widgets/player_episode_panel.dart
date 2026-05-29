@@ -1,15 +1,16 @@
 import 'dart:async';
 
+import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
 import 'package:aninest_flutter/src/models/playlist_models.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'episode_panel_widgets/player_episode_panel_frame.dart';
-import 'player_view_state_controller.dart';
+import 'player_selector.dart';
 
 class PlayerEpisodePanel extends StatefulWidget {
   const PlayerEpisodePanel({super.key, required this.controller});
 
-  final PlayerViewStateController controller;
+  final PlayerController controller;
 
   @override
   State<PlayerEpisodePanel> createState() => _PlayerEpisodePanelState();
@@ -27,11 +28,13 @@ class _PlayerEpisodePanelState extends State<PlayerEpisodePanel> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: widget.controller,
-      builder: (BuildContext context, Widget? child) {
-        final playlist = widget.controller.playlist;
-        final selectedItemId = widget.controller.selectedItemId;
+    return PlayerSelector<({PlaylistDto? playlist, String? selectedItemId})>(
+      controller: widget.controller,
+      selector: (state) =>
+          (playlist: state.playlist, selectedItemId: state.selectedItemId),
+      builder: (BuildContext context, value) {
+        final playlist = value.playlist;
+        final selectedItemId = value.selectedItemId;
         _scrollToSelectedItem(playlist, selectedItemId);
 
         return PlayerEpisodePanelFrame(
@@ -40,7 +43,7 @@ class _PlayerEpisodePanelState extends State<PlayerEpisodePanel> {
           scrollController: _scrollController,
           onItemPressed: (String itemId) {
             if (itemId != selectedItemId) {
-              unawaited(widget.controller.appController.selectItemAndPlay(itemId));
+              unawaited(widget.controller.selectItemAndPlay(itemId));
             }
           },
         );

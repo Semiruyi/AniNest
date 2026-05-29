@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:aninest_flutter/src/app/app_controller.dart';
+import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
 import 'package:flutter/widgets.dart';
 
 import 'player_intents.dart';
 
 Map<Type, Action<Intent>> buildPlayerActions({
-  required AppController controller,
+  required PlayerController controller,
   required bool isFullscreen,
   required VoidCallback onToggleFullscreen,
 }) {
@@ -25,7 +25,7 @@ Map<Type, Action<Intent>> buildPlayerActions({
     ),
     AdjustVolumeIntent: CallbackAction<AdjustVolumeIntent>(
       onInvoke: (AdjustVolumeIntent intent) {
-        unawaited(controller.adjustPlaybackVolumeBy(intent.delta));
+        unawaited(controller.adjustVolumeBy(intent.delta));
         return null;
       },
     ),

@@ -33,7 +33,7 @@ class ContentArea extends StatelessWidget {
         onOpenFolderForPlayback: onOpenFolderForPlayback,
       ),
       PlayerPage(
-        controller: controller,
+        controller: controller.player,
         isActive: currentPage == AppPage.player,
         isFullscreen: isPlayerFullscreen,
         onToggleFullscreen: onTogglePlayerFullscreen,
