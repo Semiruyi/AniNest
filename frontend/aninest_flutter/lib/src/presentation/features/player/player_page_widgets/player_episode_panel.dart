@@ -65,6 +65,10 @@ class _PlayerEpisodePanelState extends State<PlayerEpisodePanel> {
     }
 
     _lastScrolledItemId = selectedItemId;
+    _scrollToIndex(index);
+  }
+
+  void _scrollToIndex(int index) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scrollController.hasClients) {
         return;

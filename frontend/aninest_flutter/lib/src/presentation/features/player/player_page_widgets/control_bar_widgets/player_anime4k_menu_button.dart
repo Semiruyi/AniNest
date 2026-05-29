@@ -62,15 +62,6 @@ class _PlayerAnime4kMenuButtonState extends State<PlayerAnime4kMenuButton> {
         final colorScheme = Theme.of(context).colorScheme;
         final mode = widget.controller.playerRuntime.anime4kMode;
         final isInteractive = PlayerAnime4kShaderSupport.isSupported;
-        final backgroundColor = !isInteractive
-            ? Colors.transparent
-            : _pressed
-            ? colorScheme.foreground.withValues(alpha: 0.18)
-            : _hovered
-            ? colorScheme.foreground.withValues(alpha: 0.12)
-            : mode.isEnabled
-            ? colorScheme.primary.withValues(alpha: 0.18)
-            : Colors.transparent;
         final foregroundColor = !isInteractive
             ? colorScheme.mutedForeground
             : mode.isEnabled
@@ -116,7 +107,15 @@ class _PlayerAnime4kMenuButtonState extends State<PlayerAnime4kMenuButton> {
                 height: 30,
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
-                  color: backgroundColor,
+                  color: !isInteractive
+                      ? Colors.transparent
+                      : _pressed
+                      ? colorScheme.foreground.withValues(alpha: 0.18)
+                      : _hovered
+                      ? colorScheme.foreground.withValues(alpha: 0.12)
+                      : mode.isEnabled
+                      ? colorScheme.primary.withValues(alpha: 0.18)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(

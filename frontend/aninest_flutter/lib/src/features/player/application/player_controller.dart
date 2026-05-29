@@ -217,6 +217,12 @@ class PlayerController extends ChangeNotifier {
     await seekTo(target);
   }
 
+  Future<void> seekBy(Duration delta) async {
+    final target = runtime.position + delta;
+    final clamped = target < Duration.zero ? Duration.zero : target;
+    await seekTo(clamped);
+  }
+
   Future<void> cyclePlaybackRate() async {
     final currentRate = playbackRate;
     final currentIndex = _supportedRates.indexWhere(
@@ -254,6 +260,11 @@ class PlayerController extends ChangeNotifier {
       notifyListeners();
     }
     await _flushProgress();
+  }
+
+  Future<void> adjustVolumeBy(double delta) async {
+    final nextVolume = (runtime.volume + delta).clamp(0.0, 100.0).toDouble();
+    await setPlaybackVolume(nextVolume);
   }
 
   Future<void> selectSubtitleTrack(String trackId) async {

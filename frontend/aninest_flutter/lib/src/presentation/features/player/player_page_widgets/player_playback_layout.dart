@@ -1,4 +1,5 @@
 import 'package:aninest_flutter/src/app/app_controller.dart';
+import 'package:aninest_flutter/src/presentation/keyboard/player_shortcut_scope.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'fullscreen_player_chrome.dart';
@@ -10,10 +11,12 @@ class PlayerStandardPlaybackLayout extends StatelessWidget {
   const PlayerStandardPlaybackLayout({
     super.key,
     required this.controller,
+    required this.isActive,
     required this.onToggleFullscreen,
   });
 
   final AppController controller;
+  final bool isActive;
   final VoidCallback onToggleFullscreen;
 
   @override
@@ -34,9 +37,15 @@ class PlayerStandardPlaybackLayout extends StatelessWidget {
               ),
               SizedBox(
                 height: 70,
-                child: PlayerControlBar(
+                child: PlayerShortcutScope(
                   controller: controller,
+                  isActive: isActive,
+                  isFullscreen: false,
                   onToggleFullscreen: onToggleFullscreen,
+                  child: PlayerControlBar(
+                    controller: controller,
+                    onToggleFullscreen: onToggleFullscreen,
+                  ),
                 ),
               ),
             ],
@@ -57,10 +66,12 @@ class PlayerFullscreenPlaybackLayout extends StatelessWidget {
   const PlayerFullscreenPlaybackLayout({
     super.key,
     required this.controller,
+    required this.isActive,
     required this.onToggleFullscreen,
   });
 
   final AppController controller;
+  final bool isActive;
   final VoidCallback onToggleFullscreen;
 
   @override
@@ -71,10 +82,16 @@ class PlayerFullscreenPlaybackLayout extends StatelessWidget {
         isFullscreen: true,
         onToggleFullscreen: onToggleFullscreen,
       ),
-      controlBar: PlayerControlBar(
+      controlBar: PlayerShortcutScope(
         controller: controller,
+        isActive: isActive,
         isFullscreen: true,
         onToggleFullscreen: onToggleFullscreen,
+        child: PlayerControlBar(
+          controller: controller,
+          isFullscreen: true,
+          onToggleFullscreen: onToggleFullscreen,
+        ),
       ),
     );
   }

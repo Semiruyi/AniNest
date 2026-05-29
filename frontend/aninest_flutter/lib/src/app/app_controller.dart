@@ -218,6 +218,10 @@ class AppController extends ChangeNotifier {
     await player.seekToFraction(fraction);
   }
 
+  Future<void> seekBy(Duration delta) async {
+    await player.seekBy(delta);
+  }
+
   Future<void> moveNextAndPlay() async {
     await player.moveNextAndPlay();
   }
@@ -232,6 +236,10 @@ class AppController extends ChangeNotifier {
 
   Future<void> toggleMute() async {
     await player.toggleMute();
+  }
+
+  Future<void> adjustPlaybackVolumeBy(double delta) async {
+    await player.adjustVolumeBy(delta);
   }
 
   Future<void> selectSubtitleTrack(String trackId) async {

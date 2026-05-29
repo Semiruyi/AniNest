@@ -32,13 +32,6 @@ class _PlayerTransportButtonState extends State<PlayerTransportButton> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isInteractive = widget.enabled && widget.onTap != null;
-    final backgroundColor = !isInteractive
-        ? Colors.transparent
-        : _pressed
-            ? colorScheme.foreground.withValues(alpha: 0.18)
-            : _hovered
-                ? colorScheme.foreground.withValues(alpha: 0.12)
-                : Colors.transparent;
     final iconColor = isInteractive
         ? colorScheme.foreground
         : colorScheme.mutedForeground;
@@ -74,15 +67,17 @@ class _PlayerTransportButtonState extends State<PlayerTransportButton> {
             width: widget.buttonSize,
             height: widget.buttonSize,
             decoration: BoxDecoration(
-              color: backgroundColor,
+              color: !isInteractive
+                  ? Colors.transparent
+                  : _pressed
+                  ? colorScheme.foreground.withValues(alpha: 0.18)
+                  : _hovered
+                  ? colorScheme.foreground.withValues(alpha: 0.12)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(widget.borderRadius),
             ),
             child: Center(
-              child: Icon(
-                widget.icon,
-                size: widget.iconSize,
-                color: iconColor,
-              ),
+              child: Icon(widget.icon, size: widget.iconSize, color: iconColor),
             ),
           ),
         ),

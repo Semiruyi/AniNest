@@ -29,13 +29,6 @@ class _PlayerEpisodeListItemState extends State<PlayerEpisodeListItem> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final progressFraction = _progressFraction(widget.item);
-    final backgroundColor = widget.isSelected
-        ? colorScheme.primary.withValues(alpha: 0.12)
-        : _pressed
-        ? colorScheme.foreground.withValues(alpha: 0.09)
-        : _hovered
-        ? colorScheme.foreground.withValues(alpha: 0.06)
-        : Colors.transparent;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -56,7 +49,13 @@ class _PlayerEpisodeListItemState extends State<PlayerEpisodeListItem> {
             duration: const Duration(milliseconds: 120),
             curve: Curves.easeOut,
             decoration: BoxDecoration(
-              color: backgroundColor,
+              color: widget.isSelected
+                  ? colorScheme.primary.withValues(alpha: 0.12)
+                  : _pressed
+                  ? colorScheme.foreground.withValues(alpha: 0.09)
+                  : _hovered
+                  ? colorScheme.foreground.withValues(alpha: 0.06)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: widget.isSelected

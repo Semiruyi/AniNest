@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:aninest_flutter/src/app/app_controller.dart';
-import 'package:flutter/services.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'player_page_widgets/player_playback_layout.dart';
@@ -50,53 +49,31 @@ class _PlayerPageState extends State<PlayerPage> {
         ? EdgeInsets.zero
         : const EdgeInsets.all(12);
 
-    return Shortcuts(
-      shortcuts: const <ShortcutActivator, Intent>{
-        SingleActivator(LogicalKeyboardKey.escape): _ExitFullscreenIntent(),
-      },
-      child: Actions(
-        actions: <Type, Action<Intent>>{
-          _ExitFullscreenIntent: CallbackAction<_ExitFullscreenIntent>(
-            onInvoke: (_ExitFullscreenIntent intent) {
-              if (widget.isFullscreen) {
-                widget.onToggleFullscreen();
-              }
-              return null;
-            },
-          ),
-        },
-        child: Focus(
-          autofocus: widget.isActive,
-          child: Container(
-            color: colorScheme.background,
-            padding: pagePadding,
-            child: Column(
-              children: <Widget>[
-                if (!widget.isFullscreen)
-                  SizedBox(
-                    height: 38,
-                    child: PlayerTopBar(controller: widget.controller),
-                  ),
-                Expanded(
-                  child: widget.isFullscreen
-                      ? PlayerFullscreenPlaybackLayout(
-                          controller: widget.controller,
-                          onToggleFullscreen: widget.onToggleFullscreen,
-                        )
-                      : PlayerStandardPlaybackLayout(
-                          controller: widget.controller,
-                          onToggleFullscreen: widget.onToggleFullscreen,
-                        ),
-                ),
-              ],
+    return Container(
+      color: colorScheme.background,
+      padding: pagePadding,
+      child: Column(
+        children: <Widget>[
+          if (!widget.isFullscreen)
+            SizedBox(
+              height: 38,
+              child: PlayerTopBar(controller: widget.controller),
             ),
+          Expanded(
+            child: widget.isFullscreen
+                ? PlayerFullscreenPlaybackLayout(
+                    controller: widget.controller,
+                    isActive: widget.isActive,
+                    onToggleFullscreen: widget.onToggleFullscreen,
+                  )
+                : PlayerStandardPlaybackLayout(
+                    controller: widget.controller,
+                    isActive: widget.isActive,
+                    onToggleFullscreen: widget.onToggleFullscreen,
+                  ),
           ),
-        ),
+        ],
       ),
     );
   }
-}
-
-class _ExitFullscreenIntent extends Intent {
-  const _ExitFullscreenIntent();
 }
