@@ -1,16 +1,16 @@
 import 'dart:async';
 
-import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
+import 'player_control_bar_state_controller.dart';
 import 'player_subtitle_track_menu.dart';
 import 'player_transport_button.dart';
 
 class PlayerSubtitleMenuButton extends StatefulWidget {
   const PlayerSubtitleMenuButton({super.key, required this.controller});
 
-  final AppController controller;
+  final PlayerControlBarStateController controller;
 
   @override
   State<PlayerSubtitleMenuButton> createState() =>
@@ -32,7 +32,8 @@ class _PlayerSubtitleMenuButtonState extends State<PlayerSubtitleMenuButton> {
       return;
     }
 
-    final runtime = widget.controller.playerRuntime;
+    final tracks = widget.controller.subtitleTracks;
+    final selectedTrackId = widget.controller.selectedSubtitleTrackId;
     unawaited(
       _popoverController.show<void>(
         context: context,
@@ -44,10 +45,10 @@ class _PlayerSubtitleMenuButtonState extends State<PlayerSubtitleMenuButton> {
         dismissBackdropFocus: false,
         builder: (BuildContext context) {
           return PlayerSubtitleTrackMenu(
-            tracks: runtime.subtitleTracks,
-            selectedTrackId: runtime.selectedSubtitleTrackId,
+            tracks: tracks,
+            selectedTrackId: selectedTrackId,
             onTrackSelected: (String trackId) {
-              unawaited(widget.controller.selectSubtitleTrack(trackId));
+              unawaited(widget.controller.appController.selectSubtitleTrack(trackId));
             },
             onDismissRequested: _popoverController.close,
           );
@@ -59,17 +60,23 @@ class _PlayerSubtitleMenuButtonState extends State<PlayerSubtitleMenuButton> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final runtime = widget.controller.playerRuntime;
-    final isEnabled =
-        widget.controller.canTogglePlayback && runtime.hasSelectableSubtitles;
 
-    return PlayerTransportButton(
-      tooltip: l10n.playerTooltipSubtitles,
-      icon: BootstrapIcons.badgeCcFill,
-      iconSize: 21,
-      buttonSize: 30,
-      enabled: isEnabled,
-      onTap: isEnabled ? _togglePopover : null,
+    return AnimatedBuilder(
+      animation: widget.controller,
+      builder: (BuildContext context, Widget? child) {
+        final isEnabled =
+            widget.controller.canTogglePlayback &&
+            widget.controller.hasSelectableSubtitles;
+
+        return PlayerTransportButton(
+          tooltip: l10n.playerTooltipSubtitles,
+          icon: BootstrapIcons.badgeCcFill,
+          iconSize: 21,
+          buttonSize: 30,
+          enabled: isEnabled,
+          onTap: isEnabled ? _togglePopover : null,
+        );
+      },
     );
   }
 }

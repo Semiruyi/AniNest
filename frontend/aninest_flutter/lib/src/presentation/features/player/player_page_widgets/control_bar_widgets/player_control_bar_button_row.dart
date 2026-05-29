@@ -1,8 +1,8 @@
-import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'player_anime4k_menu_button.dart';
+import 'player_control_bar_state_controller.dart';
 import 'player_subtitle_menu_button.dart';
 import 'player_transport_button.dart';
 
@@ -14,7 +14,7 @@ class PlayerControlBarButtonRow extends StatelessWidget {
     required this.onToggleFullscreen,
   });
 
-  final AppController controller;
+  final PlayerControlBarStateController controller;
   final bool isFullscreen;
   final VoidCallback onToggleFullscreen;
 
@@ -25,13 +25,12 @@ class PlayerControlBarButtonRow extends StatelessWidget {
     return AnimatedBuilder(
       animation: controller,
       builder: (BuildContext context, Widget? child) {
-        final runtime = controller.playerRuntime;
-        final playIcon = runtime.isPlaying
+        final playIcon = controller.isPlaying
             ? BootstrapIcons.pauseFill
             : BootstrapIcons.playFill;
-        final volumeIcon = runtime.isMuted
+        final volumeIcon = controller.isMuted
             ? BootstrapIcons.volumeMuteFill
-            : runtime.volume < 50
+            : controller.playbackVolume < 50
             ? BootstrapIcons.volumeDownFill
             : BootstrapIcons.volumeUpFill;
 
@@ -47,7 +46,7 @@ class PlayerControlBarButtonRow extends StatelessWidget {
                 buttonSize: 30,
                 enabled: controller.canMovePrevious,
                 onTap: controller.canMovePrevious
-                    ? () => controller.movePreviousAndPlay()
+                    ? () => controller.appController.movePreviousAndPlay()
                     : null,
               ),
               const SizedBox(width: 2),
@@ -56,7 +55,7 @@ class PlayerControlBarButtonRow extends StatelessWidget {
                 icon: playIcon,
                 enabled: controller.canTogglePlayback,
                 onTap: controller.canTogglePlayback
-                    ? () => controller.togglePlayPause()
+                    ? () => controller.appController.togglePlayPause()
                     : null,
               ),
               const SizedBox(width: 2),
@@ -67,7 +66,7 @@ class PlayerControlBarButtonRow extends StatelessWidget {
                 buttonSize: 30,
                 enabled: controller.canMoveNext,
                 onTap: controller.canMoveNext
-                    ? () => controller.moveNextAndPlay()
+                    ? () => controller.appController.moveNextAndPlay()
                     : null,
               ),
               const Spacer(),
@@ -76,7 +75,7 @@ class PlayerControlBarButtonRow extends StatelessWidget {
                 label: _formatRate(controller.playbackRate),
                 enabled: controller.canTogglePlayback,
                 onTap: controller.canTogglePlayback
-                    ? () => controller.cyclePlaybackRate()
+                    ? () => controller.appController.cyclePlaybackRate()
                     : null,
               ),
               const SizedBox(width: 2),
@@ -91,7 +90,7 @@ class PlayerControlBarButtonRow extends StatelessWidget {
                 buttonSize: 30,
                 enabled: controller.canTogglePlayback,
                 onTap: controller.canTogglePlayback
-                    ? () => controller.toggleMute()
+                    ? () => controller.appController.toggleMute()
                     : null,
               ),
               const SizedBox(width: 2),

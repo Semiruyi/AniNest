@@ -1,15 +1,15 @@
 import 'dart:async';
 
-import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/features/player/application/player_anime4k_shader_support.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
+import 'player_control_bar_state_controller.dart';
 import 'player_anime4k_menu.dart';
 
 class PlayerAnime4kMenuButton extends StatefulWidget {
   const PlayerAnime4kMenuButton({super.key, required this.controller});
 
-  final AppController controller;
+  final PlayerControlBarStateController controller;
 
   @override
   State<PlayerAnime4kMenuButton> createState() =>
@@ -43,9 +43,9 @@ class _PlayerAnime4kMenuButtonState extends State<PlayerAnime4kMenuButton> {
         dismissBackdropFocus: false,
         builder: (BuildContext context) {
           return PlayerAnime4kMenu(
-            selectedMode: widget.controller.playerRuntime.anime4kMode,
+            selectedMode: widget.controller.anime4kMode,
             onModeSelected: (mode) {
-              unawaited(widget.controller.setAnime4kMode(mode));
+              unawaited(widget.controller.appController.setAnime4kMode(mode));
             },
             onDismissRequested: _popoverController.close,
           );
@@ -60,7 +60,7 @@ class _PlayerAnime4kMenuButtonState extends State<PlayerAnime4kMenuButton> {
       animation: widget.controller,
       builder: (BuildContext context, Widget? child) {
         final colorScheme = Theme.of(context).colorScheme;
-        final mode = widget.controller.playerRuntime.anime4kMode;
+        final mode = widget.controller.anime4kMode;
         final isInteractive = PlayerAnime4kShaderSupport.isSupported;
         final foregroundColor = !isInteractive
             ? colorScheme.mutedForeground

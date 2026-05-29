@@ -46,6 +46,7 @@ class PlayerPlaybackEngine extends ChangeNotifier {
   late final VideoController _videoController;
   final List<StreamSubscription<dynamic>> _subscriptions =
       <StreamSubscription<dynamic>>[];
+  final ChangeNotifier _visualStateNotifier = ChangeNotifier();
 
   PlayerRuntimeState _runtimeState = const PlayerRuntimeState.initial();
   String? _loadedPlaybackKey;
@@ -56,6 +57,7 @@ class PlayerPlaybackEngine extends ChangeNotifier {
 
   PlayerRuntimeState get runtimeState => _runtimeState;
   VideoController get videoController => _videoController;
+  Listenable get visualStateListenable => _visualStateNotifier;
 
   Future<void> load({
     required PlaybackTargetDto? target,
@@ -320,6 +322,7 @@ class PlayerPlaybackEngine extends ChangeNotifier {
     PlayerAnime4kMode? anime4kMode,
     Object? errorMessage = _sentinel,
   }) {
+    final previousState = _runtimeState;
     _runtimeState = _runtimeState.copyWith(
       hasMedia: hasMedia,
       isLoading: isLoading,
@@ -337,7 +340,30 @@ class PlayerPlaybackEngine extends ChangeNotifier {
       anime4kMode: anime4kMode,
       errorMessage: errorMessage,
     );
+    if (_didVisualStateChange(previousState, _runtimeState)) {
+      _visualStateNotifier.notifyListeners();
+    }
     notifyListeners();
+  }
+
+  bool _didVisualStateChange(
+    PlayerRuntimeState previous,
+    PlayerRuntimeState current,
+  ) {
+    return previous.hasMedia != current.hasMedia ||
+        previous.isLoading != current.isLoading ||
+        previous.isReady != current.isReady ||
+        previous.isPlaying != current.isPlaying ||
+        previous.isBuffering != current.isBuffering ||
+        previous.isCompleted != current.isCompleted ||
+        previous.duration != current.duration ||
+        previous.buffer != current.buffer ||
+        previous.volume != current.volume ||
+        previous.rate != current.rate ||
+        !listEquals(previous.subtitleTracks, current.subtitleTracks) ||
+        previous.selectedSubtitleTrackId != current.selectedSubtitleTrackId ||
+        previous.anime4kMode != current.anime4kMode ||
+        previous.errorMessage != current.errorMessage;
   }
 
   void _handleMpvLog(PlayerLog log) {
@@ -414,6 +440,7 @@ class PlayerPlaybackEngine extends ChangeNotifier {
     for (final subscription in _subscriptions) {
       subscription.cancel();
     }
+    _visualStateNotifier.dispose();
     _player.dispose();
     super.dispose();
   }

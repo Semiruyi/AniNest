@@ -1,15 +1,15 @@
 import 'dart:async';
 
-import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/models/playlist_models.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'episode_panel_widgets/player_episode_panel_frame.dart';
+import 'player_view_state_controller.dart';
 
 class PlayerEpisodePanel extends StatefulWidget {
   const PlayerEpisodePanel({super.key, required this.controller});
 
-  final AppController controller;
+  final PlayerViewStateController controller;
 
   @override
   State<PlayerEpisodePanel> createState() => _PlayerEpisodePanelState();
@@ -40,7 +40,7 @@ class _PlayerEpisodePanelState extends State<PlayerEpisodePanel> {
           scrollController: _scrollController,
           onItemPressed: (String itemId) {
             if (itemId != selectedItemId) {
-              unawaited(widget.controller.selectItemAndPlay(itemId));
+              unawaited(widget.controller.appController.selectItemAndPlay(itemId));
             }
           },
         );

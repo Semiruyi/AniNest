@@ -18,7 +18,8 @@ import 'package:media_kit_video/media_kit_video.dart';
 class PlayerController extends ChangeNotifier {
   PlayerController(this._sessionApi, this._playlistApi, this._appPreferences) {
     _progressSynchronizer = PlayerProgressSynchronizer(_sessionApi);
-    _playbackEngine.addListener(_handlePlaybackChanged);
+    _playbackEngine.addListener(_handlePlaybackTick);
+    _playbackEngine.visualStateListenable.addListener(_handleVisualStateChanged);
   }
 
   static const List<double> _supportedRates = <double>[
@@ -329,7 +330,7 @@ class PlayerController extends ChangeNotifier {
     );
   }
 
-  void _handlePlaybackChanged() {
+  void _handlePlaybackTick() {
     if (_isDisposed) {
       return;
     }
@@ -338,6 +339,12 @@ class PlayerController extends ChangeNotifier {
       unawaited(_completeCurrentItem());
     } else {
       unawaited(_reportProgressIfDue());
+    }
+  }
+
+  void _handleVisualStateChanged() {
+    if (_isDisposed) {
+      return;
     }
     notifyListeners();
   }
@@ -500,7 +507,10 @@ class PlayerController extends ChangeNotifier {
         notify: false,
       ),
     );
-    _playbackEngine.removeListener(_handlePlaybackChanged);
+    _playbackEngine.removeListener(_handlePlaybackTick);
+    _playbackEngine.visualStateListenable.removeListener(
+      _handleVisualStateChanged,
+    );
     _playbackEngine.dispose();
     super.dispose();
   }

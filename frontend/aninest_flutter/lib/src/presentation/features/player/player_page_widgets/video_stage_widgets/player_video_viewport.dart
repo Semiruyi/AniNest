@@ -10,7 +10,7 @@ class PlayerVideoViewport extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: controller,
+      animation: controller.player,
       builder: (BuildContext context, Widget? child) {
         final colorScheme = Theme.of(context).colorScheme;
         final runtime = controller.playerRuntime;

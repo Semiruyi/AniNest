@@ -6,16 +6,19 @@ import 'fullscreen_player_chrome.dart';
 import 'player_control_bar.dart';
 import 'player_episode_panel.dart';
 import 'player_video_stage.dart';
+import 'player_view_state_controller.dart';
 
 class PlayerStandardPlaybackLayout extends StatelessWidget {
   const PlayerStandardPlaybackLayout({
     super.key,
     required this.controller,
+    required this.viewStateController,
     required this.isActive,
     required this.onToggleFullscreen,
   });
 
   final AppController controller;
+  final PlayerViewStateController viewStateController;
   final bool isActive;
   final VoidCallback onToggleFullscreen;
 
@@ -32,6 +35,7 @@ class PlayerStandardPlaybackLayout extends StatelessWidget {
               Expanded(
                 child: PlayerVideoStage(
                   controller: controller,
+                  viewStateController: viewStateController,
                   onToggleFullscreen: onToggleFullscreen,
                 ),
               ),
@@ -55,7 +59,7 @@ class PlayerStandardPlaybackLayout extends StatelessWidget {
           initialSize: 320,
           minSize: 240,
           maxSize: 440,
-          child: PlayerEpisodePanel(controller: controller),
+          child: PlayerEpisodePanel(controller: viewStateController),
         ),
       ],
     );
@@ -66,11 +70,13 @@ class PlayerFullscreenPlaybackLayout extends StatelessWidget {
   const PlayerFullscreenPlaybackLayout({
     super.key,
     required this.controller,
+    required this.viewStateController,
     required this.isActive,
     required this.onToggleFullscreen,
   });
 
   final AppController controller;
+  final PlayerViewStateController viewStateController;
   final bool isActive;
   final VoidCallback onToggleFullscreen;
 
@@ -79,6 +85,7 @@ class PlayerFullscreenPlaybackLayout extends StatelessWidget {
     return FullscreenPlayerChrome(
       video: PlayerVideoStage(
         controller: controller,
+        viewStateController: viewStateController,
         isFullscreen: true,
         onToggleFullscreen: onToggleFullscreen,
       ),
