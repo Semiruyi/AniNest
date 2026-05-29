@@ -8,7 +8,7 @@ internal sealed class MetadataAcquisitionService : IMetadataAcquisitionService
     private readonly IAnimeMetadataProvider _provider;
     private readonly ILogger<MetadataAcquisitionService> _logger;
     private const int SearchFanoutPerKeyword = 5;
-    private const int DetailFanout = 3;
+    private const int DetailFanout = 6;
     private const int CandidatePoolLimit = 8;
 
     public MetadataAcquisitionService(
@@ -23,13 +23,19 @@ internal sealed class MetadataAcquisitionService : IMetadataAcquisitionService
         MetadataPreparedContext context,
         CancellationToken cancellationToken)
     {
-        var keywords = BuildSearchKeywords(context);
+        var keywords = MetadataSearchKeywordBuilder.Build(context);
+        _logger.LogInformation(
+            "Metadata acquisition started. FolderId={FolderId}, Keywords={Keywords}",
+            context.Record.FolderId,
+            string.Join(" | ", keywords));
         var candidatePool = new Dictionary<string, CandidateSeed>(StringComparer.OrdinalIgnoreCase);
+        var prioritySourceIds = new List<string>();
         var searchSucceededCount = 0;
         var failedKeywords = new List<string>();
 
-        foreach (var keyword in keywords)
+        for (var keywordIndex = 0; keywordIndex < keywords.Count; keywordIndex++)
         {
+            var keyword = keywords[keywordIndex];
             IReadOnlyList<ProviderSearchResult> providerCandidates;
             try
             {
@@ -64,31 +70,39 @@ internal sealed class MetadataAcquisitionService : IMetadataAcquisitionService
                 if (string.IsNullOrWhiteSpace(candidate.SourceId))
                     continue;
 
+                if (rank == 1 &&
+                    !prioritySourceIds.Contains(candidate.SourceId, StringComparer.OrdinalIgnoreCase))
+                {
+                    prioritySourceIds.Add(candidate.SourceId);
+                }
+
                 if (candidatePool.TryGetValue(candidate.SourceId, out var existing))
                 {
-                    existing.RegisterHit(rank, candidate);
+                    existing.RegisterHit(rank, keywordIndex, candidate);
                     continue;
                 }
 
                 if (candidatePool.Count >= CandidatePoolLimit)
                     continue;
 
-                candidatePool.Add(candidate.SourceId, new CandidateSeed(candidate, rank));
+                candidatePool.Add(candidate.SourceId, new CandidateSeed(candidate, rank, keywordIndex));
             }
         }
 
         if (candidatePool.Count == 0)
         {
+            _logger.LogWarning(
+                "Metadata acquisition produced no candidates. FolderId={FolderId}, SearchSucceededCount={SearchSucceededCount}, FailedKeywords={FailedKeywords}",
+                context.Record.FolderId,
+                searchSucceededCount,
+                string.Join(" | ", failedKeywords));
             if (searchSucceededCount == 0 && failedKeywords.Count > 0)
                 return new MetadataAcquisitionResult(false, [], $"search_failed:{string.Join(" | ", failedKeywords)}");
 
             return new MetadataAcquisitionResult(true, [], "no_match");
         }
 
-        var rankedCandidates = candidatePool.Values
-            .OrderByDescending(seed => seed.HitCount)
-            .ThenBy(seed => seed.BestRank)
-            .Select(seed => seed.Result)
+        var rankedCandidates = BuildHydrationCandidates(candidatePool, prioritySourceIds)
             .Take(DetailFanout)
             .ToArray();
 
@@ -136,38 +150,45 @@ internal sealed class MetadataAcquisitionService : IMetadataAcquisitionService
             null);
     }
 
-    private static IReadOnlyList<string> BuildSearchKeywords(MetadataPreparedContext context)
+    private static IReadOnlyList<ProviderSearchResult> BuildHydrationCandidates(
+        IReadOnlyDictionary<string, CandidateSeed> candidatePool,
+        IReadOnlyList<string> prioritySourceIds)
     {
-        var keywords = new List<string>(4);
+        var selected = new List<ProviderSearchResult>(candidatePool.Count);
+        var selectedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        AddKeyword(keywords, context.KeywordPlan.PrimaryKeyword);
-        AddKeyword(keywords, context.KeywordPlan.SeasonAwareKeyword);
-        AddKeyword(keywords, context.KeywordPlan.SimplifiedKeyword);
-        AddKeyword(keywords, context.NormalizedTitle);
+        foreach (var sourceId in prioritySourceIds)
+        {
+            if (!candidatePool.TryGetValue(sourceId, out var prioritizedSeed))
+                continue;
 
-        foreach (var alias in context.Aliases.Take(3))
-            AddKeyword(keywords, alias);
+            if (!selectedIds.Add(sourceId))
+                continue;
 
-        return keywords;
-    }
+            selected.Add(prioritizedSeed.Result);
+        }
 
-    private static void AddKeyword(ICollection<string> keywords, string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            return;
+        foreach (var seed in candidatePool.Values
+                     .OrderByDescending(seed => seed.HitCount)
+                     .ThenBy(seed => seed.BestRank)
+                     .ThenBy(seed => seed.FirstKeywordIndex))
+        {
+            if (!selectedIds.Add(seed.Result.SourceId))
+                continue;
 
-        if (keywords.Contains(value, StringComparer.OrdinalIgnoreCase))
-            return;
+            selected.Add(seed.Result);
+        }
 
-        keywords.Add(value);
+        return selected;
     }
 
     private sealed class CandidateSeed
     {
-        public CandidateSeed(ProviderSearchResult result, int rank)
+        public CandidateSeed(ProviderSearchResult result, int rank, int keywordIndex)
         {
             Result = result;
             BestRank = rank;
+            FirstKeywordIndex = keywordIndex;
             HitCount = 1;
         }
 
@@ -175,9 +196,11 @@ internal sealed class MetadataAcquisitionService : IMetadataAcquisitionService
 
         public int BestRank { get; private set; }
 
+        public int FirstKeywordIndex { get; }
+
         public int HitCount { get; private set; }
 
-        public void RegisterHit(int rank, ProviderSearchResult candidate)
+        public void RegisterHit(int rank, int keywordIndex, ProviderSearchResult candidate)
         {
             HitCount++;
             if (rank < BestRank)

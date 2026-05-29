@@ -32,8 +32,9 @@ internal sealed class MetadataFetchPipeline : IMetadataFetchPipeline
         _logger.LogInformation("Metadata fetch pipeline started. FolderId={FolderId}", record.FolderId);
         var prepared = await _preparation.PrepareAsync(record, cancellationToken);
         _logger.LogInformation(
-            "Metadata preparation completed. FolderId={FolderId}, BaseTitle={BaseTitle}, PrimaryKeyword={PrimaryKeyword}, SeasonAwareKeyword={SeasonAwareKeyword}, SimplifiedKeyword={SimplifiedKeyword}, SeasonNumber={SeasonNumber}, YearHint={YearHint}, IsMovieLike={IsMovieLike}, IsAmbiguousShortKeyword={IsAmbiguousShortKeyword}, Aliases={Aliases}",
+            "Metadata preparation completed. FolderId={FolderId}, SearchSeed={SearchSeed}, BaseTitle={BaseTitle}, PrimaryKeyword={PrimaryKeyword}, SeasonAwareKeyword={SeasonAwareKeyword}, SimplifiedKeyword={SimplifiedKeyword}, SeasonNumber={SeasonNumber}, YearHint={YearHint}, IsMovieLike={IsMovieLike}, IsAmbiguousShortKeyword={IsAmbiguousShortKeyword}, Aliases={Aliases}",
             record.FolderId,
+            prepared.SearchSeed,
             prepared.NormalizedTitle,
             prepared.KeywordPlan.PrimaryKeyword,
             prepared.KeywordPlan.SeasonAwareKeyword,

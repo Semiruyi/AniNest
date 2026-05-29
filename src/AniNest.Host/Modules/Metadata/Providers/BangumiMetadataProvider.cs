@@ -72,6 +72,7 @@ internal sealed class BangumiMetadataProvider : IAnimeMetadataProvider
             .Cast<string>()
             .ToArray()
             ?? Array.Empty<string>();
+        var aliases = ExtractAliases(payload);
 
         return new ProviderSubjectDetail(
             payload.Id.ToString(),
@@ -83,6 +84,7 @@ internal sealed class BangumiMetadataProvider : IAnimeMetadataProvider
             TryParseYear(payload.Date),
             payload.Rating?.Score,
             payload.Eps,
+            aliases,
             tags,
             "bangumi");
     }
@@ -121,6 +123,76 @@ internal sealed class BangumiMetadataProvider : IAnimeMetadataProvider
         return int.TryParse(date[..4], out var year) ? year : null;
     }
 
+    private static IReadOnlyList<string> ExtractAliases(BangumiSubjectResponse payload)
+    {
+        var aliases = new List<string>();
+        AddAliases(aliases, payload.Alias);
+
+        foreach (var item in payload.Infobox ?? [])
+        {
+            if (!IsAliasKey(item.Key))
+                continue;
+
+            AddAliases(aliases, item.Value);
+        }
+
+        return aliases
+            .Where(alias => !string.IsNullOrWhiteSpace(alias))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private static bool IsAliasKey(string? key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+            return false;
+
+        return string.Equals(key, "别名", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(key, "別名", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(key, "alias", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void AddAliases(ICollection<string> aliases, JsonElement? value)
+    {
+        if (value is null)
+            return;
+
+        switch (value.Value.ValueKind)
+        {
+            case JsonValueKind.String:
+                AddAlias(aliases, value.Value.GetString());
+                break;
+            case JsonValueKind.Array:
+                foreach (var item in value.Value.EnumerateArray())
+                {
+                    if (item.ValueKind == JsonValueKind.String)
+                    {
+                        AddAlias(aliases, item.GetString());
+                        continue;
+                    }
+
+                    if (item.ValueKind == JsonValueKind.Object)
+                    {
+                        if (item.TryGetProperty("v", out var v) && v.ValueKind == JsonValueKind.String)
+                            AddAlias(aliases, v.GetString());
+                        else if (item.TryGetProperty("value", out var valueProperty) && valueProperty.ValueKind == JsonValueKind.String)
+                            AddAlias(aliases, valueProperty.GetString());
+                    }
+                }
+                break;
+            case JsonValueKind.Object:
+                if (value.Value.TryGetProperty("v", out var objectValue) && objectValue.ValueKind == JsonValueKind.String)
+                    AddAlias(aliases, objectValue.GetString());
+                break;
+        }
+    }
+
+    private static void AddAlias(ICollection<string> aliases, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+            aliases.Add(value);
+    }
+
     private sealed class BangumiSearchResponse
     {
         public List<BangumiSearchSubject>? Data { get; set; }
@@ -144,6 +216,8 @@ internal sealed class BangumiMetadataProvider : IAnimeMetadataProvider
         public int? Eps { get; set; }
         public BangumiImages? Images { get; set; }
         public BangumiRating? Rating { get; set; }
+        public JsonElement? Alias { get; set; }
+        public List<BangumiInfoboxItem>? Infobox { get; set; }
         public List<BangumiTag>? Tags { get; set; }
     }
 
@@ -162,5 +236,11 @@ internal sealed class BangumiMetadataProvider : IAnimeMetadataProvider
     private sealed class BangumiTag
     {
         public string? Name { get; set; }
+    }
+
+    private sealed class BangumiInfoboxItem
+    {
+        public string? Key { get; set; }
+        public JsonElement? Value { get; set; }
     }
 }

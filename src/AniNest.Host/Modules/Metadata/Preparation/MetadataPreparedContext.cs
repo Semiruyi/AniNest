@@ -6,6 +6,7 @@ internal sealed record MetadataPreparedContext(
     MetadataRecord Record,
     MetadataFolderRef Folder,
     MetadataKeywordPlan KeywordPlan,
+    string SearchSeed,
     string NormalizedTitle,
     IReadOnlyList<string> Aliases,
     int? SeasonNumber,

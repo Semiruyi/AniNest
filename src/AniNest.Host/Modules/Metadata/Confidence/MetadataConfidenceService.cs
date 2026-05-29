@@ -2,14 +2,6 @@ namespace AniNest.Host.Modules;
 
 internal sealed class MetadataConfidenceService : IMetadataConfidenceService
 {
-    private static readonly string[] SeasonPatterns =
-    [
-        @"season\s*(\d+)",
-        @"s(\d+)",
-        @"\u7b2c\s*(\d+)\s*[\u5b63\u671f\u90e8]",
-        @"(\d+)\s*[\u5b63\u671f\u90e8]"
-    ];
-
     public MetadataConfidenceResult Evaluate(
         MetadataPreparedContext context,
         MetadataAcquisitionResult acquisition)
@@ -37,6 +29,8 @@ internal sealed class MetadataConfidenceService : IMetadataConfidenceService
         }
         .Where(title => !string.IsNullOrWhiteSpace(title))
         .Cast<string>()
+        .Concat(candidate.Detail?.Aliases ?? Array.Empty<string>())
+        .Where(title => !string.IsNullOrWhiteSpace(title))
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .ToArray();
 
@@ -123,17 +117,17 @@ internal sealed class MetadataConfidenceService : IMetadataConfidenceService
             }
         }
 
-        var candidateSeason = DetectSeason(candidateTitles);
+        var candidateSeason = MetadataSeasonSupport.DetectSeason(candidateTitles);
         if (context.SeasonNumber.HasValue && candidateSeason.HasValue)
         {
             if (context.SeasonNumber.Value == candidateSeason.Value)
             {
-                score += 0.25;
+                score += 0.5;
                 reasons.Add("season.exact-match");
             }
             else
             {
-                score -= 0.2;
+                score -= 0.45;
                 reasons.Add("season.conflict");
             }
         }
@@ -205,25 +199,6 @@ internal sealed class MetadataConfidenceService : IMetadataConfidenceService
             ' ',
             new string(chars)
                 .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-    }
-
-    private static int? DetectSeason(IEnumerable<string> titles)
-    {
-        foreach (var title in titles)
-        {
-            var normalized = title.ToLowerInvariant();
-            foreach (var pattern in SeasonPatterns)
-            {
-                var match = System.Text.RegularExpressions.Regex.Match(
-                    normalized,
-                    pattern,
-                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-                if (match.Success && int.TryParse(match.Groups[1].Value, out var season))
-                    return season;
-            }
-        }
-
-        return null;
     }
 
     private static bool IsMovieLikeTitle(string title)

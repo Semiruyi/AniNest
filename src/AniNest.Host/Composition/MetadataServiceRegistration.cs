@@ -1,6 +1,7 @@
 using AniNest.Application.Modules;
 using AniNest.Application.Metadata;
 using AniNest.Host.Modules;
+using System.Net;
 
 namespace AniNest.Host.Composition;
 
@@ -38,10 +39,27 @@ internal static class MetadataServiceRegistration
         if (configuration.GetValue("AniNest:MetadataWorkerEnabled", true))
             services.AddHostedService<MetadataBackgroundService>();
         services.AddHttpClient<IAnimeMetadataProvider, BangumiMetadataProvider>(client =>
-        {
-            client.BaseAddress = new Uri("https://api.bgm.tv/");
-            client.Timeout = TimeSpan.FromSeconds(15);
-        });
+            {
+                client.BaseAddress = new Uri("https://api.bgm.tv/");
+                client.Timeout = TimeSpan.FromSeconds(
+                    Math.Max(5, configuration.GetValue("AniNest:MetadataHttpTimeoutSeconds", 30)));
+            })
+            .ConfigurePrimaryHttpMessageHandler(() => BuildMetadataHttpHandler(configuration));
         return services;
+    }
+
+    private static HttpMessageHandler BuildMetadataHttpHandler(IConfiguration configuration)
+    {
+        var handler = new HttpClientHandler();
+        var proxyUrl = configuration["AniNest:MetadataProxyUrl"];
+        if (string.IsNullOrWhiteSpace(proxyUrl))
+            return handler;
+
+        if (!Uri.TryCreate(proxyUrl, UriKind.Absolute, out var proxyUri))
+            return handler;
+
+        handler.Proxy = new WebProxy(proxyUri);
+        handler.UseProxy = true;
+        return handler;
     }
 }

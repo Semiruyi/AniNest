@@ -36,6 +36,7 @@ internal sealed class MetadataPreparationService : IMetadataPreparationService
             record,
             folder,
             analysis.KeywordPlan,
+            analysis.SearchSeed,
             analysis.BaseTitle,
             analysis.Aliases,
             analysis.SeasonNumber,

@@ -56,15 +56,16 @@ internal static partial class MetadataPreparationAnalyzer
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
+        var searchSeed = BuildSearchSeed(bestCandidate.RawInput);
         var baseTitle = CleanupTitle(bestCandidate.BaseTitle);
         var simplifiedKeyword = BuildSimplifiedKeyword(baseTitle);
         var primaryKeyword = BuildPrimaryKeyword(bestCandidate with { BaseTitle = baseTitle });
         var seasonAwareKeyword = bestCandidate.SeasonNumber is > 1
-            ? $"{baseTitle} Season {bestCandidate.SeasonNumber}"
+            ? BuildSeasonAwareKeyword(baseTitle, bestCandidate.SeasonNumber.Value)
             : null;
 
         return new MetadataPreparationAnalysis(
-            bestCandidate.RawInput,
+            searchSeed,
             baseTitle,
             aliases,
             new AniNest.Application.Metadata.MetadataKeywordPlan(
@@ -89,10 +90,13 @@ internal static partial class MetadataPreparationAnalyzer
                 : $"{candidate.BaseTitle} Movie";
 
         if (candidate.SeasonNumber is > 1)
-            return $"{candidate.BaseTitle} Season {candidate.SeasonNumber}";
+            return MetadataSeasonSupport.BuildPreferredSeasonKeyword(candidate.BaseTitle, candidate.SeasonNumber.Value);
 
         return candidate.BaseTitle;
     }
+
+    private static string? BuildSeasonAwareKeyword(string baseTitle, int seasonNumber)
+        => MetadataSeasonSupport.BuildAlternateSeasonKeyword(baseTitle, seasonNumber);
 
     private static string? BuildSimplifiedKeyword(string baseTitle)
     {
@@ -152,6 +156,21 @@ internal static partial class MetadataPreparationAnalyzer
             yearHint,
             isMovieLike,
             Score(cleaned, rawInput, priority, seasonNumber, isMovieLike));
+    }
+
+    private static string BuildSearchSeed(string rawInput)
+    {
+        var normalized = NormalizeWrappersAndSeparators(rawInput);
+        normalized = StripTechnicalNoise(normalized);
+        normalized = StripReleaseNoise(normalized);
+        normalized = CleanupTitle(normalized);
+
+        if (IsMeaningless(normalized))
+            normalized = CleanupTitle(NormalizeWrappersAndSeparators(rawInput));
+
+        return string.IsNullOrWhiteSpace(normalized)
+            ? rawInput.Trim()
+            : normalized;
     }
 
     private static string NormalizeWrappersAndSeparators(string value)

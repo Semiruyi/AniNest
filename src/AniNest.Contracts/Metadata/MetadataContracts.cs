@@ -62,3 +62,42 @@ public sealed record ConfirmMetadataReviewRequest(
 
 public sealed record RejectMetadataReviewCandidateRequest(
     string SourceId);
+
+public sealed record MetadataDebugMatchRequest(
+    string FolderName,
+    string? ParentFolderName = null,
+    IReadOnlyList<string>? VideoFiles = null);
+
+public sealed record MetadataDebugPreparedDto(
+    string SearchSeed,
+    string NormalizedTitle,
+    IReadOnlyList<string> Aliases,
+    string PrimaryKeyword,
+    string? SeasonAwareKeyword,
+    string? SimplifiedKeyword,
+    string BaseTitle,
+    int? SeasonNumber,
+    int? YearHint,
+    bool IsMovieLike);
+
+public sealed record MetadataDebugCandidateDto(
+    string SourceId,
+    string? MatchedTitle,
+    string? OriginalTitle,
+    string? DetailTitle,
+    string? DetailOriginalTitle,
+    int? Year,
+    int? DetailYear,
+    int HitCount,
+    int BestRank,
+    double Score,
+    string ConfidenceLevel,
+    IReadOnlyList<string> Reasons);
+
+public sealed record MetadataDebugMatchResponse(
+    MetadataDebugPreparedDto Prepared,
+    IReadOnlyList<string> SearchKeywords,
+    bool SearchSucceeded,
+    string? FailureReason,
+    MetadataDebugCandidateDto? BestCandidate,
+    IReadOnlyList<MetadataDebugCandidateDto> Candidates);

@@ -10,5 +10,6 @@ public sealed record ProviderSubjectDetail(
     int? Year,
     double? Rating,
     int? EpisodeCount,
+    IReadOnlyList<string> Aliases,
     IReadOnlyList<string> Tags,
     string Source);
