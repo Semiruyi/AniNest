@@ -34,13 +34,14 @@ class LibraryCardGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cardWidth = _resolveCardWidth(constraints.maxWidth);
+        const gap = 25.0;
+        final cardWidth = _resolveCardWidth(constraints.maxWidth, gap);
 
         return SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: 16),
           child: AnimatedWrap.material3(
-            spacing: 12,
-            runSpacing: 12,
+            spacing: gap,
+            runSpacing: gap,
             alignment: WrapAlignment.start,
             runAlignment: WrapAlignment.start,
             staggeredInitialInsertionAnimation: const Duration(
@@ -77,16 +78,15 @@ class LibraryCardGrid extends StatelessWidget {
     );
   }
 
-  double _resolveCardWidth(double maxWidth) {
-    const spacing = 12.0;
+  double _resolveCardWidth(double maxWidth, double gap) {
     const minCardWidth = 210.0;
     const maxCardWidth = 280.0;
 
     final columns = math.max(
       1,
-      ((maxWidth + spacing) / (minCardWidth + spacing)).floor(),
+      ((maxWidth + gap) / (minCardWidth + gap)).floor(),
     );
-    final width = (maxWidth - (columns - 1) * spacing) / columns;
+    final width = (maxWidth - (columns - 1) * gap) / columns;
     return width.clamp(minCardWidth, maxCardWidth);
   }
 }

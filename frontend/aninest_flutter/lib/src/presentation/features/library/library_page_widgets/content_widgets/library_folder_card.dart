@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:aninest_flutter/src/models/enums.dart';
 import 'package:aninest_flutter/src/models/library_models.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/content_widgets/library_folder_card_context_menu.dart';
@@ -5,7 +7,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'primary_double_click_region.dart';
 
-class LibraryFolderCard extends StatelessWidget {
+class LibraryFolderCard extends StatefulWidget {
   const LibraryFolderCard({
     super.key,
     required this.folder,
@@ -32,52 +34,84 @@ class LibraryFolderCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   @override
+  State<LibraryFolderCard> createState() => _LibraryFolderCardState();
+}
+
+class _LibraryFolderCardState extends State<LibraryFolderCard> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    const cardRadius = 12.0;
 
     return LibraryFolderCardContextMenu(
-      folder: folder,
-      onContextMenuRequested: onContextMenuRequested,
-      onOpen: onOpen,
-      onToggleFavorite: onToggleFavorite,
-      onSetWatchStatus: onSetWatchStatus,
-      onMoveToFront: onMoveToFront,
-      onDelete: onDelete,
+      folder: widget.folder,
+      onContextMenuRequested: widget.onContextMenuRequested,
+      onOpen: widget.onOpen,
+      onToggleFavorite: widget.onToggleFavorite,
+      onSetWatchStatus: widget.onSetWatchStatus,
+      onMoveToFront: widget.onMoveToFront,
+      onDelete: widget.onDelete,
       child: PrimaryDoubleClickRegion(
-        onDoubleClick: onOpen,
+        onDoubleClick: widget.onOpen,
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(cardRadius),
             border: Border.all(
-              color: isSelected ? colorScheme.primary : colorScheme.border,
-              width: isSelected ? 1.5 : 1,
+              color: widget.isSelected
+                  ? colorScheme.primary
+                  : colorScheme.border,
+              width: widget.isSelected ? 1.5 : 1,
             ),
           ),
-          child: SurfaceCard(
+          child: MouseRegion(
+            onEnter: (_) => setState(() => _isHovered = true),
+            onExit: (_) => setState(() => _isHovered = false),
             child: SizedBox(
               height: 312,
-              child: CardImage(
-                direction: Axis.vertical,
-                onPressed: onPressed,
-                gap: 10,
-                image: _LibraryCardArtwork(
-                  title: folder.name,
-                  imageUrl: imageUrl,
-                ),
-                title: _LibraryCardTitle(
-                  title: folder.name,
-                  watchStatus: folder.watchStatus,
-                  isFavorite: folder.isFavorite,
-                ),
-                subtitle: Text(
-                  _subtitleFor(folder),
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: colorScheme.mutedForeground,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(cardRadius),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: widget.onPressed,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: <Widget>[
+                      _LibraryCardArtwork(
+                        title: widget.folder.name,
+                        imageUrl: widget.imageUrl,
+                        isHovered: _isHovered,
+                      ),
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: FractionallySizedBox(
+                          widthFactor: 1,
+                          heightFactor: 1 / 4,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(cardRadius),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                color: Colors.black.withValues(alpha: 0.3),
+                                child: Center(
+                                  child: _LibraryCardTitle(
+                                    title: widget.folder.name,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                backgroundColor: colorScheme.secondary,
-                borderColor: colorScheme.border,
               ),
             ),
           ),
@@ -85,72 +119,46 @@ class LibraryFolderCard extends StatelessWidget {
       ),
     );
   }
-
-  String _subtitleFor(LibraryFolderDto folder) {
-    if (folder.videoCount <= 0) {
-      return 'No episodes detected';
-    }
-    return '${folder.playedCount} / ${folder.videoCount} episodes';
-  }
 }
 
 class _LibraryCardTitle extends StatelessWidget {
-  const _LibraryCardTitle({
-    required this.title,
-    required this.watchStatus,
-    required this.isFavorite,
-  });
+  const _LibraryCardTitle({required this.title});
 
   final String title;
-  final WatchStatus watchStatus;
-  final bool isFavorite;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ).semiBold(),
-            ),
-            if (isFavorite) ...<Widget>[
-              const Gap(8),
-              Icon(
-                BootstrapIcons.heartFill,
-                size: 14,
-                color: colorScheme.destructive,
-              ),
-            ],
-          ],
-        ),
-      ],
+    return Text(
+      title,
+      maxLines: 2,
+      textAlign: TextAlign.center,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
     );
   }
 }
 
 class _LibraryCardArtwork extends StatelessWidget {
-  const _LibraryCardArtwork({required this.title, required this.imageUrl});
+  const _LibraryCardArtwork({
+    required this.title,
+    required this.imageUrl,
+    required this.isHovered,
+  });
 
   final String title;
   final String? imageUrl;
+  final bool isHovered;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return AspectRatio(
-      aspectRatio: 0.72,
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      scale: isHovered ? 1.06 : 1.0,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -160,7 +168,6 @@ class _LibraryCardArtwork extends StatelessWidget {
             ],
           ),
         ),
-        clipBehavior: Clip.antiAlias,
         alignment: Alignment.center,
         child: imageUrl == null
             ? _ArtworkFallback(title: title)
