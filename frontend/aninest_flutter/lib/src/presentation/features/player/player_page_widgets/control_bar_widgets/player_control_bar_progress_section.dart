@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -17,6 +19,7 @@ class _PlayerControlBarProgressSectionState
     extends State<PlayerControlBarProgressSection> {
   bool _isDragging = false;
   double? _dragFraction;
+  double? _pendingSeekFraction;
 
   @override
   Widget build(BuildContext context) {
@@ -39,9 +42,9 @@ class _PlayerControlBarProgressSectionState
                 1.0,
               );
         final fraction = _isDragging
-            ? _dragFraction ?? runtimeProgressFraction
-            : runtimeProgressFraction;
-        final previewPosition = _isDragging
+            ? _dragFraction ?? _pendingSeekFraction ?? runtimeProgressFraction
+            : _pendingSeekFraction ?? runtimeProgressFraction;
+        final previewPosition = _isDragging || _pendingSeekFraction != null
             ? Duration(
                 microseconds: (duration.inMicroseconds * fraction).round(),
               )
@@ -58,32 +61,30 @@ class _PlayerControlBarProgressSectionState
                 child: Text(_formatDuration(previewPosition)).xSmall(),
               ),
               Expanded(
-                child: Slider(
-                  value: SliderValue.single(fraction),
-                  onChangeStart: isEnabled
-                      ? (SliderValue value) {
-                          setState(() {
-                            _isDragging = true;
-                            _dragFraction = value.value;
-                          });
-                        }
-                      : null,
-                  onChanged: isEnabled
-                      ? (SliderValue value) {
-                          setState(() {
-                            _dragFraction = value.value;
-                          });
-                        }
-                      : null,
-                  onChangeEnd: isEnabled
-                      ? (SliderValue value) {
-                          setState(() {
-                            _isDragging = false;
-                            _dragFraction = null;
-                          });
-                          widget.controller.seekToFraction(value.value);
-                        }
-                      : null,
+                child: Listener(
+                  behavior: HitTestBehavior.translucent,
+                  onPointerUp: (_) => _commitDragIfNeeded(),
+                  onPointerCancel: (_) => _commitDragIfNeeded(),
+                  child: Slider(
+                    value: SliderValue.single(fraction),
+                    onChangeStart: isEnabled
+                        ? (SliderValue value) {
+                            setState(() {
+                              _isDragging = true;
+                              _dragFraction = value.value.clamp(0.0, 1.0);
+                              _pendingSeekFraction = null;
+                            });
+                          }
+                        : null,
+                    onChanged: isEnabled
+                        ? (SliderValue value) {
+                            setState(() {
+                              _dragFraction = value.value.clamp(0.0, 1.0);
+                            });
+                          }
+                        : null,
+                    onChangeEnd: null,
+                  ),
                 ),
               ),
               SizedBox(
@@ -109,5 +110,38 @@ class _PlayerControlBarProgressSectionState
       return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
     }
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  void _commitDragIfNeeded() {
+    if (!_isDragging) {
+      return;
+    }
+
+    final targetFraction = (_dragFraction ?? _pendingSeekFraction ?? 0.0).clamp(
+      0.0,
+      1.0,
+    );
+    setState(() {
+      _isDragging = false;
+      _dragFraction = null;
+      _pendingSeekFraction = targetFraction;
+    });
+    unawaited(_commitSeek(targetFraction));
+  }
+
+  Future<void> _commitSeek(double fraction) async {
+    try {
+      await widget.controller.seekToFraction(fraction);
+    } finally {
+      if (mounted) {
+        setState(() {
+          if (!_isDragging &&
+              _pendingSeekFraction != null &&
+              (_pendingSeekFraction! - fraction).abs() < 0.0001) {
+            _pendingSeekFraction = null;
+          }
+        });
+      }
+    }
   }
 }

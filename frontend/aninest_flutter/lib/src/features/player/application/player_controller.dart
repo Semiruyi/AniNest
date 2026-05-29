@@ -207,9 +207,12 @@ class PlayerController extends ChangeNotifier {
       return;
     }
 
-    final clamped = position > maxPosition ? maxPosition : position;
+    final minPosition = position < Duration.zero ? Duration.zero : position;
+    final clamped = minPosition > maxPosition ? maxPosition : minPosition;
     await _playbackEngine.seek(clamped);
-    await _flushProgress();
+    await _flushProgress(
+      runtimeState: runtime.copyWith(position: clamped, isCompleted: false),
+    );
   }
 
   Future<void> seekToFraction(double fraction) async {
