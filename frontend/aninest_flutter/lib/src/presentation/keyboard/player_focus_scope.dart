@@ -3,12 +3,14 @@ import 'package:flutter/widgets.dart';
 
 import 'focus_context.dart';
 import 'player_actions.dart';
+import 'player_focus_controller.dart';
 import 'player_shortcuts.dart';
 
-class PlayerShortcutScope extends StatefulWidget {
-  const PlayerShortcutScope({
+class PlayerFocusScope extends StatefulWidget {
+  const PlayerFocusScope({
     super.key,
     required this.controller,
+    required this.focusController,
     required this.isActive,
     required this.isFullscreen,
     required this.onToggleFullscreen,
@@ -16,39 +18,31 @@ class PlayerShortcutScope extends StatefulWidget {
   });
 
   final PlayerController controller;
+  final PlayerFocusController focusController;
   final bool isActive;
   final bool isFullscreen;
   final VoidCallback onToggleFullscreen;
   final Widget child;
 
   @override
-  State<PlayerShortcutScope> createState() => _PlayerShortcutScopeState();
+  State<PlayerFocusScope> createState() => _PlayerFocusScopeState();
 }
 
-class _PlayerShortcutScopeState extends State<PlayerShortcutScope> {
-  final FocusNode _focusNode = FocusNode(debugLabel: 'PlayerShortcutScope');
-
+class _PlayerFocusScopeState extends State<PlayerFocusScope> {
   @override
   void initState() {
     super.initState();
-    _scheduleFocusRequestIfNeeded();
+    _schedulePrimaryFocusIfNeeded();
   }
 
   @override
-  void didUpdateWidget(PlayerShortcutScope oldWidget) {
+  void didUpdateWidget(PlayerFocusScope oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!oldWidget.isActive && widget.isActive) {
-      _scheduleFocusRequestIfNeeded();
+      _schedulePrimaryFocusIfNeeded();
+    } else if (oldWidget.isActive && !widget.isActive) {
+      widget.focusController.releaseFocus();
     }
-    if (oldWidget.isActive && !widget.isActive && _focusNode.hasFocus) {
-      _focusNode.unfocus();
-    }
-  }
-
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
   }
 
   @override
@@ -63,12 +57,17 @@ class _PlayerShortcutScopeState extends State<PlayerShortcutScope> {
           isFullscreen: widget.isFullscreen,
           onToggleFullscreen: widget.onToggleFullscreen,
         ),
-        child: Focus(
-          focusNode: _focusNode,
-          canRequestFocus: widget.isActive,
-          skipTraversal: !widget.isActive,
-          onKeyEvent: _handleKeyEvent,
-          child: widget.child,
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: _handlePointerDown,
+          child: Focus(
+            focusNode: widget.focusController.focusNode,
+            autofocus: widget.isActive,
+            canRequestFocus: widget.isActive,
+            skipTraversal: !widget.isActive,
+            onKeyEvent: _handleKeyEvent,
+            child: widget.child,
+          ),
         ),
       ),
     );
@@ -82,13 +81,23 @@ class _PlayerShortcutScopeState extends State<PlayerShortcutScope> {
     return KeyEventResult.ignored;
   }
 
-  void _scheduleFocusRequestIfNeeded() {
+  void _handlePointerDown(PointerDownEvent event) {
+    if (!widget.isActive ||
+        FocusContext.hasEditableTextFocus() ||
+        widget.focusController.hasFocus) {
+      return;
+    }
+
+    widget.focusController.requestPrimaryFocus();
+  }
+
+  void _schedulePrimaryFocusIfNeeded() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !widget.isActive || FocusContext.hasEditableTextFocus()) {
         return;
       }
 
-      _focusNode.requestFocus();
+      widget.focusController.requestPrimaryFocus();
     });
   }
 }

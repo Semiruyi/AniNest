@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
+import 'package:aninest_flutter/src/presentation/keyboard/player_focus_controller.dart';
+import 'package:aninest_flutter/src/presentation/keyboard/player_focus_scope.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'player_page_widgets/player_playback_layout.dart';
@@ -10,13 +12,17 @@ class PlayerPage extends StatefulWidget {
   const PlayerPage({
     super.key,
     required this.controller,
-    required this.isActive,
+    required this.focusController,
+    required this.isSelected,
+    required this.isPresented,
     required this.isFullscreen,
     required this.onToggleFullscreen,
   });
 
   final PlayerController controller;
-  final bool isActive;
+  final PlayerFocusController focusController;
+  final bool isSelected;
+  final bool isPresented;
   final bool isFullscreen;
   final VoidCallback onToggleFullscreen;
 
@@ -29,14 +35,14 @@ class _PlayerPageState extends State<PlayerPage> {
   void didUpdateWidget(PlayerPage oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.isActive && !widget.isActive) {
+    if (oldWidget.isSelected && !widget.isSelected) {
       unawaited(widget.controller.pause());
     }
   }
 
   @override
   void dispose() {
-    if (widget.isActive) {
+    if (widget.isSelected) {
       unawaited(widget.controller.pause());
     }
     super.dispose();
@@ -60,17 +66,22 @@ class _PlayerPageState extends State<PlayerPage> {
               child: PlayerTopBar(controller: widget.controller),
             ),
           Expanded(
-            child: widget.isFullscreen
-                ? PlayerFullscreenPlaybackLayout(
-                    controller: widget.controller,
-                    isActive: widget.isActive,
-                    onToggleFullscreen: widget.onToggleFullscreen,
-                  )
-                : PlayerStandardPlaybackLayout(
-                    controller: widget.controller,
-                    isActive: widget.isActive,
-                    onToggleFullscreen: widget.onToggleFullscreen,
-                  ),
+            child: PlayerFocusScope(
+              controller: widget.controller,
+              focusController: widget.focusController,
+              isActive: widget.isPresented,
+              isFullscreen: widget.isFullscreen,
+              onToggleFullscreen: widget.onToggleFullscreen,
+              child: widget.isFullscreen
+                  ? PlayerFullscreenPlaybackLayout(
+                      controller: widget.controller,
+                      onToggleFullscreen: widget.onToggleFullscreen,
+                    )
+                  : PlayerStandardPlaybackLayout(
+                      controller: widget.controller,
+                      onToggleFullscreen: widget.onToggleFullscreen,
+                    ),
+            ),
           ),
         ],
       ),
