@@ -32,7 +32,7 @@ public sealed class SettingsService
     public void SaveMetadata(MetadataSettingsDto settings)
     {
         var current = _store.Load();
-        _store.Save(Normalize(current with { Metadata = settings }));
+        _store.Save(Normalize(current with { Metadata = NormalizeMetadata(settings) }));
     }
 
     public ThumbnailSettingsDto GetThumbnails()
@@ -48,7 +48,7 @@ public sealed class SettingsService
         => new(
             settings.Library,
             NormalizePlayer(settings.Player),
-            settings.Metadata,
+            NormalizeMetadata(settings.Metadata),
             NormalizeThumbnails(settings.Thumbnails));
 
     private static PlayerSettingsDto NormalizePlayer(PlayerSettingsDto settings)
@@ -62,5 +62,16 @@ public sealed class SettingsService
         => settings with
         {
             ExpiryDays = Math.Clamp(settings.ExpiryDays, 0, 365)
+        };
+
+    private static MetadataSettingsDto NormalizeMetadata(MetadataSettingsDto settings)
+        => settings with
+        {
+            BangumiAccessToken = string.IsNullOrWhiteSpace(settings.BangumiAccessToken)
+                ? null
+                : settings.BangumiAccessToken.Trim(),
+            MetadataProxyUrl = string.IsNullOrWhiteSpace(settings.MetadataProxyUrl)
+                ? null
+                : settings.MetadataProxyUrl.Trim()
         };
 }

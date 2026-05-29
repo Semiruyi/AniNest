@@ -1,5 +1,6 @@
 using AniNest.Application.Modules;
 using AniNest.Application.Metadata;
+using AniNest.Application.Settings;
 using AniNest.Host.Modules;
 using System.Net;
 
@@ -44,22 +45,48 @@ internal static class MetadataServiceRegistration
                 client.Timeout = TimeSpan.FromSeconds(
                     Math.Max(5, configuration.GetValue("AniNest:MetadataHttpTimeoutSeconds", 30)));
             })
-            .ConfigurePrimaryHttpMessageHandler(() => BuildMetadataHttpHandler(configuration));
+            .ConfigurePrimaryHttpMessageHandler(sp => BuildMetadataHttpHandler(
+                sp.GetRequiredService<SettingsService>()));
         return services;
     }
 
-    private static HttpMessageHandler BuildMetadataHttpHandler(IConfiguration configuration)
+    private static HttpMessageHandler BuildMetadataHttpHandler(SettingsService settings)
     {
         var handler = new HttpClientHandler();
-        var proxyUrl = configuration["AniNest:MetadataProxyUrl"];
-        if (string.IsNullOrWhiteSpace(proxyUrl))
-            return handler;
-
-        if (!Uri.TryCreate(proxyUrl, UriKind.Absolute, out var proxyUri))
-            return handler;
-
-        handler.Proxy = new WebProxy(proxyUri);
+        handler.Proxy = new MetadataProxy(settings);
         handler.UseProxy = true;
         return handler;
+    }
+
+    private sealed class MetadataProxy : IWebProxy
+    {
+        private readonly SettingsService _settings;
+
+        public MetadataProxy(SettingsService settings)
+        {
+            _settings = settings;
+        }
+
+        public ICredentials? Credentials { get; set; }
+
+        public Uri GetProxy(Uri destination)
+        {
+            var proxyUri = ResolveProxyUri();
+            return proxyUri ?? destination;
+        }
+
+        public bool IsBypassed(Uri host)
+            => ResolveProxyUri() is null;
+
+        private Uri? ResolveProxyUri()
+        {
+            var proxyUrl = _settings.GetMetadata().MetadataProxyUrl;
+            if (string.IsNullOrWhiteSpace(proxyUrl))
+                return null;
+
+            return Uri.TryCreate(proxyUrl, UriKind.Absolute, out var proxyUri)
+                ? proxyUri
+                : null;
+        }
     }
 }

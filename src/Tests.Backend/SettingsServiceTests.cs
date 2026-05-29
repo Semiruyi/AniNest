@@ -30,13 +30,24 @@ public sealed class SettingsServiceTests
     }
 
     [Fact]
+    public void SaveMetadata_TrimsProxyUrl()
+    {
+        var service = CreateService();
+
+        service.SaveMetadata(new MetadataSettingsDto(true, null, "  http://127.0.0.1:7890  "));
+
+        var metadata = service.GetMetadata();
+        Assert.Equal("http://127.0.0.1:7890", metadata.MetadataProxyUrl);
+    }
+
+    [Fact]
     public void Save_ReplacesWholeSettingsSnapshot()
     {
         var service = CreateService();
         var updated = new AppSettingsDto(
             new LibrarySettingsDto(["D:/Anime/A", "D:/Anime/B"]),
             new PlayerSettingsDto(1.25, 55, false),
-            new MetadataSettingsDto(false, "token-a"),
+            new MetadataSettingsDto(false, "token-a", "http://127.0.0.1:7890"),
             new ThumbnailSettingsDto(7, false));
 
         service.Save(updated);
@@ -46,6 +57,7 @@ public sealed class SettingsServiceTests
         Assert.Equal(1.25, settings.Player.PreferredRate);
         Assert.False(settings.Metadata.AutoScrapeMetadata);
         Assert.Equal("token-a", settings.Metadata.BangumiAccessToken);
+        Assert.Equal("http://127.0.0.1:7890", settings.Metadata.MetadataProxyUrl);
         Assert.Equal(7, settings.Thumbnails.ExpiryDays);
     }
 
@@ -55,7 +67,7 @@ public sealed class SettingsServiceTests
             new AppSettingsDto(
                 new LibrarySettingsDto(Array.Empty<string>()),
                 new PlayerSettingsDto(1.0, 80, true),
-                new MetadataSettingsDto(true, null),
+                new MetadataSettingsDto(true, null, null),
                 new ThumbnailSettingsDto(30, true)));
 
         return new SettingsService(store);

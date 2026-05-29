@@ -10,7 +10,8 @@ public sealed record PlayerSettingsDto(
 
 public sealed record MetadataSettingsDto(
     bool AutoScrapeMetadata,
-    string? BangumiAccessToken);
+    string? BangumiAccessToken,
+    string? MetadataProxyUrl);
 
 public sealed record ThumbnailSettingsDto(
     int ExpiryDays,

@@ -5,7 +5,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 enum _SidebarDestination {
   library(AppPage.library, 'Library', BootstrapIcons.collectionPlay),
   player(AppPage.player, 'Player', BootstrapIcons.playCircle),
-  settings(null, 'Settings', BootstrapIcons.sliders);
+  settings(AppPage.settings, 'Settings', BootstrapIcons.sliders);
 
   const _SidebarDestination(this.page, this.label, this.icon);
 
@@ -32,7 +32,7 @@ class Sidebar extends StatelessWidget {
       return NavigationItem(
         selected: destination.page == currentPage,
         onChanged: (selected) {
-          if (!selected || destination.page == null) {
+          if (!selected) {
             return;
           }
           onPageSelected(destination.page!);

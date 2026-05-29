@@ -1,1 +1,1 @@
-enum AppPage { library, player }
+enum AppPage { library, player, settings }

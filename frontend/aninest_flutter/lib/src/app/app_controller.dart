@@ -199,6 +199,10 @@ class AppController extends ChangeNotifier {
     await _runtime.settingsWorkflow.savePlayerSettings(settings);
   }
 
+  Future<void> saveMetadataSettings(MetadataSettingsDto settings) async {
+    await _runtime.settingsWorkflow.saveMetadataSettings(settings);
+  }
+
   Future<void> saveLocale(AppLocaleOption locale) async {
     await _runtime.settingsWorkflow.saveLocale(locale);
   }

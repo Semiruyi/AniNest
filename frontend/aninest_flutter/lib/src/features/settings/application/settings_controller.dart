@@ -61,6 +61,21 @@ class SettingsController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> saveMetadataSettings(MetadataSettingsDto settings) async {
+    await _settingsApi.saveMetadata(settings);
+    final current = _appSettings;
+    if (current == null) {
+      return;
+    }
+
+    _appSettings = AppSettingsDto(
+      player: current.player,
+      metadata: settings,
+      thumbnails: current.thumbnails,
+    );
+    notifyListeners();
+  }
+
   void clear() {
     if (_appSettings == null) {
       return;

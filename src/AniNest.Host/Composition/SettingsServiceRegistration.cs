@@ -12,7 +12,7 @@ internal static class SettingsServiceRegistration
     {
         services.AddSingleton<ISettingsStore>(sp => new FileSettingsStore(
             configuration.ResolveAniNestPath("AniNest:SettingsPath", "host-settings.json"),
-            SettingsDefaults.Create()));
+            SettingsDefaults.Create(configuration)));
         services.AddSingleton<SettingsService>();
         services.AddSingleton<ISettingsModule, SettingsModule>();
         return services;

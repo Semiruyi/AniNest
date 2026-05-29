@@ -23,6 +23,12 @@ class SettingsWorkflow {
     }, showSpinner: false);
   }
 
+  Future<void> saveMetadataSettings(MetadataSettingsDto settings) async {
+    await _runOperation(() async {
+      await _settings.saveMetadataSettings(settings);
+    }, showSpinner: false);
+  }
+
   Future<void> saveLocale(AppLocaleOption locale) async {
     await _runOperation(() async {
       await _settings.saveLocale(locale);

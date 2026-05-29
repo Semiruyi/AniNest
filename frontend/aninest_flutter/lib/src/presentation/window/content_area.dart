@@ -1,6 +1,7 @@
 import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page.dart';
 import 'package:aninest_flutter/src/presentation/features/player/player_page.dart';
+import 'package:aninest_flutter/src/presentation/features/settings/settings_page.dart';
 import 'package:aninest_flutter/src/presentation/keyboard/player_focus_controller.dart';
 import 'package:aninest_flutter/src/presentation/window/animated_page_stack.dart';
 import 'package:aninest_flutter/src/presentation/window/app_page.dart';
@@ -61,6 +62,10 @@ class _ContentAreaState extends State<ContentArea> {
         isPresented: _presentedPage == AppPage.player,
         isFullscreen: widget.isPlayerFullscreen,
         onToggleFullscreen: widget.onTogglePlayerFullscreen,
+      ),
+      SettingsPage(
+        controller: widget.controller,
+        isPresented: _presentedPage == AppPage.settings,
       ),
     ];
 

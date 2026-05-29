@@ -19,4 +19,13 @@ class SettingsApi {
   Future<void> savePlayer(PlayerSettingsDto settings) async {
     await _client.put('/api/settings/player', body: settings.toJson());
   }
+
+  Future<MetadataSettingsDto> getMetadata() async {
+    final payload = await _client.getObject('/api/settings/metadata');
+    return MetadataSettingsDto.fromJson(payload);
+  }
+
+  Future<void> saveMetadata(MetadataSettingsDto settings) async {
+    await _client.put('/api/settings/metadata', body: settings.toJson());
+  }
 }

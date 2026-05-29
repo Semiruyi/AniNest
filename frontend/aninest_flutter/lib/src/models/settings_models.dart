@@ -30,15 +30,26 @@ class MetadataSettingsDto {
   const MetadataSettingsDto({
     required this.autoScrapeMetadata,
     required this.bangumiAccessToken,
+    required this.metadataProxyUrl,
   });
 
   final bool autoScrapeMetadata;
   final String? bangumiAccessToken;
+  final String? metadataProxyUrl;
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'autoScrapeMetadata': autoScrapeMetadata,
+      'bangumiAccessToken': bangumiAccessToken,
+      'metadataProxyUrl': metadataProxyUrl,
+    };
+  }
 
   factory MetadataSettingsDto.fromJson(Map<String, dynamic> json) {
     return MetadataSettingsDto(
       autoScrapeMetadata: json['autoScrapeMetadata'] as bool? ?? false,
       bangumiAccessToken: json['bangumiAccessToken'] as String?,
+      metadataProxyUrl: json['metadataProxyUrl'] as String?,
     );
   }
 }
