@@ -2,6 +2,8 @@ import 'package:aninest_flutter/src/features/player/application/player_subtitle_
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
+import 'player_menu_popup_shell.dart';
+
 class PlayerSubtitleTrackMenu extends StatelessWidget {
   const PlayerSubtitleTrackMenu({
     super.key,
@@ -26,52 +28,46 @@ class PlayerSubtitleTrackMenu extends StatelessWidget {
       (PlayerSubtitleTrackOption track) => !track.isOff,
     );
 
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 220, maxWidth: 280),
-      child: MenuGroup(
-        itemPadding: EdgeInsets.zero,
-        direction: Axis.vertical,
-        onDismissed: onDismissRequested,
-        builder: (BuildContext context, List<Widget> children) {
-          return MenuPopup(children: children);
-        },
-        children: <MenuItem>[
-          MenuRadioGroup<String>(
-            value: selectedTrackId,
-            onChanged: (BuildContext context, String value) {
-              onTrackSelected(value);
-              onDismissRequested();
-            },
-            children: <Widget>[
-              MenuRadio<String>(
-                value: PlayerSubtitleTrackOption.automaticId,
-                enabled: hasRealTracks,
-                child: Text(l10n.playerSubtitleAutomatic),
-              ),
-              MenuRadio<String>(
-                value: PlayerSubtitleTrackOption.offId,
-                enabled: hasRealTracks,
-                child: Text(l10n.playerSubtitleOff),
-              ),
-              if (hasRealTracks) const MenuDivider(),
-              if (hasRealTracks)
-                for (final track in selectableTracks)
-                  if (!track.isOff)
-                    MenuRadio<String>(
-                      value: track.id,
-                      child: _SubtitleTrackText(
-                        label: _labelForTrack(l10n, track),
-                      ),
-                    )
-                  else
-                    MenuButton(
-                      enabled: false,
-                      child: Text(l10n.playerSubtitleNoTracks),
+    return PlayerMenuPopupShell(
+      minWidth: 220,
+      maxWidth: 280,
+      onDismissRequested: onDismissRequested,
+      children: <MenuItem>[
+        MenuRadioGroup<String>(
+          value: selectedTrackId,
+          onChanged: (BuildContext context, String value) {
+            onTrackSelected(value);
+            onDismissRequested();
+          },
+          children: <Widget>[
+            MenuRadio<String>(
+              value: PlayerSubtitleTrackOption.automaticId,
+              enabled: hasRealTracks,
+              child: Text(l10n.playerSubtitleAutomatic),
+            ),
+            MenuRadio<String>(
+              value: PlayerSubtitleTrackOption.offId,
+              enabled: hasRealTracks,
+              child: Text(l10n.playerSubtitleOff),
+            ),
+            if (hasRealTracks) const MenuDivider(),
+            if (hasRealTracks)
+              for (final track in selectableTracks)
+                if (!track.isOff)
+                  MenuRadio<String>(
+                    value: track.id,
+                    child: _SubtitleTrackText(
+                      label: _labelForTrack(l10n, track),
                     ),
-            ],
-          ),
-        ],
-      ),
+                  )
+                else
+                  MenuButton(
+                    enabled: false,
+                    child: Text(l10n.playerSubtitleNoTracks),
+                  ),
+          ],
+        ),
+      ],
     );
   }
 

@@ -65,7 +65,7 @@ class _LibraryFolderCardState extends State<LibraryFolderCard> {
               color: widget.isSelected
                   ? colorScheme.primary
                   : colorScheme.border,
-              width: 2.3,
+              width: 3,
             ),
           ),
           child: MouseRegion(

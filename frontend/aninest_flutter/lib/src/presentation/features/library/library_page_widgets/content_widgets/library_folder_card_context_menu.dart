@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:aninest_flutter/src/models/enums.dart';
 import 'package:aninest_flutter/src/models/library_models.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
@@ -28,165 +29,87 @@ class LibraryFolderCardContextMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final enableLongPress =
-        theme.platform == TargetPlatform.iOS ||
-        theme.platform == TargetPlatform.android ||
-        theme.platform == TargetPlatform.fuchsia;
 
-    return GestureDetector(
+    return ContextMenu(
       behavior: HitTestBehavior.translucent,
-      onSecondaryTapDown: (details) {
-        onContextMenuRequested();
-        _showContextMenu(context, details.globalPosition, <MenuItem>[
-          MenuButton(
-            leading: const Icon(BootstrapIcons.playFill),
-            onPressed: (_) => onOpen(),
-            child: Text(l10n.libraryCardMenuOpen),
-          ),
-          const MenuDivider(),
-          MenuCheckbox(
-            value: folder.isFavorite,
-            onChanged: (_, value) => onToggleFavorite(value),
-            child: Text(l10n.libraryCardMenuFavorite),
-          ),
-          MenuButton(
-            leading: const Icon(BootstrapIcons.eye),
-            subMenu: _buildWatchStatusMenuItems(l10n),
-            child: Text(l10n.libraryCardMenuWatchStatus),
-          ),
-          const MenuDivider(),
-          MenuButton(
-            leading: const Icon(BootstrapIcons.arrowUpSquare),
-            onPressed: (_) => onMoveToFront(),
-            child: Text(l10n.libraryCardMenuMoveToFront),
-          ),
-          const MenuDivider(),
-          MenuButton(
-            leading: const Icon(BootstrapIcons.trash3),
-            onPressed: (_) => onDelete(),
-            child: Text(l10n.libraryCardMenuDelete),
-          ),
-        ]);
-      },
-      onLongPressStart: enableLongPress
-          ? (details) {
-              onContextMenuRequested();
-              _showContextMenu(context, details.globalPosition, <MenuItem>[
-                MenuButton(
-                  leading: const Icon(BootstrapIcons.playFill),
-                  onPressed: (_) => onOpen(),
-                  child: Text(l10n.libraryCardMenuOpen),
-                ),
-                const MenuDivider(),
-                MenuCheckbox(
-                  value: folder.isFavorite,
-                  onChanged: (_, value) => onToggleFavorite(value),
-                  child: Text(l10n.libraryCardMenuFavorite),
-                ),
-                MenuButton(
-                  leading: const Icon(BootstrapIcons.eye),
-                  subMenu: _buildWatchStatusMenuItems(l10n),
-                  child: Text(l10n.libraryCardMenuWatchStatus),
-                ),
-                const MenuDivider(),
-                MenuButton(
-                  leading: const Icon(BootstrapIcons.arrowUpSquare),
-                  onPressed: (_) => onMoveToFront(),
-                  child: Text(l10n.libraryCardMenuMoveToFront),
-                ),
-                const MenuDivider(),
-                MenuButton(
-                  leading: const Icon(BootstrapIcons.trash3),
-                  onPressed: (_) => onDelete(),
-                  child: Text(l10n.libraryCardMenuDelete),
-                ),
-              ]);
-            }
-          : null,
-      child: child,
+      items: _buildMenuItems(l10n),
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: _handlePointerDown,
+        child: child,
+      ),
     );
   }
 
-  Future<void> _showContextMenu(
-    BuildContext context,
-    Offset position,
-    List<MenuItem> items,
-  ) {
-    final key = GlobalKey<OverlayHandlerStateMixin>();
-    final theme = Theme.of(context);
-    final overlayManager = OverlayManager.of(context);
+  void _handlePointerDown(PointerDownEvent event) {
+    if (event.kind == PointerDeviceKind.mouse) {
+      if ((event.buttons & kSecondaryMouseButton) != 0) {
+        onContextMenuRequested();
+      }
+      return;
+    }
 
-    return overlayManager
-        .showMenu<void>(
-          key: key,
-          context: context,
-          position: position + const Offset(8, 0),
-          alignment: Alignment.topLeft,
-          anchorAlignment: Alignment.topRight,
-          regionGroupId: key,
-          modal: true,
-          follow: false,
-          consumeOutsideTaps: false,
-          dismissBackdropFocus: false,
-          overlayBarrier: OverlayBarrier(
-            borderRadius: BorderRadius.circular(theme.radiusMd),
-            barrierColor: const Color(0xB2000000),
-          ),
-          builder: (context) {
-            return ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 192),
-              child: MenuGroup(
-                itemPadding: EdgeInsets.zero,
-                direction: Axis.vertical,
-                regionGroupId: key,
-                subMenuOffset: const Offset(8, -4),
-                onDismissed: () {
-                  closeOverlay(context);
-                },
-                builder: (context, children) {
-                  return MenuPopup(children: children);
-                },
-                children: items,
-              ),
-            );
-          },
-        )
-        .future;
+    onContextMenuRequested();
+  }
+
+  List<MenuItem> _buildMenuItems(AppLocalizations l10n) {
+    return <MenuItem>[
+      MenuButton(
+        leading: const Icon(BootstrapIcons.playFill),
+        onPressed: (_) => onOpen(),
+        child: Text(l10n.libraryCardMenuOpen),
+      ),
+      const MenuDivider(),
+      MenuCheckbox(
+        value: folder.isFavorite,
+        onChanged: (_, value) => onToggleFavorite(value),
+        child: Text(l10n.libraryCardMenuFavorite),
+      ),
+      MenuButton(
+        leading: const Icon(BootstrapIcons.eye),
+        subMenu: _buildWatchStatusMenuItems(l10n),
+        child: Text(l10n.libraryCardMenuWatchStatus),
+      ),
+      const MenuDivider(),
+      MenuButton(
+        leading: const Icon(BootstrapIcons.arrowUpSquare),
+        onPressed: (_) => onMoveToFront(),
+        child: Text(l10n.libraryCardMenuMoveToFront),
+      ),
+      const MenuDivider(),
+      MenuButton(
+        leading: const Icon(BootstrapIcons.trash3),
+        onPressed: (_) => onDelete(),
+        child: Text(l10n.libraryCardMenuDelete),
+      ),
+    ];
   }
 
   List<MenuItem> _buildWatchStatusMenuItems(AppLocalizations l10n) {
     return <MenuItem>[
-      MenuCheckbox(
-        value: folder.watchStatus == WatchStatus.unknown,
-        onChanged: (_, _) => onSetWatchStatus(WatchStatus.unknown),
-        child: Text(l10n.watchStatusUnknown),
-      ),
-      MenuCheckbox(
-        value: folder.watchStatus == WatchStatus.watching,
-        onChanged: (_, _) => onSetWatchStatus(WatchStatus.watching),
-        child: Text(l10n.watchStatusWatching),
-      ),
-      MenuCheckbox(
-        value: folder.watchStatus == WatchStatus.completed,
-        onChanged: (_, _) => onSetWatchStatus(WatchStatus.completed),
-        child: Text(l10n.watchStatusCompleted),
-      ),
-      MenuCheckbox(
-        value: folder.watchStatus == WatchStatus.onHold,
-        onChanged: (_, _) => onSetWatchStatus(WatchStatus.onHold),
-        child: Text(l10n.watchStatusOnHold),
-      ),
-      MenuCheckbox(
-        value: folder.watchStatus == WatchStatus.dropped,
-        onChanged: (_, _) => onSetWatchStatus(WatchStatus.dropped),
-        child: Text(l10n.watchStatusDropped),
-      ),
-      MenuCheckbox(
-        value: folder.watchStatus == WatchStatus.planned,
-        onChanged: (_, _) => onSetWatchStatus(WatchStatus.planned),
-        child: Text(l10n.watchStatusPlanned),
+      MenuRadioGroup<WatchStatus>(
+        value: folder.watchStatus,
+        onChanged: (_, value) => onSetWatchStatus(value),
+        children: WatchStatus.values
+            .map(
+              (status) => MenuRadio<WatchStatus>(
+                value: status,
+                child: Text(_watchStatusLabel(l10n, status)),
+              ),
+            )
+            .toList(),
       ),
     ];
+  }
+
+  String _watchStatusLabel(AppLocalizations l10n, WatchStatus status) {
+    return switch (status) {
+      WatchStatus.unknown => l10n.watchStatusUnknown,
+      WatchStatus.watching => l10n.watchStatusWatching,
+      WatchStatus.completed => l10n.watchStatusCompleted,
+      WatchStatus.onHold => l10n.watchStatusOnHold,
+      WatchStatus.dropped => l10n.watchStatusDropped,
+      WatchStatus.planned => l10n.watchStatusPlanned,
+    };
   }
 }
