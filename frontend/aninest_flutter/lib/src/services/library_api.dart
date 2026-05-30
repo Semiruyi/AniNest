@@ -44,7 +44,7 @@ class LibraryApi {
     );
   }
 
-  Future<void> setWatchStatus(String folderId, String status) async {
+  Future<void> setWatchStatus(String folderId, int status) async {
     await _client.post(
       '/api/library/folders/$folderId:watch-status',
       body: <String, dynamic>{'status': status},

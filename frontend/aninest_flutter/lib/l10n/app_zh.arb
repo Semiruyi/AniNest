@@ -89,6 +89,12 @@
   "playerTooltipVolume": "\u97f3\u91cf",
   "playerTooltipSettings": "\u8bbe\u7f6e",
   "playerTooltipFullscreen": "\u5168\u5c4f",
+  "libraryNavLibraryTitle": "\u5a92\u4f53\u5e93",
+  "libraryNavWatchStatusTitle": "\u89c2\u770b\u72b6\u6001",
+  "libraryViewAllMedia": "\u5168\u90e8\u5185\u5bb9",
+  "libraryViewRecentlyAdded": "\u6700\u8fd1\u6dfb\u52a0",
+  "libraryViewContinueWatching": "\u7ee7\u7eed\u89c2\u770b",
+  "libraryViewFavorites": "\u6536\u85cf",
   "libraryCardMenuOpen": "\u6253\u5f00",
   "libraryCardMenuFavorite": "\u6536\u85cf",
   "libraryCardMenuWatchStatus": "\u89c2\u770b\u72b6\u6001",
@@ -139,6 +145,8 @@
       "name": {}
     }
   },
+  "libraryFilteredStatusEmptyTitle": "\u6ca1\u6709\u5339\u914d\u7684\u6587\u4ef6\u5939",
+  "libraryFilteredStatusEmptyMessage": "\u8bd5\u8bd5\u5176\u4ed6\u89c2\u770b\u72b6\u6001\uff0c\u6216\u8005\u6dfb\u52a0\u66f4\u591a\u6587\u4ef6\u5939\u3002",
   "watchStatusUnknown": "\u672a\u77e5",
   "watchStatusWatching": "\u5728\u770b",
   "watchStatusCompleted": "\u5df2\u770b\u5b8c",

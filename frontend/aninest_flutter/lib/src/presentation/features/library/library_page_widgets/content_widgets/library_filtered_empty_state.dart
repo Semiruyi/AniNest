@@ -1,4 +1,5 @@
 import 'package:aninest_flutter/src/features/library/application/library_view.dart';
+import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class LibraryFilteredEmptyState extends StatelessWidget {
@@ -8,8 +9,9 @@ class LibraryFilteredEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
-    final copy = _copyFor(view);
+    final copy = _copyFor(view, l10n);
 
     return Center(
       child: ConstrainedBox(
@@ -35,7 +37,7 @@ class LibraryFilteredEmptyState extends StatelessWidget {
     );
   }
 
-  _FilteredEmptyCopy _copyFor(LibraryView view) {
+  _FilteredEmptyCopy _copyFor(LibraryView view, AppLocalizations l10n) {
     return switch (view) {
       LibraryView.recentlyAdded => const _FilteredEmptyCopy(
         BootstrapIcons.clockHistory,
@@ -56,6 +58,16 @@ class LibraryFilteredEmptyState extends StatelessWidget {
         BootstrapIcons.collectionPlay,
         'No media folders yet',
         'Add a folder from the toolbar to start building your library.',
+      ),
+      LibraryView.unknown ||
+      LibraryView.watching ||
+      LibraryView.completed ||
+      LibraryView.onHold ||
+      LibraryView.dropped ||
+      LibraryView.planned => _FilteredEmptyCopy(
+        BootstrapIcons.funnel,
+        l10n.libraryFilteredStatusEmptyTitle,
+        l10n.libraryFilteredStatusEmptyMessage,
       ),
     };
   }

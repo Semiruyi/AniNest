@@ -89,6 +89,12 @@
   "playerTooltipVolume": "Volume",
   "playerTooltipSettings": "Settings",
   "playerTooltipFullscreen": "Fullscreen",
+  "libraryNavLibraryTitle": "Library",
+  "libraryNavWatchStatusTitle": "Watch Status",
+  "libraryViewAllMedia": "All Media",
+  "libraryViewRecentlyAdded": "Recently Added",
+  "libraryViewContinueWatching": "Continue Watching",
+  "libraryViewFavorites": "Favorites",
   "libraryCardMenuOpen": "Open",
   "libraryCardMenuFavorite": "Favorite",
   "libraryCardMenuWatchStatus": "Watch Status",
@@ -139,6 +145,8 @@
       "name": {}
     }
   },
+  "libraryFilteredStatusEmptyTitle": "No matching folders",
+  "libraryFilteredStatusEmptyMessage": "Try a different watch status or add more folders.",
   "watchStatusUnknown": "Unknown",
   "watchStatusWatching": "Watching",
   "watchStatusCompleted": "Completed",

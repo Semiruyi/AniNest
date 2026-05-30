@@ -1,5 +1,6 @@
 import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/features/library/application/library_view.dart';
+import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_layout.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -10,6 +11,7 @@ class LibraryNavigationPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -23,27 +25,27 @@ class LibraryNavigationPane extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 _NavGroup(
-                  title: 'Library',
+                  title: l10n.libraryNavLibraryTitle,
                   selectedView: controller.libraryView,
                   onViewSelected: controller.selectLibraryView,
-                  items: const <_NavItemData>[
+                  items: <_NavItemData>[
                     _NavItemData(
-                      'All Media',
+                      l10n.libraryViewAllMedia,
                       BootstrapIcons.collectionPlay,
                       LibraryView.allMedia,
                     ),
                     _NavItemData(
-                      'Recently Added',
+                      l10n.libraryViewRecentlyAdded,
                       BootstrapIcons.clockHistory,
                       LibraryView.recentlyAdded,
                     ),
                     _NavItemData(
-                      'Continue Watching',
+                      l10n.libraryViewContinueWatching,
                       BootstrapIcons.playCircle,
                       LibraryView.continueWatching,
                     ),
                     _NavItemData(
-                      'Favorites',
+                      l10n.libraryViewFavorites,
                       BootstrapIcons.heart,
                       LibraryView.favorites,
                     ),
@@ -51,13 +53,40 @@ class LibraryNavigationPane extends StatelessWidget {
                 ),
                 const Gap(12),
                 _NavGroup(
-                  title: 'Type',
+                  title: l10n.libraryNavWatchStatusTitle,
                   selectedView: controller.libraryView,
                   onViewSelected: controller.selectLibraryView,
-                  items: const <_NavItemData>[
-                    _NavItemData('Series', BootstrapIcons.tv),
-                    _NavItemData('Movies', BootstrapIcons.film),
-                    _NavItemData('OVA / Specials', BootstrapIcons.collection),
+                  items: <_NavItemData>[
+                    _NavItemData(
+                      l10n.watchStatusUnknown,
+                      BootstrapIcons.questionCircle,
+                      LibraryView.unknown,
+                    ),
+                    _NavItemData(
+                      l10n.watchStatusWatching,
+                      BootstrapIcons.playCircle,
+                      LibraryView.watching,
+                    ),
+                    _NavItemData(
+                      l10n.watchStatusCompleted,
+                      BootstrapIcons.checkCircle,
+                      LibraryView.completed,
+                    ),
+                    _NavItemData(
+                      l10n.watchStatusOnHold,
+                      BootstrapIcons.pauseCircle,
+                      LibraryView.onHold,
+                    ),
+                    _NavItemData(
+                      l10n.watchStatusDropped,
+                      BootstrapIcons.xCircle,
+                      LibraryView.dropped,
+                    ),
+                    _NavItemData(
+                      l10n.watchStatusPlanned,
+                      BootstrapIcons.bookmark,
+                      LibraryView.planned,
+                    ),
                   ],
                 ),
               ],

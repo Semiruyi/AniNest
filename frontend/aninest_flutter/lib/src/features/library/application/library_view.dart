@@ -1,6 +1,18 @@
 import 'package:aninest_flutter/src/models/library_models.dart';
+import 'package:aninest_flutter/src/models/enums.dart';
 
-enum LibraryView { allMedia, recentlyAdded, continueWatching, favorites }
+enum LibraryView {
+  allMedia,
+  recentlyAdded,
+  continueWatching,
+  favorites,
+  unknown,
+  watching,
+  completed,
+  onHold,
+  dropped,
+  planned,
+}
 
 class LibraryViewFilter {
   const LibraryViewFilter();
@@ -23,7 +35,22 @@ class LibraryViewFilter {
             .toList(growable: false),
       LibraryView.favorites =>
         folders.where((folder) => folder.isFavorite).toList(growable: false),
+      LibraryView.unknown => _byWatchStatus(folders, WatchStatus.unknown),
+      LibraryView.watching => _byWatchStatus(folders, WatchStatus.watching),
+      LibraryView.completed => _byWatchStatus(folders, WatchStatus.completed),
+      LibraryView.onHold => _byWatchStatus(folders, WatchStatus.onHold),
+      LibraryView.dropped => _byWatchStatus(folders, WatchStatus.dropped),
+      LibraryView.planned => _byWatchStatus(folders, WatchStatus.planned),
     };
+  }
+
+  List<LibraryFolderDto> _byWatchStatus(
+    List<LibraryFolderDto> folders,
+    WatchStatus status,
+  ) {
+    return folders
+        .where((folder) => folder.watchStatus == status)
+        .toList(growable: false);
   }
 
   List<LibraryFolderDto> _recentlyAdded(List<LibraryFolderDto> folders) {

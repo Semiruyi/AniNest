@@ -100,7 +100,7 @@ class LibraryController extends ChangeNotifier {
   }
 
   Future<void> setWatchStatus(String folderId, WatchStatus status) async {
-    await _libraryApi.setWatchStatus(folderId, _encodeWatchStatus(status));
+    await _libraryApi.setWatchStatus(folderId, status.index);
     _patchFolder(folderId, (folder) => folder.copyWith(watchStatus: status));
   }
 
@@ -303,13 +303,6 @@ class LibraryController extends ChangeNotifier {
     }
 
     return visible.first.folderId;
-  }
-
-  String _encodeWatchStatus(WatchStatus status) {
-    return switch (status) {
-      WatchStatus.onHold => 'on_hold',
-      _ => status.name,
-    };
   }
 
   List<LibraryFolderDto> _mergeRefreshedFolders(
