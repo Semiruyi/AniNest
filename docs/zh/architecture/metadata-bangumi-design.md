@@ -1,5 +1,23 @@
 # AniNest Bangumi 元数据子系统设计
 
+## 适用范围
+
+- 面向当前动漫元数据主线
+- 数据源限定为 `Bangumi`
+- 目标实现位置以 `src/AniNest.Host/Modules/Metadata` 为准
+
+## 相关代码
+
+- `src/AniNest.Host/Modules/Metadata`
+- `src/AniNest.Application/Metadata`
+- `src/AniNest.Contracts/Metadata`
+
+## 配套阅读
+
+- [后端模块与 API](./backend-modules-and-api.md)
+- [元数据抓取流水线](./metadata-fetch-pipeline-design.md)
+- [元数据运行时结构](./metadata-runtime-structure.md)
+
 ## 1. 目标
 
 本文档定义 AniNest 面向动漫库的元数据获取能力设计。该能力以 `Bangumi` 为唯一数据源，目标是在不阻塞 Library 正常加载的前提下，为本地目录持续补全标题、简介、海报、评分等信息，并在重启、失败、重试、目录变更场景下保持状态一致。

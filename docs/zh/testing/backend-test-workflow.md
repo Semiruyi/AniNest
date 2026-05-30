@@ -1,4 +1,4 @@
-# Backend Test Workflow
+# 后端测试工作流
 
 当前后端工作的验证基线主要是：
 
@@ -8,6 +8,23 @@
 - `src/Tests.Backend`
 
 旧 UI 工程已经不再是后端重构的验收标准。
+
+## 适用范围
+
+- 面向当前后端主线的日常开发、自测与提交前验证
+- 以 `AniNest.Host`、`AniNest.Application`、`AniNest.Contracts` 与 `AniNest.Backend.Tests` 为准
+- 不包含已移除旧 UI 工程的验收流程
+
+## 相关代码
+
+- `src/Tests.Backend`
+- `src/AniNest.Host`
+- `src/AniNest.Application`
+- `src/AniNest.Contracts`
+
+## 配套阅读
+
+- [后端模块与 API](../architecture/backend-modules-and-api.md)
 
 ## 常用命令
 

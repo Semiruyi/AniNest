@@ -1,4 +1,4 @@
-# aninest_flutter
+# AniNest Flutter
 
 AniNest 的 Flutter 桌面端壳层，负责消费 `AniNest.Host` 暴露的 REST API 与 SSE 事件流。
 
@@ -26,6 +26,12 @@ flutter run -d windows
 ```
 
 默认后端地址是 `http://localhost:5275`。
+
+## 相关文档
+
+- [仓库文档导航](../../docs/README.md)
+- [Flutter 与后端对接契约](../../docs/zh/frontend/flutter-backend-client-contract.md)
+- [后端模块与 API](../../docs/zh/architecture/backend-modules-and-api.md)
 
 ## Windows media_kit 修复
 

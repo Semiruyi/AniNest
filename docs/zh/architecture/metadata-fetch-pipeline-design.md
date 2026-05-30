@@ -2,6 +2,25 @@
 
 本文档补充 AniNest 动漫元数据子系统中的“实际抓取执行流水线”职责划分。
 
+## 适用范围
+
+- 面向当前 `AniNest.Host` 内部的元数据抓取执行链路
+- 关注运行时任务如何从输入清洗走到决策落库
+- 不展开 UI 展示层与非 Bangumi 数据源方案
+
+## 相关代码
+
+- `src/AniNest.Host/Modules/Metadata/Preparation`
+- `src/AniNest.Host/Modules/Metadata/Acquisition`
+- `src/AniNest.Host/Modules/Metadata/Confidence`
+- `src/AniNest.Host/Modules/Metadata/Resolution`
+- `src/AniNest.Host/Modules/Metadata/Runtime`
+
+## 配套阅读
+
+- [Bangumi 元数据设计](./metadata-bangumi-design.md)
+- [元数据运行时结构](./metadata-runtime-structure.md)
+
 目标不是把所有逻辑塞进一个 worker，而是把“清洗本地输入”、“向 Bangumi 获取候选”、“做保守可信判断”、“把判断结果落成系统状态”拆成四段，便于调试、演进和回放日志。
 
 ---

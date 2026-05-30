@@ -9,7 +9,7 @@ AniNest 现在的主线是一个以后端为中心的本地番剧库项目：
 - `frontend/aninest_flutter`：Flutter 桌面端壳层，消费 Host API
 - `src/Tests.Backend`：后端测试
 
-旧的 `WPF + LibVLC` 方案文档已经移除；当前仓库以 `Host + Flutter` 结构为准。
+旧的 `WPF + LibVLC` 方案文档已经移除；当前仓库以 `AniNest.Host + Flutter` 结构为准。
 
 ## 当前能力
 
@@ -64,13 +64,13 @@ AniNest/
    └─ Tests.Backend/
 ```
 
-## 文档
+## 文档入口
 
-- [docs/README.md](docs/README.md)：当前文档索引
-- [docs/zh/architecture/backend-modules-and-api.md](docs/zh/architecture/backend-modules-and-api.md)：后端模块与 API 总览
-- [docs/zh/architecture/metadata-bangumi-design.md](docs/zh/architecture/metadata-bangumi-design.md)：Bangumi 元数据设计
-- [docs/zh/frontend/flutter-backend-client-contract.md](docs/zh/frontend/flutter-backend-client-contract.md)：Flutter 对接契约
-- [docs/zh/testing/backend-test-workflow.md](docs/zh/testing/backend-test-workflow.md)：后端测试工作流
+- [docs/README.md](docs/README.md)：文档导航页，包含推荐阅读路径与专题索引
+- [docs/zh/architecture/README.md](docs/zh/architecture/README.md)：架构文档总入口，适合按路径阅读后端与元数据设计
+- [frontend/aninest_flutter/README.md](frontend/aninest_flutter/README.md)：Flutter 前端本地运行方式与 Windows `media_kit` 说明
+- [docs/zh/architecture/backend-modules-and-api.md](docs/zh/architecture/backend-modules-and-api.md)：后端结构、模块边界与 API 总览
+- [docs/zh/testing/backend-test-workflow.md](docs/zh/testing/backend-test-workflow.md)：后端日常验证方式与提交流程
 
 ## 技术栈
 
@@ -79,6 +79,6 @@ AniNest/
 - Flutter
 - `media_kit`
 
-## License
+## 许可证
 
 MIT

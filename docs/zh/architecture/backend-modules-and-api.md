@@ -2,6 +2,24 @@
 
 本文档描述当前仓库里已经落地的后端结构与接口，以 `src/AniNest.Host` 的实际实现为准。
 
+## 适用范围
+
+- 面向当前 `AniNest.Host + Flutter` 主线
+- 以仓库中的 `src/AniNest.Host`、`src/AniNest.Application`、`src/AniNest.Contracts` 实现为准
+- 不覆盖已移除的 WPF / LibVLC 历史方案
+
+## 相关代码
+
+- `src/AniNest.Host`
+- `src/AniNest.Application`
+- `src/AniNest.Contracts`
+- `src/AniNest.Core`
+
+## 配套阅读
+
+- [Flutter 与后端对接契约](../frontend/flutter-backend-client-contract.md)
+- [后端测试工作流](../testing/backend-test-workflow.md)
+
 ## 当前项目结构
 
 ```text

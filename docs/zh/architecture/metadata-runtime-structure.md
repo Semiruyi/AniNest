@@ -2,6 +2,23 @@
 
 本文档说明当前 AniNest 元数据模块在 `AniNest.Host` 内部的目录结构、职责分层和运行主线。
 
+## 适用范围
+
+- 面向当前 `src/AniNest.Host/Modules/Metadata` 目录结构
+- 关注代码应该放在哪里，以及运行时任务如何穿过这些层
+- 不替代抓取策略与业务目标文档
+
+## 相关代码
+
+- `src/AniNest.Host/Modules/Metadata`
+- `src/AniNest.Application/Metadata`
+- `src/AniNest.Contracts/Metadata`
+
+## 配套阅读
+
+- [Bangumi 元数据设计](./metadata-bangumi-design.md)
+- [元数据抓取流水线](./metadata-fetch-pipeline-design.md)
+
 这份文档重点不是介绍 Bangumi 抓取策略本身，而是回答下面几个问题：
 
 - 元数据模块现在有哪些层

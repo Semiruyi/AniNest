@@ -2,6 +2,25 @@
 
 本文档面向当前仓库里的 Flutter 客户端，对齐 `AniNest.Host` 已落地的 REST API 与 SSE 事件流。
 
+## 适用范围
+
+- 面向当前 `frontend/aninest_flutter` 客户端
+- 对齐 `AniNest.Host` 已落地的 REST API、资源接口与 SSE 事件流
+- 重点描述前后端边界，而不是 Flutter 组件层的视觉实现
+
+## 相关代码
+
+- `frontend/aninest_flutter/lib/src/services`
+- `frontend/aninest_flutter/lib/src/models`
+- `frontend/aninest_flutter/lib/src/app`
+- `src/AniNest.Host/Endpoints`
+- `src/AniNest.Contracts`
+
+## 配套阅读
+
+- [后端模块与 API](../architecture/backend-modules-and-api.md)
+- [frontend/aninest_flutter/README.md](../../../frontend/aninest_flutter/README.md)
+
 ## 边界
 
 后端负责：
