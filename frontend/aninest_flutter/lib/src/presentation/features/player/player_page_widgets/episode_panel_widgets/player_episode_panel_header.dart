@@ -42,16 +42,6 @@ class PlayerEpisodePanelHeader extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const Gap(3),
-                Text(
-                  counter,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.mutedForeground,
-                  ),
-                ),
               ],
             ),
           ),

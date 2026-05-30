@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:aninest_flutter/src/features/player/application/player_controller.dart';
+import 'package:aninest_flutter/src/features/player/application/player_runtime_state.dart';
 import 'package:aninest_flutter/src/models/playlist_models.dart';
+import 'package:aninest_flutter/src/models/session_models.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'episode_panel_widgets/player_episode_panel_frame.dart';
@@ -18,7 +20,6 @@ class PlayerEpisodePanel extends StatefulWidget {
 
 class _PlayerEpisodePanelState extends State<PlayerEpisodePanel> {
   final ScrollController _scrollController = ScrollController();
-  String? _lastScrolledItemId;
 
   @override
   void dispose() {
@@ -28,18 +29,40 @@ class _PlayerEpisodePanelState extends State<PlayerEpisodePanel> {
 
   @override
   Widget build(BuildContext context) {
-    return PlayerSelector<({PlaylistDto? playlist, String? selectedItemId})>(
+    return PlayerSelector<
+      ({
+        PlaylistDto? playlist,
+        String? selectedItemId,
+        PlaybackTargetDto? playbackTarget,
+        PlayerRuntimeState runtime,
+      })
+    >(
       controller: widget.controller,
-      selector: (state) =>
-          (playlist: state.playlist, selectedItemId: state.selectedItemId),
+      selector: (state) => (
+        playlist: state.playlist,
+        selectedItemId: state.selectedItemId,
+        playbackTarget: state.playbackTarget,
+        runtime: state.runtime,
+      ),
       builder: (BuildContext context, value) {
         final playlist = value.playlist;
         final selectedItemId = value.selectedItemId;
-        _scrollToSelectedItem(playlist, selectedItemId);
+        final playbackTarget = value.playbackTarget;
+        final runtime = value.runtime;
+        final currentPlaybackProgressFraction =
+            playbackTarget != null &&
+                runtime.hasMedia &&
+                !runtime.isLoading &&
+                runtime.duration > Duration.zero
+            ? runtime.progressFraction
+            : null;
 
         return PlayerEpisodePanelFrame(
           playlist: playlist,
           selectedItemId: selectedItemId,
+          currentPlaybackItemId: playbackTarget?.itemId,
+          currentPlaybackStartPositionMs: playbackTarget?.startPositionMs,
+          currentPlaybackProgressFraction: currentPlaybackProgressFraction,
           scrollController: _scrollController,
           onItemPressed: (String itemId) {
             if (itemId != selectedItemId) {
@@ -49,44 +72,5 @@ class _PlayerEpisodePanelState extends State<PlayerEpisodePanel> {
         );
       },
     );
-  }
-
-  void _scrollToSelectedItem(PlaylistDto? playlist, String? selectedItemId) {
-    if (playlist == null || selectedItemId == null) {
-      _lastScrolledItemId = null;
-      return;
-    }
-    if (_lastScrolledItemId == selectedItemId) {
-      return;
-    }
-
-    final index = playlist.items.indexWhere(
-      (PlaylistItemDto item) => item.itemId == selectedItemId,
-    );
-    if (index < 0) {
-      return;
-    }
-
-    _lastScrolledItemId = selectedItemId;
-    _scrollToIndex(index);
-  }
-
-  void _scrollToIndex(int index) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scrollController.hasClients) {
-        return;
-      }
-
-      final target = index * PlayerEpisodePanelFrame.itemExtent;
-      final position = _scrollController.position;
-      final clamped = target.clamp(0.0, position.maxScrollExtent);
-      unawaited(
-        _scrollController.animateTo(
-          clamped,
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-        ),
-      );
-    });
   }
 }
