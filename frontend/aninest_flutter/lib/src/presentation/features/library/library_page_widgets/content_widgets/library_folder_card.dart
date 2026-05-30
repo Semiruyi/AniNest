@@ -44,6 +44,7 @@ class _LibraryFolderCardState extends State<LibraryFolderCard> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     const cardRadius = 12.0;
+    const borderRadius = 15.0;
 
     return LibraryFolderCardContextMenu(
       folder: widget.folder,
@@ -55,14 +56,16 @@ class _LibraryFolderCardState extends State<LibraryFolderCard> {
       onDelete: widget.onDelete,
       child: PrimaryDoubleClickRegion(
         onDoubleClick: widget.onOpen,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(cardRadius),
+            borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(
               color: widget.isSelected
                   ? colorScheme.primary
                   : colorScheme.border,
-              width: widget.isSelected ? 1.5 : 1,
+              width: 2.3,
             ),
           ),
           child: MouseRegion(
