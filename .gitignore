@@ -55,6 +55,8 @@ Desktop.ini
 release/
 dist/
 artifacts/
+.tmp/
+tmp/
 
 .claude/
 
