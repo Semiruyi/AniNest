@@ -127,6 +127,8 @@ class LibraryContentPane extends StatelessWidget {
                 if (folders.isEmpty) {
                   return LibraryFilteredEmptyState(
                     view: controller.libraryView,
+                    searchQuery: controller.librarySearchQuery,
+                    hasViewResults: controller.viewFilteredFolders.isNotEmpty,
                   );
                 }
 

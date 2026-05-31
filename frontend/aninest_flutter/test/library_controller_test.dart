@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:aninest_flutter/src/api/aninest_http_client.dart';
 import 'package:aninest_flutter/src/features/library/application/library_controller.dart';
+import 'package:aninest_flutter/src/features/library/application/library_search_filter.dart';
 import 'package:aninest_flutter/src/features/library/application/library_view.dart';
 import 'package:aninest_flutter/src/models/enums.dart';
 import 'package:aninest_flutter/src/models/library_models.dart';
@@ -51,6 +52,119 @@ void main() {
       'completed',
     );
   });
+
+  test('LibrarySearchFilter matches folder name metadata and path', () {
+    const folders = <LibraryFolderDto>[
+      LibraryFolderDto(
+        folderId: 'folder-01',
+        name: 'Frieren',
+        path: '/anime/frieren',
+        videoCount: 28,
+        coverUrl: null,
+        playedCount: 0,
+        watchStatus: WatchStatus.planned,
+        isFavorite: false,
+        addedAtUtc: null,
+        metadataSummary: null,
+      ),
+      LibraryFolderDto(
+        folderId: 'folder-02',
+        name: 'Sousou Project',
+        path: '/anime/seasonal/drama',
+        videoCount: 24,
+        coverUrl: null,
+        playedCount: 0,
+        watchStatus: WatchStatus.watching,
+        isFavorite: false,
+        addedAtUtc: null,
+        metadataSummary: LibraryMetadataSummaryDto(
+          matchedTitle: 'Bocchi the Rock!',
+          originalTitle: 'ぼっち・ざ・ろっく！',
+          posterUrl: null,
+          state: 'Matched',
+          hasMetadata: true,
+        ),
+      ),
+    ];
+
+    final filter = LibrarySearchFilter();
+
+    expect(
+      filter.apply('fri', folders).map((folder) => folder.folderId),
+      <String>['folder-01'],
+    );
+    expect(
+      filter.apply('bocchi', folders).map((folder) => folder.folderId),
+      <String>['folder-02'],
+    );
+    expect(
+      filter.apply('seasonal', folders).map((folder) => folder.folderId),
+      <String>['folder-02'],
+    );
+  });
+
+  test(
+    'LibraryController applies search query after current view filtering',
+    () {
+      final controller = _createController();
+
+      controller.applyFolderAdded(
+        const LibraryFolderDto(
+          folderId: 'favorite-match',
+          name: 'Frieren',
+          path: '/anime/frieren',
+          videoCount: 28,
+          coverUrl: null,
+          playedCount: 0,
+          watchStatus: WatchStatus.watching,
+          isFavorite: true,
+          addedAtUtc: null,
+          metadataSummary: null,
+        ),
+      );
+      controller.applyFolderAdded(
+        const LibraryFolderDto(
+          folderId: 'favorite-miss',
+          name: 'Dungeon Meshi',
+          path: '/anime/dungeon-meshi',
+          videoCount: 24,
+          coverUrl: null,
+          playedCount: 0,
+          watchStatus: WatchStatus.watching,
+          isFavorite: true,
+          addedAtUtc: null,
+          metadataSummary: null,
+        ),
+      );
+      controller.applyFolderAdded(
+        const LibraryFolderDto(
+          folderId: 'non-favorite-match',
+          name: 'Frieren Specials',
+          path: '/anime/frieren-specials',
+          videoCount: 4,
+          coverUrl: null,
+          playedCount: 0,
+          watchStatus: WatchStatus.planned,
+          isFavorite: false,
+          addedAtUtc: null,
+          metadataSummary: null,
+        ),
+      );
+
+      controller.selectView(LibraryView.favorites);
+      controller.setSearchQuery('fri');
+
+      expect(controller.viewFilteredFolders.map((folder) => folder.folderId), [
+        'favorite-match',
+        'favorite-miss',
+      ]);
+      expect(controller.visibleFolders.map((folder) => folder.folderId), [
+        'favorite-match',
+      ]);
+      expect(controller.selectedFolderId, 'favorite-match');
+      expect(controller.searchQuery, 'fri');
+    },
+  );
 
   test(
     'LibraryController sends numeric watch status values to backend',
@@ -200,6 +314,16 @@ void main() {
       expect(controller.folders, hasLength(3));
     },
   );
+}
+
+LibraryController _createController() {
+  final client = AniNestHttpClient(
+    baseUrl: 'http://localhost:5275',
+    httpClient: _FakeHttpClient((_) async {
+      throw UnimplementedError('This test should not hit HTTP.');
+    }),
+  );
+  return LibraryController(LibraryApi(client));
 }
 
 class _FakeHttpClient extends http.BaseClient {

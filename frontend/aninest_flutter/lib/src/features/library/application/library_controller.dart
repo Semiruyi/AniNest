@@ -1,4 +1,5 @@
 import 'package:aninest_flutter/src/features/library/application/library_view.dart';
+import 'package:aninest_flutter/src/features/library/application/library_search_filter.dart';
 import 'package:aninest_flutter/src/features/library/application/library_batch_add_result.dart';
 import 'package:aninest_flutter/src/core/logging/app_performance_logger.dart';
 import 'package:aninest_flutter/src/models/enums.dart';
@@ -15,13 +16,18 @@ class LibraryController extends ChangeNotifier {
   List<LibraryFolderDto> _folders = const [];
   String? _selectedFolderId;
   LibraryView _selectedView = LibraryView.allMedia;
+  String _searchQuery = '';
 
   final LibraryViewFilter _viewFilter = const LibraryViewFilter();
+  final LibrarySearchFilter _searchFilter = const LibrarySearchFilter();
 
   List<LibraryFolderDto> get folders => _folders;
-  List<LibraryFolderDto> get visibleFolders =>
+  List<LibraryFolderDto> get viewFilteredFolders =>
       _viewFilter.apply(_selectedView, _folders);
+  List<LibraryFolderDto> get visibleFolders =>
+      _searchFilter.apply(_searchQuery, viewFilteredFolders);
   LibraryView get selectedView => _selectedView;
+  String get searchQuery => _searchQuery;
   String? get selectedFolderId => _selectedFolderId;
   LibraryFolderDto? get selectedFolder {
     final visible = visibleFolders;
@@ -131,6 +137,16 @@ class LibraryController extends ChangeNotifier {
     }
 
     _selectedView = view;
+    _selectedFolderId = _resolveSelectedFolderId(_selectedFolderId);
+    notifyListeners();
+  }
+
+  void setSearchQuery(String query) {
+    if (query == _searchQuery) {
+      return;
+    }
+
+    _searchQuery = query;
     _selectedFolderId = _resolveSelectedFolderId(_selectedFolderId);
     notifyListeners();
   }

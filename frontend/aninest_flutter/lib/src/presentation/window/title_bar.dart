@@ -56,11 +56,13 @@ class TitleBar extends StatelessWidget {
                     transitionBuilder: (child, animation) =>
                         FadeTransition(opacity: animation, child: child),
                     child: currentPage == AppPage.library
-                        ? const SizedBox(
+                        ? SizedBox(
                             key: ValueKey<String>('library-search'),
                             width: _kLibraryTitleSearchFieldWidth,
                             height: 30,
-                            child: LibraryTitleSearchField(),
+                            child: LibraryTitleSearchField(
+                              controller: appController,
+                            ),
                           )
                         : const SizedBox(
                             key: ValueKey<String>('titlebar-empty'),

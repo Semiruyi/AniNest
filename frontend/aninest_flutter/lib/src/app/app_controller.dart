@@ -74,8 +74,10 @@ class AppController extends ChangeNotifier {
   MetadataController get metadata => _dependencies.metadata;
 
   List<LibraryFolderDto> get folders => library.folders;
+  List<LibraryFolderDto> get viewFilteredFolders => library.viewFilteredFolders;
   List<LibraryFolderDto> get visibleFolders => library.visibleFolders;
   LibraryView get libraryView => library.selectedView;
+  String get librarySearchQuery => library.searchQuery;
 
   String? get selectedFolderId =>
       _runtime.selectionResolver.resolveSelectedFolderId();
@@ -193,6 +195,10 @@ class AppController extends ChangeNotifier {
 
   void selectLibraryView(LibraryView view) {
     library.selectView(view);
+  }
+
+  void setLibrarySearchQuery(String query) {
+    library.setSearchQuery(query);
   }
 
   Future<void> savePlayerSettings(PlayerSettingsDto settings) async {

@@ -3,9 +3,16 @@ import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class LibraryFilteredEmptyState extends StatelessWidget {
-  const LibraryFilteredEmptyState({super.key, required this.view});
+  const LibraryFilteredEmptyState({
+    super.key,
+    required this.view,
+    required this.searchQuery,
+    required this.hasViewResults,
+  });
 
   final LibraryView view;
+  final String searchQuery;
+  final bool hasViewResults;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +45,14 @@ class LibraryFilteredEmptyState extends StatelessWidget {
   }
 
   _FilteredEmptyCopy _copyFor(LibraryView view, AppLocalizations l10n) {
+    if (hasViewResults && searchQuery.trim().isNotEmpty) {
+      return _FilteredEmptyCopy(
+        BootstrapIcons.search,
+        'No matching titles',
+        'Try a different search in the current library section.',
+      );
+    }
+
     return switch (view) {
       LibraryView.recentlyAdded => const _FilteredEmptyCopy(
         BootstrapIcons.clockHistory,
