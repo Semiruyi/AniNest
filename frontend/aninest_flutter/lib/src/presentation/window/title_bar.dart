@@ -3,7 +3,7 @@ import 'package:aninest_flutter/src/core/window/window_frame_controller.dart';
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_controller.dart';
 import 'package:aninest_flutter/src/presentation/window/app_page.dart';
 import 'package:aninest_flutter/src/presentation/window/window_layout.dart';
-import 'package:aninest_flutter/src/presentation/window/title_bar/ani_menubar.dart';
+import 'package:aninest_flutter/src/presentation/window/title_bar/menu_area.dart';
 import 'package:aninest_flutter/src/presentation/window/title_bar/drag_bar.dart';
 import 'package:aninest_flutter/src/presentation/window/title_bar/library_title_search_field.dart';
 import 'package:aninest_flutter/src/presentation/window/title_bar/window_control_bar.dart';
@@ -38,11 +38,9 @@ class TitleBar extends StatelessWidget {
         children: <Widget>[
           SizedBox(
             width: kSidebarRailWidth,
-            child: Center(
-              child: FlutterLogo(size: 20,),
-            ),
+            child: Center(child: FlutterLogo(size: 20)),
           ),
-          AniMenubar(
+          MenuArea(
             controller: appController,
             feedbackController: feedbackController,
           ),

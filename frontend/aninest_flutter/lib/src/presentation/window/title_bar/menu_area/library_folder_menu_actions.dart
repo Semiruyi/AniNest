@@ -6,7 +6,7 @@ import 'package:aninest_flutter/src/features/library/application/library_batch_a
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_controller.dart';
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_models.dart';
-import 'package:aninest_flutter/src/presentation/window/title_bar/server_folder_browser_dialog.dart';
+import 'package:aninest_flutter/src/presentation/window/title_bar/menu_area/server_folder_browser_dialog.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class LibraryFolderMenuActions {

@@ -1,8 +1,8 @@
 import 'package:aninest_flutter/src/api/api_exception.dart';
 import 'package:aninest_flutter/src/app/app_controller.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
-import 'package:aninest_flutter/src/presentation/window/title_bar/server_folder_browser/server_folder_browser_tree_state.dart';
-import 'package:aninest_flutter/src/presentation/window/title_bar/server_folder_browser/server_folder_browser_tree_view.dart';
+import 'package:aninest_flutter/src/presentation/window/title_bar/menu_area/server_folder_browser/server_folder_browser_tree_state.dart';
+import 'package:aninest_flutter/src/presentation/window/title_bar/menu_area/server_folder_browser/server_folder_browser_tree_view.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class ServerFolderBrowserDialog extends StatefulWidget {

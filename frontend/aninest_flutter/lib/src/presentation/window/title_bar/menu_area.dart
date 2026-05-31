@@ -5,12 +5,12 @@ import 'package:aninest_flutter/src/app/app_locale.dart';
 import 'package:aninest_flutter/src/l10n/generated/app_localizations.dart';
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_controller.dart';
 import 'package:aninest_flutter/src/presentation/feedback/app_feedback_models.dart';
-import 'package:aninest_flutter/src/presentation/window/title_bar/backend_connection_dialog.dart';
-import 'package:aninest_flutter/src/presentation/window/title_bar/library_folder_menu_actions.dart';
+import 'package:aninest_flutter/src/presentation/window/title_bar/menu_area/backend_connection_dialog.dart';
+import 'package:aninest_flutter/src/presentation/window/title_bar/menu_area/library_folder_menu_actions.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-class AniMenubar extends StatelessWidget {
-  const AniMenubar({
+class MenuArea extends StatelessWidget {
+  const MenuArea({
     super.key,
     required this.controller,
     required this.feedbackController,

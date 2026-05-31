@@ -1,4 +1,4 @@
-import 'package:aninest_flutter/src/presentation/window/title_bar/server_folder_browser/server_folder_browser_tree_state.dart';
+import 'package:aninest_flutter/src/presentation/window/title_bar/menu_area/server_folder_browser/server_folder_browser_tree_state.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class ServerFolderBrowserTreeView extends StatelessWidget {
