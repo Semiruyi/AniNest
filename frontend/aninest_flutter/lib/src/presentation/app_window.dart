@@ -176,6 +176,7 @@ class _AppWindowState extends State<AppWindow> {
               controller: _windowFrameController,
               appController: widget.controller,
               feedbackController: _feedbackController,
+              currentPage: _currentPage,
             ),
           if (!isPlayerFullscreen)
             Container(height: 1, color: colorScheme.border),

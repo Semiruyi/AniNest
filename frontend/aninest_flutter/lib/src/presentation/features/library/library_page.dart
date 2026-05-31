@@ -7,7 +7,6 @@ import 'package:aninest_flutter/src/presentation/features/library/library_page_w
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_layout.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_navigation_pane.dart';
 import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_status_bar.dart';
-import 'package:aninest_flutter/src/presentation/features/library/library_page_widgets/library_toolbar.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class LibraryPage extends StatefulWidget {
@@ -98,7 +97,6 @@ class _LibraryPageState extends State<LibraryPage> {
       color: colorScheme.background,
       child: Column(
         children: <Widget>[
-          const LibraryToolbar(),
           Expanded(
             child: ResizablePanel.horizontal(
               draggerBuilder: ResizablePanel.defaultDraggerBuilder,
